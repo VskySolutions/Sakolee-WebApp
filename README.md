@@ -1,6 +1,6 @@
-# VSkyBaseFramework (.NET 9)
+# Sakolee (.NET 9)
 
-A reusable **multi-tenant application base** for new VSky products. It ships the platform every product needs and no product-specific module:
+**Sakolee** is a multi-tenant application platform built on a reusable Clean Architecture base. It ships the platform every product needs and no product-specific module yet:
 
 - **Tenancy** — tenants with lifecycle (active / inactive / archived), tenant-scoped data via EF Core global query filters, tenant switching for multi-tenant users.
 - **Identity and access** — platform-issued JWT (RS256) + API-key authentication, persons (CRM master records) promoted to users, system and custom roles, permission groups, permission-based RBAC, self-service password reset, session invalidation.
@@ -56,7 +56,7 @@ Domain  ←  Application  ←  Infrastructure  ←  Api / Workers / McpServer
 - **Shared** — cross-cutting contracts: configuration option types, API response envelopes, the permission catalogue and role names.
 - **Api / Workers / McpServer** — composition roots that wire everything via `AddApplication()` + `AddInfrastructure()`.
 
-> The .NET projects and namespaces keep the `Sakolee.*` names they were forked with. Renaming them is a mechanical, product-level decision; see [Starting a new product on this base](#starting-a-new-product-on-this-base).
+> The .NET projects and namespaces were renamed from the `EmsPortal.*` base to `Sakolee.*` for this product. The solution file itself (`VSkyBaseFramework.sln`) keeps the base framework's name; only the project/namespace names changed.
 
 ---
 
@@ -242,7 +242,7 @@ dotnet ef migrations add <Name> \
 2. Add the product's modules on top: an `EntityType` value per new record type (numbers are append-only; 6 and 14 are retired and must not be reused), entities and EF configurations, repositories registered in `Infrastructure/DependencyInjection.cs`, controllers, and SPA modules under `WEB/src/modules/`. `API/docs/DEVELOPMENT.md` lists every file a new module needs.
 3. Add the module's permission keys to `Permissions.cs` and `usePermissions.js`, its default option sets to `DefaultOptionSets.cs`, its email templates to `DefaultEmailTemplates.cs` (and to `EmailSendPolicy` if they may be emailed), and its notification and activity-event types to their enums.
 4. Wire its records into the Universal Features hooks that key on `EntityType`: `UniversalFeatureEntityAccess` (read permission), `UploadRecordKeyResolver` (upload folder name), `DeletedRecordsRepository` (restore / purge), `AggregateRootTouch` (if its list shows a parent worked on through child records), and `useEntityMeta.js` (label, icon, permalink route).
-5. Optionally rename the `Sakolee.*` projects and namespaces to the product's name.
+5. Optionally rename the `Sakolee.*` projects and namespaces again for a further downstream product.
 
 ---
 
