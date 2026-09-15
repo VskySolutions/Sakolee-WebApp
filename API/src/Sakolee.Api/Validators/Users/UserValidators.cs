@@ -1,5 +1,6 @@
 using FluentValidation;
 using Sakolee.Api.Models.Users;
+using Sakolee.Api.Validators;
 
 namespace Sakolee.Api.Validators.Users;
 
@@ -7,10 +8,10 @@ public sealed class CreateUserRequestValidator : AbstractValidator<CreateUserReq
 {
     public CreateUserRequestValidator()
     {
-        // A user is created by promoting an existing Person (WO-61).
-        RuleFor(x => x.PersonId).NotEmpty().WithMessage("personId is required.");
-        // Email is optional here — it defaults to the person's primary email when omitted.
-        RuleFor(x => x.Email).EmailAddress().MaximumLength(256).When(x => !string.IsNullOrWhiteSpace(x.Email));
+        // The new Person master record is minted from these (WO-61).
+        RuleFor(x => x.FirstName).NotEmpty().MaximumLength(100).MustBeAPersonName("First name");
+        RuleFor(x => x.LastName).NotEmpty().MaximumLength(100).MustBeAPersonName("Last name");
+        RuleFor(x => x.Email).NotEmpty().WithMessage("Email is required.").EmailAddress().MaximumLength(256);
         // At least one role (multi-role roleIds, the legacy single roleId, or the legacy role name).
         RuleFor(x => x)
             .Must(x => x.RoleIds is { Count: > 0 } || x.RoleId is not null || !string.IsNullOrWhiteSpace(x.Role))
