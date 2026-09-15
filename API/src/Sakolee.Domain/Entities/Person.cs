@@ -188,4 +188,7 @@ public class Person : AuditableEntity
     public Address? Address { get; set; }
     public Media? ProfileMedia { get; set; }
     public Tenant? Tenant { get; set; }
+
+    /// <summary>The tenants this person is assigned to (a person may belong to more than one).</summary>
+    public ICollection<TenantPersonMapping> TenantMappings { get; set; } = new List<TenantPersonMapping>();
 }

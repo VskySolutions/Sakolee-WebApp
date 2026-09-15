@@ -40,6 +40,11 @@ internal sealed class PersonRepository : IPersonRepository
             .Include(p => p.ProfileMedia)
             .FirstOrDefaultAsync(p => p.UserId == userId && !p.Deleted, cancellationToken);
 
+    public async Task<IReadOnlyList<Person>> GetByIdsAsync(IEnumerable<Guid> ids, CancellationToken cancellationToken = default)
+        => await _dbContext.Persons
+            .Where(p => ids.Contains(p.Id))
+            .ToListAsync(cancellationToken);
+
     public Task<bool> PersonCodeExistsAsync(string personCode, CancellationToken cancellationToken = default)
         => _dbContext.Persons.AnyAsync(p => p.PersonCode == personCode, cancellationToken);
 

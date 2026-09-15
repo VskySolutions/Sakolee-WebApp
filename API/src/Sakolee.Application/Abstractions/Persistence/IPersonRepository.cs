@@ -15,6 +15,9 @@ public interface IPersonRepository
 
     Task<Person?> GetByUserIdAsync(Guid userId, CancellationToken cancellationToken = default);
 
+    /// <summary>Batch-loads persons by id, scoped to the active tenant.</summary>
+    Task<IReadOnlyList<Person>> GetByIdsAsync(IEnumerable<Guid> ids, CancellationToken cancellationToken = default);
+
     Task<bool> PersonCodeExistsAsync(string personCode, CancellationToken cancellationToken = default);
 
     /// <summary>

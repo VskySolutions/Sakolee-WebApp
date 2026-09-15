@@ -32,4 +32,7 @@ public enum EntityType
     // A client of the organisation, held as a Person. Used as a Person's SourceEntityType to say what
     // that person IS rather than which screen created them, so only clients land in a client picker.
     Client = 16,
+    // A student enrolled at the tenant, held as a Person. Used as a Person's SourceEntityType, the same
+    // way Client is, so a student created via the Student screen is identifiable as such.
+    Student = 17,
 }

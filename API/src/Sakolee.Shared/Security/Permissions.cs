@@ -17,6 +17,11 @@ public static class Permissions
     public const string PersonsWrite = "persons.write";
     public const string PersonsDelete = "persons.delete";
 
+    // Students
+    public const string StudentsRead = "students.read";
+    public const string StudentsWrite = "students.write";
+    public const string StudentsDelete = "students.delete";
+
     // Users
     public const string UsersRead = "users.read";
     public const string UsersWrite = "users.write";
@@ -55,6 +60,7 @@ public static class Permissions
     {
         TenantsRead, TenantsWrite, TenantsArchive,
         PersonsRead, PersonsWrite, PersonsDelete,
+        StudentsRead, StudentsWrite, StudentsDelete,
         UsersRead, UsersWrite, UsersResetPassword, UsersGroupManagement,
         RolesRead, RolesWrite, RolesAssign,
         GroupsManage,
@@ -71,6 +77,8 @@ public static class Permissions
         TenantsRead,
         // Deleting persons stays Super-Admin-only (PersonsDelete intentionally excluded here).
         PersonsRead, PersonsWrite,
+        // Students are owned entirely within a tenant, so Tenant Admins get full CRUD.
+        StudentsRead, StudentsWrite, StudentsDelete,
         UsersRead, UsersWrite, UsersResetPassword, UsersGroupManagement,
         // Tenant Admins manage the roles of users in their OWN tenant, and build roles of their own to
         // assign. The permission alone is not the whole boundary. UsersController confines them to their
@@ -89,15 +97,20 @@ public static class Permissions
         OptionSetsRead, OptionSetsManage
     };
 
+    /// <summary>A student holds no platform permissions — access to their own record is by ownership.</summary>
+    public static IReadOnlyList<string> ForStudent() => Array.Empty<string>();
+
     /// <summary>
-    /// The seeded permission set for a system role name (SuperAdmin/TenantAdmin), or an empty set for any
-    /// other name (including custom roles). Used as the fallback when an assignment carries no explicit
-    /// permission keys and when a caller holds only a role claim (API-key callers, pre-RBAC tokens).
+    /// The seeded permission set for a system role name (SuperAdmin/TenantAdmin/Student), or an empty set
+    /// for any other name (including custom roles). Used as the fallback when an assignment carries no
+    /// explicit permission keys and when a caller holds only a role claim (API-key callers, pre-RBAC
+    /// tokens).
     /// </summary>
     public static IReadOnlyList<string> ForSystemRole(string? roleName) => roleName switch
     {
         Roles.SuperAdmin => ForSuperAdmin(),
         Roles.TenantAdmin => ForTenantAdmin(),
+        Roles.Student => ForStudent(),
         _ => Array.Empty<string>(),
     };
 }
