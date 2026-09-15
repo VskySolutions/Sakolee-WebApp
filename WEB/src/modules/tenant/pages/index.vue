@@ -97,6 +97,8 @@
           class="q-mb-md"
           :rules="[(v) => !!v || 'Name is required']"
         />
+        <app-text-field v-model="form.email" type="email" label="Email *" :rules="emailRules" required class="q-mb-md" />
+        <app-phone-input v-model="form.phoneNumber" v-model:country="form.countryCode" label="Phone Number" />
         <app-text-field
           v-model="form.identifier"
           label="Identifier"
@@ -119,6 +121,24 @@
           :clearable="false"
           :options="allZones"
         />
+      <!-- Address -->
+      <q-card flat bordered class="profile-card q-mb-md">
+        <q-card-section class="text-subtitle1 text-weight-medium">Address</q-card-section>
+        <q-separator />
+        <q-card-section>
+          <!-- Not `extended`: the landmark / building / floor / unit boxes are off this page. -->
+          <app-address-fields v-model="form.address" />
+        </q-card-section>
+      </q-card>
+        <q-card flat bordered class="profile-card">
+          <q-card-section class="text-subtitle1 text-weight-medium">User Information</q-card-section>
+          <q-separator />
+          <q-card-section>
+            <app-text-field v-model="form.firstName" label="First Name *" class="q-mb-md" :rules="nameRules('First name', { required: true })" />
+            <app-text-field v-model="form.lastName" label="Last Name *" class="q-mb-md" :rules="nameRules('Last name', { required: true })" />
+            <app-text-field v-model="form.userEmail" type="email" label="User Email *" :rules="userEmailRules" required />
+          </q-card-section>
+        </q-card>
       </q-form>
     </app-form-drawer>
   </q-page>
@@ -134,6 +154,7 @@ import { useListTable } from "composables/useListTable";
 import { useDeletedRecords } from "composables/useDeletedRecords";
 import { useAuditColumns } from "composables/useAuditColumns";
 import { useTenantScope } from "composables/useTenantScope";
+import { nameRules } from "utils/personName";
 
 import AppDataTable from "components/common/AppDataTable.vue";
 import DeletedRecordsPanel from "components/universal/DeletedRecordsPanel.vue";
@@ -142,6 +163,8 @@ import AppFilterDrawer from "components/common/AppFilterDrawer.vue";
 import AppListHeader from "components/common/AppListHeader.vue";
 import AppSelect from "components/common/AppSelect.vue";
 import AppTextField from "components/common/AppTextField.vue";
+import AppPhoneInput from "components/common/AppPhoneInput.vue";
+import AppAddressFields from "components/common/AppAddressFields.vue";
 
 const { showDeleted, canManageDeleted } = useDeletedRecords();
 const notify = useNotify();
@@ -206,7 +229,27 @@ const editing = ref(false);
 const saving = ref(false);
 const identifierError = ref("");
 const formRef = ref(null);
-const form = reactive({ tenantId: null, name: "", identifier: "", timeZoneId: "UTC" });
+const form = reactive({ 
+  tenantId: null, 
+  name: "", identifier: "", 
+  timeZoneId: "UTC", 
+  email: "", 
+  phoneNumber: "", 
+  address: {
+    countryCode: null,
+    countryName: null,
+    stateCode: null,
+    stateName: null,
+    cityName: null,
+    postalCode: "",
+    addressLine1: "",
+    addressLine2: "",
+    landmark: "",
+    buildingName: "",
+    floorNumber: "",
+    unitNumber: "" 
+  } 
+});
 
 // The whole list goes to AppSelect, which narrows it as you type: it filters in a computed rather than
 // through QSelect's filter/done-callback round trip, so there is nothing left here to filter.
@@ -217,6 +260,22 @@ const resetForm = () => {
   form.name = "";
   form.identifier = "";
   form.timeZoneId = "UTC";
+  form.email = "";
+  form.phoneNumber = "";
+  form.address = {
+    countryCode: null,
+    countryName: null,
+    stateCode: null,
+    stateName: null,
+    cityName: null,
+    postalCode: "",
+    addressLine1: "",
+    addressLine2: "",
+    landmark: "",
+    buildingName: "",
+    floorNumber: "",
+    unitNumber: ""
+  };
   identifierError.value = "";
   editing.value = false;
 };
@@ -320,4 +379,12 @@ const archive = async (row) => {
   }
 };
 
+const emailRules = [
+  (v) => !!v || "Email is required",
+  (v) => /.+@.+\..+/.test(v) || "Enter a valid email"
+];
+const userEmailRules = [
+  (v) => !!v || "Email is required",
+  (v) => /.+@.+\..+/.test(v) || "Enter a valid email"
+];
 </script>
