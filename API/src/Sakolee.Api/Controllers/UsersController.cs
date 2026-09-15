@@ -92,17 +92,20 @@ public sealed class UsersController : ControllerBase
 
         var anySuperAdmin = targetRoles.Any(IsSuperAdminRole);
 
-        Guid? tenantId;
+        // Every tenant the new person is assigned to (TenantPersonMapping); the FIRST is the target
+        // tenant — where the login's roles and UserTenantRole are created — same primary/full-set split
+        // used for Person creation's own Tenant multiselect.
+        List<Guid> tenantIds;
 
         if (User.IsSuperAdmin())
         {
-            if (!anySuperAdmin && request.TenantId is null)
+            if (!anySuperAdmin && request.TenantIds is not { Count: > 0 })
             {
                 return BadRequest(ApiResponseFactory.Error(
-                    ApiErrorCodes.ValidationFailed, "Validation failed.", "tenantId is required for tenant-scoped roles."));
+                    ApiErrorCodes.ValidationFailed, "Validation failed.", "tenantIds is required for tenant-scoped roles."));
             }
 
-            tenantId = request.TenantId;
+            tenantIds = request.TenantIds is { Count: > 0 } ? request.TenantIds.Distinct().ToList() : new List<Guid>();
         }
         else
         {
@@ -113,13 +116,16 @@ public sealed class UsersController : ControllerBase
                     ApiResponseFactory.Forbidden("Tenant Admins cannot create Super Admin users."));
             }
 
-            tenantId = User.GetActiveTenantId();
-            if (tenantId is null)
+            var activeTenantId = User.GetActiveTenantId();
+            if (activeTenantId is null)
             {
                 return StatusCode(StatusCodes.Status403Forbidden,
                     ApiResponseFactory.Forbidden("No active tenant for the caller."));
             }
+            tenantIds = new List<Guid> { activeTenantId.Value };
         }
+
+        Guid? tenantId = tenantIds.Count > 0 ? tenantIds[0] : null;
 
         // A role another tenant created is not offerable here: it exists only inside the tenant that made
         // it, so nobody outside can be given it — a Super Admin creating a user in tenant A included.
@@ -142,29 +148,7 @@ public sealed class UsersController : ControllerBase
             }
         }
 
-        // A user is created by promoting an existing Person master record (WO-61). Super Admins may
-        // promote a person from any tenant; Tenant Admins are restricted to their own by the tenant filter.
-        var person = User.IsSuperAdmin()
-            ? await _persons.GetByIdUnscopedAsync(request.PersonId, cancellationToken)
-            : await _persons.GetByIdAsync(request.PersonId, cancellationToken);
-        if (person is null)
-        {
-            return NotFound(ApiResponseFactory.NotFound("Person not found."));
-        }
-
-        if (person.UserId is not null)
-        {
-            return Conflict(ApiResponseFactory.Error(
-                ApiErrorCodes.DuplicateIdentifier, "Person is already a user.", person.PersonCode));
-        }
-
-        var email = string.IsNullOrWhiteSpace(request.Email) ? person.PrimaryEmail : request.Email;
-        if (string.IsNullOrWhiteSpace(email))
-        {
-            return BadRequest(ApiResponseFactory.Error(
-                ApiErrorCodes.ValidationFailed, "Validation failed.", "An email is required (the person has none)."));
-        }
-
+        var email = request.Email!.Trim();
         if (await _users.EmailExistsAsync(email, cancellationToken))
         {
             return Conflict(ApiResponseFactory.Error(
@@ -174,21 +158,34 @@ public sealed class UsersController : ControllerBase
         var temporaryPassword = _passwordHasher.GenerateTemporaryPassword();
         var (hash, salt) = _passwordHasher.Hash(temporaryPassword);
 
-        // Link the person to the new account and refresh its contact details from the request.
-        person.UserId = userId;
-        if (!string.IsNullOrWhiteSpace(request.PhoneNumber))
+        // There is no existing Person to promote — one is minted here, the same way Student creation
+        // mints its own (WO-61 / see StudentsController.Create).
+        var firstName = request.FirstName.Trim();
+        var lastName = request.LastName.Trim();
+        var fullName = string.Join(" ", new[] { firstName, lastName }.Where(s => !string.IsNullOrWhiteSpace(s)));
+        var person = new Person
         {
-            person.MobileNumber = request.PhoneNumber;
-        }
-        if (!string.IsNullOrWhiteSpace(request.CountryCode))
+            Id = Guid.NewGuid(),
+            PersonCode = await GeneratePersonCodeAsync(cancellationToken),
+            UserId = userId,
+            FirstName = firstName,
+            LastName = lastName,
+            DisplayName = fullName,
+            PrimaryEmail = email,
+            MobileNumber = string.IsNullOrWhiteSpace(request.PhoneNumber) ? null : request.PhoneNumber,
+            CountryCode = string.IsNullOrWhiteSpace(request.CountryCode) ? null : request.CountryCode,
+            TenantId = tenantId,
+            IsActive = true,
+            LastProfileUpdatedOn = DateTime.UtcNow,
+            // Created via the User screen — mirrors Student's SourceEntityType (a person created by a
+            // module rather than entered on the Person screen itself).
+            SourceEntityType = EntityType.User,
+        };
+        foreach (var mappedTenantId in tenantIds)
         {
-            person.CountryCode = request.CountryCode;
+            person.TenantMappings.Add(new TenantPersonMapping { Id = Guid.NewGuid(), TenantId = mappedTenantId });
         }
-        if (string.IsNullOrWhiteSpace(person.PrimaryEmail))
-        {
-            person.PrimaryEmail = email;
-        }
-        _persons.Update(person);
+        await _persons.AddAsync(person, cancellationToken);
 
         var user = new User
         {
@@ -222,7 +219,7 @@ public sealed class UsersController : ControllerBase
         }
 
         await _audit.AddAsync(nameof(User), user.Id.ToString(), "Created",
-            details: $"roles={string.Join(",", targetRoles.Select(r => r.Entity.Name))}; tenant={tenantId}", cancellationToken: cancellationToken);
+            details: $"roles={string.Join(",", targetRoles.Select(r => r.Entity.Name))}; tenants={string.Join(",", tenantIds)}", cancellationToken: cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         // Optionally email the invitation (with the temporary password) via the tenant's active SMTP account.
@@ -1070,4 +1067,19 @@ public sealed class UsersController : ControllerBase
 
     private static string? NameOf(IReadOnlyDictionary<Guid, string> names, Guid? id)
         => id.HasValue && names.TryGetValue(id.Value, out var name) ? name : null;
+
+    /// <summary>Generates a unique business person code (e.g. PER-AB12CD34EF).</summary>
+    private async Task<string> GeneratePersonCodeAsync(CancellationToken cancellationToken)
+    {
+        for (var attempt = 0; attempt < 5; attempt++)
+        {
+            var code = "PER-" + Guid.NewGuid().ToString("N")[..10].ToUpperInvariant();
+            if (!await _persons.PersonCodeExistsAsync(code, cancellationToken))
+            {
+                return code;
+            }
+        }
+
+        return "PER-" + Guid.NewGuid().ToString("N").ToUpperInvariant();
+    }
 }

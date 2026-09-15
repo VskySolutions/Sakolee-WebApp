@@ -2,16 +2,24 @@ namespace Sakolee.Api.Models.Users;
 
 public sealed class CreateUserRequest
 {
-    /// <summary>The existing Person to promote to a login account.</summary>
-    public Guid PersonId { get; set; }
-    /// <summary>Login email/username.</summary>
+    /// <summary>
+    /// The new Person master record is minted from these three fields — there is no existing Person to
+    /// promote (WO-61's original "promote a Person" flow was replaced by creating one inline).
+    /// </summary>
+    public string FirstName { get; set; } = string.Empty;
+    public string LastName { get; set; } = string.Empty;
+    /// <summary>Login email/username; also becomes the new person's primary email.</summary>
     public string? Email { get; set; }
     /// <summary>Optional phone; when supplied it is written back to the person's mobile number.</summary>
     public string? PhoneNumber { get; set; }
     /// <summary>Optional dial code for <see cref="PhoneNumber"/>, written back to the person.</summary>
     public string? CountryCode { get; set; }
-    /// <summary>Target tenant.</summary>
-    public Guid? TenantId { get; set; }
+    /// <summary>
+    /// Tenants the new person is assigned to. The first id is the target tenant — where the login's roles
+    /// and <see cref="Sakolee.Domain.Entities.UserTenantRole"/> are created — and every id gets its own
+    /// <see cref="Sakolee.Domain.Entities.TenantPersonMapping"/> row (same pattern as Person creation).
+    /// </summary>
+    public List<Guid>? TenantIds { get; set; }
     /// <summary>The RBAC roles to assign in the tenant (multi-role).</summary>
     public List<Guid> RoleIds { get; set; } = new();
     /// <summary>Legacy single RBAC role.</summary>

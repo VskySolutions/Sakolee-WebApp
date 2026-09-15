@@ -102,8 +102,9 @@ export const userApi = {
   // `tenantId` this is the caller's ACTIVE tenant.
   list: (params) => api.get("/api/admin/users", { params }).then(envelope),
   get: (id) => api.get(`/api/admin/users/${id}`).then(unwrap),
-  // payload: { personId, email?, phoneNumber?, countryCode?, tenantId, roleIds[] } — promotes a Person
-  // to a login account with one or more RBAC roles in the tenant (multi-role, WO-123).
+  // payload: { firstName, lastName, email, phoneNumber?, countryCode?, tenantIds[], roleIds[] } — mints a
+  // new Person master record (assigned to every tenant in tenantIds via TenantPersonMapping) and a login
+  // account for it, with one or more RBAC roles in the FIRST tenant (multi-role, WO-123).
   create: (payload) => api.post("/api/admin/users", payload).then(unwrap),
   update: (id, payload) => api.put(`/api/admin/users/${id}`, payload).then(unwrap),
   setStatus: (id, isActive) => api.put(`/api/admin/users/${id}/status`, { isActive }).then(unwrap),
