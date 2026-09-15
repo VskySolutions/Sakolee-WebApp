@@ -20,6 +20,7 @@ internal sealed class PersonRepository : IPersonRepository
             .Include(p => p.Address)
             .Include(p => p.ProfileMedia)
             .Include(p => p.Tenant)
+            .Include(p => p.TenantMappings)
             .FirstOrDefaultAsync(p => p.Id == id, cancellationToken);
 
     /// <summary>Super Admin (cross-tenant) read of a single person, bypassing the ambient tenant filter.</summary>
@@ -29,6 +30,7 @@ internal sealed class PersonRepository : IPersonRepository
             .Include(p => p.Address)
             .Include(p => p.ProfileMedia)
             .Include(p => p.Tenant)
+            .Include(p => p.TenantMappings)
             .FirstOrDefaultAsync(p => p.Id == id && !p.Deleted, cancellationToken);
 
     // Self-profile lookup is keyed by the authenticated user's own id, so it bypasses the tenant
@@ -154,4 +156,6 @@ internal sealed class PersonRepository : IPersonRepository
     public void Update(Person person) => _dbContext.Persons.Update(person);
 
     public void Remove(Person person) => _dbContext.Persons.Remove(person);
+
+    public void RemoveTenantMapping(TenantPersonMapping mapping) => _dbContext.TenantPersonMappings.Remove(mapping);
 }

@@ -34,8 +34,8 @@
           <q-separator />
           <q-card-section class="row q-col-gutter-md">
             <app-select
-              v-if="canChooseTenant" v-model="form.tenantId" :options="tenantOptions" label="Tenant"
-              class="col-12" :loading="loadingTenants" :disable="!canWrite"
+              v-if="canChooseTenant" v-model="form.tenantIds" :options="tenantOptions" label="Tenant"
+              class="col-12" multiple :loading="loadingTenants" :disable="!canWrite"
             />
             <app-text-field v-model="form.firstName" label="First Name" class="col-12 col-sm-6" :disable="!canWrite" :rules="nameRules('First name', { required: true })" />
             <app-text-field v-model="form.middleName" label="Middle Name" class="col-12 col-sm-6" :disable="!canWrite" :rules="nameRules('Middle name')" />
@@ -117,7 +117,7 @@ const genderOptions = ["Male", "Female", "Other", "Prefer not to say"].map((g) =
 const emailRules = [(v) => !v || /.+@.+\..+/.test(v) || "Enter a valid email"];
 
 const form = reactive({
-  tenantId: null,
+  tenantIds: [],
   suffix: "",
   firstName: "",
   middleName: "",
@@ -145,7 +145,7 @@ const load = async () => {
     isUser.value = detail.isUser;
     personCode.value = p.personCode || "";
     audit.value = p.audit || null;
-    form.tenantId = p.tenantId || null;
+    form.tenantIds = p.tenantIds || [];
     form.suffix = p.suffix || "";
     form.firstName = p.firstName || "";
     form.middleName = p.middleName || "";

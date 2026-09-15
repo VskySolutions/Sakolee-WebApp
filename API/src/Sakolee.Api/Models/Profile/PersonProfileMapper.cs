@@ -11,6 +11,7 @@ public static class PersonProfileMapper
     /// </summary>
     public static PersonProfileResponse Map(Person p, RecordAudit audit) => new(
         p.Id, p.PersonCode, p.UserId, p.TenantId,
+        p.TenantMappings.Where(m => !m.Deleted).Select(m => m.TenantId).ToList(),
         p.Suffix,
         p.FirstName, p.MiddleName, p.LastName, p.DisplayName, p.FullName,
         p.PreferredName, p.Gender, p.DateOfBirth, p.MaritalStatus, p.Nationality,

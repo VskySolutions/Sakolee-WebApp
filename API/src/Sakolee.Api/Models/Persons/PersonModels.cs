@@ -5,8 +5,13 @@ namespace Sakolee.Api.Models.Persons;
 /// <summary>Create payload for a standalone <c>Person</c> master record (WO-61).</summary>
 public sealed class CreatePersonRequest
 {
-    /// <summary>Owning tenant (optional).</summary>
-    public Guid? TenantId { get; set; }
+    /// <summary>
+    /// Tenants this person is assigned to (optional; Super Admin only — ignored for everyone else, who is
+    /// always scoped to their own active tenant). The first id becomes the person's primary
+    /// <see cref="Sakolee.Domain.Entities.Person.TenantId"/>; every id gets its own
+    /// <see cref="Sakolee.Domain.Entities.TenantPersonMapping"/> row.
+    /// </summary>
+    public List<Guid>? TenantIds { get; set; }
 
     // Personal
     /// <summary>
@@ -47,8 +52,11 @@ public sealed class CreatePersonRequest
 /// <summary>Update payload for a person.</summary>
 public sealed class UpdatePersonRequest
 {
-    /// <summary>Owning tenant.</summary>
-    public Guid? TenantId { get; set; }
+    /// <summary>
+    /// Tenants this person is assigned to (Super Admin only; null leaves the current assignments
+    /// untouched). Reconciles the full desired set — same pattern as a user's tenant/role grants.
+    /// </summary>
+    public List<Guid>? TenantIds { get; set; }
 
     // Personal
     /// <summary>The generational particle on the name.</summary>

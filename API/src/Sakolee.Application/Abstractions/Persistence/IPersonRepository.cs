@@ -44,4 +44,7 @@ public interface IPersonRepository
 
     /// <summary>Soft-deletes the person (the DbContext converts the delete to a <c>Deleted</c> flag).</summary>
     void Remove(Person person);
+
+    /// <summary>Soft-deletes a tenant assignment no longer wanted (reconciling the desired tenant set).</summary>
+    void RemoveTenantMapping(TenantPersonMapping mapping);
 }

@@ -81,6 +81,8 @@ public sealed record PersonProfileResponse(
     string PersonCode,
     Guid? UserId,
     Guid? TenantId,
+    /// <summary>Every tenant this person is assigned to (may be more than one; see <c>TenantPersonMapping</c>).</summary>
+    IReadOnlyList<Guid> TenantIds,
     /// <summary>The generational particle on the name (Jr., III, …); null when they have none.</summary>
     string? Suffix,
     string FirstName,

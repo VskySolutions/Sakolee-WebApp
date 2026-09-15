@@ -1,12 +1,13 @@
 <template>
   <div>
-    <!-- Tenant: only platform/super admins get the dropdown; for others it is auto-set and hidden. -->
+    <!-- Tenant: only platform/super admins get the dropdown; for others it is auto-set and hidden. A
+         person may be assigned to more than one tenant (TenantPersonMapping), so this is a multiselect. -->
     <template v-if="tenantOptions.length">
       <div class="section-subhead">Tenant</div>
       <div class="row q-col-gutter-md q-mb-md">
         <app-select
-          v-model="form.tenantId" :options="tenantOptions" label="Tenant" class="col-12 col-sm-6"
-          :loading="loadingTenants" :disable="disable"
+          v-model="form.tenantIds" :options="tenantOptions" label="Tenant" class="col-12 col-sm-6"
+          multiple :loading="loadingTenants" :disable="disable"
         />
       </div>
     </template>

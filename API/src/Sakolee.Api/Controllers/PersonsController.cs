@@ -59,13 +59,19 @@ public sealed class PersonsController : ControllerBase
         var fullName = string.Join(" ", new[] { request.FirstName, request.LastName }.Where(s => !string.IsNullOrWhiteSpace(s)));
         var displayName = string.IsNullOrWhiteSpace(request.DisplayName) ? fullName : request.DisplayName!;
 
+        // A non-Super-Admin can only create within their own tenant; a client-supplied TenantIds list is
+        // honoured only for Super Admins (who may pick several).
+        var tenantIds = User.IsSuperAdmin() && request.TenantIds is { Count: > 0 }
+            ? request.TenantIds.Distinct().ToList()
+            : (User.GetActiveTenantId() is { } activeTenantId ? new List<Guid> { activeTenantId } : new List<Guid>());
+
         var person = new Person
         {
             Id = Guid.NewGuid(),
             PersonCode = await GeneratePersonCodeAsync(cancellationToken),
-            // A non-Super-Admin can only create within their own tenant; a client-supplied TenantId is honoured
-            // only for Super Admins.
-            TenantId = (User.IsSuperAdmin() ? request.TenantId : null) ?? User.GetActiveTenantId(),
+            // The first selected tenant remains the person's primary/owning tenant; every selected tenant
+            // also gets its own TenantPersonMapping row below.
+            TenantId = tenantIds.Count > 0 ? tenantIds[0] : null,
             Suffix = request.Suffix,
             FirstName = request.FirstName,
             MiddleName = request.MiddleName,
@@ -92,6 +98,11 @@ public sealed class PersonsController : ControllerBase
             // this one to point back at.
             SourceEntityType = EntityType.Person,
         };
+
+        foreach (var tid in tenantIds)
+        {
+            person.TenantMappings.Add(new TenantPersonMapping { Id = Guid.NewGuid(), TenantId = tid });
+        }
 
         if (request.Address is { } addressInput)
         {
@@ -213,10 +224,26 @@ public sealed class PersonsController : ControllerBase
         {
             person.IsActive = request.IsActive.Value;
         }
-        // Only a Super Admin may move a person to a different tenant.
-        if (request.TenantId.HasValue && User.IsSuperAdmin())
+        // Only a Super Admin may change a person's tenant assignments; null leaves them untouched.
+        if (request.TenantIds is { } desiredTenantIds && User.IsSuperAdmin())
         {
-            person.TenantId = request.TenantId;
+            var desired = desiredTenantIds.Distinct().ToList();
+            var existing = person.TenantMappings.Where(m => !m.Deleted).ToList();
+
+            foreach (var mapping in existing.Where(m => !desired.Contains(m.TenantId)))
+            {
+                _persons.RemoveTenantMapping(mapping);
+            }
+            foreach (var tid in desired.Where(tid => existing.All(m => m.TenantId != tid)))
+            {
+                person.TenantMappings.Add(new TenantPersonMapping { Id = Guid.NewGuid(), TenantId = tid });
+            }
+
+            // The primary/owning tenant follows the desired set: kept if still selected, otherwise the
+            // first of the new set, or none.
+            person.TenantId = person.TenantId is { } current && desired.Contains(current)
+                ? current
+                : desired.Count > 0 ? desired[0] : (Guid?)null;
         }
 
         if (request.Address is { } addressInput)

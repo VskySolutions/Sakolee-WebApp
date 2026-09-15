@@ -202,7 +202,7 @@ const openCreate = async () => {
   if (canChooseTenant.value) {
     await loadTenants();
   } else {
-    form.tenantId = activeTenantId.value;
+    form.tenantIds = [activeTenantId.value];
   }
   formOpen.value = true;
 };

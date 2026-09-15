@@ -63,11 +63,11 @@ watch(open, async (isOpen) => {
   if (!isOpen) return;
   Object.assign(form, blankPersonForm());
   if (props.tenantId) {
-    form.tenantId = props.tenantId;
+    form.tenantIds = [props.tenantId];
   } else if (canChooseTenant.value) {
     await loadTenants();
   } else {
-    form.tenantId = activeTenantId.value;
+    form.tenantIds = [activeTenantId.value];
   }
 });
 
