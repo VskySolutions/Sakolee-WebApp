@@ -77,7 +77,7 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<SakoleeDbContext>();
-    dbContext.Database.Migrate();
+    //dbContext.Database.Migrate();
 
     // Seed a bootstrap Super Admin on first run so the platform is usable out of the box.
     await Sakolee.Api.Startup.BootstrapSeeder.SeedAsync(scope.ServiceProvider, builder.Configuration);

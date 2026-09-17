@@ -13,7 +13,7 @@
     "IncludeExceptionDetails": false
   },
   "ConnectionStrings": {
-    "SqlServer": "Data Source=<server>;Initial Catalog=<database>;User Id=<user>;Password=<password>;MultipleActiveResultSets=True;TrustServerCertificate=True;"
+    "SqlServer": "Data Source=localhost;Initial Catalog=Sakolee;User Id=sa;Password=soft;MultipleActiveResultSets=True;TrustServerCertificate=True;"
   },
   "Hangfire": {
     "WorkerCount": 10,

@@ -2,6 +2,8 @@ using Sakolee.Application.Abstractions.Security;
 using Sakolee.Application.Abstractions.Tenancy;
 using Sakolee.Domain.Entities;
 using Microsoft.AspNetCore.DataProtection.EntityFrameworkCore;
+using Sakolee.Domain.Entities;
+
 using Microsoft.EntityFrameworkCore;
 
 namespace Sakolee.Infrastructure.Persistence;
@@ -36,6 +38,7 @@ public class SakoleeDbContext : DbContext, IDataProtectionKeyContext
     public DbSet<AuditTrailEntry> AuditTrail => Set<AuditTrailEntry>();
 
     public DbSet<Tenant> Tenants => Set<Tenant>();
+    public DbSet<FamilyStatus> FamilyStatuses { get; set; }
 
     public DbSet<User> Users => Set<User>();
 

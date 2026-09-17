@@ -45,6 +45,7 @@ public sealed class PersonsController : ControllerBase
         _audit = audit;
     }
 
+
     [HttpPost]
     [RequirePermission(Permissions.PersonsWrite)]
     [ProducesResponseType<ApiResponse<PersonDetail>>(StatusCodes.Status201Created)]

@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Sakolee.Infrastructure.Persistence;
 
@@ -11,9 +12,11 @@ using Sakolee.Infrastructure.Persistence;
 namespace Sakolee.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(SakoleeDbContext))]
-    partial class SakoleeDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260917053446_UpdateFamilyStatusToSoftDelete")]
+    partial class UpdateFamilyStatusToSoftDelete
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -781,6 +784,9 @@ namespace Sakolee.Infrastructure.Persistence.Migrations
 
                     b.Property<DateTime>("CreatedOn")
                         .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");

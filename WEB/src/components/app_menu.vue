@@ -186,6 +186,9 @@ const sections = [
       { label: "Email Templates", icon: "o_drafts", to: "/email-templates", permissions: [Permissions.EmailManage] },
       // Gated on MANAGE, not read: working roles hold optionSets.read so their dropdowns resolve, but the
       // lists are configuration and only Super Admin / Tenant Admin maintain them.
+
+      { label: "Family Statuses", icon: "o_family_restroom", to: "/familystatus", permissions: [Permissions.EmailManage] },
+
       { label: "Option Sets", icon: "o_list_alt", to: "/option-sets", permissions: [Permissions.OptionSetsManage] },
       { label: "Tag Management", icon: "o_label", to: "/settings/tags", permissions: [Permissions.SettingsManage] },
       { label: "Sticky Notes", icon: "o_sticky_note_2", to: "/settings/sticky-notes", permissions: [Permissions.SettingsManage] },

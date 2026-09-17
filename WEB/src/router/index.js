@@ -5,6 +5,7 @@ import { useAuthStore } from "stores/auth";
 import { isJwtExpired } from "services/jwt";
 import { useNotify } from "composables/useNotify";
 
+
 /*
  * If not building with SSR mode, you can
  * directly export the Router instantiation;
@@ -27,6 +28,7 @@ import smtpRoutes from "modules/smtp/routes";
 import emailTemplateRoutes from "modules/email-template/routes";
 import optionSetRoutes from "modules/option-set/routes";
 import universalRoutes from "modules/universal/routes";
+import familystatusRoutes from "modules/familystatus/routes";
 
 routes.push(...accountRoutes);
 routes.push(...authRoutes);
@@ -41,6 +43,7 @@ routes.push(...smtpRoutes);
 routes.push(...emailTemplateRoutes);
 routes.push(...optionSetRoutes);
 routes.push(...universalRoutes);
+routes.push(...familystatusRoutes);
 
 export default route(function ({ store }) {
   const createHistory = process.env.SERVER
