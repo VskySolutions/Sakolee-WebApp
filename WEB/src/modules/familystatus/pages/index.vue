@@ -1,31 +1,20 @@
 <template>
   <q-page padding>
-    <!-- Page Header: Renders breadcrumb navigation, live search input, filter trigger, and primary actions -->
+    <!-- Page Header: Manages breadcrumbs, live search input, creation trigger, and navigation -->
     <app-list-header
       :breadcrumbs="[{ label: 'Home', icon: 'o_home', to: '/' }, { label: 'Family Statuses' }]"
       :search="search"
       show-search
       search-placeholder="Search family status name"
-      show-filters
-      :filter-count="filterChips.length"
       show-add
       add-label="Create Family Status"
       show-back
       @update:search="search = $event"
-      @filters="filterOpen = true"
       @add="openCreateDialog"
       @back="$router.back()"
     />
 
-    <!-- Filter Drawer: Column-level filtering and soft-delete toggle -->
-    <app-filter-drawer v-model="filterOpen" :chips="filterChips" @remove="removeFilter" @clear="clearFilters">
-      <app-column-filters v-model="filters" :columns="filterableColumns" />
-      <q-toggle
-        v-if="canManageDeleted" v-model="showDeleted" label="Show deleted?" dense class="q-mt-md"
-      />
-    </app-filter-drawer>
-
-    <!-- Core Data Table Grid: Server-side pagination, sorting, row selection, and batch processing -->
+    <!-- Core Data Table Grid: Handles server-side pagination, sorting, row selection, and batch actions -->
     <app-data-table
       page-key="family-status"
       row-key="familyStatusId"
@@ -45,7 +34,7 @@
         <q-btn flat dense no-caps color="negative" label="Delete Selected" @click="bulkDelete(sel)" />
       </template>
 
-      <!-- Slot: Inline Row-level Action Controllers (View, Edit, Soft-Delete) -->
+      <!-- Slot: Inline Row-level Action Controllers (View, Edit, Delete) -->
       <template #body-cell-actions="cell">
         <q-td :props="cell">
           <q-btn flat round dense color="primary" icon="o_visibility" :to="{ name: 'family_status_detail', params: { id: cell.row.familyStatusId } }">
@@ -81,20 +70,6 @@
         <q-card-section class="col q-pa-md scroll">
           <q-form ref="formRef" greedy @submit.prevent="submitForm">
             
-            <!-- Foreign Key Selection: Associated Tenant Lookup (Visible only for Platform/Super Admins) -->
-            <app-select
-              v-if="canChooseTenant"
-              v-model="form.tenantId"
-              :options="tenantOptions"
-              :loading="loadingTenants"
-              label="Tenant"
-              required
-              emit-value
-              map-options
-              class="q-mb-md"
-              :rules="[(v) => !!v || 'Tenant is required']"
-            />
-
             <!-- Primary Entity Property: Family Status Name -->
             <app-text-field
               v-model="form.name"
@@ -117,7 +92,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, watch, onMounted } from "vue";
+import { ref, reactive, computed, watch } from "vue";
 import { useRouter } from "vue-router";
 import { debounce } from "quasar";
 
@@ -125,60 +100,35 @@ import { api, familyStatusApi, getApiErrorMessage, EntityType } from "services/a
 import { useNotify } from "composables/useNotify";
 import { useConfirm } from "composables/useConfirm";
 import { useListTable } from "composables/useListTable";
-import { useColumnFilters } from "composables/useColumnFilters";
 import { useDeletedRecords } from "composables/useDeletedRecords";
-import { useTenantOptions } from "composables/useTenantOptions";
 
 import AppDataTable from "components/common/AppDataTable.vue";
 import DeletedRecordsPanel from "components/universal/DeletedRecordsPanel.vue";
 import AppListHeader from "components/common/AppListHeader.vue";
-import AppFilterDrawer from "components/common/AppFilterDrawer.vue";
-import AppColumnFilters from "components/common/AppColumnFilters.vue";
-import AppSelect from "components/common/AppSelect.vue";
 import AppTextField from "components/common/AppTextField.vue";
 
-// Composables & Routing Initialization
+// Initialize core routing, notifications, and confirmation dialogs
 const router = useRouter();
 const { showDeleted, canManageDeleted } = useDeletedRecords();
 const notify = useNotify();
 const { confirm } = useConfirm();
-const { canChooseTenant, activeTenantId, tenantOptions, loadingTenants, loadTenants } = useTenantOptions();
 
-// Modal Presentation and Mutation Flags
+// Component modal presentation flags and entity reference trackers
 const dialogOpen = ref(false);
 const editingId = ref(null);
 const editing = ref(false);
 const saving = ref(false);
 const formRef = ref(null);
 
-// Form Entity Binding Object (Payload Model)
+// Form payload data model binding structure
 const form = reactive({ 
-  tenantId: null,
   name: "", 
 });
 
-// Tenant dropdown filter options for platform/super admins
-const tenantFilterOptions = computed(() =>
-  (canChooseTenant.value && tenantOptions.value.length ? tenantOptions.value : null));
-
-// Data Grid Column Configuration Schema with server-side column filtering support
+// Data Grid Column Configuration Schema
 const columns = computed(() => [
-  { name: "familyStatusId", label: "ID", field: "familyStatusId", align: "left", sortable: true, default: true, filterable: false },
-  { name: "name", label: "Status Name", field: "name", align: "left", sortable: true, default: true, filterable: false },
-  { 
-    name: "tenantName", 
-    label: "Tenant", 
-    field: (row) => row.tenantName || row.tenant_name || row.tenantId, 
-    format: (val, row) => {
-      const tenantId = row.tenantId || row.tenantid;
-      const found = tenantOptions.value.find((t) => t.value === tenantId);
-      return found ? found.label : (row.tenantName || row.tenant_name || tenantId || '-');
-    },
-    align: "left", 
-    sortable: true, 
-    default: true,
-    ...(tenantFilterOptions.value ? { filterOptions: tenantFilterOptions.value } : { filterable: false })
-  },
+  { name: "familyStatusId", label: "ID", field: "familyStatusId", align: "left", sortable: true, default: true },
+  { name: "name", label: "Status Name", field: "name", align: "left", sortable: true, default: true },
   { 
     name: "createdOn", 
     label: "Created On", 
@@ -190,95 +140,63 @@ const columns = computed(() => [
     align: "left", 
     sortable: true, 
     default: true,
-    filterable: false,
     format: (val) => {
       if (!val || val === '-') return '-';
       const date = new Date(val);
       return isNaN(date.getTime()) ? String(val) : date.toLocaleString(); 
     }
   },
-  { name: "actions", label: "Actions", field: "actions", align: "left", filterable: false }
+  { name: "actions", label: "Actions", field: "actions", align: "left" }
 ]);
 
-// Server-side List Management Composable integrated with column filters
+// Server-side List Management Composable without tenant restrictions
 const { 
     rows, 
     loading, 
     totalRecords, 
     selected, 
     search, 
-    filterOpen,
     pagination, 
     load, 
     onRequest 
 } = useListTable({
     pageKey: "family-status",
-    fetcher: async ({ page, limit, sortBy, descending }) => {
-        const currentTenantId = filters.tenantName || activeTenantId.value;
-
-        // Seedha global api instance use karenge taaki header aur query params dono confirm ho jayein
-        const response = await api.get('/api/admin/family-statuses', {
-            params: {
-                page,
-                limit,
-                sortBy: sortBy || undefined,
-                descending: descending ? true : undefined,
-                search: search.value || undefined,
-                tenantId: currentTenantId || undefined
-            },
-            headers: currentTenantId ? { 'X-Site-Id': currentTenantId } : {}
-        });
-
-        return { 
-            data: response?.data?.data || response?.data, 
-            total: response?.data?.meta?.totalRecords || response?.data?.totalRecords || 0 
-        };
+    fetcher: ({ page, limit, sortBy, descending }) => {
+        return familyStatusApi.list({
+            page,
+            limit,
+            sortBy,
+            descending,
+            search: search.value || undefined
+        }).then((r) => ({ 
+            data: r?.data, 
+            total: r?.meta?.totalRecords || r?.totalRecords || 0 
+        }));
     },
     onError: (err) => notify.error(getApiErrorMessage(err))
 });
 
-// Column Filters Setup (Server-side integration)
-const { filters, filterableColumns, filterChips, removeFilter, clearFilters } = useColumnFilters(columns, rows, { server: true });
-
-// Debounced reload handler resetting pagination index on search or filter updates
+// Debounced reload handler resetting pagination index upon search term changes
 const reload = debounce(() => { 
   pagination.value.page = 1; 
   load(); 
 }, 300);
 
-
-// Watch for active tenant changes and reload table data automatically
-watch(activeTenantId, () => {
-  reload();
-});
-
-// Component Mount Hook: Load tenant options if user has platform privileges
-onMounted(() => {
-  if (canChooseTenant.value) {
-    loadTenants();
-  }
-});
+// Watch for search updates to automatically refresh table data
+watch(search, reload);
 
 /**
- * Initializes state context and opens the drawer dialog in Creation mode.
+ * Initializes state context and opens the drawer dialog in creation mode.
  */
-const openCreateDialog = async () => {
+const openCreateDialog = () => {
   editingId.value = null;
   editing.value = false;
   form.name = "";
-  
-  if (canChooseTenant.value) {
-    await loadTenants();
-    form.tenantId = activeTenantId.value || null;
-  } else {
-    form.tenantId = activeTenantId.value;
-  }
-  
   dialogOpen.value = true;
 };
 
 /**
- * Hydrates target record metadata and opens the drawer dialog in Update mode.
+ * Hydrates target record metadata and opens the drawer dialog in edit/update mode.
  * @param {string|number} id - Target entity primary key identifier.
  */
 const openEditDialog = async (id) => {
@@ -291,7 +209,6 @@ const openEditDialog = async (id) => {
     const item = response?.data?.data || response?.data;
     
     if (item) {
-      form.tenantId = item.tenantId || item.tenantid || null;
       form.name = item.name || "";
     }
   } catch (err) {
@@ -300,7 +217,7 @@ const openEditDialog = async (id) => {
 };
 
 /**
- * Validates form integrity and executes either a POST (Create) or PUT (Update) transaction.
+ * Validates form integrity and executes either a POST (Create) or PUT (Update) API transaction.
  */
 const submitForm = async () => {
   const valid = await formRef.value?.validate();
@@ -309,7 +226,6 @@ const submitForm = async () => {
   saving.value = true;
   try {
     const payload = {
-      tenantId: form.tenantId,
       name: form.name
     };
 
