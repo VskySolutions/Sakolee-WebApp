@@ -186,7 +186,7 @@ const reload = debounce(() => { pagination.value.page = 1; load(); }, 300);
 watch([search, filters], reload, { deep: true });
 
 // Load tenant options so the Tenant dropdown filter is available to platform/super admins.
-onMounted(() => { if (canChooseTenant.value) loadTenants(); });
+onMounted(() => { if (canChooseTenant.value) loadTenants(); console.log(canChooseTenant.value) });
 
 // ---- Create ----
 const formOpen = ref(false);

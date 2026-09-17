@@ -108,6 +108,14 @@ export const classCategoryApi = {
   list: () => api.get("/api/admin/class-categories").then(unwrap)
 };
 
+// Family Status API mapping
+export const familyStatusApi = {
+  list: (params) => api.get("/api/admin/family-statuses", { params }).then(envelope),
+  get: (id) => api.get(`/api/admin/family-statuses/${id}`).then(unwrap),
+  create: (payload) => api.post("/api/admin/family-statuses", payload).then(unwrap),
+  update: (id, payload) => api.put(`/api/admin/family-statuses/${id}`, payload).then(unwrap),
+  delete: (id) => api.delete(`/api/admin/family-statuses/${id}`).then(unwrap)
+};
 export const personApi = {
   list: (params) => api.get("/api/admin/persons", { params }).then(envelope),
   get: (id) => api.get(`/api/admin/persons/${id}`).then(unwrap),
