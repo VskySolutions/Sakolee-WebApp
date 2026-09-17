@@ -22,6 +22,9 @@ public class Role : AuditableEntity
 
     public string Name { get; set; } = string.Empty;
 
+    /// <summary>The friendlier label shown in the UI in place of <see cref="Name"/>; falls back to it when unset.</summary>
+    public string? DisplayName { get; set; }
+
     public string? Description { get; set; }
 
     /// <summary>Seeded, non-deletable role mirroring a base authorization level.</summary>

@@ -53,7 +53,8 @@
             <q-tooltip>{{ actionTooltip(cell.row) }}</q-tooltip>
           </q-btn>
           <q-btn
-            v-if="cell.row.canManage && !cell.row.isSystem" type="a" flat round dense color="negative"
+            v-if="cell.row.canManage && !cell.row.isSystem && !isAdministratorRole(cell.row)"
+            type="a" flat round dense color="negative"
             icon="o_delete" @click="removeRole(cell.row)"
           >
             <q-tooltip>Delete</q-tooltip>
@@ -76,6 +77,7 @@
           v-model="form.name" label="Name" required class="q-mb-md"
           :rules="[(v) => !!v || 'Name is required']"
         />
+        <app-text-field v-model="form.displayName" label="Display Name" class="q-mb-md" />
         <app-rich-text-field v-model="form.description" label="Description" class="q-mb-md" />
         <app-select
           v-model="form.permissions" :options="permissionOptions" label="Permissions" multiple
@@ -124,6 +126,7 @@ const isSuperAdmin = computed(() => authStore.roles.includes("SuperAdmin"));
 
 const columns = [
   { name: "name", label: "Name", field: "name", align: "left", sortable: true, default: true },
+  { name: "displayName", label: "Display Name", field: (r) => r.displayName || "—", align: "left", sortable: true, default: true },
   // Descriptions are rich text; the cell shows the text without its markup (see utils/richText).
   { name: "description", label: "Description", field: (r) => stripHtml(r.description), align: "left", default: true },
   {
@@ -184,6 +187,10 @@ const loadPermissions = async () => {
   }
 };
 
+// The "Administrator" role is a platform-level custom role, not flagged System, but it must never be
+// deletable from here (it is not seeded/protected server-side the way SuperAdmin/TenantAdmin are).
+const isAdministratorRole = (row) => (row.name || "").trim().toLowerCase() === "administrator";
+
 // ---- Open ----
 // Editing a role happens on the role's own page.
 const roleRoute = (row) => ({ name: "role_detail", params: { id: row.id } });
@@ -194,10 +201,11 @@ const actionTooltip = (row) => (row.canManage ? "Open" : "View");
 const formOpen = ref(false);
 const saving = ref(false);
 const formRef = ref(null);
-const form = reactive({ name: "", description: "", permissions: [] });
+const form = reactive({ name: "", displayName: "", description: "", permissions: [] });
 
 const resetForm = () => {
   form.name = "";
+  form.displayName = "";
   form.description = "";
   form.permissions = [];
 };
@@ -215,6 +223,7 @@ const submitForm = async ({ clearDraft } = {}) => {
   try {
     const created = await roleApi.create({
       name: form.name,
+      displayName: form.displayName || undefined,
       description: form.description,
       permissions: form.permissions
     });

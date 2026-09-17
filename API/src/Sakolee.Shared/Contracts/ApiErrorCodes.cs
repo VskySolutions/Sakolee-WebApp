@@ -8,6 +8,7 @@ public static class ApiErrorCodes
     public const string Forbidden = "FORBIDDEN";
     public const string NotFound = "NOT_FOUND";
     public const string DuplicateIdentifier = "DUPLICATE_IDENTIFIER";
+    public const string DuplicateEmail = "DUPLICATE_EMAIL";
     public const string TenantInactive = "TENANT_INACTIVE";
     public const string TenantNotFound = "TENANT_NOT_FOUND";
     public const string TenantArchived = "TENANT_ARCHIVED";

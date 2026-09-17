@@ -54,6 +54,10 @@ public class SakoleeDbContext : DbContext, IDataProtectionKeyContext
 
     public DbSet<Student> Students => Set<Student>();
 
+    public DbSet<Class> Classes => Set<Class>();
+
+    public DbSet<ClassCategory> ClassCategories => Set<ClassCategory>();
+
     public DbSet<Address> Addresses => Set<Address>();
 
     public DbSet<Media> Media => Set<Media>();

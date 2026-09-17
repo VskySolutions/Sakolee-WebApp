@@ -264,6 +264,8 @@ public sealed class AuthController : ControllerBase
         user.Salt = salt;
         user.MustChangePassword = false;
         user.TokenVersion++; // invalidate all sessions
+        // They now have their own password — the one previously kept for "resend credentials" is stale.
+        user.EncryptedTemporaryPassword = null;
         _users.Update(user);
         await _refreshTokens.RevokeAllForUserAsync(user.Id, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
@@ -420,6 +422,8 @@ public sealed class AuthController : ControllerBase
         // They chose this password deliberately, so do not force another change at sign-in.
         user.MustChangePassword = false;
         user.TokenVersion++; // invalidate all sessions
+        // They now have their own password — the one previously kept for "resend credentials" is stale.
+        user.EncryptedTemporaryPassword = null;
         _users.Update(user);
 
         token.UsedOnUtc = now;

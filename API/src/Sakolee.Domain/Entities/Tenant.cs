@@ -25,4 +25,18 @@ public class Tenant : AuditableEntity
 
     /// <summary>UTC timestamp when the tenant was created.</summary>
     public DateTime CreatedDate { get; set; }
+
+    /// <summary>The tenant's own business address (optional; reusable <see cref="Entities.Address"/> record).</summary>
+    public Guid? AddressId { get; set; }
+
+    public Address? Address { get; set; }
+
+    /// <summary>
+    /// The tenant's default administrator — the <see cref="Entities.Person"/> master record created
+    /// alongside the tenant, whose linked <see cref="Person.UserId"/> account holds the TenantAdmin role
+    /// and is protected from deactivation/role removal (see <see cref="User.IsProtected"/>).
+    /// </summary>
+    public Guid? PersonId { get; set; }
+
+    public Person? Person { get; set; }
 }

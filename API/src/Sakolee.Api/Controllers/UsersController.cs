@@ -41,6 +41,7 @@ public sealed class UsersController : ControllerBase
     private readonly IPermissionGroupRepository _permissionGroups;
     private readonly IEmailNotificationService _emailNotifications;
     private readonly IEmailDispatcher _emailDispatcher;
+    private readonly ICredentialEncryptionService _credentialEncryption;
 
     public UsersController(
         IUserRepository users,
@@ -56,7 +57,8 @@ public sealed class UsersController : ControllerBase
         IOptionSetRepository optionSets,
         IPermissionGroupRepository permissionGroups,
         IEmailNotificationService emailNotifications,
-        IEmailDispatcher emailDispatcher)
+        IEmailDispatcher emailDispatcher,
+        ICredentialEncryptionService credentialEncryption)
     {
         _users = users;
         _passwordHasher = passwordHasher;
@@ -72,6 +74,7 @@ public sealed class UsersController : ControllerBase
         _permissionGroups = permissionGroups;
         _emailNotifications = emailNotifications;
         _emailDispatcher = emailDispatcher;
+        _credentialEncryption = credentialEncryption;
     }
 
     [HttpPost("/api/admin/users")]
@@ -199,6 +202,9 @@ public sealed class UsersController : ControllerBase
             MustChangePassword = true,
             TokenVersion = 1,
             CreatedDate = DateTime.UtcNow,
+            // Kept (encrypted) only until the user signs in and sets their own password, so credentials
+            // can be resent without minting a new password.
+            EncryptedTemporaryPassword = _credentialEncryption.Encrypt(temporaryPassword),
         };
         await _users.AddAsync(user, cancellationToken);
 
@@ -323,7 +329,7 @@ public sealed class UsersController : ControllerBase
                 u.Person?.FirstName ?? string.Empty, u.Person?.LastName ?? string.Empty,
                 u.Person?.FullName ?? u.DisplayName, u.Person?.MobileNumber,
                 TenantNamesFor(u), RolesFor(u), GroupsFor(u, tenantFilter), u.IsActive,
-                department, isDepartmentHead,
+                department, isDepartmentHead, u.IsProtected,
                 NameOf(names, u.CreatedById), NameOf(names, u.UpdatedById), u.CreatedOnUtc, u.UpdatedOnUtc);
         });
         return Ok(ApiResponseFactory.Paginated(summaries, "Users retrieved.", page, limit, total));
@@ -465,6 +471,14 @@ public sealed class UsersController : ControllerBase
                 ApiResponseFactory.Forbidden("Not permitted to manage this user."));
         }
 
+        // A tenant's default Administrator (see User.IsProtected) can never be deactivated — the tenant
+        // must always keep at least one working admin login.
+        if (!request.IsActive && user.IsProtected)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden,
+                ApiResponseFactory.Forbidden("This user is the tenant's default Administrator and cannot be deactivated."));
+        }
+
         var wasActive = user.IsActive;
         if (!request.IsActive && user.IsActive)
         {
@@ -516,6 +530,8 @@ public sealed class UsersController : ControllerBase
         user.Salt = salt;
         user.MustChangePassword = true;
         user.TokenVersion++; // AC-ADM-013.5: invalidate all existing sessions
+        // Replaces whatever temporary password was previously resendable — this is now the current one.
+        user.EncryptedTemporaryPassword = _credentialEncryption.Encrypt(temporaryPassword);
         _users.Update(user);
         await _refreshTokens.RevokeAllForUserAsync(user.Id, cancellationToken);
         await _audit.AddAsync(nameof(User), user.Id.ToString(), "PasswordReset", cancellationToken: cancellationToken);
@@ -620,6 +636,20 @@ public sealed class UsersController : ControllerBase
     [RequirePermission(Permissions.RolesAssign)]
     public async Task<IActionResult> RemoveTenantRole(Guid id, Guid tenantId, CancellationToken cancellationToken)
     {
+        var target = await _users.GetByIdAsync(id, cancellationToken);
+        if (target is null)
+        {
+            return NotFound(ApiResponseFactory.NotFound("User not found."));
+        }
+
+        // A tenant's default Administrator (see User.IsProtected) can never lose its tenant access — not
+        // even a Super Admin may strip it — so the tenant is never left without a working admin login.
+        if (target.IsProtected)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden,
+                ApiResponseFactory.Forbidden("This user is the tenant's default Administrator and its role assignment cannot be removed."));
+        }
+
         // Same boundary as assigning: a Tenant Admin may only revoke within their own tenant, and never
         // strip a Super Admin of theirs.
         if (!User.IsSuperAdmin())
@@ -628,12 +658,6 @@ public sealed class UsersController : ControllerBase
             {
                 return StatusCode(StatusCodes.Status403Forbidden,
                     ApiResponseFactory.Forbidden("You can only change role assignments within your own tenant."));
-            }
-
-            var target = await _users.GetByIdAsync(id, cancellationToken);
-            if (target is null)
-            {
-                return NotFound(ApiResponseFactory.NotFound("User not found."));
             }
             if (target.TenantRoles.Any(r => r.Role == UserRole.SuperAdmin))
             {
@@ -1052,6 +1076,7 @@ public sealed class UsersController : ControllerBase
             department?.Department,
             department?.IsHead ?? false,
             p?.ProfileMedia?.PublicUrl,
+            user.IsProtected,
             audit);
     }
 

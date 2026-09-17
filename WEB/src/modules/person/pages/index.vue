@@ -125,7 +125,6 @@ const { confirm } = useConfirm();
 const { has } = usePermissions();
 const auditColumns = useAuditColumns();
 const { canChooseTenant, activeTenantId, tenantOptions, loadingTenants, loadTenants } = useTenantOptions();
-
 const canWrite = computed(() => has(Permissions.PersonsWrite));
 const canDelete = computed(() => has(Permissions.PersonsDelete));
 const canCreateUser = computed(() => has(Permissions.UsersWrite));
@@ -137,7 +136,8 @@ const tenantFilterOptions = computed(() =>
 // Filterable columns are server-side; text/date columns are covered by the search box.
 const SOURCE_LABELS = {
   Person: "Added manually",
-  User: "User account"
+  User: "User account",
+  Tenant: "Tenant administrator"
 };
 const sourceLabel = (value) => (value ? (SOURCE_LABELS[value] || value) : "—");
 

@@ -154,7 +154,7 @@ public sealed class PersonsController : ControllerBase
 
     /// <summary>
     /// Selectable persons for the user-create dropdown (already-promoted persons carry
-    /// <c>IsUser=true</c>).
+    /// <c>IsUser=true</c>)
     /// </summary>
     [HttpGet("selectable")]
     [RequirePermission(Permissions.PersonsRead)]

@@ -14,7 +14,7 @@ internal sealed class TenantRepository : ITenantRepository
     }
 
     public Task<Tenant?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
-        => _dbContext.Tenants.FirstOrDefaultAsync(t => t.Id == id, cancellationToken);
+        => _dbContext.Tenants.Include(t => t.Address).FirstOrDefaultAsync(t => t.Id == id, cancellationToken);
 
     public Task<Tenant?> GetByIdentifierAsync(string identifier, CancellationToken cancellationToken = default)
         => _dbContext.Tenants.FirstOrDefaultAsync(t => t.Identifier == identifier, cancellationToken);

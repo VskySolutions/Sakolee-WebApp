@@ -35,38 +35,38 @@
         </q-item>
         <q-separator class="q-mb-sm" />
         <!-- The full list, above the bell's popover — which only ever shows the unread few. -->
-        <q-item v-ripple :to="{ name: 'uf_notifications' }" clickable>
+        <!-- <q-item v-ripple :to="{ name: 'uf_notifications' }" clickable>
           <q-item-section avatar>
             <q-icon name="o_notifications" color="orange" class="material-icons-outlined" />
           </q-item-section>
           <q-item-section>
             <q-item-label>My Notifications</q-item-label>
           </q-item-section>
-        </q-item>
-        <q-item v-ripple :to="{ name: 'uf_mentions' }" clickable>
+        </q-item> -->
+        <!-- <q-item v-ripple :to="{ name: 'uf_mentions' }" clickable>
           <q-item-section avatar>
             <q-icon name="o_alternate_email" color="orange" class="material-icons-outlined" />
           </q-item-section>
           <q-item-section>
             <q-item-label>My Mentions</q-item-label>
           </q-item-section>
-        </q-item>
-        <q-item v-ripple :to="{ name: 'uf_pinned' }" clickable>
+        </q-item> -->
+        <!-- <q-item v-ripple :to="{ name: 'uf_pinned' }" clickable>
           <q-item-section avatar>
             <q-icon name="o_push_pin" color="orange" class="material-icons-outlined" />
           </q-item-section>
           <q-item-section>
             <q-item-label>My Pinned</q-item-label>
           </q-item-section>
-        </q-item>
-        <q-item v-ripple :to="{ name: 'uf_notification_preferences' }" clickable>
+        </q-item> -->
+        <!-- <q-item v-ripple :to="{ name: 'uf_notification_preferences' }" clickable>
           <q-item-section avatar>
             <q-icon name="o_tune" color="orange" class="material-icons-outlined" />
           </q-item-section>
           <q-item-section>
             <q-item-label>Notification Preferences</q-item-label>
           </q-item-section>
-        </q-item>
+        </q-item> -->
         <q-separator class="q-my-sm" />
         <q-item v-ripple :to="{ name: 'profile' }" clickable>
           <q-item-section avatar>
@@ -93,14 +93,14 @@
             <q-item-label>Logout</q-item-label>
           </q-item-section>
         </q-item>
-        <q-item v-ripple clickable @click="onLogoutAll">
+        <!-- <q-item v-ripple clickable @click="onLogoutAll">
           <q-item-section avatar>
             <q-icon name="o_devices" color="orange" class="material-icons-outlined" />
           </q-item-section>
           <q-item-section>
             <q-item-label>Logout all devices</q-item-label>
           </q-item-section>
-        </q-item>
+        </q-item> -->
       </q-list>
     </q-menu>
   </q-btn>
@@ -139,10 +139,10 @@ const onLogout = async () => {
   router.replace({ name: "login" });
 };
 
-const onLogoutAll = async () => {
-  await authStore.logoutAll();
-  router.replace({ name: "login" });
-};
+// const onLogoutAll = async () => {
+//   await authStore.logoutAll();
+//   router.replace({ name: "login" });
+// };
 </script>
 
 <style scoped>

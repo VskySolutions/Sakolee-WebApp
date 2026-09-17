@@ -30,5 +30,17 @@ internal sealed class TenantConfiguration : IEntityTypeConfiguration<Tenant>
 
         // Tenant identifiers must be unique, URL-safe slugs.
         builder.HasIndex(t => t.Identifier).IsUnique().HasFilter("[Deleted] = 0");
+
+        // The tenant's own address and default-administrator Person (no cascade — both are independently
+        // owned records; a tenant losing its address/admin reference must not take either down with it).
+        builder.HasOne(t => t.Address)
+            .WithMany()
+            .HasForeignKey(t => t.AddressId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasOne(t => t.Person)
+            .WithMany()
+            .HasForeignKey(t => t.PersonId)
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }

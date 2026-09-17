@@ -72,9 +72,14 @@
             flat round dense
             :color="cell.row.isActive ? 'grey-8' : 'positive'"
             :icon="cell.row.isActive ? 'o_block' : 'o_check_circle'"
+            :disable="cell.row.isActive && cell.row.isProtected"
             @click="setStatus(cell.row, !cell.row.isActive)"
           >
-            <q-tooltip>{{ cell.row.isActive ? "Deactivate" : "Activate" }}</q-tooltip>
+            <q-tooltip>
+              {{ cell.row.isActive && cell.row.isProtected
+                ? "The tenant's default Administrator cannot be deactivated"
+                : (cell.row.isActive ? "Deactivate" : "Activate") }}
+            </q-tooltip>
           </q-btn>
           <q-btn
             v-if="has(Permissions.UsersResetPassword)" type="a"
@@ -212,14 +217,22 @@ const setStatus = async (row, isActive) => {
 
 const bulkSetStatus = async (sel, isActive) => {
   if (!sel.length) return;
+  // The tenant's default Administrator can't be deactivated (the API rejects it) — skip and warn, same as
+  // the People list skips persons already linked to a user on bulk delete.
+  const eligible = isActive ? sel : sel.filter((r) => !r.isProtected);
+  const skipped = sel.length - eligible.length;
+  if (!eligible.length) {
+    notify.error("Selected users are protected default Administrators and can't be deactivated.");
+    return;
+  }
   const ok = await confirm({
     title: isActive ? "Activate users" : "Deactivate users",
-    message: `${isActive ? "Activate" : "Deactivate"} ${sel.length} user(s)?`,
+    message: `${isActive ? "Activate" : "Deactivate"} ${eligible.length} user(s)?${skipped ? ` (${skipped} protected Administrator(s) will be skipped.)` : ""}`,
     type: isActive ? "primary" : "danger"
   });
   if (!ok) return;
   try {
-    await Promise.all(sel.map((r) => userApi.setStatus(r.userId, isActive)));
+    await Promise.all(eligible.map((r) => userApi.setStatus(r.userId, isActive)));
     notify.success("Users updated.");
     selected.value = [];
     load();

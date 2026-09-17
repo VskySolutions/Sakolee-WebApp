@@ -431,6 +431,226 @@ namespace Sakolee.Infrastructure.Persistence.Migrations
                     b.ToTable("ChecklistItems", (string)null);
                 });
 
+            modelBuilder.Entity("Sakolee.Domain.Entities.Class", b =>
+                {
+                    b.Property<string>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<bool>("Active")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true);
+
+                    b.Property<string>("ActiveDays")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("AdditionalInstructors")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<bool>("AllowDropIns")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("AllowPortalDropRequests")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("AllowPortalEnrollment")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("AllowWaitlistEnrollment")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("AllowWaitlistInRoll")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("BillingCycle")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("BillingMethod")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("ClassName")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("CreatedById")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime>("CreatedOnUtc")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("sysutcdatetime()");
+
+                    b.Property<DateTime?>("CutoffDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("Deleted")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("DropInFee")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Duration")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<DateTime?>("EndDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("EndTime")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("Gender")
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<string>("LinkDisplayText")
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
+
+                    b.Property<string>("LocationId")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<bool>("MakeupsInClass")
+                        .HasColumnType("bit");
+
+                    b.Property<int?>("MaxAge")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("MaxClassSize")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("MaxWaitlistSize")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("MinAge")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("OnlineListings")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("OnlineRegistration")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("ParentPortalSchedule")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("PolicyGroups")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("PrimaryInstructorId")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<bool?>("RegistrationFee")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("RegistrationOpenDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("RoomId")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("SessionId")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime?>("StartDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("StartTime")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<decimal?>("TuitionFee")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)")
+                        .HasColumnName("TutionFee");
+
+                    b.Property<string>("UpdatedById")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime?>("UpdatedOnUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("VirtualClassUrl")
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)")
+                        .HasColumnName("VirtualClassURL");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Class", (string)null);
+                });
+
+            modelBuilder.Entity("Sakolee.Domain.Entities.ClassCategory", b =>
+                {
+                    b.Property<string>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("CategoryType")
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<string>("CreatedById")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime>("CreatedOnUtc")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("sysutcdatetime()");
+
+                    b.Property<bool>("Deleted")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("TenantId")
+                        .IsRequired()
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)")
+                        .HasColumnName("TenentId");
+
+                    b.Property<string>("UpdatedById")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime?>("UpdatedOnUtc")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "CategoryType", "Name")
+                        .IsUnique()
+                        .HasFilter("[Deleted] = 0");
+
+                    b.ToTable("ClassCategory", (string)null);
+                });
+
             modelBuilder.Entity("Sakolee.Domain.Entities.ColourCode", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1753,6 +1973,10 @@ namespace Sakolee.Infrastructure.Persistence.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
 
+                    b.Property<string>("DisplayName")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
                     b.Property<string>("EffectivePermissionsJson")
                         .HasColumnType("nvarchar(max)");
 
@@ -2189,6 +2413,9 @@ namespace Sakolee.Infrastructure.Persistence.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<Guid?>("AddressId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<Guid?>("CreatedById")
                         .HasColumnType("uniqueidentifier");
 
@@ -2214,6 +2441,9 @@ namespace Sakolee.Infrastructure.Persistence.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
 
+                    b.Property<Guid?>("PersonId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(20)
@@ -2231,9 +2461,13 @@ namespace Sakolee.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("AddressId");
+
                     b.HasIndex("Identifier")
                         .IsUnique()
                         .HasFilter("[Deleted] = 0");
+
+                    b.HasIndex("PersonId");
 
                     b.ToTable("Tenants", (string)null);
                 });
@@ -2351,7 +2585,13 @@ namespace Sakolee.Infrastructure.Persistence.Migrations
                         .HasMaxLength(256)
                         .HasColumnType("nvarchar(256)");
 
+                    b.Property<string>("EncryptedTemporaryPassword")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsProtected")
                         .HasColumnType("bit");
 
                     b.Property<bool>("MustChangePassword")
@@ -2820,6 +3060,23 @@ namespace Sakolee.Infrastructure.Persistence.Migrations
                         .IsRequired();
 
                     b.Navigation("StickyNote");
+                });
+
+            modelBuilder.Entity("Sakolee.Domain.Entities.Tenant", b =>
+                {
+                    b.HasOne("Sakolee.Domain.Entities.Address", "Address")
+                        .WithMany()
+                        .HasForeignKey("AddressId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Sakolee.Domain.Entities.Person", "Person")
+                        .WithMany()
+                        .HasForeignKey("PersonId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Address");
+
+                    b.Navigation("Person");
                 });
 
             modelBuilder.Entity("Sakolee.Domain.Entities.TenantPersonMapping", b =>

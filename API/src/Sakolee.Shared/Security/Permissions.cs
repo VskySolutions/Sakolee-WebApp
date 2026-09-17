@@ -22,6 +22,11 @@ public static class Permissions
     public const string StudentsWrite = "students.write";
     public const string StudentsDelete = "students.delete";
 
+    // Classes
+    public const string ClassesRead = "classes.read";
+    public const string ClassesWrite = "classes.write";
+    public const string ClassesDelete = "classes.delete";
+
     // Users
     public const string UsersRead = "users.read";
     public const string UsersWrite = "users.write";
@@ -61,6 +66,7 @@ public static class Permissions
         TenantsRead, TenantsWrite, TenantsArchive,
         PersonsRead, PersonsWrite, PersonsDelete,
         StudentsRead, StudentsWrite, StudentsDelete,
+        ClassesRead, ClassesWrite, ClassesDelete,
         UsersRead, UsersWrite, UsersResetPassword, UsersGroupManagement,
         RolesRead, RolesWrite, RolesAssign,
         GroupsManage,
@@ -79,6 +85,8 @@ public static class Permissions
         PersonsRead, PersonsWrite,
         // Students are owned entirely within a tenant, so Tenant Admins get full CRUD.
         StudentsRead, StudentsWrite, StudentsDelete,
+        // Classes carry no TenantId yet (see the Class entity remarks) but are administered the same way.
+        ClassesRead, ClassesWrite, ClassesDelete,
         UsersRead, UsersWrite, UsersResetPassword, UsersGroupManagement,
         // Tenant Admins manage the roles of users in their OWN tenant, and build roles of their own to
         // assign. The permission alone is not the whole boundary. UsersController confines them to their

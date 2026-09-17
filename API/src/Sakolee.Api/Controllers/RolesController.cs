@@ -116,6 +116,7 @@ public sealed class RolesController : ControllerBase
             var term = search.Trim();
             result = result.Where(r =>
                 r.Name.Contains(term, StringComparison.OrdinalIgnoreCase) ||
+                (r.DisplayName != null && r.DisplayName.Contains(term, StringComparison.OrdinalIgnoreCase)) ||
                 (r.Description != null && r.Description.Contains(term, StringComparison.OrdinalIgnoreCase)));
         }
         var page = result.ToList();
@@ -130,6 +131,7 @@ public sealed class RolesController : ControllerBase
     /// <summary>What the Roles list may be ordered by.</summary>
     private static readonly SortMap<RoleSummary> ListSorts = new SortMap<RoleSummary>("updatedOnUtc")
         .Add("name", r => r.Name)
+        .Add("displayName", r => r.DisplayName ?? r.Name)
         .Add("description", r => r.Description)
         .Add("isSystem", r => r.IsSystem, r => r.Name)
         .Add("scope", r => r.TenantName ?? "Platform", r => r.Name)
@@ -196,6 +198,7 @@ public sealed class RolesController : ControllerBase
             Id = Guid.NewGuid(),
             TenantId = owner,
             Name = name,
+            DisplayName = string.IsNullOrWhiteSpace(request.DisplayName) ? null : request.DisplayName.Trim(),
             Description = request.Description,
             IsSystem = false,
             Permissions = Normalize(request.Permissions),
@@ -237,8 +240,10 @@ public sealed class RolesController : ControllerBase
             role.Permissions = Normalize(request.Permissions);
         }
 
-        // System role names are fixed; their permission sets may still be tuned.
-        if (!role.IsSystem && !string.IsNullOrWhiteSpace(request.Name))
+        // System role names are fixed, and so is "Administrator"'s; their permission sets may still be
+        // tuned.
+        if (!role.IsSystem && !string.Equals(role.Name, "Administrator", StringComparison.OrdinalIgnoreCase)
+            && !string.IsNullOrWhiteSpace(request.Name))
         {
             var name = request.Name.Trim();
             if (!string.Equals(name, role.Name, StringComparison.OrdinalIgnoreCase)
@@ -247,6 +252,12 @@ public sealed class RolesController : ControllerBase
                 return Conflict(ApiResponseFactory.Error(ApiErrorCodes.DuplicateIdentifier, "Role name already in use.", name));
             }
             role.Name = name;
+        }
+        // The display label is free to change even when the name is fixed (system roles, Administrator) —
+        // it carries no lookup significance, unlike Name.
+        if (request.DisplayName is not null)
+        {
+            role.DisplayName = string.IsNullOrWhiteSpace(request.DisplayName) ? null : request.DisplayName.Trim();
         }
         if (request.Description is not null)
         {
@@ -271,6 +282,10 @@ public sealed class RolesController : ControllerBase
         if (role.IsSystem)
         {
             return StatusCode(StatusCodes.Status403Forbidden, ApiResponseFactory.Forbidden("System roles cannot be deleted."));
+        }
+        if (string.Equals(role.Name, "Administrator", StringComparison.OrdinalIgnoreCase))
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, ApiResponseFactory.Forbidden("The Administrator role cannot be deleted."));
         }
 
         _roles.Remove(role); // soft delete via interceptor
@@ -450,11 +465,11 @@ public sealed class RolesController : ControllerBase
             ? (await _tenants.GetByIdAsync(owner, cancellationToken))?.Name
             : null;
         return new RoleResponse(
-            r.Id, r.Name, r.Description, r.IsSystem, r.TenantId, tenantName, RoleAccess.CanManage(User, r),
+            r.Id, r.Name, r.DisplayName, r.Description, r.IsSystem, r.TenantId, tenantName, RoleAccess.CanManage(User, r),
             r.Permissions, await RecordAudit.ForAsync(_users, r, cancellationToken));
     }
 
     private RoleSummary ToSummary(Role r, Func<Guid?, string?> nameOf, Func<Guid?, string?> tenantNameOf) => new(
-        r.Id, r.Name, r.Description, r.IsSystem, r.TenantId, tenantNameOf(r.TenantId), RoleAccess.CanManage(User, r),
+        r.Id, r.Name, r.DisplayName, r.Description, r.IsSystem, r.TenantId, tenantNameOf(r.TenantId), RoleAccess.CanManage(User, r),
         r.Permissions.Count, nameOf(r.CreatedById), r.CreatedOnUtc, nameOf(r.UpdatedById), r.UpdatedOnUtc);
 }

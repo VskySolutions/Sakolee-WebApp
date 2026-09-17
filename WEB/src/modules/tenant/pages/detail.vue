@@ -21,9 +21,36 @@
         <q-card-section class="row q-col-gutter-md">
           <app-text-field v-model="name" label="Name" class="col-12 col-sm-6" />
           <app-text-field :model-value="tenant.identifier" readonly label="Identifier" class="col-12 col-sm-6" />
+          <app-select
+            v-model="timeZoneId"
+            label="Time Zone"
+            class="col-12 col-sm-6"
+            use-input
+            :clearable="false"
+            :options="allZones"
+          />
         </q-card-section>
         <q-card-actions align="right">
-          <q-btn unelevated no-caps color="primary" label="Save" :loading="savingName" :disable="name === tenant.name" @click="saveName" />
+          <q-btn
+            unelevated no-caps color="primary" label="Save" :loading="savingName"
+            :disable="name === tenant.name && timeZoneId === tenant.timeZoneId" @click="saveBasicInfo"
+          />
+        </q-card-actions>
+      </q-card>
+
+      <!-- Address: same field set as the Create Tenant form's Address card. -->
+      <q-card flat bordered class="tenant-card q-mb-md">
+        <q-card-section class="text-subtitle1 text-weight-medium">Address</q-card-section>
+        <q-separator />
+        <q-card-section>
+          <!-- Not `extended`: the landmark / building / floor / unit boxes are off this page. -->
+          <app-address-fields v-model="address" />
+        </q-card-section>
+        <q-card-actions align="right">
+          <q-btn
+            unelevated no-caps color="primary" label="Save" :loading="savingAddress"
+            :disable="!addressDirty" @click="saveAddress"
+          />
         </q-card-actions>
       </q-card>
 
@@ -146,6 +173,8 @@ import { useAuthStore } from "stores/auth";
 import { useTenantStore } from "stores/tenant";
 import AppDetailHeader from "components/common/AppDetailHeader.vue";
 import AppTextField from "components/common/AppTextField.vue";
+import AppSelect from "components/common/AppSelect.vue";
+import AppAddressFields from "components/common/AppAddressFields.vue";
 import AppDataTable from "components/common/AppDataTable.vue";
 import AppRecordAudit from "components/common/AppRecordAudit.vue";
 import UserCreateDrawer from "components/user/UserCreateDrawer.vue";
@@ -165,8 +194,32 @@ const tenantId = route.params.id;
 const tenant = ref(null);
 const loading = ref(false);
 const name = ref("");
+const timeZoneId = ref("UTC");
 const savingName = ref(false);
 const archiveError = ref("");
+
+// Same field set as the Create Tenant form, minus Identifier (fixed after create).
+const allZones = typeof Intl.supportedValuesOf === "function" ? Intl.supportedValuesOf("timeZone") : ["UTC"];
+
+// Same field set as the Create Tenant form's Address card.
+const blankAddress = () => ({
+  countryCode: null,
+  countryName: null,
+  stateCode: null,
+  stateName: null,
+  cityName: null,
+  postalCode: "",
+  addressLine1: "",
+  addressLine2: "",
+  landmark: "",
+  buildingName: "",
+  floorNumber: "",
+  unitNumber: ""
+});
+const address = ref(blankAddress());
+const addressSnapshot = ref(JSON.stringify(blankAddress()));
+const addressDirty = computed(() => JSON.stringify(address.value) !== addressSnapshot.value);
+const savingAddress = ref(false);
 
 // Whether the tenant being edited is one the signed-in user actually belongs to.
 const authStore = useAuthStore();
@@ -182,6 +235,9 @@ const load = async () => {
   try {
     tenant.value = await tenantApi.get(tenantId);
     name.value = tenant.value.name;
+    timeZoneId.value = tenant.value.timeZoneId || "UTC";
+    address.value = tenant.value.address ? { ...blankAddress(), ...tenant.value.address } : blankAddress();
+    addressSnapshot.value = JSON.stringify(address.value);
   } catch (err) {
     notify.error(getApiErrorMessage(err));
   } finally {
@@ -189,10 +245,10 @@ const load = async () => {
   }
 };
 
-const saveName = async () => {
+const saveBasicInfo = async () => {
   savingName.value = true;
   try {
-    await tenantApi.update(tenantId, { name: name.value });
+    await tenantApi.update(tenantId, { name: name.value, timeZoneId: timeZoneId.value });
     notify.success("Tenant updated.");
     load();
     // The new name has to reach the toolbar, and — when this is a tenant the user is actually assigned
@@ -203,6 +259,19 @@ const saveName = async () => {
     notify.error(getApiErrorMessage(err));
   } finally {
     savingName.value = false;
+  }
+};
+
+const saveAddress = async () => {
+  savingAddress.value = true;
+  try {
+    await tenantApi.update(tenantId, { name: name.value, timeZoneId: timeZoneId.value, address: address.value });
+    notify.success("Tenant updated.");
+    load();
+  } catch (err) {
+    notify.error(getApiErrorMessage(err));
+  } finally {
+    savingAddress.value = false;
   }
 };
 

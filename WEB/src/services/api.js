@@ -12,6 +12,7 @@ export const ApiErrorCodes = Object.freeze({
   Forbidden: "FORBIDDEN",
   NotFound: "NOT_FOUND",
   DuplicateIdentifier: "DUPLICATE_IDENTIFIER",
+  DuplicateEmail: "DUPLICATE_EMAIL",
   DuplicateGroupName: "DUPLICATE_GROUP_NAME",
   PermissionCeilingExceeded: "PERMISSION_CEILING_EXCEEDED",
   CapacityBelowUsage: "CAPACITY_BELOW_USAGE",
@@ -80,10 +81,31 @@ export const authApi = {
 export const tenantApi = {
   list: (params) => api.get("/api/admin/tenants", { params }).then(envelope),
   get: (id) => api.get(`/api/admin/tenants/${id}`).then(unwrap),
+  // payload: { name, identifier, timeZoneId, firstName, lastName, email, phoneNumber?, countryCode?,
+  // address? } — also mints the tenant's default Administrator (a Person + a protected User login
+  // holding TenantAdmin). Response carries { ..., adminUserId, temporaryPassword }.
   create: (payload) => api.post("/api/admin/tenants", payload).then(unwrap),
   update: (id, payload) => api.put(`/api/admin/tenants/${id}`, payload).then(unwrap),
   setStatus: (id, isActive) => api.put(`/api/admin/tenants/${id}/status`, { isActive }).then(unwrap),
-  archive: (id) => api.put(`/api/admin/tenants/${id}/archive`).then(unwrap)
+  archive: (id) => api.put(`/api/admin/tenants/${id}/archive`).then(unwrap),
+  // Mints a fresh temporary password for the tenant's default Administrator and emails it (welcome +
+  // login credentials) via the tenant's active SMTP account. Response carries { ..., temporaryPassword,
+  // emailSent } — same one-time-reveal contract as userApi.resetPassword.
+  sendCredentials: (id) => api.post(`/api/admin/tenants/${id}/send-credentials`).then(unwrap)
+};
+
+export const classApi = {
+  list: (params) => api.get("/api/admin/classes", { params }).then(envelope),
+  get: (id) => api.get(`/api/admin/classes/${id}`).then(unwrap),
+  create: (payload) => api.post("/api/admin/classes", payload).then(unwrap),
+  update: (id, payload) => api.put(`/api/admin/classes/${id}`, payload).then(unwrap),
+  remove: (id) => api.delete(`/api/admin/classes/${id}`).then(envelope)
+};
+
+export const classCategoryApi = {
+  // Class form's Category 1/2/3 dropdown options — one flat list, scoped to the caller's active
+  // tenant; each row carries which dropdown it belongs to via categoryType.
+  list: () => api.get("/api/admin/class-categories").then(unwrap)
 };
 
 export const personApi = {

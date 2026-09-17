@@ -16,7 +16,10 @@ internal sealed class UserConfiguration : IEntityTypeConfiguration<User>
         builder.Property(u => u.DisplayName).IsRequired().HasMaxLength(200);
         builder.Property(u => u.PasswordHash).IsRequired().HasMaxLength(512);
         builder.Property(u => u.Salt).IsRequired().HasMaxLength(512);
+        // Encrypted blob; never stored in plaintext, never returned in API responses.
+        builder.Property(u => u.EncryptedTemporaryPassword);
         builder.Property(u => u.IsActive).IsRequired();
+        builder.Property(u => u.IsProtected).IsRequired();
         builder.Property(u => u.MustChangePassword).IsRequired();
         builder.Property(u => u.TokenVersion).IsRequired();
         builder.Property(u => u.CreatedDate).IsRequired();

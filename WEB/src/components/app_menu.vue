@@ -166,33 +166,41 @@ const sections = [
     ]
   },
   {
+    key: "class",
+    label: "Class",
+    icon: "o_school",
+    items: [
+      { label: "All Classes", icon: "o_list_alt", to: "/classes", permissions: [Permissions.ClassesRead] },
+    ]
+  },
+  {
     key: "access-management",
     label: "Access Management",
     icon: "o_lock",
     items: [
-      { label: "Permission Groups", icon: "o_workspaces", to: "/permission-groups", permissions: [Permissions.GroupsManage] },
+      // { label: "Permission Groups", icon: "o_workspaces", to: "/permission-groups", permissions: [Permissions.GroupsManage] },
       { label: "Roles", icon: "o_admin_panel_settings", to: "/roles", permissions: [Permissions.RolesWrite] },
-      { label: "Users", icon: "o_group", to: "/users", permissions: [Permissions.UsersRead] },
-      { label: "User Groups", icon: "o_groups", to: "/user-groups", permissions: [Permissions.UsersGroupManagement] }
+      { label: "Users", icon: "o_group", to: "/users", permissions: [Permissions.UsersRead] }
+      // { label: "User Groups", icon: "o_groups", to: "/user-groups", permissions: [Permissions.UsersGroupManagement] }
     ]
   },
-  {
-    // Tenant-wide settings and universal features (email, and future cross-cutting settings).
-    key: "settings",
-    label: "Tenant Settings",
-    icon: "o_settings",
-    items: [
-      { label: "Email Accounts", icon: "o_mail", to: "/smtp-accounts", permissions: [Permissions.EmailManage] },
-      { label: "Email Templates", icon: "o_drafts", to: "/email-templates", permissions: [Permissions.EmailManage] },
-      // Gated on MANAGE, not read: working roles hold optionSets.read so their dropdowns resolve, but the
-      // lists are configuration and only Super Admin / Tenant Admin maintain them.
-      { label: "Option Sets", icon: "o_list_alt", to: "/option-sets", permissions: [Permissions.OptionSetsManage] },
-      { label: "Tag Management", icon: "o_label", to: "/settings/tags", permissions: [Permissions.SettingsManage] },
-      { label: "Sticky Notes", icon: "o_sticky_note_2", to: "/settings/sticky-notes", permissions: [Permissions.SettingsManage] },
-      { label: "Modified Log", icon: "o_manage_history", to: "/settings/modified-log-config", permissions: [Permissions.SettingsManage] },
-      { label: "Deleted Records", icon: "o_restore_from_trash", to: "/settings/retention", permissions: [Permissions.RecordsAdminDelete] }
-    ]
-  },
+  // {
+  //   // Tenant-wide settings and universal features (email, and future cross-cutting settings).
+  //   key: "settings",
+  //   label: "Tenant Settings",
+  //   icon: "o_settings",
+  //   items: [
+  //     { label: "Email Accounts", icon: "o_mail", to: "/smtp-accounts", permissions: [Permissions.EmailManage] },
+  //     { label: "Email Templates", icon: "o_drafts", to: "/email-templates", permissions: [Permissions.EmailManage] },
+  //     // Gated on MANAGE, not read: working roles hold optionSets.read so their dropdowns resolve, but the
+  //     // lists are configuration and only Super Admin / Tenant Admin maintain them.
+  //     { label: "Option Sets", icon: "o_list_alt", to: "/option-sets", permissions: [Permissions.OptionSetsManage] },
+  //     { label: "Tag Management", icon: "o_label", to: "/settings/tags", permissions: [Permissions.SettingsManage] },
+  //     { label: "Sticky Notes", icon: "o_sticky_note_2", to: "/settings/sticky-notes", permissions: [Permissions.SettingsManage] },
+  //     { label: "Modified Log", icon: "o_manage_history", to: "/settings/modified-log-config", permissions: [Permissions.SettingsManage] },
+  //     { label: "Deleted Records", icon: "o_restore_from_trash", to: "/settings/retention", permissions: [Permissions.RecordsAdminDelete] }
+  //   ]
+  // },
   {
     key: "account",
     label: "Account",
@@ -203,12 +211,12 @@ const sections = [
       { label: "Change Password", icon: "o_lock", to: { name: "change_password" }, permissions: null },
       // The full list behind the bell's "View all". Named and ordered as the avatar menu has it, since
       // both lead to the same four pages and reading differently in each is what makes one look missing.
-      { label: "My Notifications", icon: "o_notifications", to: { name: "uf_notifications" }, permissions: null },
-      { label: "My Mentions", icon: "o_alternate_email", to: { name: "uf_mentions" }, permissions: null },
-      { label: "My Pinned", icon: "o_push_pin", to: { name: "uf_pinned" }, permissions: null },
-      { label: "Notification Preferences", icon: "o_tune", to: { name: "uf_notification_preferences" }, permissions: null },
+      // { label: "My Notifications", icon: "o_notifications", to: { name: "uf_notifications" }, permissions: null },
+      // { label: "My Mentions", icon: "o_alternate_email", to: { name: "uf_mentions" }, permissions: null },
+      // { label: "My Pinned", icon: "o_push_pin", to: { name: "uf_pinned" }, permissions: null },
+      // { label: "Notification Preferences", icon: "o_tune", to: { name: "uf_notification_preferences" }, permissions: null },
       { label: "Logout", icon: "o_logout", action: "logout", permissions: null },
-      { label: "Logout all devices", icon: "o_devices", action: "logoutAll", permissions: null }
+      // { label: "Logout all devices", icon: "o_devices", action: "logoutAll", permissions: null }
     ]
   }
 ];

@@ -29,6 +29,10 @@
             <div class="row items-center q-gutter-sm">
               <div class="text-h6 text-weight-bold ellipsis">{{ user.fullName || user.displayName }}</div>
               <q-badge :color="user.isActive ? 'positive' : 'grey-6'">{{ user.isActive ? "Active" : "Inactive" }}</q-badge>
+              <!-- Explains why the Deactivate/Remove actions below are disabled. -->
+              <q-badge v-if="user.isProtected" color="blue-8">
+                <q-icon name="o_shield" size="13px" class="q-mr-xs" />Default Administrator
+              </q-badge>
               <!-- Surfaced because it explains a sign-in the admin may be about to be asked about. -->
               <q-badge v-if="user.mustChangePassword" color="orange-8">
                 <q-icon name="o_key" size="13px" class="q-mr-xs" />Must change password
@@ -59,9 +63,12 @@
               v-if="canEdit" unelevated no-caps :color="user.isActive ? 'negative' : 'positive'"
               :icon="user.isActive ? 'o_block' : 'o_check_circle'"
               :label="user.isActive ? 'Deactivate' : 'Activate'"
-              :disable="!canManageTarget" @click="toggleStatus"
+              :disable="!canManageTarget || (user.isActive && user.isProtected)" @click="toggleStatus"
             >
               <q-tooltip v-if="!canManageTarget">Only a Super Admin can manage this user.</q-tooltip>
+              <q-tooltip v-else-if="user.isActive && user.isProtected">
+                The tenant's default Administrator cannot be deactivated.
+              </q-tooltip>
             </q-btn>
             <q-btn
               v-if="canResetPassword" outline no-caps color="primary" icon="o_lock_reset" label="Reset password"
@@ -205,9 +212,13 @@
                     </q-btn>
                     <q-btn
                       flat round dense color="negative" icon="o_delete"
-                      :disable="!canManageTarget" @click="removeAssignment(a)"
+                      :disable="!canManageTarget || user.isProtected" @click="removeAssignment(a)"
                     >
-                      <q-tooltip>{{ canManageTarget ? "Remove" : "Only a Super Admin can manage this user." }}</q-tooltip>
+                      <q-tooltip>
+                        {{ user.isProtected
+                          ? "The tenant's default Administrator cannot have its role assignment removed."
+                          : (canManageTarget ? "Remove" : "Only a Super Admin can manage this user.") }}
+                      </q-tooltip>
                     </q-btn>
                   </div>
                 </q-item-section>

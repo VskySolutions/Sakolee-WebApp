@@ -3,6 +3,7 @@ namespace Sakolee.Api.Models.Roles;
 public sealed class CreateRoleRequest
 {
     public string Name { get; set; } = string.Empty;
+    public string? DisplayName { get; set; }
     public string? Description { get; set; }
     public List<string> Permissions { get; set; } = new();
 }
@@ -10,6 +11,7 @@ public sealed class CreateRoleRequest
 public sealed class UpdateRoleRequest
 {
     public string? Name { get; set; }
+    public string? DisplayName { get; set; }
     public string? Description { get; set; }
     public List<string>? Permissions { get; set; }
 }
@@ -23,6 +25,7 @@ public sealed class AssignRoleToTenantRequest
 public sealed record RoleResponse(
     Guid Id,
     string Name,
+    string? DisplayName,
     string? Description,
     bool IsSystem,
     Guid? TenantId,
@@ -35,6 +38,7 @@ public sealed record RoleResponse(
 public sealed record RoleSummary(
     Guid Id,
     string Name,
+    string? DisplayName,
     string? Description,
     bool IsSystem,
     Guid? TenantId,

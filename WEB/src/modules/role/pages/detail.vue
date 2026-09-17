@@ -55,7 +55,7 @@
               icon="o_apartment" label="Manage tenants" @click="openTenants"
             />
             <q-btn
-              v-if="role.canManage && !role.isSystem" flat no-caps color="negative"
+              v-if="role.canManage && !role.isSystem && !isAdministratorRole" flat no-caps color="negative"
               icon="o_delete" label="Delete role" @click="removeRole"
             />
           </div>
@@ -87,8 +87,14 @@
               <app-text-field
                 v-model="form.name" label="Name" required class="q-mb-md"
                 :readonly="!canEditName"
-                :hint="role.isSystem ? 'System role names are fixed; permissions can still be tuned.' : undefined"
+                :hint="!canEditName && role.canManage ? 'This role\'s name is fixed; permissions can still be tuned.' : undefined"
                 @blur="autoSaveName"
+              />
+              <app-text-field
+                v-model="form.displayName" label="Display Name" class="q-mb-md"
+                :readonly="!role.canManage"
+                hint="An optional friendlier label for this role, shown in the Roles list."
+                @blur="autoSaveDisplayName"
               />
               <app-rich-text-field
                 v-model="form.description" label="Description" class="q-mb-md" :readonly="!role.canManage"
@@ -197,8 +203,13 @@ const canAssign = computed(() => has(Permissions.RolesAssign));
 const canManageMembers = computed(() =>
   canAssign.value && (!role.value?.tenantId || role.value.tenantId === tenantStore.activeTenantId));
 
-// A system role's name is fixed: the platform seeds it and looks it up by that name.
-const canEditName = computed(() => !!role.value?.canManage && !role.value?.isSystem);
+// The "Administrator" role is a platform-level custom role, not flagged System, but it must never be
+// deletable or renamable from here (it is not seeded/protected server-side the way SuperAdmin/TenantAdmin are).
+const isAdministratorRole = computed(() => (role.value?.name || "").trim().toLowerCase() === "administrator");
+
+// A system role's name is fixed: the platform seeds it and looks it up by that name. The Administrator
+// role's name is likewise fixed, though nothing server-side enforces it by that lookup.
+const canEditName = computed(() => !!role.value?.canManage && !role.value?.isSystem && !isAdministratorRole.value);
 
 const scopeLabel = computed(() => (role.value?.tenantId ? role.value.tenantName || "This tenant" : "Platform"));
 const scopeExplainer = computed(() => (role.value?.tenantId
@@ -216,9 +227,9 @@ const memberSummary = computed(() => {
 });
 const definitionHint = computed(() => (canEditName.value
   ? "Saves as you go: the name and description when you leave them, the permissions as soon as you change them."
-  : "A system role keeps its name — the platform looks it up by that name — but its permissions can still be tuned, and they save as soon as you change them."));
+  : "This role keeps its name, but its permissions can still be tuned, and they save as soon as you change them."));
 
-const form = reactive({ name: "", description: "", permissions: [] });
+const form = reactive({ name: "", displayName: "", description: "", permissions: [] });
 
 const prettyPermission = (key) => key.replace(/_/g, " ").replace(/\./g, " · ");
 
@@ -230,6 +241,7 @@ const load = async ({ syncFields = true } = {}) => {
     role.value = await roleApi.get(roleId);
     if (!syncFields) return;
     form.name = role.value.name;
+    form.displayName = role.value.displayName || "";
     form.description = role.value.description || "";
     form.permissions = role.value.permissions || [];
   } catch (err) {
@@ -302,6 +314,20 @@ const autoSaveName = async () => {
     // Refused — a duplicate name, most likely, and the indicator carries the reason. The field goes back
     // to the name that is actually in force rather than sitting there looking saved.
     form.name = role.value.name;
+  }
+};
+
+const autoSaveDisplayName = async () => {
+  if (!role.value?.canManage) return;
+  const next = (form.displayName || "").trim();
+  if (next === (role.value.displayName || "")) {
+    form.displayName = next; // whitespace-only edits tidied away
+    return;
+  }
+
+  const saved = await saveDefinition({ displayName: next });
+  if (!saved) {
+    form.displayName = role.value.displayName || "";
   }
 };
 

@@ -27,7 +27,24 @@ public class User : AuditableEntity
     /// <summary>Base64 per-user salt.</summary>
     public string Salt { get; set; } = string.Empty;
 
+    /// <summary>
+    /// The last temporary password minted for this user (invite, tenant-admin creation, or an admin
+    /// reset), encrypted at rest — never stored in plaintext. Lets "resend credentials" actions re-email
+    /// the same password without minting a new one. Cleared as soon as the user signs in and sets their
+    /// own password (<see cref="MustChangePassword"/> goes false), after which nothing is left to resend.
+    /// </summary>
+    public string? EncryptedTemporaryPassword { get; set; }
+
     public bool IsActive { get; set; } = true;
+
+    /// <summary>
+    /// True for a tenant's default administrator account (minted alongside the tenant — see
+    /// <see cref="Tenant.PersonId"/>). Guarantees the tenant always keeps at least one working admin
+    /// login: <c>UsersController</c> refuses to deactivate this user or remove its tenant role assignment.
+    /// There is no user-delete endpoint on the platform, so this is the closest equivalent to "cannot be
+    /// deleted".
+    /// </summary>
+    public bool IsProtected { get; set; }
 
     /// <summary>Forces a password change before non-auth API access (new accounts).</summary>
     public bool MustChangePassword { get; set; }

@@ -155,6 +155,9 @@ public sealed record UserSummary(
     // when the user is unplaced (or the caller has no active tenant).
     string? Department,
     bool IsDepartmentHead,
+    // A tenant's default Administrator (see User.IsProtected) — the UI disables deactivate/remove-role
+    // actions for it rather than let the caller hit the 403 the API returns for both.
+    bool IsProtected,
     string? CreatedBy,
     string? UpdatedBy,
     DateTime CreatedOnUtc,
@@ -180,4 +183,7 @@ public sealed record UserDetail(
     bool IsDepartmentHead,
     // The profile picture from the person's own record, or null — in which case the UI shows initials.
     string? ProfileMediaUrl,
+    // A tenant's default Administrator (see User.IsProtected) — the UI disables deactivate/remove-role
+    // actions for it rather than let the caller hit the 403 the API returns for both.
+    bool IsProtected,
     RecordAudit Audit);
