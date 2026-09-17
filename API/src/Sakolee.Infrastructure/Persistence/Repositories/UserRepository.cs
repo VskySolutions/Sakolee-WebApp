@@ -86,7 +86,6 @@ internal sealed class UserRepository : IUserRepository
     // query (they are per-tenant collections, not columns), and Created By / Updated By are ids resolved
     // to names afterwards — none of them can be an ORDER BY, so none of them is offered as one here or
     // marked sortable on the page.
-    //
     // The name sorts on the two columns a person is FILED under, in that order, rather than on
     // DisplayName — which is what the Name cell shows and is free text.
     private static readonly SortMap<User> Sorts = new SortMap<User>("updatedOnUtc")

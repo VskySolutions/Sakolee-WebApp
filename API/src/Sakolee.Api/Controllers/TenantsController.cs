@@ -28,6 +28,8 @@ namespace Sakolee.Api.Controllers;
 [ProducesResponseType<ApiErrorResponse>(StatusCodes.Status500InternalServerError)]
 public sealed class TenantsController : ControllerBase
 {
+    #region Fields & Constructor
+
     private readonly ITenantRepository _tenants;
     private readonly IUserRepository _users;
     private readonly IOptionSetRepository _optionSets;
@@ -48,8 +50,15 @@ public sealed class TenantsController : ControllerBase
         _unitOfWork = unitOfWork;
     }
 
-    // ---- Tenant lifecycle (Super Admin) ----
+    #endregion
 
+    #region Tenant Lifecycle (Super Admin)
+
+    /// <summary>
+    /// Creates a new tenant with a unique <see cref="CreateTenantRequest.Identifier"/>, seeds it with its
+    /// own copy of the platform's default option lists (so its admins can manage values independently of
+    /// the shared originals), and starts it in <see cref="TenantStatus.Active"/>.
+    /// </summary>
     [HttpPost]
     [RequirePermission(Permissions.TenantsWrite)]
     [ProducesResponseType<ApiResponse<TenantResponse>>(StatusCodes.Status201Created)]
@@ -91,6 +100,11 @@ public sealed class TenantsController : ControllerBase
         .Add("createdOnUtc", t => t.CreatedOnUtc)
         .Add("updatedOnUtc", t => t.UpdatedOnUtc);
 
+    /// <summary>
+    /// Paginated list of tenants (Super Admin only), with optional status/search filters. Archived
+    /// tenants are excluded unless <paramref name="includeArchived"/> is set — the whole set is read and
+    /// filtered/sorted in memory (the tenant table is small), so paging happens after ordering.
+    /// </summary>
     [HttpGet]
     [RequirePermission(Permissions.TenantsWrite)]
     public async Task<IActionResult> List(
@@ -133,6 +147,7 @@ public sealed class TenantsController : ControllerBase
         return Ok(ApiResponseFactory.Paginated(pageItems, "Tenants retrieved.", page, limit, filtered.Count));
     }
 
+    /// <summary>Gets a single tenant's detail, including its provenance (who created/last updated it).</summary>
     [HttpGet("{id:guid}")]
     [RequirePermission(Permissions.TenantsWrite)]
     [ProducesResponseType<ApiResponse<TenantDetail>>(StatusCodes.Status200OK)]
@@ -151,6 +166,10 @@ public sealed class TenantsController : ControllerBase
         return Ok(ApiResponseFactory.Success(detail, "Tenant retrieved."));
     }
 
+    /// <summary>
+    /// Updates a tenant's name and time zone. The <see cref="Tenant.Identifier"/> is immutable — it is
+    /// never accepted from this request — since it is baked into the tenant's subdomain/routing.
+    /// </summary>
     [HttpPut("{id:guid}")]
     [RequirePermission(Permissions.TenantsWrite)]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateTenantRequest request, CancellationToken cancellationToken)
@@ -173,6 +192,11 @@ public sealed class TenantsController : ControllerBase
             new TenantResponse(tenant.Id, tenant.Identifier, tenant.Status.ToString()), "Tenant updated."));
     }
 
+    /// <summary>
+    /// Activates or deactivates a tenant (toggles between <see cref="TenantStatus.Active"/> and
+    /// <see cref="TenantStatus.Inactive"/>). Distinct from <see cref="Archive"/>: this is reversible and
+    /// does not require the elevated <see cref="Permissions.TenantsArchive"/> permission.
+    /// </summary>
     [HttpPut("{id:guid}/status")]
     [RequirePermission(Permissions.TenantsWrite)]
     public async Task<IActionResult> SetStatus(Guid id, [FromBody] UpdateTenantStatusRequest request, CancellationToken cancellationToken)
@@ -191,6 +215,12 @@ public sealed class TenantsController : ControllerBase
         return Ok(ApiResponseFactory.Success(new { tenantId = tenant.Id, status = tenant.Status.ToString() }, "Status updated."));
     }
 
+    /// <summary>
+    /// Archives a tenant (<see cref="TenantStatus.Archived"/>) — the terminal, effectively-retired state
+    /// hidden from <see cref="List"/> by default. Gated behind the separate
+    /// <see cref="Permissions.TenantsArchive"/> permission since it is a heavier action than a status
+    /// toggle.
+    /// </summary>
     [HttpPut("{id:guid}/archive")]
     [RequirePermission(Permissions.TenantsArchive)]
     public async Task<IActionResult> Archive(Guid id, CancellationToken cancellationToken)
@@ -209,11 +239,17 @@ public sealed class TenantsController : ControllerBase
         return Ok(ApiResponseFactory.Success(new { tenantId = tenant.Id, status = tenant.Status.ToString() }, "Tenant archived."));
     }
 
-    // ---- helpers ----
+    #endregion
 
+    #region Helpers
+
+    /// <summary>Resolves the display names of the given user ids (nulls skipped), for the CreatedBy/UpdatedBy columns.</summary>
     private async Task<IReadOnlyDictionary<Guid, string>> ResolveActorNamesAsync(IEnumerable<Guid?> ids, CancellationToken cancellationToken)
         => await _users.GetFullNamesAsync(ids.Where(id => id.HasValue).Select(id => id!.Value), cancellationToken);
 
+    /// <summary>Looks up a resolved actor name by id, or null when the id is absent or unresolved.</summary>
     private static string? NameOf(IReadOnlyDictionary<Guid, string> names, Guid? id)
         => id.HasValue && names.TryGetValue(id.Value, out var name) ? name : null;
+
+    #endregion
 }
