@@ -103,9 +103,12 @@ export const classApi = {
 };
 
 export const classCategoryApi = {
-  // Class form's Category 1/2/3 dropdown options — one flat list, scoped to the caller's active
-  // tenant; each row carries which dropdown it belongs to via categoryType.
-  list: () => api.get("/api/admin/class-categories").then(unwrap)
+  // Class Category records scoped to the caller's active tenant.
+  list: (params) => api.get("/api/admin/class-categories", { params }).then(envelope),
+  get: (id) => api.get(`/api/admin/class-categories/${id}`).then(unwrap),
+  create: (payload) => api.post("/api/admin/class-categories", payload).then(unwrap),
+  update: (id, payload) => api.put(`/api/admin/class-categories/${id}`, payload).then(unwrap),
+  remove: (id) => api.delete(`/api/admin/class-categories/${id}`).then(envelope)
 };
 
 // Family Status API mapping
