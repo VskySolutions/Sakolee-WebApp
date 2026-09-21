@@ -5,7 +5,11 @@
         <div class="flex items-center">
           <q-btn v-if="isLoggedIn" flat dense round icon="o_menu" class="text-black" aria-label="Menu" @click="toggleLeftDrawer" />
           <q-btn flat no-caps class="no-padding q-ml-md" @click="$router.push('/')">
-            <span class="text-weight-bold fs-18 text-primary">Sakolee</span>
+            <!-- Brand mark + wordmark, as the prototype sets them. The badge is the same SVG the tab
+                 icon uses, so the two cannot drift; drawing it with a q-icon would need the filled
+                 Material font, and only material-icons-outlined is loaded. -->
+            <img :src="brandMark" alt="" width="34" height="34" class="brand-mark">
+            <span class="text-weight-bold fs-18 text-primary q-ml-sm">Sakolee</span>
           </q-btn>
         </div>
         <!-- User menu when signed in, otherwise a login action -->
@@ -127,6 +131,10 @@ import StickyNoteLayer from "components/universal/StickyNoteLayer.vue";
 import AppTenantScopeSelect from "components/common/AppTenantScopeSelect.vue";
 import { useTenantScope } from "composables/useTenantScope";
 
+// Served straight out of public/ — the same file index.html points the tab icon at. Absolute,
+// because history-mode routes would otherwise resolve it against the current path.
+const brandMark = "/icons/sakolee-mark.svg";
+
 const $q = useQuasar();
 const isLoggedIn = !!LocalStorage.getItem("token");
 
@@ -195,5 +203,13 @@ const onSwitchTenant = async (tenantId) => {
   }
   .no-underline {
     text-decoration: none !important;
+  }
+
+  /* The gradient and rounded corners live in the SVG itself; this only sets the drop shadow the
+     prototype puts behind the badge. */
+  .brand-mark {
+    display: block;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(70, 72, 212, 0.25);
   }
 </style>

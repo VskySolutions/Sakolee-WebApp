@@ -95,7 +95,7 @@
   /* width: 100%; */
 }
 .color-blue {
-  color: #1f6478;
+  color: var(--primary);
 }
 .theme-blue {
   /* background-color: #f3fbff; */
@@ -145,7 +145,7 @@
 }
 .WhiteTable th{
   font-weight: 600;
-  background-color: #1f6478;
+  background-color: var(--primary);
   color: white;
   font-size: 17px;
 }
@@ -243,10 +243,10 @@ min-width: 10px !important;
   display: inline-block;
 }
 .dot-active {
-  background-color: #21ba45; /* Quasar 'positive' color */
+  background-color: var(--success); /* Quasar 'positive' color */
 }
 .dot-inactive {
-  background-color: #c10015; /* Quasar 'negative' color */
+  background-color: var(--error); /* Quasar 'negative' color */
 }
 .rightDialog {
   position: absolute;

@@ -127,6 +127,14 @@ export const personApi = {
   selectable: (tenantId) => api.get("/api/admin/persons/selectable", { params: { tenantId } }).then(unwrap)
 };
 
+export const studentApi = {
+  list: (params) => api.get("/api/admin/students", { params }).then(envelope),
+  get: (id) => api.get(`/api/admin/students/${id}`).then(unwrap),
+  create: (payload) => api.post("/api/admin/students", payload).then(unwrap),
+  update: (id, payload) => api.put(`/api/admin/students/${id}`, payload).then(unwrap),
+  remove: (id) => api.delete(`/api/admin/students/${id}`).then(envelope)
+};
+
 export const userApi = {
   // params: { page, limit, search?, isActive?, name?, email?, phone?, role?, group?, tenantId? }. Without
   // `tenantId` this is the caller's ACTIVE tenant.

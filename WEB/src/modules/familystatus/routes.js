@@ -20,7 +20,7 @@ export default [
         path: ":id/edit",
         name: "family_status_edit",
         component: () => import("modules/familystatus/components/create_edit_status.vue"),
-        meta: { requiresAuth: true,title: "Edit Family Status" }
+        meta: { requiresAuth: true, title: "Edit Family Status" }
       },
       {
         path: ":id",

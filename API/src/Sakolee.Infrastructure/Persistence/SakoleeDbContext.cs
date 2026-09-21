@@ -132,6 +132,8 @@ public class SakoleeDbContext : DbContext, IDataProtectionKeyContext
         modelBuilder.Entity<UserDepartment>().HasQueryFilter(e => (!_tenantContext.IsResolved || e.TenantId == _tenantContext.TenantId) && !e.Deleted);
         // SMTP accounts are tenant-scoped; a tenant only ever sees its own mail accounts.
         modelBuilder.Entity<SmtpAccount>().HasQueryFilter(e => (!_tenantContext.IsResolved || e.TenantId == _tenantContext.TenantId) && !e.Deleted);
+        // Family statuses are tenant-scoped; switching the active/viewed tenant must change what this list returns.
+        modelBuilder.Entity<FamilyStatus>().HasQueryFilter(e => (!_tenantContext.IsResolved || e.TenantId == _tenantContext.TenantId) && !e.IsDeleted);
 
         // Universal Features (Phase 14): every UF table is tenant-scoped + soft-deletable, so it
         // carries the combined ambient-tenant + soft-delete filter. FieldModifiedLog is the lone

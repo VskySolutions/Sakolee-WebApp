@@ -1,315 +1,176 @@
 <template>
-  <q-page padding>
-    <!-- Common page header card: breadcrumb on the left, all actions on the right. -->
-    <app-list-header :breadcrumbs="[{ label: 'Dashboard', icon: 'o_home' }]">
-      <template #actions>
-        <q-btn-dropdown outline no-caps color="primary" :label="dateRangeLabel" icon="o_calendar_today">
-          <q-list>
-            <q-item v-for="opt in DATE_RANGES" :key="opt.value" v-close-popup clickable @click="setDateRange(opt.value)">
-              <q-item-section>{{ opt.label }}</q-item-section>
-              <q-item-section v-if="opt.value === dateRange" side><q-icon name="o_check" color="primary" /></q-item-section>
-            </q-item>
-          </q-list>
-        </q-btn-dropdown>
-        <q-btn outline no-caps color="primary" icon="o_refresh" label="Refresh" :loading="anyLoading" @click="refreshAll" />
-        <q-btn-dropdown outline no-caps color="primary" icon="o_download" label="Export">
-          <q-list>
-            <q-item v-close-popup clickable @click="exportCsv">
-              <q-item-section avatar><q-icon name="o_table_view" /></q-item-section>
-              <q-item-section>Export CSV</q-item-section>
-            </q-item>
-            <q-item v-close-popup clickable @click="exportPdf">
-              <q-item-section avatar><q-icon name="o_print" /></q-item-section>
-              <q-item-section>Print / PDF</q-item-section>
-            </q-item>
-          </q-list>
-        </q-btn-dropdown>
-        <q-btn
-          outline
-          no-caps
-          :color="customiseOpen ? 'secondary' : 'primary'"
-          icon="o_tune"
-          label="Customise"
-          @click="customiseOpen = !customiseOpen"
-        />
-      </template>
-    </app-list-header>
+  <q-page padding class="dashboard-overview">
+    <!-- Page heading: crumbs, then the title block. -->
+    <app-breadcrumbs :items="[{ label: 'Home', to: '/' }, { label: 'Dashboard' }]" no-margin class="dashboard-overview__crumbs" />
 
-    <!-- Reorder hint while customising. -->
-    <q-banner v-if="customiseOpen" dense rounded class="bg-teal-1 text-primary q-mb-md no-print">
-      <template #avatar><q-icon name="o_drag_indicator" color="primary" /></template>
-      Drag widgets by the handle to reorder them. Toggle visibility in the panel on the right.
+    <h1 class="dashboard-overview__title">Dashboard Overview</h1>
+    <div class="dashboard-overview__subtitle q-mb-lg">
+      Quick overview of your studio's daily activities, student activity, alerts and business performance.
+    </div>
+
+    <q-banner v-if="error" dense rounded class="bg-red-1 text-negative q-mb-md">
+      <template #avatar><q-icon name="o_error" color="negative" /></template>
+      {{ error }}
+      <template #action>
+        <q-btn flat dense no-caps color="negative" label="Retry" @click="refresh" />
+      </template>
     </q-banner>
 
-    <!-- Widget grid -->
-    <div class="row q-col-gutter-md">
-      <div
-        v-for="(widget, index) in layout.visibleWidgets.value"
-        :key="widget.key"
-        class="col-12 col-md-6 col-lg-4"
-        :draggable="customiseOpen"
-        :class="['dashboard-grid-item', { 'dashboard-grid-item--over': dragOverIndex === index, 'dashboard-grid-item--drag': dragIndex === index }]"
-        @dragstart="onDragStart(index, $event)"
-        @dragover.prevent="onDragOver(index)"
-        @drop.prevent="onDrop(index)"
-        @dragend="onDragEnd"
-      >
-        <div v-if="customiseOpen" class="dashboard-grid-item__handle no-print">
-          <q-icon name="o_drag_indicator" class="text-grey-6" />
-          <q-tooltip>Drag to reorder</q-tooltip>
+    <!-- ---- Alerts & Attention Required ---- -->
+    <studio-section-header
+      title="Alerts & Attention Required"
+      icon="o_error"
+      icon-color="negative"
+      :badge="activeAlertCount ? `${activeAlertCount} ACTIVE` : null"
+      :note="updatedAt"
+    />
+
+    <div class="row q-col-gutter-md q-mb-lg">
+      <template v-if="loading">
+        <div v-for="n in 3" :key="`alert-skeleton-${n}`" class="col-12 col-md-4">
+          <q-skeleton type="rect" height="132px" class="dashboard-overview__skeleton" />
         </div>
-        <component
-          :is="resolveComponent(widget)"
-          :widget-key="widget.key"
-          :title="widget.title"
-          v-bind="dataFor(widget)"
-          :collapsed="layout.isCollapsed(widget.key)"
-          @update:collapsed="(val) => layout.setCollapsed(widget.key, val)"
-          @retry="() => retryFor(widget)"
+      </template>
+      <div v-for="alert in alerts" v-else :key="alert.id" class="col-12 col-md-4">
+        <studio-alert-card :alert="alert" />
+      </div>
+    </div>
+
+    <!-- ---- Enrollment & Studio Metrics ---- -->
+    <studio-section-header
+      title="Enrollment & Studio Metrics"
+      icon="o_grid_view"
+      :note="termLabel"
+    />
+
+    <div class="row q-col-gutter-md q-mb-lg">
+      <template v-if="loading">
+        <div v-for="n in METRIC_CARDS.length" :key="`metric-skeleton-${n}`" class="col-12 col-sm-6 col-md-4">
+          <q-skeleton type="rect" height="88px" class="dashboard-overview__skeleton" />
+        </div>
+      </template>
+      <div v-for="card in metricCards" v-else :key="card.key" class="col-12 col-sm-6 col-md-4">
+        <studio-metric-card
+          :label="card.label"
+          :value="card.value"
+          :icon="card.icon"
+          :tone="card.tone"
+          :to="card.to"
         />
       </div>
     </div>
 
-    <dashboard-customise-panel v-model="customiseOpen" :role="role" :layout="layout" />
+    <!-- ---- Activity feed alongside the viewer's task list ---- -->
+    <div class="row q-col-gutter-md q-mb-lg">
+      <div class="col-12 col-lg-8">
+        <q-skeleton v-if="loading" type="rect" height="280px" class="dashboard-overview__skeleton" />
+        <enrollment-activity-panel v-else :activity="recentActivity" />
+      </div>
+      <div class="col-12 col-lg-4">
+        <q-skeleton v-if="loading" type="rect" height="280px" class="dashboard-overview__skeleton" />
+        <my-tasks-panel v-else :tasks="tasks" @add="onAddTask" />
+      </div>
+    </div>
 
-    <div v-if="!layout.visibleWidgets.value.length" class="column flex-center q-pa-xl text-grey-6">
-      <q-icon name="o_dashboard" size="40px" class="q-mb-sm" />
-      <div class="text-subtitle1">No widgets to display.</div>
+    <!-- ---- Receivables alongside revenue ---- -->
+    <div class="row q-col-gutter-md q-mb-lg">
+      <div class="col-12 col-lg-6">
+        <q-skeleton v-if="loading" type="rect" height="300px" class="dashboard-overview__skeleton" />
+        <unpaid-balances-panel v-else :receivables="receivables" @view-unpaid="onViewUnpaid" />
+      </div>
+      <div class="col-12 col-lg-6">
+        <q-skeleton v-if="loading" type="rect" height="300px" class="dashboard-overview__skeleton" />
+        <revenue-analytics-panel v-else :revenue="revenue" />
+      </div>
+    </div>
+
+    <!-- ---- Announcements ---- -->
+    <div class="row q-col-gutter-md">
+      <div class="col-12">
+        <q-skeleton v-if="loading" type="rect" height="180px" class="dashboard-overview__skeleton" />
+        <announcements-panel v-else :announcements="announcements" @post="onPostAnnouncement" />
+      </div>
     </div>
   </q-page>
 </template>
 
 <script setup>
-import { ref, computed, defineAsyncComponent, onMounted } from "vue";
-import AppListHeader from "components/common/AppListHeader.vue";
-import DashboardCustomisePanel from "modules/dashboard/DashboardCustomisePanel.vue";
-import { usePreferences } from "composables/usePreferences";
-import { usePermissions, Permissions } from "composables/usePermissions";
-import { useDashboardLayout } from "composables/useDashboardLayout";
+import { computed } from "vue";
+import AppBreadcrumbs from "components/common/AppBreadcrumbs.vue";
+import StudioSectionHeader from "components/dashboard/studio/StudioSectionHeader.vue";
+import StudioAlertCard from "components/dashboard/studio/StudioAlertCard.vue";
+import StudioMetricCard from "components/dashboard/studio/StudioMetricCard.vue";
+import EnrollmentActivityPanel from "components/dashboard/studio/EnrollmentActivityPanel.vue";
+import MyTasksPanel from "components/dashboard/studio/MyTasksPanel.vue";
+import UnpaidBalancesPanel from "components/dashboard/studio/UnpaidBalancesPanel.vue";
+import RevenueAnalyticsPanel from "components/dashboard/studio/RevenueAnalyticsPanel.vue";
+import AnnouncementsPanel from "components/dashboard/studio/AnnouncementsPanel.vue";
+import { useStudioDashboard } from "composables/useStudioDashboard";
 import { useNotify } from "composables/useNotify";
-import {
-  useUserDashboard,
-  usePlatformDashboard
-} from "composables/useDashboardData";
 
-const { has } = usePermissions();
-const prefs = usePreferences("dashboard");
 const notify = useNotify();
 
-// ---- Role resolution (must mirror DashboardController.ResolveDashboardRole) ----
-// Super Admin = platform admin (can manage tenants). Tenant Admin = manages users + reads tenants.
-const role = computed(() => {
-  if (has(Permissions.TenantsWrite)) return "superAdmin";
-  if (has(Permissions.UsersRead) && has(Permissions.TenantsRead)) return "tenantAdmin";
-  return "common";
-}).value;
+const {
+  loading,
+  error,
+  refresh,
+  alerts,
+  activeAlertCount,
+  metrics,
+  termLabel,
+  updatedAt,
+  recentActivity,
+  tasks,
+  receivables,
+  revenue,
+  announcements
+} = useStudioDashboard();
 
-// ---- Date range ----
-const DATE_RANGES = [
-  { label: "Today", value: "today" },
-  { label: "Last 7 days", value: "7d" },
-  { label: "Last 30 days", value: "30d" },
-  { label: "Last 90 days", value: "90d" }
+// The KPI band, in the reference's reading order. `field` maps onto the metrics payload, `tone` is
+// the tile hue the prototype gives that card, and `to` is set only where the app already has a list
+// page to land on.
+const METRIC_CARDS = [
+  { key: "totalEnrollments", label: "Total Enrollments", field: "totalEnrollments", icon: "o_assignment_turned_in", tone: "purple", to: { path: "/students" } },
+  { key: "recentlyDropped", label: "Recently Dropped", field: "recentlyDropped", icon: "o_person_remove", tone: "red", to: { path: "/students" } },
+  { key: "activeFamilies", label: "Active Families", field: "activeFamilies", icon: "o_family_restroom", tone: "indigo", to: { path: "/persons" } },
+  { key: "activeStudents", label: "Active Students", field: "activeStudents", icon: "o_group", tone: "blue", to: { path: "/students" } },
+  { key: "activeClasses", label: "Active Classes", field: "activeClasses", icon: "o_school", tone: "emerald", to: { path: "/classes" } },
+  { key: "activeStaff", label: "Active Staff", field: "activeStaff", icon: "o_badge", tone: "cyan", to: { path: "/persons" } },
+  { key: "newOnlineRegistrations", label: "New Online Registrations", field: "newOnlineRegistrations", icon: "o_how_to_reg", tone: "teal", to: null },
+  { key: "portalEnrollments", label: "Portal Enrollments", field: "portalEnrollments", icon: "o_touch_app", tone: "amber", to: null },
+  { key: "pendingRequests", label: "Pending Requests", field: "pendingRequests", icon: "o_pending_actions", tone: "rose", to: null }
 ];
-const dateRange = ref(prefs.get("dateRange", "7d"));
-const dateRangeLabel = computed(() => DATE_RANGES.find((r) => r.value === dateRange.value)?.label || "Last 7 days");
-const setDateRange = (val) => {
-  dateRange.value = val;
-  prefs.set("dateRange", val);
-};
 
-// ---- Layout ----
-const layout = useDashboardLayout(role);
+const metricCards = computed(() =>
+  METRIC_CARDS.map((card) => ({ ...card, value: metrics.value?.[card.field] ?? 0 })));
 
-// ---- Data composables (instantiated once per category the role needs) ----
-const isTenantAdmin = role === "tenantAdmin" || role === "superAdmin";
-const isSuperAdmin = role === "superAdmin";
-const users = isTenantAdmin ? useUserDashboard(dateRange) : null;
-const platform = isSuperAdmin ? usePlatformDashboard(dateRange) : null;
-
-const sources = [users, platform].filter(Boolean);
-const anyLoading = computed(() => sources.some((s) => s.loading.value));
-
-// ---- Component resolution (lazy, cached per key) ----
-const componentCache = {};
-const resolveComponent = (widget) => {
-  if (!componentCache[widget.key]) {
-    componentCache[widget.key] = defineAsyncComponent(widget.component);
-  }
-  return componentCache[widget.key];
-};
-
-// ---- Map a widget to its data slice + loading/error ----
-// Keyed by widget.key so widget WOs can bind exactly the fields they need.
-const dataFor = (widget) => {
-  switch (widget.category) {
-    case "users":
-      return usersProps(widget.key);
-    case "platform":
-      return platformProps(widget.key);
-    default:
-      return {};
-  }
-};
-
-const usersProps = (key) => {
-  if (!users) return {};
-  const base = { loading: users.loading.value, error: users.error.value };
-  switch (key) {
-    case "userSummary": return { ...base, kpis: users.kpis.value, activityFeed: users.activityFeed.value };
-    case "userRoleDistribution": return { ...base, roleDistribution: users.roleDistribution.value };
-    default: return base;
-  }
-};
-
-const platformProps = (key) => {
-  if (!platform) return {};
-  const base = { loading: platform.loading.value, error: platform.error.value };
-  switch (key) {
-    case "tenantKpiCards": return { ...base, tenantKpis: platform.tenantKpis.value };
-    case "tenantHealthTable": return { ...base, tenantHealth: platform.tenantHealth.value };
-    case "platformGrowthChart": return { ...base, growth: platform.growth.value };
-    case "tenantOnboardingPanel": return { ...base, onboarding: platform.onboarding.value };
-    case "systemAlertsPanel": return { ...base, systemAlerts: platform.systemAlerts.value };
-    case "platformUserAnalytics": return { ...base, userAnalytics: platform.userAnalytics.value };
-    default: return base;
-  }
-};
-
-const retryFor = (widget) => {
-  switch (widget.category) {
-    case "users": return users?.refresh();
-    case "platform": return platform?.refresh(true);
-    default: return undefined;
-  }
-};
-
-// ---- Controls ----
-const customiseOpen = ref(false);
-
-const refreshAll = () => {
-  users?.refresh();
-  platform?.refresh(true);
-};
-
-// ---- Drag-to-reorder (only while the customise panel is open) ----
-// Mirrors AppDataTable's native HTML5 column-reorder pattern: dragstart records the source index, dragover
-// marks the hovered target, drop computes the new visible-key order and persists it.
-const dragIndex = ref(null);
-const dragOverIndex = ref(null);
-
-const onDragStart = (index, e) => {
-  if (!customiseOpen.value) return;
-  dragIndex.value = index;
-  if (e.dataTransfer) e.dataTransfer.effectAllowed = "move";
-};
-const onDragOver = (index) => {
-  if (dragIndex.value === null) return;
-  dragOverIndex.value = index;
-};
-const onDrop = (index) => {
-  const from = dragIndex.value;
-  if (from === null || from === index) {
-    dragIndex.value = null;
-    dragOverIndex.value = null;
-    return;
-  }
-  // Reorder the visible keys, then merge back into the full widget order so hidden widgets keep
-  // their relative positions.
-  const visibleKeys = layout.visibleWidgets.value.map((w) => w.key);
-  const moved = visibleKeys.splice(from, 1)[0];
-  visibleKeys.splice(index, 0, moved);
-
-  const fullOrder = [...layout.widgetOrder.value];
-  let vi = 0;
-  const newOrder = fullOrder.map((key) =>
-    visibleKeys.includes(key) ? visibleKeys[vi++] : key);
-  layout.setOrder(newOrder);
-
-  dragIndex.value = null;
-  dragOverIndex.value = null;
-};
-const onDragEnd = () => { dragIndex.value = null; dragOverIndex.value = null; };
-
-// ---- Export ----
-const csvEscape = (val) => {
-  const s = val == null ? "" : String(val);
-  return /[",\n]/.test(s) ? `"${s.replace(/"/g, "\"\"")}"` : s;
-};
-const rowsToCsv = (rows) => rows.map((r) => r.map(csvEscape).join(",")).join("\n");
-
-const triggerDownload = (text, filename) => {
-  const blob = new Blob([text], { type: "text/csv;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-};
-
-// Builds a CSV from the loaded tabular composable data for the widgets currently visible.
-const exportCsv = () => {
-  const visibleKeys = new Set(layout.visibleWidgets.value.map((w) => w.key));
-  const sections = [];
-
-  // Tenant health (super)
-  if (visibleKeys.has("tenantHealthTable") && platform?.tenantHealth.value?.length) {
-    const head = ["Tenant", "Active Users"];
-    const body = platform.tenantHealth.value.map((t) => [
-      t.tenantName ?? "", t.activeUsers ?? 0]);
-    sections.push([["Tenant Health"], head, ...body]);
-  }
-
-  if (!sections.length) {
-    notify.warning("No exportable tabular data is currently visible.");
-    return;
-  }
-
-  // Join sections with a blank line between each.
-  const csv = sections.map(rowsToCsv).join("\n\n");
-  const stamp = new Date().toISOString().slice(0, 10);
-  triggerDownload(csv, `dashboard-${stamp}.csv`);
-  notify.success("Dashboard CSV exported.");
-};
-
-// Native print dialog — the @media print stylesheet hides controls so the widgets print cleanly,
-// and the user can choose "Save as PDF".
-const exportPdf = () => {
-  notify.info("Opening print dialog. Choose \"Save as PDF\" to export.");
-  window.print();
-};
-
-// ---- Lifecycle ----
-onMounted(async () => {
-  await layout.loadLayout();
-});
+// Tasks, receivables and announcements have no CRUD endpoints yet, so these acknowledge rather
+// than opening a form or navigating somewhere that does not exist.
+const onAddTask = () => notify.info("Task creation isn't available yet.");
+const onViewUnpaid = () => notify.info("The unpaid families list isn't available yet.");
+const onPostAnnouncement = () => notify.info("Posting announcements isn't available yet.");
 </script>
 
 <style scoped>
-.dashboard-grid-item { position: relative; }
-.dashboard-grid-item[draggable="true"] { cursor: grab; }
-.dashboard-grid-item--drag { opacity: 0.5; }
-.dashboard-grid-item--over :deep(.dashboard-widget) { outline: 2px dashed var(--q-primary); outline-offset: 2px; }
-.dashboard-grid-item__handle {
-  position: absolute;
-  top: 14px;
-  right: 18px;
-  z-index: 2;
-  cursor: grab;
+.dashboard-overview__crumbs {
+  text-transform: uppercase;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  font-weight: 600;
 }
-</style>
 
-<style>
-/* Print / PDF: hide controls + chrome, expand widgets to full width. */
-@media print {
-  .no-print,
-  .q-drawer,
-  .q-banner,
-  .q-breadcrumbs,
-  .q-btn { display: none !important; }
-  .dashboard-grid-item { width: 100% !important; max-width: 100% !important; page-break-inside: avoid; }
+.dashboard-overview__title {
+  font-size: 30px;
+  font-weight: 700;
+  line-height: 1.2;
+  margin: 12px 0 4px;
+  color: var(--on-surface);
 }
+
+.dashboard-overview__subtitle {
+  font-size: 13px;
+  color: var(--outline);
+}
+
+.dashboard-overview__skeleton { border-radius: 16px; }
 </style>
