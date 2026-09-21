@@ -49,6 +49,8 @@ public class SakoleeDbContext : DbContext, IDataProtectionKeyContext
 
     public DbSet<Role> Roles => Set<Role>();
 
+    public DbSet<Location> Locations => Set<Location>();
+
     public DbSet<TenantRole> TenantRoles => Set<TenantRole>();
 
     public DbSet<Person> Persons => Set<Person>();
@@ -175,11 +177,14 @@ public class SakoleeDbContext : DbContext, IDataProtectionKeyContext
         modelBuilder.Entity<OptionSet>().HasQueryFilter(e => !e.Deleted);
         modelBuilder.Entity<OptionSetItem>().HasQueryFilter(e => !e.Deleted);
         modelBuilder.Entity<Role>().HasQueryFilter(e => !e.Deleted);
+        //modelBuilder.Entity<Location>().HasQueryFilter(e => !_tenantContext.IsResolved || e.TenantId == _tenantContext.TenantId);
+        modelBuilder.Entity<Location>().HasQueryFilter(e => (!_tenantContext.IsResolved || e.TenantId == _tenantContext.TenantId) && !e.Deleted);
         modelBuilder.Entity<TenantRole>().HasQueryFilter(e => !e.Deleted);
         modelBuilder.Entity<Address>().HasQueryFilter(e => !e.Deleted);
         modelBuilder.Entity<Media>().HasQueryFilter(e => !e.Deleted);
         modelBuilder.Entity<PermissionGroupTemplate>().HasQueryFilter(e => !e.Deleted);
         modelBuilder.Entity<DashboardLayout>().HasQueryFilter(e => !e.Deleted);
+
     }
 
     public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
@@ -330,6 +335,12 @@ public class SakoleeDbContext : DbContext, IDataProtectionKeyContext
                     break;
                 case ModifiedLogFieldConfig modifiedLogFieldConfig when modifiedLogFieldConfig.TenantId == Guid.Empty:
                     modifiedLogFieldConfig.TenantId = _tenantContext.TenantId;
+                    break;
+                //case Location location when location.TenantId == Guid.Empty:
+                //    location.TenantId = _tenantContext.TenantId;
+                //    break;
+                case Location location when location.TenantId is null || location.TenantId == Guid.Empty:
+                    location.TenantId = _tenantContext.TenantId;
                     break;
             }
         }

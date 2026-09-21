@@ -29,24 +29,98 @@ internal sealed class SakoleeDbContextFactory : IDesignTimeDbContextFactory<Sako
         return new SakoleeDbContext(options, new TenantContext(), new SystemActorAccessor());
     }
 
+    //private static string ResolveConnectionString()
+    //{
+    //    var fromEnvironment = Environment.GetEnvironmentVariable("ConnectionStrings__SqlServer");
+    //    if (!string.IsNullOrWhiteSpace(fromEnvironment))
+    //    {
+    //        return fromEnvironment;
+    //    }
+
+    //    foreach (var start in new[] { Directory.GetCurrentDirectory(), AppContext.BaseDirectory })
+    //    {
+    //        for (var dir = new DirectoryInfo(start); dir is not null; dir = dir.Parent)
+    //        {
+    //            var candidates = new[]
+    //            {
+    //                Path.Combine(dir.FullName, "appsettings.json"),
+    //                Path.Combine(dir.FullName, "Sakolee.Api", "appsettings.json"),
+    //                Path.Combine(dir.FullName, "src", "Sakolee.Api", "appsettings.json"),
+    //            };
+
+    //            foreach (var candidate in candidates)
+    //            {
+    //                if (ReadSqlServerConnection(candidate) is { } connection)
+    //                {
+    //                    return connection;
+    //                }
+    //            }
+    //        }
+    //    }
+
+    //    return Placeholder;
+    //}
+
     private static string ResolveConnectionString()
     {
-        var fromEnvironment = Environment.GetEnvironmentVariable("ConnectionStrings__SqlServer");
+        // 1. Explicit environment variable has highest priority.
+        var fromEnvironment =
+            Environment.GetEnvironmentVariable("ConnectionStrings__SqlServer");
+
         if (!string.IsNullOrWhiteSpace(fromEnvironment))
         {
             return fromEnvironment;
         }
 
-        foreach (var start in new[] { Directory.GetCurrentDirectory(), AppContext.BaseDirectory })
+        // 2. Determine the current environment.
+        var environment =
+            Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT")
+            ?? Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT")
+            ?? "Development";
+
+        // 3. Search from the current directory and its parents.
+        foreach (var start in new[]
         {
-            for (var dir = new DirectoryInfo(start); dir is not null; dir = dir.Parent)
+        Directory.GetCurrentDirectory(),
+        AppContext.BaseDirectory
+    })
+        {
+            for (var dir = new DirectoryInfo(start);
+                 dir is not null;
+                 dir = dir.Parent)
             {
                 var candidates = new[]
                 {
-                    Path.Combine(dir.FullName, "appsettings.json"),
-                    Path.Combine(dir.FullName, "Sakolee.Api", "appsettings.json"),
-                    Path.Combine(dir.FullName, "src", "Sakolee.Api", "appsettings.json"),
-                };
+                Path.Combine(
+                    dir.FullName,
+                    "appsettings.json"),
+
+                Path.Combine(
+                    dir.FullName,
+                    $"appsettings.{environment}.json"),
+
+                Path.Combine(
+                    dir.FullName,
+                    "Sakolee.Api",
+                    "appsettings.json"),
+
+                Path.Combine(
+                    dir.FullName,
+                    "Sakolee.Api",
+                    $"appsettings.{environment}.json"),
+
+                Path.Combine(
+                    dir.FullName,
+                    "src",
+                    "Sakolee.Api",
+                    "appsettings.json"),
+
+                Path.Combine(
+                    dir.FullName,
+                    "src",
+                    "Sakolee.Api",
+                    $"appsettings.{environment}.json"),
+            };
 
                 foreach (var candidate in candidates)
                 {
@@ -58,7 +132,10 @@ internal sealed class SakoleeDbContextFactory : IDesignTimeDbContextFactory<Sako
             }
         }
 
-        return Placeholder;
+        throw new InvalidOperationException(
+            $"SQL Server connection string 'SqlServer' was not found. " +
+            $"Environment: '{environment}'. " +
+            "Configure ConnectionStrings:SqlServer or set ConnectionStrings__SqlServer.");
     }
 
     private static string? ReadSqlServerConnection(string path)

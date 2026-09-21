@@ -1,5 +1,5 @@
 <template>
-  <q-list class="app-menu q-py-xs">
+  <q-list class="app-menu q-py-xs q-gutter-y-sm">
     <template v-for="section in visibleSections" :key="section.key">
       <!-- Ungrouped items (no label, e.g. Dashboard) render flat at the top. -->
       <template v-if="!section.label">
@@ -11,10 +11,10 @@
           clickable
           :to="item.to"
           :exact="item.exact"
-          active-class="text-primary bg-teal-1"
+          active-class="active-menu-class"
           @click="onItem(item)"
         >
-          <q-item-section avatar><q-icon :name="item.icon" size="20px" /></q-item-section>
+          <q-item-section avatar><q-icon :name="item.icon" size="24px" /></q-item-section>
           <q-item-section>{{ item.label }}</q-item-section>
           <q-tooltip v-if="mini" anchor="center right" self="center left">{{ item.label }}</q-tooltip>
         </q-item>
@@ -63,7 +63,7 @@
               clickable
               :to="item.to"
               :exact="item.exact"
-              active-class="text-primary bg-teal-1"
+              active-class="active-menu-class"
               @click="onItem(item)"
             >
               <q-item-section avatar><q-icon :name="item.icon" size="20px" /></q-item-section>
@@ -81,6 +81,7 @@
         :label="section.label"
         :model-value="isOpen(section)"
         header-class="app-menu__group"
+        class="sakolee-desktop-menu-class"
         @update:model-value="(v) => setOpen(section.key, v)"
       >
         <q-item
@@ -91,11 +92,11 @@
           clickable
           :to="item.to"
           :exact="item.exact"
-          active-class="text-primary bg-teal-1"
+          active-class="text-primary"
           class="app-menu__nested"
           @click="onItem(item)"
         >
-          <q-item-section avatar><q-icon :name="item.icon" size="20px" /></q-item-section>
+          <q-item-section avatar><q-icon :name="item.icon" size="22px" /></q-item-section>
           <q-item-section>{{ item.label }}</q-item-section>
         </q-item>
       </q-expansion-item>
@@ -117,6 +118,8 @@ defineProps({
 
 const authStore = useAuthStore();
 const router = useRouter();
+const loggedUserRole = computed(() => authStore.user?.tenants[0]?.roleNames[0]);
+console.log("Logged User Role:", loggedUserRole.value);
 
 // Which group is showing its children beside the rail. One at a time — they would overlap otherwise.
 const flyoutKey = ref(null);
@@ -207,11 +210,12 @@ const sections = [
     // the "Family Status" field on a family record.
     key: "masters",
     label: "Masters",
-    icon: "o_list",
+    icon: "o_list_alt",
     items: [
       // Ungated, matching the family-status route itself — there is no family-status permission in
       // the catalogue yet, so gating here would hide the page from everyone.
-      { label: "Family Statuses", icon: "o_flag", to: "/familystatus", permissions: null }
+      { label: "Family Statuses", icon: "o_flag", to: "/familystatus", permissions: null },
+      { label: "Studio Locations", icon: "o_location_on", to: "/locations", permissions: [Permissions.LocationsRead] }
     ]
   },
   {
@@ -263,6 +267,7 @@ const sections = [
 ];
 
 const canSee = (permissions) => !permissions || authStore.hasAnyPermission(permissions);
+console.log("Can See Permissionis:", canSee());
 
 const visibleSections = computed(() =>
   sections
