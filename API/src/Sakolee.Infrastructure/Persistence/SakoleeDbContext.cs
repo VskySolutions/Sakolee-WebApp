@@ -2,7 +2,7 @@ using Sakolee.Application.Abstractions.Security;
 using Sakolee.Application.Abstractions.Tenancy;
 using Sakolee.Domain.Entities;
 using Microsoft.AspNetCore.DataProtection.EntityFrameworkCore;
-using Sakolee.Domain.Entities;
+
 
 using Microsoft.EntityFrameworkCore;
 
@@ -39,6 +39,9 @@ public class SakoleeDbContext : DbContext, IDataProtectionKeyContext
 
     public DbSet<Tenant> Tenants => Set<Tenant>();
     public DbSet<FamilyStatus> FamilyStatuses { get; set; }
+
+    public DbSet<ClassSessions> ClassSessions { get; set; }
+
 
     public DbSet<User> Users => Set<User>();
 
@@ -128,6 +131,10 @@ public class SakoleeDbContext : DbContext, IDataProtectionKeyContext
         // Persons are CRM master records owned by a tenant; scope them so a non-Super-Admin never
         // sees another tenant's people. Self-profile reads bypass this filter via GetByUserIdAsync.
         modelBuilder.Entity<Person>().HasQueryFilter(e => (!_tenantContext.IsResolved || e.TenantId == _tenantContext.TenantId) && !e.Deleted);
+
+        modelBuilder.Entity<ClassSessions>().HasQueryFilter(e => (!_tenantContext.IsResolved || e.TenantId == _tenantContext.TenantId) && !e.IsDeleted);
+
+
         // User groups + memberships are tenant-scoped so a tenant only ever sees its own groups.
         modelBuilder.Entity<UserGroup>().HasQueryFilter(e => (!_tenantContext.IsResolved || e.TenantId == _tenantContext.TenantId) && !e.Deleted);
         modelBuilder.Entity<UserGroupMember>().HasQueryFilter(e => (!_tenantContext.IsResolved || e.TenantId == _tenantContext.TenantId) && !e.Deleted);
@@ -341,6 +348,10 @@ public class SakoleeDbContext : DbContext, IDataProtectionKeyContext
                 //    break;
                 case Location location when location.TenantId is null || location.TenantId == Guid.Empty:
                     location.TenantId = _tenantContext.TenantId;
+                    break;
+
+                case ClassSessions classsessions when classsessions.TenantId != null || classsessions.TenantId == Guid.Empty:
+                    classsessions.TenantId = _tenantContext.TenantId;
                     break;
             }
         }

@@ -17,6 +17,16 @@ public static class Permissions
     public const string PersonsWrite = "persons.write";
     public const string PersonsDelete = "persons.delete";
 
+    // Family Statuses
+    public const string FamilyStatusesRead = "familyStatuses.read";
+    public const string FamilyStatusesWrite = "familyStatuses.write";
+    public const string FamilyStatusesDelete = "familyStatuses.delete";
+
+    // Sessions (Dance academy session master records)
+    public const string SessionsRead = "sessions.read";
+    public const string SessionsWrite = "sessions.write";
+    public const string SessionsDelete = "sessions.delete";
+
     // Students
     public const string StudentsRead = "students.read";
     public const string StudentsWrite = "students.write";
@@ -70,6 +80,8 @@ public static class Permissions
     {
         TenantsRead, TenantsWrite, TenantsArchive,
         PersonsRead, PersonsWrite, PersonsDelete,
+        FamilyStatusesRead,FamilyStatusesWrite,FamilyStatusesDelete,
+        SessionsRead, SessionsWrite, SessionsDelete,
         StudentsRead, StudentsWrite, StudentsDelete,
         ClassesRead, ClassesWrite, ClassesDelete,
         LocationsRead, LocationsWrite, LocationsDelete,
@@ -89,6 +101,8 @@ public static class Permissions
         TenantsRead,
         // Deleting persons stays Super-Admin-only (PersonsDelete intentionally excluded here).
         PersonsRead, PersonsWrite,
+        FamilyStatusesRead,FamilyStatusesWrite,FamilyStatusesDelete,
+        SessionsRead, SessionsWrite, SessionsDelete,
         // Students are owned entirely within a tenant, so Tenant Admins get full CRUD.
         StudentsRead, StudentsWrite, StudentsDelete,
         // Classes carry no TenantId yet (see the Class entity remarks) but are administered the same way.

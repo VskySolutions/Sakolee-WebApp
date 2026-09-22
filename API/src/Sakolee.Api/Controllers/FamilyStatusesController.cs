@@ -1,236 +1,305 @@
-﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
-using System;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.EntityFrameworkCore;
+using Sakolee.Api.Models;
+using Sakolee.Api.Models.FamilyStatus;
 using Sakolee.Api.Security;
+using Sakolee.Application.Abstractions.Auditing;
+using Sakolee.Application.Abstractions.Persistence;
+using Sakolee.Application.Common;
 using Sakolee.Domain.Entities;
-using Sakolee.Infrastructure.Persistence;
+using Sakolee.Shared.Contracts;
+using Sakolee.Shared.Security;
+using Microsoft.AspNetCore.Mvc;
 
-namespace Sakolee.Api.Controllers
+namespace Sakolee.Api.Controllers;
+
+/// <summary>
+/// Controller managing family status master records for multi-tenant configurations.
+/// </summary>
+[ApiController]
+[Route("/api/admin/family-statuses")]
+[Produces("application/json")]
+[Tags("Family Statuses")]
+[ProducesResponseType<ApiErrorResponse>(StatusCodes.Status400BadRequest)]
+[ProducesResponseType(StatusCodes.Status401Unauthorized)]
+[ProducesResponseType(StatusCodes.Status403Forbidden)]
+[ProducesResponseType<ApiErrorResponse>(StatusCodes.Status404NotFound)]
+[ProducesResponseType<ApiErrorResponse>(StatusCodes.Status500InternalServerError)]
+public sealed class FamilyStatusesController : ControllerBase
 {
-    [Route("api/admin/family-statuses")]
-    [ApiController]
-    [Authorize]
-    public class FamilyStatusesController : ControllerBase
+    #region Field Declarations
+
+    private readonly IFamilyStatusRepository _familyStatuses;
+    private readonly IUserRepository _users;
+    private readonly IUnitOfWork _unitOfWork;
+    private readonly IAuditTrailService _audit;
+
+    #endregion
+
+    #region Constructor
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="FamilyStatusesController"/> class.
+    /// </summary>
+    public FamilyStatusesController(
+        IFamilyStatusRepository familyStatuses,
+        IUserRepository users,
+        IUnitOfWork unitOfWork,
+        IAuditTrailService audit)
     {
-        #region Private Fields & Constructor
-
-        private readonly SakoleeDbContext _context;
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="FamilyStatusesController"/> class.
-        /// </summary>
-        /// <param name="context">The database context instance.</param>
-        public FamilyStatusesController(SakoleeDbContext context)
-        {
-            _context = context ?? throw new ArgumentNullException(nameof(context));
-        }
-
-        #endregion
-
-        #region GetFamilyStatuses Endpoint
-
-        /// <summary>
-        /// Retrieves a paginated and filtered list of family status records.
-        /// </summary>
-        /// <param name="page">The current page index (defaults to 1).</param>
-        /// <param name="limit">The maximum number of records per page (defaults to 20).</param>
-        /// <param name="search">Optional search term for filtering by status name.</param>
-        /// <param name="tenantId">Optional tenant identifier filter.</param>
-        /// <returns>A collection of family statuses along with pagination metadata.</returns>
-        [HttpGet]
-        public async Task<IActionResult> GetFamilyStatuses(
-            [FromQuery] int page = 1,
-            [FromQuery] int limit = 20,
-            [FromQuery] string search = null,
-            [FromQuery] Guid? tenantId = null,
-            [FromQuery] string sortBy = null,
-            [FromQuery] bool descending = false)
-        {
-            // Initialize base queryable data source context (by default filtering out soft-deleted records).
-            // The ambient tenant query filter (SakoleeDbContext) already restricts this to the caller's
-            // active/viewed tenant, so switching tenants changes what this query returns automatically.
-            var query = _context.FamilyStatuses.Where(x => !x.IsDeleted).AsQueryable();
-
-            // A client-supplied tenantId is only honoured for a Super Admin explicitly cross-tenant filtering;
-            // for everyone else it is ignored (the ambient filter already pins them to their own tenant).
-            if (tenantId.HasValue && User.IsSuperAdmin())
-            {
-                query = query.Where(x => x.TenantId == tenantId.Value);
-            }
-
-            // Apply case-insensitive partial text search filter on the name property if specified
-            if (!string.IsNullOrEmpty(search))
-            {
-                query = query.Where(x => x.Name.Contains(search));
-            }
-
-            // Retrieve total count of records matching current filters prior to pagination
-            var totalRecords = await query.CountAsync();
-
-            // Flag to track whether custom column sorting was successfully applied
-            bool isSorted = false;
-
-            // Handle dynamic column sorting based on client request parameters
-            if (!string.IsNullOrEmpty(sortBy))
-            {
-                switch (sortBy.ToLower())
-                {
-                    case "name":
-                        query = descending ? query.OrderByDescending(x => x.Name) : query.OrderBy(x => x.Name);
-                        isSorted = true;
-                        break;
-                    case "createdon":
-                    case "createdat":
-                        query = descending ? query.OrderByDescending(x => x.CreatedOn) : query.OrderBy(x => x.CreatedOn);
-                        isSorted = true;
-                        break;
-                    case "familystatusid":
-                        query = descending ? query.OrderByDescending(x => x.FamilyStatusId) : query.OrderBy(x => x.FamilyStatusId);
-                        isSorted = true;
-                        break;
-                }
-            }
-
-            // Fallback to default sorting (newest records first) if no valid sorting column was provided
-            if (!isSorted)
-            {
-                query = query.OrderByDescending(x => x.CreatedOn);
-            }
-
-            // Apply pagination slicing (skip and take) on the finalized sorted and filtered query
-            var data = await query
-                .Skip((page - 1) * limit)
-                .Take(limit)
-                .ToListAsync();
-
-            // Return structured response containing data payload and pagination meta information
-            return Ok(new
-            {
-                data = data,
-                meta = new { totalRecords = totalRecords }
-            });
-        }
-
-        #endregion
-
-        #region GetById Endpoint
-
-        /// <summary>
-        /// Retrieves a specific family status record by its unique identifier.
-        /// </summary>
-        /// <param name="id">The unique GUID of the family status.</param>
-        /// <returns>The family status entity if found; otherwise, a NotFound response.</returns>
-        [HttpGet("{id:guid}")]
-        public async Task<IActionResult> GetById(Guid id)
-        {
-            var item = await _context.FamilyStatuses.FirstOrDefaultAsync(x => x.FamilyStatusId == id && !x.IsDeleted);
-
-            if (item == null)
-            {
-                return NotFound(new { message = "Family status record not found." });
-            }
-
-            return Ok(item);
-        }
-
-        #endregion
-
-        #region Create Endpoint
-
-        /// <summary>
-        /// Creates a new family status record.
-        /// </summary>
-        /// <param name="model">The family status creation payload.</param>
-        /// <returns>The newly created family status entity.</returns>
-        [HttpPost]
-        public async Task<IActionResult> Create([FromBody] FamilyStatus model)
-        {
-            if (model == null)
-            {
-                return BadRequest(new { message = "Invalid request payload provided." });
-            }
-
-            if (User.GetActiveTenantId() is not { } activeTenantId)
-            {
-                return Unauthorized(new { message = "Tenant could not be resolved." });
-            }
-
-            model.FamilyStatusId = Guid.NewGuid();
-            model.TenantId = activeTenantId;
-            model.CreatedOn = DateTime.UtcNow;
-            model.IsDeleted = false;
-
-            // Persist the new entity changes to the database
-            await _context.FamilyStatuses.AddAsync(model);
-            await _context.SaveChangesAsync();
-
-            return Ok(model);
-        }
-
-        #endregion
-
-        #region Update Endpoint
-
-        /// <summary>
-        /// Updates an existing family status record details.
-        /// </summary>
-        /// <param name="id">The unique GUID of the record to update.</param>
-        /// <param name="model">The updated model data.</param>
-        /// <returns>The updated family status entity.</returns>
-        [HttpPut("{id:guid}")]
-        public async Task<IActionResult> Update(Guid id, [FromBody] FamilyStatus model)
-        {
-            if (model == null)
-            {
-                return BadRequest(new { message = "Invalid update payload provided." });
-            }
-
-            var existing = await _context.FamilyStatuses.FirstOrDefaultAsync(x => x.FamilyStatusId == id && !x.IsDeleted);
-            if (existing == null)
-            {
-                return NotFound(new { message = "Family status record not found." });
-            }
-
-            // TenantId is not editable via update — it is stamped once at creation from the caller's
-            // active tenant, and the ambient query filter already scoped `existing` to that tenant.
-            existing.Name = model.Name;
-
-            _context.FamilyStatuses.Update(existing);
-            await _context.SaveChangesAsync();
-
-            return Ok(existing);
-        }
-
-        #endregion
-
-        #region Delete Endpoint
-
-        /// <summary>
-        /// Soft deletes an existing family status record by setting IsDeleted to true.
-        /// </summary>
-        /// <param name="id">The unique GUID of the record to delete.</param>
-        /// <returns>Success response if deleted.</returns>
-        [HttpDelete("{id:guid}")]
-        public async Task<IActionResult> Delete(Guid id)
-        {
-            var existing = await _context.FamilyStatuses.FirstOrDefaultAsync(x => x.FamilyStatusId == id && !x.IsDeleted);
-            if (existing == null)
-            {
-                return NotFound(new { message = "Family status record not found." });
-            }
-
-            // Perform Soft Delete
-            existing.IsDeleted = true;
-
-            _context.FamilyStatuses.Update(existing);
-            await _context.SaveChangesAsync();
-
-            return Ok(new { message = "Family status deleted successfully." });
-        }
-
-        #endregion
+        _familyStatuses = familyStatuses;
+        _users = users;
+        _unitOfWork = unitOfWork;
+        _audit = audit;
     }
+
+    #endregion
+
+    #region API Endpoints
+
+    #region Create Endpoint
+
+    /// <summary>
+    /// Creates a new family status record.
+    /// </summary>
+    [HttpPost]
+    [RequirePermission(Permissions.FamilyStatusesWrite)]
+    [ProducesResponseType<ApiResponse<FamilyStatusDetail>>(StatusCodes.Status201Created)]
+    public async Task<IActionResult> Create([FromBody] CreateFamilyStatusRequest request, CancellationToken cancellationToken)
+    {
+        // Validate if the request body name is null or whitespace
+        if (string.IsNullOrWhiteSpace(request.Name))
+        {
+            return BadRequest(ApiResponseFactory.Error(
+                ApiErrorCodes.ValidationFailed, "Validation failed.", "Family status name is required."));
+        }
+
+        // Check if a family status with the exact same name already exists in the system
+        if (await _familyStatuses.ExistsAsync(request.Name, cancellationToken))
+        {
+            return BadRequest(ApiResponseFactory.Error(
+                ApiErrorCodes.ValidationFailed, "Validation failed.", "A family status with this name already exists."));
+        }
+
+        // Retrieve and validate the active tenant identifier from the current user context
+        var tenantId = User.GetActiveTenantId() ?? Guid.Empty;
+        if (tenantId == Guid.Empty)
+        {
+            return BadRequest(ApiResponseFactory.Error(
+                ApiErrorCodes.ValidationFailed, "Validation failed.", "Tenant ID is required."));
+        }
+
+        // Initialize a new FamilyStatus entity instance with generated identifiers and metadata
+        var familyStatus = new FamilyStatus
+        {
+            FamilyStatusId = Guid.NewGuid(),
+            TenantId = tenantId,
+            Name = request.Name.Trim(),
+            IsDeleted = false,
+            CreatedOn = DateTime.UtcNow,
+            CreatedBy = User.GetUserId().ToString()
+        };
+
+        // Persist the new record to the database via repository and unit of work
+        await _familyStatuses.AddAsync(familyStatus, cancellationToken);
+        await _audit.AddAsync(nameof(FamilyStatus), familyStatus.FamilyStatusId.ToString(), "Created", details: familyStatus.Name, cancellationToken: cancellationToken);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+        // Map the created entity to a detailed response DTO
+        var detail = new FamilyStatusDetail(
+            familyStatus.FamilyStatusId,
+            familyStatus.Name,
+            !familyStatus.IsDeleted,
+            familyStatus.CreatedBy,
+            familyStatus.UpdatedBy,
+            familyStatus.CreatedOn,
+            familyStatus.UpdatedOn);
+
+        return StatusCode(StatusCodes.Status201Created,
+            ApiResponseFactory.Success(detail, "Family status created."));
+    }
+
+    #endregion
+
+    #region List Endpoint
+
+    /// <summary>
+    /// Retrieves a paginated list of family status records.
+    /// </summary>
+    [HttpGet]
+    public async Task<IActionResult> List(
+        [FromQuery] int page = 1,
+        [FromQuery] int limit = 20,
+        [FromQuery] string? search = null,
+        [FromQuery] Guid? tenantId = null,
+        [FromQuery] bool? isActive = null,
+        [FromQuery] string? sortBy = null,
+        [FromQuery] bool descending = true,
+        CancellationToken cancellationToken = default)
+    {
+        // Ensure valid pagination boundary values
+        page = Math.Max(1, page);
+        limit = Math.Clamp(limit, 1, 100);
+
+        // Scope tenant filter for super admin users if explicitly specified in query parameters
+        Guid? scopeTenant = User.IsSuperAdmin() && tenantId is { } tid ? tid : null;
+
+        // Fetch filtered, sorted, and paginated records from the repository
+        var (items, total) = await _familyStatuses.ListAsync(
+            search, scopeTenant, isActive, new SortRequest(sortBy, descending), page, limit,
+            cancellationToken: cancellationToken);
+
+        // Project database model items into summary DTOs including Tenant information for client consumption
+        var summaries = items.Select(f => new FamilyStatusSummary(
+            f.FamilyStatusId,
+            f.Name,
+            !f.IsDeleted,
+            f.CreatedBy,
+            f.UpdatedBy,
+            f.CreatedOn,
+            f.UpdatedOn,
+            f.TenantId,                  // Added TenantId
+            f.Tenant != null ? f.Tenant.Name : null
+        ));
+
+        return Ok(ApiResponseFactory.Paginated(summaries, "Family statuses retrieved.", page, limit, total));
+    }
+
+    #endregion
+
+    #region GetById Endpoint
+
+    /// <summary>
+    /// Retrieves a specific family status record by its unique identifier.
+    /// </summary>
+    [HttpGet("{id:guid}")]
+    [RequirePermission(Permissions.FamilyStatusesRead)]
+    public async Task<IActionResult> GetById(Guid id, CancellationToken cancellationToken)
+    {
+        // Load the family status entity handling tenant scoping rules
+        var familyStatus = await LoadAsync(id, cancellationToken);
+        if (familyStatus is null)
+        {
+            return NotFound(ApiResponseFactory.NotFound("Family status not found."));
+        }
+
+        // Map entity details to response DTO
+        var detail = new FamilyStatusDetail(
+            familyStatus.FamilyStatusId,
+            familyStatus.Name,
+            !familyStatus.IsDeleted,
+            familyStatus.CreatedBy,
+            familyStatus.UpdatedBy,
+            familyStatus.CreatedOn,
+            familyStatus.UpdatedOn);
+
+        return Ok(ApiResponseFactory.Success(detail, "Family status retrieved."));
+    }
+
+    #endregion
+
+    #region Update Endpoint
+
+    /// <summary>
+    /// Updates an existing family status record.
+    /// </summary>
+    [HttpPut("{id:guid}")]
+    [RequirePermission(Permissions.FamilyStatusesWrite)]
+
+    public async Task<IActionResult> Update(Guid id, [FromBody] UpdateFamilyStatusRequest request, CancellationToken cancellationToken)
+    {
+        var familyStatus = await LoadAsync(id, cancellationToken);
+        if (familyStatus is null)
+        {
+            return NotFound(ApiResponseFactory.NotFound("Family status not found."));
+        }
+
+        if (!string.IsNullOrWhiteSpace(request.Name))
+        {
+            familyStatus.Name = request.Name.Trim();
+        }
+
+        if (request.IsActive.HasValue)
+        {
+            familyStatus.IsDeleted = !request.IsActive.Value;
+        }
+
+        familyStatus.UpdatedOn = DateTime.UtcNow;
+        familyStatus.UpdatedBy = User.GetUserId().ToString();
+
+        _familyStatuses.Update(familyStatus);
+
+        await _audit.AddAsync(nameof(FamilyStatus), familyStatus.FamilyStatusId.ToString(), "Updated", cancellationToken: cancellationToken);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+        var detail = new FamilyStatusDetail(
+            familyStatus.FamilyStatusId,
+            familyStatus.Name,
+            !familyStatus.IsDeleted,
+            familyStatus.CreatedBy,
+            familyStatus.UpdatedBy,
+            familyStatus.CreatedOn,
+            familyStatus.UpdatedOn);
+
+        return Ok(ApiResponseFactory.Success(detail, "Family status updated."));
+    }
+
+
+
+    #endregion
+
+    #region Delete Endpoint
+
+    /// <summary>
+    /// Soft deletes a family status record by updating its IsDeleted flag.
+    /// </summary>
+    [HttpDelete("{id:guid}")]
+    [RequirePermission(Permissions.FamilyStatusesDelete)]
+    public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
+    {
+        // Verify delete permissions if the caller is not a super admin
+        if (!User.IsSuperAdmin() && !User.HasPermission(Permissions.FamilyStatusesDelete))
+        {
+            return StatusCode(StatusCodes.Status403Forbidden,
+                ApiResponseFactory.Forbidden("You do not have permission to delete family statuses."));
+        }
+
+        // Load the target family status entity
+        var familyStatus = await LoadAsync(id, cancellationToken);
+        if (familyStatus is null)
+        {
+            return NotFound(ApiResponseFactory.NotFound("Family status not found."));
+        }
+
+        // Soft delete: set IsDeleted flag to true (1) instead of physical removal
+        familyStatus.IsDeleted = true;
+
+        // Optionally update audit fields if available (e.g., UpdatedOn / UpdatedBy)
+        familyStatus.UpdatedOn = DateTime.UtcNow;
+
+        // Update the entity state in the repository/context and log the audit event
+        _familyStatuses.Update(familyStatus);
+        await _audit.AddAsync(nameof(FamilyStatus), familyStatus.FamilyStatusId.ToString(), "SoftDeleted", cancellationToken: cancellationToken);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+        return Ok(ApiResponseFactory.Success(new { id }, "Family status moved to trash successfully."));
+    }
+
+    #endregion
+
+    #endregion
+
+    #region Private Helper Methods
+
+    #region LoadAsync Helper
+
+    /// <summary>
+    /// Loads a family status entity based on super admin privileges or standard tenant context filters.
+    /// </summary>
+    private Task<FamilyStatus?> LoadAsync(Guid id, CancellationToken cancellationToken)
+        => User.IsSuperAdmin()
+            ? _familyStatuses.GetByIdUnscopedAsync(id, cancellationToken)
+            : _familyStatuses.GetByIdAsync(id, cancellationToken);
+
+    #endregion
+
+    #endregion
 }
