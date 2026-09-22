@@ -1,19 +1,37 @@
 <template>
-  <q-btn dense flat color="grey-8">
-    <div class="flex items-center nav-user-info">
-      <q-icon name="o_account_circle" color="orange" class="material-icons-outlined q-mr-sm" size="38px" />
-      <div class="line-height-normal q-mr-sm text-left">
-        <div class="fs-16 text-capitalize flex justify-between items-center">
-          <span>{{ displayName }}</span>
-          <q-icon side name="o_keyboard_arrow_down" size="sm" class="q-ml-sm" style="color:#697A8D;" />
+  <q-btn dense flat color="grey-8" padding="0" class="sakolee-profile-btn">
+    <div class="nav-user-info">
+      <!-- <div class="line-height-normal q-mr-sm text-left">
+        <div class="flex column text-right">
+          <p class="q-mb-none fs-12 text-capitalize text-2e fw-600" style="transform: translateY(5px);">{{ displayName }}</p>
+          <p class="fs-11 q-mb-none text-capitalize text-86 fw-500" style="transform: translateY(-5px);">{{ roles[0] }}</p>
+        </div>
+      </div> -->
+      <div class="profile-text q-mr-sm">
+        <div class="profile-text-inner">
+          <p
+            class="q-mb-none fs-12 text-capitalize text-2e fw-600" style="transform: translateY(5px);"
+          >
+            {{ displayName }}
+          </p>
+
+          <p
+            class="fs-11 q-mb-none text-capitalize text-86 fw-500" style="transform: translateY(-5px);"
+          >
+            {{ roles[0] }}
+          </p>
         </div>
       </div>
+      <img v-if="previewUrl" :src="previewUrl" alt="" width="36px" height="36px" style="border: 2px solid white; border-radius: 12px;">
+      <q-icon v-else name="o_account_circle" color="orange" class="material-icons-outlined" size="38px" />
+      <q-icon side name="o_keyboard_arrow_down" class="q-ml-sm" size="18px" style="color:#697A8D;" />
     </div>
     <q-menu>
       <q-list style="min-width: 250px" class="user-card">
         <q-item class="q-py-sm">
           <q-item-section avatar>
-            <q-icon name="o_account_circle" color="orange" class="material-icons-outlined q-mr-sm" size="38px" />
+            <img v-if="previewUrl" :src="previewUrl" alt="" width="36px" height="36px" style="border: 2px solid white; border-radius: 12px;">
+            <q-icon v-else name="o_account_circle" color="orange" class="material-icons-outlined q-mr-sm" size="38px" />
           </q-item-section>
           <q-item-section>
             <q-item-label class="text-subtitle1 text-weight-medium text-capitalize">{{ displayName }}</q-item-label>
@@ -33,7 +51,7 @@
             </q-item-label>
           </q-item-section>
         </q-item>
-        <q-separator class="q-mb-sm" />
+        <!-- <q-separator class="q-mb-sm" /> -->
         <!-- The full list, above the bell's popover — which only ever shows the unread few. -->
         <!-- <q-item v-ripple :to="{ name: 'uf_notifications' }" clickable>
           <q-item-section avatar>
@@ -107,7 +125,8 @@
 </template>
 
 <script setup>
-import { computed } from "vue";
+import { computed, reactive, onMounted, ref } from "vue";
+import { profileApi, mediaApi } from "services/api";
 import { useRouter } from "vue-router";
 import { useAuthStore } from "stores/auth";
 import { useTenantStore } from "stores/tenant";
@@ -120,7 +139,6 @@ const displayName = computed(() => authStore.user?.displayName || authStore.user
 const email = computed(() => authStore.user?.email || "");
 // All RBAC role names the user holds in the active tenant (multi-role, WO-123).
 const roles = computed(() => tenantStore.activeRoles);
-
 // Active tenant name (falls back to its identifier) shown under the role.
 const tenantName = computed(() => tenantStore.activeTenant?.name || tenantStore.activeTenant?.identifier || "");
 
@@ -138,6 +156,22 @@ const onLogout = async () => {
   await authStore.logout();
   router.replace({ name: "login" });
 };
+
+const form = reactive({
+  profileMediaId: null
+});
+const previewUrl = ref(null);
+const load = async () => {
+  const p = await profileApi.getMine();
+  form.profileMediaId = p.profileMediaId || null;
+  if (p.profileMediaUrl) previewUrl.value = mediaApi.absoluteUrl(p.profileMediaUrl);
+
+  console.log("Preview:", form.profileMediaId + "" + previewUrl.value);
+};
+
+onMounted(() => {
+  load();
+});
 
 // const onLogoutAll = async () => {
 //   await authStore.logoutAll();

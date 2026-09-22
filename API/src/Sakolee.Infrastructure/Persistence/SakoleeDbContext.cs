@@ -2,7 +2,6 @@ using Sakolee.Application.Abstractions.Security;
 using Sakolee.Application.Abstractions.Tenancy;
 using Sakolee.Domain.Entities;
 using Microsoft.AspNetCore.DataProtection.EntityFrameworkCore;
-using Sakolee.Domain.Entities;
 
 using Microsoft.EntityFrameworkCore;
 
