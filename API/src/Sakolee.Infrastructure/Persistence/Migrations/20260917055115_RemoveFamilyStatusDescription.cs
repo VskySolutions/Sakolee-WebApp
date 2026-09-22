@@ -10,19 +10,19 @@ namespace Sakolee.Infrastructure.Persistence.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropColumn(
-                name: "Description",
-                table: "FamilyStatuses");
+            //migrationBuilder.DropColumn(
+            //    name: "Description",
+            //    table: "FamilyStatuses");
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.AddColumn<string>(
-                name: "Description",
-                table: "FamilyStatuses",
-                type: "nvarchar(max)",
-                nullable: true);
+            //migrationBuilder.AddColumn<string>(
+            //    name: "Description",
+            //    table: "FamilyStatuses",
+            //    type: "nvarchar(max)",
+            //    nullable: true);
         }
     }
 }

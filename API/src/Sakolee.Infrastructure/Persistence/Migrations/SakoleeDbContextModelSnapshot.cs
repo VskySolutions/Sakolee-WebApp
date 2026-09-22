@@ -663,6 +663,47 @@ namespace Sakolee.Infrastructure.Persistence.Migrations
                     b.ToTable("ClassCategory", (string)null);
                 });
 
+            modelBuilder.Entity("Sakolee.Domain.Entities.ClassSessions", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("Active")
+                        .HasColumnType("bit");
+
+                    b.Property<Guid?>("CreatedById")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedOnUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("Deleted")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("DeletedOnUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("UpdatedById")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("UpdatedOnUtc")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId");
+
+                    b.ToTable("ClassSessions");
+                });
+
             modelBuilder.Entity("Sakolee.Domain.Entities.ColourCode", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1024,7 +1065,15 @@ namespace Sakolee.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("TenantId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("UpdatedOn")
+                        .HasColumnType("datetime2");
+
                     b.HasKey("FamilyStatusId");
+
+                    b.HasIndex("TenantId");
 
                     b.ToTable("FamilyStatuses");
                 });
@@ -1069,6 +1118,50 @@ namespace Sakolee.Infrastructure.Persistence.Migrations
                         .IsDescending(false, false, false, true);
 
                     b.ToTable("FieldModifiedLogs", (string)null);
+                });
+
+            modelBuilder.Entity("Sakolee.Domain.Entities.Location", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("Active")
+                        .HasColumnType("bit");
+
+                    b.Property<Guid?>("CreatedById")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedOnUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("Deleted")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("DeletedOnUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<Guid?>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("UpdatedById")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("UpdatedOnUtc")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "Name")
+                        .IsUnique()
+                        .HasFilter("[Deleted] = 0");
+
+                    b.ToTable("Locations", (string)null);
                 });
 
             modelBuilder.Entity("Sakolee.Domain.Entities.Media", b =>
@@ -2972,6 +3065,17 @@ namespace Sakolee.Infrastructure.Persistence.Migrations
                     b.Navigation("Checklist");
                 });
 
+            modelBuilder.Entity("Sakolee.Domain.Entities.ClassSessions", b =>
+                {
+                    b.HasOne("Sakolee.Domain.Entities.Tenant", "Tenant")
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Tenant");
+                });
+
             modelBuilder.Entity("Sakolee.Domain.Entities.ConversationMessageMention", b =>
                 {
                     b.HasOne("Sakolee.Domain.Entities.ConversationMessage", "ConversationMessage")
@@ -3000,6 +3104,27 @@ namespace Sakolee.Infrastructure.Persistence.Migrations
                         .IsRequired();
 
                     b.Navigation("Tag");
+                });
+
+            modelBuilder.Entity("Sakolee.Domain.Entities.FamilyStatus", b =>
+                {
+                    b.HasOne("Sakolee.Domain.Entities.Tenant", "Tenant")
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Tenant");
+                });
+
+            modelBuilder.Entity("Sakolee.Domain.Entities.Location", b =>
+                {
+                    b.HasOne("Sakolee.Domain.Entities.Tenant", "Tenant")
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.Navigation("Tenant");
                 });
 
             modelBuilder.Entity("Sakolee.Domain.Entities.OptionSet", b =>

@@ -1,5 +1,5 @@
 <template>
-  <q-list class="app-menu q-py-xs">
+  <q-list class="app-menu q-py-xs q-gutter-y-sm">
     <template v-for="section in visibleSections" :key="section.key">
       <!-- Ungrouped items (no label, e.g. Dashboard) render flat at the top. -->
       <template v-if="!section.label">
@@ -11,11 +11,11 @@
           clickable
           :to="item.to"
           :exact="item.exact"
-          active-class="text-primary bg-teal-1"
+          active-class="active-menu-class"
           @click="onItem(item)"
         >
-          <q-item-section avatar><q-icon :name="item.icon" size="20px" /></q-item-section>
-          <q-item-section>{{ item.label }}</q-item-section>
+          <q-item-section avatar><q-icon :name="item.icon" size="24px" /></q-item-section>
+          <q-item-section class="fs-14 fw-500">{{ item.label }}</q-item-section>
           <q-tooltip v-if="mini" anchor="center right" self="center left">{{ item.label }}</q-tooltip>
         </q-item>
       </template>
@@ -31,7 +31,7 @@
         @mouseleave="scheduleFlyoutClose"
         @click="openFlyout(section.key)"
       >
-        <q-item-section avatar><q-icon :name="section.icon" size="20px" /></q-item-section>
+        <q-item-section avatar><q-icon :name="section.icon" size="24px" /></q-item-section>
         <q-item-section>{{ section.label }}</q-item-section>
 
         <q-menu
@@ -63,7 +63,7 @@
               clickable
               :to="item.to"
               :exact="item.exact"
-              active-class="text-primary bg-teal-1"
+              active-class="active-menu-class"
               @click="onItem(item)"
             >
               <q-item-section avatar><q-icon :name="item.icon" size="20px" /></q-item-section>
@@ -81,6 +81,7 @@
         :label="section.label"
         :model-value="isOpen(section)"
         header-class="app-menu__group"
+        class="sakolee-desktop-menu-class"
         @update:model-value="(v) => setOpen(section.key, v)"
       >
         <q-item
@@ -91,11 +92,11 @@
           clickable
           :to="item.to"
           :exact="item.exact"
-          active-class="text-primary bg-teal-1"
+          active-class="text-primary"
           class="app-menu__nested"
           @click="onItem(item)"
         >
-          <q-item-section avatar><q-icon :name="item.icon" size="20px" /></q-item-section>
+          <q-item-section avatar><q-icon :name="item.icon" size="20px" class="fw-400" /></q-item-section>
           <q-item-section>{{ item.label }}</q-item-section>
         </q-item>
       </q-expansion-item>
@@ -117,6 +118,8 @@ defineProps({
 
 const authStore = useAuthStore();
 const router = useRouter();
+const loggedUserRole = computed(() => authStore.user?.tenants[0]?.roleNames[0]);
+console.log("Logged User Role:", loggedUserRole.value);
 
 // Which group is showing its children beside the rail. One at a time — they would overlap otherwise.
 const flyoutKey = ref(null);
@@ -207,11 +210,14 @@ const sections = [
     // the "Family Status" field on a family record.
     key: "masters",
     label: "Masters",
-    icon: "o_list",
+    icon: "o_list_alt",
     items: [
       // Ungated, matching the family-status route itself — there is no family-status permission in
       // the catalogue yet, so gating here would hide the page from everyone.
-      { label: "Family Statuses", icon: "o_flag", to: "/familystatus", permissions: null }
+      { label: "Family Statuses", icon: "o_flag", to: "/familystatus", permissions: null },
+      { label: "Studio Locations", icon: "o_location_on", to: "/locations", permissions: [Permissions.LocationsRead] },
+      { label: "Class Categories", icon: "o_category", to: "/class-categories", permissions: [Permissions.ClassesRead]}
+      { label: "Class Sessions", icon: "o_date_range", to: "/sessions", permissions: null }
     ]
   },
   {
@@ -256,13 +262,14 @@ const sections = [
       // { label: "My Mentions", icon: "o_alternate_email", to: { name: "uf_mentions" }, permissions: null },
       // { label: "My Pinned", icon: "o_push_pin", to: { name: "uf_pinned" }, permissions: null },
       // { label: "Notification Preferences", icon: "o_tune", to: { name: "uf_notification_preferences" }, permissions: null },
-      { label: "Logout", icon: "o_logout", action: "logout", permissions: null },
+      // { label: "Logout", icon: "o_logout", action: "logout", permissions: null },
       // { label: "Logout all devices", icon: "o_devices", action: "logoutAll", permissions: null }
     ]
   }
 ];
 
 const canSee = (permissions) => !permissions || authStore.hasAnyPermission(permissions);
+console.log("Can See Permissionis:", canSee());
 
 const visibleSections = computed(() =>
   sections
@@ -287,7 +294,7 @@ const setOpen = (key, open) => {
 <style scoped>
 /* Compact spacing — the drawer holds many items. */
 .app-menu :deep(.q-item) {
-  min-height: 34px;
+  min-height: 40px;
 }
 /* Tighten the icon gutter so icon + label sit close together. */
 .app-menu :deep(.q-item__section--avatar) {
@@ -305,11 +312,13 @@ const setOpen = (key, open) => {
 }
 .app-menu :deep(.app-menu__group .q-item__section--avatar) {
   min-width: 30px;
-  padding-right: 6px;
+  padding-right: 10px;
 }
 /* Indent the items within a group so the hierarchy reads clearly. */
 .app-menu__nested {
   padding-left: 20px;
+  font-size: 14px;
+  font-weight: 400;
 }
 
 /* The rail's flyout. Portaled to the body, so .app-menu selectors cannot reach it — spacing restated. */

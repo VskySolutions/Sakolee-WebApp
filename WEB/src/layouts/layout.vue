@@ -1,19 +1,30 @@
 <template>
   <q-layout view="lHh Lpr lFf">
-    <q-header bordered class="header">
-      <q-toolbar class="header-top flex items-center justify-between">
-        <div class="flex items-center">
-          <q-btn v-if="isLoggedIn" flat dense round icon="o_menu" class="text-black" aria-label="Menu" @click="toggleLeftDrawer" />
+    <q-header class="header sakolee-layout no-shadow">
+      <q-toolbar class="header-top">
+        <div class="sakolee-layout-header-left">
+          <!-- Toggle -->
+          <q-btn v-if="isLoggedIn" flat padding="0" class="text-black sakolee-layout-header-btn" aria-label="Menu" @click="toggleLeftDrawer">
+            <span class="material-symbols-outlined fs-24">menu</span>
+          </q-btn>
+          <!-- Search Input -->
+          <div class="global-search-input">
+            <app-text-field placeholder="Global Search...">
+              <template #prepend>
+                <q-icon name="o_search" />
+              </template>
+            </app-text-field>
+          </div>
           <q-btn flat no-caps class="no-padding q-ml-md" @click="$router.push('/')">
             <!-- Brand mark + wordmark, as the prototype sets them. The badge is the same SVG the tab
                  icon uses, so the two cannot drift; drawing it with a q-icon would need the filled
                  Material font, and only material-icons-outlined is loaded. -->
-            <img :src="brandMark" alt="" width="34" height="34" class="brand-mark">
-            <span class="text-weight-bold fs-18 text-primary q-ml-sm">Sakolee</span>
+            <!-- <img :src="brandMark" alt="" width="34" height="34" class="brand-mark">
+            <span class="text-weight-bold fs-18 text-primary q-ml-sm">Sakolee</span> -->
           </q-btn>
         </div>
         <!-- User menu when signed in, otherwise a login action -->
-        <div class="row q-gutter-sm items-center no-wrap">
+        <div class="sakolee-layout-header-right">
           <!-- Active Tenant switcher -->
           <q-btn-dropdown
             v-if="isLoggedIn && hasMultipleTenants"
@@ -21,7 +32,7 @@
             no-caps
             icon="o_apartment"
             :label="activeTenantLabel"
-            class="text-grey-9"
+            class="no-padding tenant-scope-control"
           >
             <q-list>
               <q-item-label header class="text-grey-7">Switch tenant</q-item-label>
@@ -46,19 +57,26 @@
 
           <!-- Active-tenant roles: the user's roles for the active tenant, shown on every
                authenticated screen alongside their name (in user-info). -->
-          <div v-if="isLoggedIn && activeRoles.length" class="gt-xs row items-center q-gutter-xs">
+          <!-- <div v-if="isLoggedIn && activeRoles.length" class="gt-xs row items-center q-gutter-xs">
             <q-chip
               v-for="r in activeRoles" :key="r" dense square color="teal-1" text-color="primary"
               class="text-capitalize q-my-none"
             >
               {{ r }}
             </q-chip>
-          </div>
+          </div> -->
 
           <!-- Super-Admin tenant scope. -->
-          <app-tenant-scope-select v-if="isLoggedIn" class="gt-xs" />
+          <app-tenant-scope-select v-if="isLoggedIn" class="tenant-scope-select" />
 
-          <notification-centre v-if="isLoggedIn" />
+          <!-- Help -->
+          <div class="header-icon-btn" flat round dense>
+            <span class="material-symbols-outlined fs-22 text-2e">help_outline</span>
+          </div>
+          <!-- Notification -->
+          <notification-centre class="header-icon-btn" v-if="isLoggedIn" />
+          <div class="line" />
+          <!-- User Profile -->
           <user-info v-if="isLoggedIn" />
           <q-btn v-else unelevated color="primary" no-caps icon="o_login" label="Login" :to="{ name: 'login' }" />
         </div>
@@ -66,21 +84,90 @@
     </q-header>
 
     <!-- Collapsed, the drawer stays as a 60px icon rail. -->
-    <q-drawer
+    <!-- <q-drawer
       v-if="isLoggedIn"
       v-model="leftDrawerOpen"
       show-if-above
       :mini="menuCollapsed"
       :width="292"
-      :mini-width="60"
+      :mini-width="70"
       :breakpoint="1024"
       bordered
       class="bg-white"
     >
-      <aside-header />
+      <aside-header :class="menuCollapsed ? 'pa-3' : 'pa-6'" />
       <q-scroll-area class="fit">
         <AppMenu :mini="menuCollapsed" />
       </q-scroll-area>
+    </q-drawer> -->
+
+    <q-drawer
+      v-if="isLoggedIn"
+      v-model="leftDrawerOpen"
+      show-if-above
+      :mini="menuCollapsed"
+      :width="279"
+      :mini-width="90"
+      :breakpoint="1023"
+      bordered
+      class="bg-white"
+    >
+      <div class="drawer-content">
+
+        <!-- ========================================= -->
+        <!-- 1. FIXED HEADER / LOGO                   -->
+        <!-- ========================================= -->
+        <div class="drawer-header">
+          <aside-header />
+        </div>
+
+        <!-- ========================================= -->
+        <!-- 2. ONLY THIS SECTION SCROLLS             -->
+        <!-- ========================================= -->
+        <q-scroll-area class="drawer-menu">
+          <AppMenu :mini="menuCollapsed" />
+        </q-scroll-area>
+
+        <!-- ========================================= -->
+        <!-- 3. FIXED BOTTOM MENU                     -->
+        <!-- ========================================= -->
+        <div class="drawer-footer">
+
+          <!-- Settings -->
+          <q-item
+            v-ripple
+            clickable
+            class="drawer-footer-item"
+            :to="{ name: 'settings' }"
+          >
+            <q-item-section avatar>
+              <q-icon name="o_settings" size="24px" />
+            </q-item-section>
+
+            <q-item-section :class="menuCollapsed ? 'q-mini-drawer-hide' : ''">
+              <q-item-label class="fw-500">Settings</q-item-label>
+            </q-item-section>
+          </q-item>
+
+          <!-- Logout -->
+          <q-item
+            v-ripple
+            clickable
+            class="drawer-footer-item logout-item"
+            @click="handleLogout"
+          >
+            <q-item-section avatar>
+              <q-icon name="o_logout" size="24px" />
+            </q-item-section>
+
+            <q-item-section :class="menuCollapsed ? 'q-mini-drawer-hide' : ''">
+              <q-item-label class="fw-500">Logout</q-item-label>
+            </q-item-section>
+          </q-item>
+
+        </div>
+
+      </div>
     </q-drawer>
 
     <q-page-container>
@@ -104,7 +191,7 @@
     <!-- Universal Features floating sticky notes overlay (authenticated users only). -->
     <sticky-note-layer v-if="isLoggedIn" />
 
-    <q-footer bordered class="bg-white">
+    <!-- <q-footer bordered class="bg-white">
       <div class="text-center q-py-sm">
         <h6 class="q-my-none text-black" style="font-size: 13px; font-weight: 400;">
           Copyright &copy; 2025 Vsky. Website Designed and Developed by
@@ -113,7 +200,7 @@
           </a>
         </h6>
       </div>
-    </q-footer>
+    </q-footer> -->
   </q-layout>
 </template>
 
@@ -122,6 +209,8 @@ import { ref, computed, watch } from "vue";
 import { LocalStorage, Dialog, useQuasar } from "quasar";
 import { storeToRefs } from "pinia";
 import { useTenantStore } from "stores/tenant";
+import { useRouter } from "vue-router";
+import { useAuthStore } from "stores/auth";
 
 import UserInfo from "shared/user_info.vue";
 import AsideHeader from "shared/aside_header.vue";
@@ -131,10 +220,14 @@ import StickyNoteLayer from "components/universal/StickyNoteLayer.vue";
 import AppTenantScopeSelect from "components/common/AppTenantScopeSelect.vue";
 import { useTenantScope } from "composables/useTenantScope";
 
+import AppTextField from "components/common/AppTextField.vue";
+
 // Served straight out of public/ — the same file index.html points the tab icon at. Absolute,
 // because history-mode routes would otherwise resolve it against the current path.
-const brandMark = "/icons/sakolee-mark.svg";
+// const brandMark = "/icons/sakolee-mark.svg";
 
+const authStore = useAuthStore();
+const router = useRouter();
 const $q = useQuasar();
 const isLoggedIn = !!LocalStorage.getItem("token");
 
@@ -194,6 +287,11 @@ const onSwitchTenant = async (tenantId) => {
     window.dispatchEvent(new CustomEvent("tenant-switched", { detail: { tenantId } }));
   }
 };
+
+const handleLogout = async () => {
+  await authStore.logout();
+  router.replace({ name: "login" });
+};
 </script>
 
 <style scoped>
@@ -212,4 +310,52 @@ const onSwitchTenant = async (tenantId) => {
     border-radius: 10px;
     box-shadow: 0 4px 12px rgba(70, 72, 212, 0.25);
   }
+
+  /* =========================================================
+   LEFT DRAWER STRUCTURE
+   ========================================================= */
+
+.drawer-content {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Fixed logo/header area */
+.drawer-header {
+  flex: 0 0 auto;
+}
+
+/* Only this section is allowed to scroll */
+.drawer-menu {
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 0 14px;
+}
+
+/* Fixed bottom section */
+.drawer-footer {
+  flex: 0 0 auto;
+  border-top: 1px solid #e5e7eb;
+  background: #ffffff;
+  padding: 8px 0;
+}
+
+/* Footer menu items */
+.drawer-footer-item {
+  min-height: 44px;
+  color: #17233f;
+  padding-left: 18px;
+  padding-right: 18px;
+}
+
+/* Logout styling */
+.logout-item {
+  color: #dc2626;
+}
+
+.drawer-footer-item:hover {
+  background: #f5f6ff;
+}
 </style>

@@ -4,21 +4,21 @@
     <app-detail-header
       :items="[
         { label: 'Home', icon: 'o_home', to: '/' },
-        { label: 'Family Statuses', to: { name: 'family_statuses' } },
+        { label: 'Sessions', to: { name: 'sessions' } },
         { label: 'Management' }
       ]"
-      :back-to="{ name: 'family_statuses' }"
+      :back-to="{ name: 'sessions' }"
     />
 
     <!-- Main Card Container -->
     <q-card flat bordered class="q-pa-md">
       <div class="row justify-between items-center q-mb-md">
-        <div class="text-h6">Family Statuses Management</div>
+        <div class="text-h6">Sessions Management</div>
         <q-btn 
           unelevated 
           color="primary" 
           icon="o_add" 
-          label="Create Status" 
+          label="Create Session" 
           @click="openCreateDialog" 
         />
       </div>
@@ -26,10 +26,10 @@
 
     <!-- Create / Edit Right-Side Drawer Dialog -->
     <q-dialog v-model="dialogOpen" position="right" maximized>
-      <q-card class="column full-height" style="width: 500px; max-width: 100vw; height: 400px;">
+      <q-card class="column full-height" style="width: 500px; max-width: 100vw; height: 500px;">
         <!-- Dialog Header Banner -->
         <q-card-section class="row items-center q-pb-none bg-primary text-white">
-          <div class="text-h6">{{ editing ? 'Edit Family Status' : 'Create Family Status' }}</div>
+          <div class="text-h6">{{ editing ? 'Edit Session' : 'Create Session' }}</div>
           <q-space />
           <q-btn icon="o_close" flat round dense v-close-popup />
         </q-card-section>
@@ -37,37 +37,30 @@
         <!-- Dialog Body Form Content Container -->
         <q-card-section class="col q-pa-md scroll">
           <q-form ref="formRef" greedy @submit.prevent="submitForm">
-            <!-- Associated Tenant Selection Dropdown -->
-            <app-select
-              v-model="form.tenantId"
-              :options="tenantOptions"
-              label="Tenant"
-              required
-              emit-value
-              map-options
-              class="q-mb-md"
-              :rules="[(v) => !!v || 'Tenant is required']"
-            />
-
-            <!-- Primary Family Status Name Input Field -->
+            
+            <!-- Session Name Input Field -->
             <app-text-field
-              v-model="form.name"
-              label="Status Name"
+              v-model="form.sessionName"
+              label="Session Name"
               required
               class="q-mb-md"
-              :rules="[(v) => !!v || 'Status name is required']"
+              :rules="[(v) => !!v || 'Session name is required']"
             />
 
-            <!-- Description Field (Commented Out for Future Extensions) -->
-            <!--
+            <!-- Dance Style Input Field -->
             <app-text-field
-              v-model="form.description"
-              label="Description"
-              type="textarea"
+              v-model="form.danceStyle"
+              label="Dance Style"
               class="q-mb-md"
-              hint="Optional description for this family status"
             />
-            -->
+
+            <!-- Timing Input Field -->
+            <app-text-field
+              v-model="form.timing"
+              label="Timing"
+              class="q-mb-md"
+            />
+
           </q-form>
         </q-card-section>
 
@@ -82,13 +75,12 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from "vue";
+import { ref, reactive } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { familyStatusApi, tenantApi, getApiErrorMessage } from "services/api";
+import { sessionApi, getApiErrorMessage } from "services/api";
 import { useNotify } from "composables/useNotify";
 
 import AppDetailHeader from "components/common/AppDetailHeader.vue";
-import AppSelect from "components/common/AppSelect.vue";
 import AppTextField from "components/common/AppTextField.vue";
 
 // Router and Utility Composable Declarations
@@ -102,54 +94,23 @@ const editingId = ref(null);
 const editing = ref(false);
 const saving = ref(false);
 const formRef = ref(null);
-const loading = ref(false);
 
-// Reactive reference for storing tenant dropdown collection options
-const tenantOptions = ref([]);
-
-// Form Data Payload Model Definition
+// Form Data Payload Model Definition containing session attributes
 const form = reactive({ 
-  tenantId: null,
-  name: "", 
-  // description: "" 
-});
-
-// Lifecycle Hook: Fetch Tenant Options and Assign Default Selection on Component Mount
-onMounted(async () => {
-  loading.value = true;
-  try {
-    const tenantRes = await tenantApi.list({ limit: 100 });
-    const tenantsList = tenantRes?.data || tenantRes || [];
-    
-    tenantOptions.value = tenantsList.map((t) => ({ 
-      label: t.name, 
-      value: t.tenantId || t.tenantid 
-    }));
-
-    // Automatically set the first tenant as default if options exist and form tenant is empty
-    if (tenantOptions.value.length > 0 && !form.tenantId) {
-      form.tenantId = tenantOptions.value[0].value;
-    }
-  } catch (err) {
-    notify.error(getApiErrorMessage(err));
-  } finally {
-    loading.value = false;
-  }
+  sessionName: "",
+  danceStyle: "",
+  timing: ""
 });
 
 /**
  * Initializes state context and opens the drawer dialog in Creation mode.
- * Automatically assigns the first available tenant as the default value if present.
  */
 const openCreateDialog = () => {
   editingId.value = null;
   editing.value = false;
-  
-  // Set default tenant to the first option if available, otherwise fallback to null
-  form.tenantId = tenantOptions.value.length > 0 ? tenantOptions.value[0].value : null;
-  form.name = "";
-  // form.description = "";
-  
+  form.sessionName = "";
+  form.danceStyle = "";
+  form.timing = "";
   dialogOpen.value = true;
 };
 
@@ -158,18 +119,23 @@ const openCreateDialog = () => {
  * @param {string|number} id - Unique primary key identifier of the target entity.
  */
 const openEditDialog = async (id) => {
+  if (!id) {
+    notify.error("Invalid record identifier.");
+    return;
+  }
+
   editingId.value = id;
   editing.value = true;
   dialogOpen.value = true;
   
   try {
-    const response = await familyStatusApi.get(id);
+    const response = await sessionApi.get(id);
     const item = response?.data?.data || response?.data || response;
     
     if (item) {
-      form.tenantId = item.tenantId || item.tenantid || null;
-      form.name = item.name || "";
-      // form.description = item.description || "";
+      form.sessionName = item.sessionName || item.name || "";
+      form.danceStyle = item.danceStyle || item.style || "";
+      form.timing = item.timing || item.time || "";
     }
   } catch (err) {
     notify.error(getApiErrorMessage(err));
@@ -186,17 +152,17 @@ const submitForm = async () => {
   saving.value = true;
   try {
     const payload = {
-      tenantId: form.tenantId,
-      name: form.name,
-      // description: form.description
+      sessionName: form.sessionName,
+      danceStyle: form.danceStyle,
+      timing: form.timing
     };
 
     if (editing.value && editingId.value) {
-      await familyStatusApi.update(editingId.value, payload);
-      notify.success("Family status updated successfully.");
+      await sessionApi.update(editingId.value, payload);
+      notify.success("Session updated successfully.");
     } else {
-      await familyStatusApi.create(payload);
-      notify.success("Family status created successfully.");
+      await sessionApi.create(payload);
+      notify.success("Session created successfully.");
     }
 
     dialogOpen.value = false;
@@ -206,4 +172,10 @@ const submitForm = async () => {
     saving.value = false;
   }
 };
+
+// Expose methods if parent components need to trigger them directly
+defineExpose({
+  openCreateDialog,
+  openEditDialog
+});
 </script>

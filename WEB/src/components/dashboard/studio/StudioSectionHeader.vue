@@ -2,8 +2,8 @@
   <!-- Section rule above a band of cards: icon + title (+ count badge) on the left, a quiet note on the right. -->
   <div class="studio-section row items-center no-wrap q-mb-sm">
     <q-icon :name="icon" size="20px" :color="iconColor" class="q-mr-sm" />
-    <div class="studio-section__title">{{ title }}</div>
-    <q-badge v-if="badge" :color="badgeColor" class="studio-section__badge q-ml-sm">{{ badge }}</q-badge>
+    <div class="studio-section__title text-2e">{{ title }}</div>
+    <q-badge v-if="badge" :color="badgeColor" class="studio-section__badge q-ml-sm fw-700">{{ badge }}</q-badge>
     <q-space />
     <div v-if="note" class="studio-section__note">{{ note }}</div>
   </div>
@@ -22,17 +22,18 @@ defineProps({
 
 <style scoped>
 .studio-section__title {
-  font-size: 15px;
-  font-weight: 600;
+  font-size: 14px;
+  font-weight: 700;
   color: var(--on-surface);
 }
 
 .studio-section__badge {
+  color: #ba1a1a;
+  background-color: #fef2f2 !important;
   font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  border-radius: 6px;
-  padding: 2px 7px;
+  padding: 2px 12px !important;
+  border: 1px solid #fecaca;
+  border-radius: 999px;
 }
 
 .studio-section__note {

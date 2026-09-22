@@ -2,7 +2,7 @@ using Sakolee.Application.Abstractions.Security;
 using Sakolee.Application.Abstractions.Tenancy;
 using Sakolee.Domain.Entities;
 using Microsoft.AspNetCore.DataProtection.EntityFrameworkCore;
-using Sakolee.Domain.Entities;
+
 
 using Microsoft.EntityFrameworkCore;
 
@@ -40,6 +40,9 @@ public class SakoleeDbContext : DbContext, IDataProtectionKeyContext
     public DbSet<Tenant> Tenants => Set<Tenant>();
     public DbSet<FamilyStatus> FamilyStatuses { get; set; }
 
+    public DbSet<ClassSessions> ClassSessions { get; set; }
+
+
     public DbSet<User> Users => Set<User>();
 
     public DbSet<UserTenantRole> UserTenantRoles => Set<UserTenantRole>();
@@ -48,6 +51,8 @@ public class SakoleeDbContext : DbContext, IDataProtectionKeyContext
     public DbSet<PasswordResetToken> PasswordResetTokens => Set<PasswordResetToken>();
 
     public DbSet<Role> Roles => Set<Role>();
+
+    public DbSet<Location> Locations => Set<Location>();
 
     public DbSet<TenantRole> TenantRoles => Set<TenantRole>();
 
@@ -126,6 +131,10 @@ public class SakoleeDbContext : DbContext, IDataProtectionKeyContext
         // Persons are CRM master records owned by a tenant; scope them so a non-Super-Admin never
         // sees another tenant's people. Self-profile reads bypass this filter via GetByUserIdAsync.
         modelBuilder.Entity<Person>().HasQueryFilter(e => (!_tenantContext.IsResolved || e.TenantId == _tenantContext.TenantId) && !e.Deleted);
+
+        modelBuilder.Entity<ClassSessions>().HasQueryFilter(e => (!_tenantContext.IsResolved || e.TenantId == _tenantContext.TenantId) && !e.IsDeleted);
+
+
         // User groups + memberships are tenant-scoped so a tenant only ever sees its own groups.
         modelBuilder.Entity<UserGroup>().HasQueryFilter(e => (!_tenantContext.IsResolved || e.TenantId == _tenantContext.TenantId) && !e.Deleted);
         modelBuilder.Entity<UserGroupMember>().HasQueryFilter(e => (!_tenantContext.IsResolved || e.TenantId == _tenantContext.TenantId) && !e.Deleted);
@@ -175,6 +184,8 @@ public class SakoleeDbContext : DbContext, IDataProtectionKeyContext
         modelBuilder.Entity<OptionSet>().HasQueryFilter(e => !e.Deleted);
         modelBuilder.Entity<OptionSetItem>().HasQueryFilter(e => !e.Deleted);
         modelBuilder.Entity<Role>().HasQueryFilter(e => !e.Deleted);
+        //modelBuilder.Entity<Location>().HasQueryFilter(e => !_tenantContext.IsResolved || e.TenantId == _tenantContext.TenantId);
+        modelBuilder.Entity<Location>().HasQueryFilter(e => (!_tenantContext.IsResolved || e.TenantId == _tenantContext.TenantId) && !e.Deleted);
         modelBuilder.Entity<TenantRole>().HasQueryFilter(e => !e.Deleted);
         modelBuilder.Entity<Address>().HasQueryFilter(e => !e.Deleted);
         modelBuilder.Entity<Media>().HasQueryFilter(e => !e.Deleted);
@@ -330,6 +341,16 @@ public class SakoleeDbContext : DbContext, IDataProtectionKeyContext
                     break;
                 case ModifiedLogFieldConfig modifiedLogFieldConfig when modifiedLogFieldConfig.TenantId == Guid.Empty:
                     modifiedLogFieldConfig.TenantId = _tenantContext.TenantId;
+                    break;
+                //case Location location when location.TenantId == Guid.Empty:
+                //    location.TenantId = _tenantContext.TenantId;
+                //    break;
+                case Location location when location.TenantId is null || location.TenantId == Guid.Empty:
+                    location.TenantId = _tenantContext.TenantId;
+                    break;
+
+                case ClassSessions classsessions when classsessions.TenantId != null || classsessions.TenantId == Guid.Empty:
+                    classsessions.TenantId = _tenantContext.TenantId;
                     break;
             }
         }

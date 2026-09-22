@@ -76,6 +76,10 @@ public static class DependencyInjection
         services.AddScoped<IStudentRepository, StudentRepository>();
         services.AddScoped<IClassRepository, ClassRepository>();
         services.AddScoped<IClassCategoryRepository, ClassCategoryRepository>();
+        services.AddScoped<IFamilyStatusRepository, FamilyStatusRepository>();
+        services.AddScoped<IClassSessionRepository, ClassSessionRepository>();
+
+
         services.AddScoped<IUserGroupRepository, UserGroupRepository>();
         services.AddScoped<IUserDepartmentRepository, UserDepartmentRepository>();
         services.AddScoped<IAddressRepository, AddressRepository>();
@@ -85,6 +89,7 @@ public static class DependencyInjection
         services.AddScoped<ISmtpAccountRepository, SmtpAccountRepository>();
         services.AddScoped<IEmailTemplateRepository, EmailTemplateRepository>();
         services.AddScoped<IOptionSetRepository, OptionSetRepository>();
+        services.AddScoped<ILocationRepository, LocationRepository>();
 
         // Universal Features (Phase 14) repositories.
         services.AddScoped<IActivityEventRepository, ActivityEventRepository>();

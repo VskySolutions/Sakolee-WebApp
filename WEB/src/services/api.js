@@ -103,9 +103,12 @@ export const classApi = {
 };
 
 export const classCategoryApi = {
-  // Class form's Category 1/2/3 dropdown options — one flat list, scoped to the caller's active
-  // tenant; each row carries which dropdown it belongs to via categoryType.
-  list: () => api.get("/api/admin/class-categories").then(unwrap)
+  // Class Category records scoped to the caller's active tenant.
+  list: (params) => api.get("/api/admin/class-categories", { params }).then(envelope),
+  get: (id) => api.get(`/api/admin/class-categories/${id}`).then(unwrap),
+  create: (payload) => api.post("/api/admin/class-categories", payload).then(unwrap),
+  update: (id, payload) => api.put(`/api/admin/class-categories/${id}`, payload).then(unwrap),
+  remove: (id) => api.delete(`/api/admin/class-categories/${id}`).then(envelope)
 };
 
 // Family Status API mapping
@@ -116,6 +119,16 @@ export const familyStatusApi = {
   update: (id, payload) => api.put(`/api/admin/family-statuses/${id}`, payload).then(unwrap),
   delete: (id) => api.delete(`/api/admin/family-statuses/${id}`).then(unwrap)
 };
+
+// Session API mapping (Add this inside your services/api.js)
+export const classSessionApi = {
+  list: (params) => api.get("/api/admin/sessions", { params }).then(envelope),
+  get: (id) => api.get(`/api/admin/sessions/${id}`).then(unwrap),
+  create: (payload) => api.post("/api/admin/sessions", payload).then(unwrap),
+  update: (id, payload) => api.put(`/api/admin/sessions/${id}`, payload).then(unwrap),
+  delete: (id) => api.delete(`/api/admin/sessions/${id}`).then(unwrap)
+};
+
 export const personApi = {
   list: (params) => api.get("/api/admin/persons", { params }).then(envelope),
   get: (id) => api.get(`/api/admin/persons/${id}`).then(unwrap),
@@ -469,4 +482,16 @@ export const dashboardApi = {
   getLayout: () => api.get("/api/dashboard/layout").then(unwrap),
   // payload: { widgetOrder, hiddenWidgets, collapsedWidgets }
   saveLayout: (payload) => api.put("/api/dashboard/layout", payload).then(unwrap)
+};
+
+export const locationApi = {
+  list: (params) => api.get("/api/admin/locations", { params }).then(envelope),
+
+  get: (id) => api.get(`/api/admin/locations/${id}`).then(unwrap),
+
+  create: (payload) => api.post("/api/admin/locations", payload).then(unwrap),
+
+  update: (id, payload) => api.put(`/api/admin/locations/${id}`, payload).then(unwrap),
+
+  remove: (id) => api.delete(`/api/admin/locations/${id}`).then(envelope)
 };
