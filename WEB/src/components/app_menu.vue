@@ -215,7 +215,8 @@ const sections = [
       // Ungated, matching the family-status route itself — there is no family-status permission in
       // the catalogue yet, so gating here would hide the page from everyone.
       { label: "Family Statuses", icon: "o_flag", to: "/familystatus", permissions: null },
-      { label: "Studio Locations", icon: "o_location_on", to: "/locations", permissions: [Permissions.LocationsRead] }
+      { label: "Studio Locations", icon: "o_location_on", to: "/locations", permissions: [Permissions.LocationsRead] },
+      { label: "Class Categories", icon: "o_category", to: "/class-categories", permissions: [Permissions.ClassesRead]}
     ]
   },
   {
