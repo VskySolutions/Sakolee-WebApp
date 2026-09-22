@@ -19,6 +19,8 @@ import authRoutes from "modules/auth/routes";
 import accountRoutes from "modules/account/routes";
 import tenantRoutes from "modules/tenant/routes";
 import personRoutes from "modules/person/routes";
+import familyRoutes from "modules/family/routes";
+import studentRoutes from "modules/student/routes";
 import classRoutes from "modules/class/routes";
 import userRoutes from "modules/user/routes";
 import roleRoutes from "modules/role/routes";
@@ -30,12 +32,14 @@ import emailTemplateRoutes from "modules/email-template/routes";
 import optionSetRoutes from "modules/option-set/routes";
 import universalRoutes from "modules/universal/routes";
 import familystatusRoutes from "modules/familystatus/routes";
-import classCategoryRoutes from "modules/class-category/routes";
+import locationRoutes from "modules/location/routes";
 
 routes.push(...accountRoutes);
 routes.push(...authRoutes);
 routes.push(...tenantRoutes);
 routes.push(...personRoutes);
+routes.push(...familyRoutes);
+routes.push(...studentRoutes);
 routes.push(...classRoutes);
 routes.push(...userRoutes);
 routes.push(...roleRoutes);
@@ -47,7 +51,7 @@ routes.push(...emailTemplateRoutes);
 routes.push(...optionSetRoutes);
 routes.push(...universalRoutes);
 routes.push(...familystatusRoutes);
-routes.push(...classCategoryRoutes);
+routes.push(...locationRoutes);
 
 export default route(function ({ store }) {
   const createHistory = process.env.SERVER

@@ -49,6 +49,8 @@ public class SakoleeDbContext : DbContext, IDataProtectionKeyContext
 
     public DbSet<Role> Roles => Set<Role>();
 
+    public DbSet<Location> Locations => Set<Location>();
+
     public DbSet<TenantRole> TenantRoles => Set<TenantRole>();
 
     public DbSet<Person> Persons => Set<Person>();
@@ -132,6 +134,8 @@ public class SakoleeDbContext : DbContext, IDataProtectionKeyContext
         modelBuilder.Entity<UserDepartment>().HasQueryFilter(e => (!_tenantContext.IsResolved || e.TenantId == _tenantContext.TenantId) && !e.Deleted);
         // SMTP accounts are tenant-scoped; a tenant only ever sees its own mail accounts.
         modelBuilder.Entity<SmtpAccount>().HasQueryFilter(e => (!_tenantContext.IsResolved || e.TenantId == _tenantContext.TenantId) && !e.Deleted);
+        // Family statuses are tenant-scoped; switching the active/viewed tenant must change what this list returns.
+        modelBuilder.Entity<FamilyStatus>().HasQueryFilter(e => (!_tenantContext.IsResolved || e.TenantId == _tenantContext.TenantId) && !e.IsDeleted);
 
         // Universal Features (Phase 14): every UF table is tenant-scoped + soft-deletable, so it
         // carries the combined ambient-tenant + soft-delete filter. FieldModifiedLog is the lone
@@ -173,13 +177,13 @@ public class SakoleeDbContext : DbContext, IDataProtectionKeyContext
         modelBuilder.Entity<OptionSet>().HasQueryFilter(e => !e.Deleted);
         modelBuilder.Entity<OptionSetItem>().HasQueryFilter(e => !e.Deleted);
         modelBuilder.Entity<Role>().HasQueryFilter(e => !e.Deleted);
+        //modelBuilder.Entity<Location>().HasQueryFilter(e => !_tenantContext.IsResolved || e.TenantId == _tenantContext.TenantId);
+        modelBuilder.Entity<Location>().HasQueryFilter(e => (!_tenantContext.IsResolved || e.TenantId == _tenantContext.TenantId) && !e.Deleted);
         modelBuilder.Entity<TenantRole>().HasQueryFilter(e => !e.Deleted);
         modelBuilder.Entity<Address>().HasQueryFilter(e => !e.Deleted);
         modelBuilder.Entity<Media>().HasQueryFilter(e => !e.Deleted);
         modelBuilder.Entity<PermissionGroupTemplate>().HasQueryFilter(e => !e.Deleted);
         modelBuilder.Entity<DashboardLayout>().HasQueryFilter(e => !e.Deleted);
-        // Class Category is tenant-scoped and soft-deletable.
-        modelBuilder.Entity<ClassCategory>().HasQueryFilter(e =>(!_tenantContext.IsResolved || e.TenantId == _tenantContext.TenantId) && !e.Deleted);
     }
 
     public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
@@ -331,8 +335,11 @@ public class SakoleeDbContext : DbContext, IDataProtectionKeyContext
                 case ModifiedLogFieldConfig modifiedLogFieldConfig when modifiedLogFieldConfig.TenantId == Guid.Empty:
                     modifiedLogFieldConfig.TenantId = _tenantContext.TenantId;
                     break;
-                case ClassCategory classCategory when classCategory.TenantId == Guid.Empty:
-                    classCategory.TenantId = _tenantContext.TenantId;
+                //case Location location when location.TenantId == Guid.Empty:
+                //    location.TenantId = _tenantContext.TenantId;
+                //    break;
+                case Location location when location.TenantId is null || location.TenantId == Guid.Empty:
+                    location.TenantId = _tenantContext.TenantId;
                     break;
             }
         }
