@@ -33,7 +33,8 @@ export default defineConfig((ctx) => {
       "typography.scss",
       "app.scss",
       "page.scss",
-      "custom.scss"
+      "custom.scss",
+      "sakolee.scss"
     ],
 
     extras: [
