@@ -64,6 +64,16 @@
       <template #body-cell-actions="cell">
         <q-td :props="cell">
           <q-btn
+            flat
+            round
+            dense
+            color="primary"
+            icon="o_visibility"
+            @click="openView(cell.row)"
+          >
+            <q-tooltip>View</q-tooltip>
+          </q-btn>
+          <q-btn
             v-if="canWrite"
             flat
             round
@@ -127,6 +137,83 @@
         />
       </q-form>
     </app-form-drawer>
+    <!-- =========================================================
+         View Location
+         ========================================================= -->
+    <app-form-drawer
+      v-model="viewOpen"
+      title="View Location"
+      :saving="viewLoading"
+      :save-label="''"
+      @cancel="closeView"
+    >
+      <div class="q-gutter-md">
+
+        <app-text-field
+          v-model="viewLocation.name"
+          label="Name"
+          readonly
+        />
+
+        <div>
+          <div class="text-caption text-grey-7 q-mb-xs">
+            Status
+          </div>
+
+          <q-badge
+            :color="viewLocation.active ? 'positive' : 'grey'"
+            class="q-pa-sm"
+          >
+            {{ viewLocation.active ? "Active" : "Inactive" }}
+          </q-badge>
+        </div>
+
+        <q-separator />
+
+        <div>
+          <div class="text-caption text-grey-7">
+            Created By
+          </div>
+
+          <div class="text-body1">
+            {{ viewLocation.createdBy || "—" }}
+          </div>
+        </div>
+
+        <div>
+          <div class="text-caption text-grey-7">
+            Created On
+          </div>
+
+          <div class="text-body1">
+            {{ formatDate(viewLocation.createdOnUtc) }}
+          </div>
+        </div>
+
+        <q-separator />
+
+        <div>
+          <div class="text-caption text-grey-7">
+            Updated By
+          </div>
+
+          <div class="text-body1">
+            {{ viewLocation.updatedBy || "—" }}
+          </div>
+        </div>
+
+        <div>
+          <div class="text-caption text-grey-7">
+            Updated On
+          </div>
+
+          <div class="text-body1">
+            {{ formatDate(viewLocation.updatedOnUtc) }}
+          </div>
+        </div>
+
+      </div>
+    </app-form-drawer>
   </q-page>
 </template>
 
@@ -150,11 +237,9 @@ import { useDeletedRecords } from "composables/useDeletedRecords";
 import { useAuditColumns } from "composables/useAuditColumns";
 
 import AppDataTable from "components/common/AppDataTable.vue";
-// import DeletedRecordsPanel from "components/universal/DeletedRecordsPanel.vue";
 import AppFormDrawer from "components/common/AppFormDrawer.vue";
 import AppListHeader from "components/common/AppListHeader.vue";
 import AppFilterDrawer from "components/common/AppFilterDrawer.vue";
-
 import AppColumnFilters from "components/common/AppColumnFilters.vue";
 import AppTextField from "components/common/AppTextField.vue";
 
@@ -167,8 +252,20 @@ const { has } = usePermissions();
 const canWrite = computed(() => has(Permissions.LocationsWrite));
 const canDelete = computed(() => has(Permissions.LocationsDelete));
 
+/*
+ * ------------------------------------------------------------
+ * Table columns
+ * ------------------------------------------------------------
+ */
 const columns = [
-  { name: "name", label: "Name", field: "name", align: "left", sortable: true, default: true },
+  {
+    name: "name",
+    label: "Name",
+    field: "name",
+    align: "left",
+    sortable: true,
+    default: true
+  },
   {
     name: "active",
     label: "Status",
@@ -182,9 +279,19 @@ const columns = [
     ]
   },
   ...auditColumns(),
-  { name: "actions", label: "Actions", field: "actions", align: "left" }
+  {
+    name: "actions",
+    label: "Actions",
+    field: "actions",
+    align: "left"
+  }
 ];
 
+/*
+ * ------------------------------------------------------------
+ * List
+ * ------------------------------------------------------------
+ */
 const {
   rows,
   loading,
@@ -229,7 +336,78 @@ const reload = debounce(() => {
 watch(search, reload);
 
 /*
+ * ------------------------------------------------------------
+ * View Location
+ * ------------------------------------------------------------
+ */
+const viewOpen = ref(false);
+const viewLoading = ref(false);
+
+const viewLocation = reactive({
+  id: null,
+  name: "",
+  active: true,
+  createdBy: "",
+  createdOnUtc: null,
+  updatedBy: "",
+  updatedOnUtc: null
+});
+
+const resetViewLocation = () => {
+  viewLocation.id = null;
+  viewLocation.name = "";
+  viewLocation.active = true;
+  viewLocation.createdBy = "";
+  viewLocation.createdOnUtc = null;
+  viewLocation.updatedBy = "";
+  viewLocation.updatedOnUtc = null;
+};
+
+const openView = async (row) => {
+  resetViewLocation();
+
+  viewOpen.value = true;
+  viewLoading.value = true;
+
+  try {
+    const location = await locationApi.get(row.id);
+
+    viewLocation.id = location?.id;
+    viewLocation.name = location?.name || "";
+    viewLocation.active = location?.active ?? true;
+    viewLocation.createdBy = location?.createdBy || "";
+    viewLocation.createdOnUtc = location?.createdOnUtc || null;
+    viewLocation.updatedBy = location?.updatedBy || "";
+    viewLocation.updatedOnUtc = location?.updatedOnUtc || null;
+  } catch (err) {
+    viewOpen.value = false;
+    notify.error(getApiErrorMessage(err));
+  } finally {
+    viewLoading.value = false;
+  }
+};
+
+const closeView = () => {
+  viewOpen.value = false;
+  resetViewLocation();
+};
+
+/*
+ * Keep this aligned with the application's existing date display
+ * if you already have a global date formatter/composable.
+ */
+const formatDate = (value) => {
+  if (!value) {
+    return "—";
+  }
+
+  return new Date(value).toLocaleString();
+};
+
+/*
+ * ------------------------------------------------------------
  * Create / Edit
+ * ------------------------------------------------------------
  */
 const formOpen = ref(false);
 const saving = ref(false);
@@ -256,6 +434,7 @@ const openEdit = (row) => {
   editingId.value = row.id;
   form.name = row.name || "";
   form.active = row.active ?? true;
+
   formOpen.value = true;
 };
 
@@ -298,7 +477,9 @@ const submitForm = async ({ clearDraft } = {}) => {
 };
 
 /*
+ * ------------------------------------------------------------
  * Delete
+ * ------------------------------------------------------------
  */
 const removeLocation = async (row) => {
   const ok = await confirm({

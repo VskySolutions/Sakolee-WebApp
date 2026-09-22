@@ -1,6 +1,6 @@
 <template>
   <!-- grey-8 matches the user menu sitting next to it in the header. -->
-  <q-btn flat round dense color="grey-8" icon="o_notifications" aria-label="Notifications">
+  <q-btn flat round dense color="grey-8" aria-label="Notifications">
     <q-badge v-if="unread > 0" floating color="negative" :label="unread > 99 ? '99+' : unread" />
     <q-menu anchor="bottom right" self="top right" @show="loadLatest">
       <q-card style="width: 500px; max-width: 90vw;">
@@ -42,6 +42,8 @@
         </q-card-actions>
       </q-card>
     </q-menu>
+    <span class="material-symbols-outlined fs-22 text-2e">notifications</span>
+    <span class="absolute top-2.5 right-2.5 w-2 h-2 bg-error rounded-full ring-2 ring-white"></span>
   </q-btn>
 </template>
 
