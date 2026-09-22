@@ -12,9 +12,12 @@
         label="Name"
         required
         class="q-mb-md"
+        :error="!!nameError"
+        :error-message="nameError"
         :rules="[
           (v) => !!v?.trim() || 'Category name is required'
         ]"
+        @update:model-value="clearNameError"
       />
 
       <app-select
@@ -37,7 +40,10 @@
 <script setup>
 import { reactive, ref, watch } from "vue";
 
-import { classCategoryApi, getApiErrorMessage } from "services/api";
+import {
+  classCategoryApi,
+  getApiErrorMessage
+} from "services/api";
 
 import { useNotify } from "composables/useNotify";
 
@@ -70,6 +76,8 @@ const notify = useNotify();
 const formOpen = ref(props.modelValue);
 const formRef = ref(null);
 const saving = ref(false);
+
+const nameError = ref("");
 
 const form = reactive({
   name: "",
@@ -109,15 +117,25 @@ watch(formOpen, (value) => {
 const loadForm = () => {
   form.name = props.category?.name || "";
   form.categoryType = props.category?.categoryType || "";
+  nameError.value = "";
+};
+
+const clearNameError = () => {
+  if (nameError.value) {
+    nameError.value = "";
+  }
 };
 
 const reset = () => {
   form.name = "";
   form.categoryType = "";
+  nameError.value = "";
   formRef.value?.resetValidation();
 };
 
 const submit = async ({ clearDraft } = {}) => {
+  nameError.value = "";
+
   const valid = await formRef.value?.validate();
 
   if (!valid) {
@@ -151,13 +169,19 @@ const submit = async ({ clearDraft } = {}) => {
     reset();
 
     emit("saved");
-  } catch (error) {
-    notify.error(
-      getApiErrorMessage(
-        error,
-        "Unable to save class category."
-      )
+ } catch (error) {
+    if (error?.response?.status === 409) {
+      nameError.value =
+        "A class category with this name already exists.";
+      return;
+    }
+
+    const message = getApiErrorMessage(
+      error,
+      "Unable to save class category."
     );
+
+    notify.error(message);
   } finally {
     saving.value = false;
   }

@@ -37,7 +37,7 @@
       </template>
 
       <template #body-cell-actions="cell">
-        <q-td :props="cell">
+        <q-td :props="cell" text-class="text-center">
           <q-btn
             v-if="canRead"
             type="a"
@@ -86,54 +86,64 @@
       :category="selectedCategory"
       @saved="load"
     />
-
     <q-dialog
       v-model="viewOpen"
       position="right"
-      full-height
       transition-show="slide-left"
       transition-hide="slide-right"
     >
       <q-card
         class="column no-wrap"
-        style="width: 420px; max-width: 100vw"
+        style="
+          width: 350px;
+          max-width: 100vw;
+          max-height: 70vh;
+        "
       >
         <q-card-section class="row items-center">
-          <div class="text-h6 text-primary">Class Category Details</div>
+          <div class="text-h6 text-primary">
+            Class Category Details
+          </div>
+
           <q-space />
-          <q-btn icon="o_close" flat round dense v-close-popup />
+
+          <q-btn
+            icon="o_close"
+            flat
+            round
+            dense
+            v-close-popup
+          />
         </q-card-section>
 
         <q-separator />
 
         <q-card-section class="col scroll">
           <q-list>
-            <q-item v-for="field in viewFields" :key="field.label">
+            <q-item
+              v-for="field in viewFields"
+              :key="field.label"
+            >
               <q-item-section>
-                <q-item-label caption>{{ field.label }}</q-item-label>
-
-                <q-item-label v-if="field.badge">
-                  <q-badge color="primary">{{ field.value }}</q-badge>
+                <q-item-label caption>
+                  {{ field.label }}
                 </q-item-label>
-                <q-item-label v-else>{{ field.value }}</q-item-label>
+              </q-item-section>
+
+              <q-item-section side>
+                <q-item-label v-if="field.badge">
+                  <q-badge color="primary">
+                    {{ field.value }}
+                  </q-badge>
+                </q-item-label>
+
+                <q-item-label v-else>
+                  {{ field.value }}
+                </q-item-label>
               </q-item-section>
             </q-item>
           </q-list>
         </q-card-section>
-
-        <q-separator />
-
-        <q-card-actions align="right" class="q-pa-md">
-          <q-btn flat label="Close" v-close-popup />
-          <q-btn
-            v-if="canWrite"
-            color="primary"
-            unelevated
-            icon="o_edit"
-            label="Edit"
-            @click="editFromView"
-          />
-        </q-card-actions>
       </q-card>
     </q-dialog>
   </q-page>

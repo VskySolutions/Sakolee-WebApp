@@ -178,6 +178,8 @@ public class SakoleeDbContext : DbContext, IDataProtectionKeyContext
         modelBuilder.Entity<Media>().HasQueryFilter(e => !e.Deleted);
         modelBuilder.Entity<PermissionGroupTemplate>().HasQueryFilter(e => !e.Deleted);
         modelBuilder.Entity<DashboardLayout>().HasQueryFilter(e => !e.Deleted);
+        // Class Category is tenant-scoped and soft-deletable.
+        modelBuilder.Entity<ClassCategory>().HasQueryFilter(e =>(!_tenantContext.IsResolved || e.TenantId == _tenantContext.TenantId) && !e.Deleted);
     }
 
     public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
@@ -328,6 +330,9 @@ public class SakoleeDbContext : DbContext, IDataProtectionKeyContext
                     break;
                 case ModifiedLogFieldConfig modifiedLogFieldConfig when modifiedLogFieldConfig.TenantId == Guid.Empty:
                     modifiedLogFieldConfig.TenantId = _tenantContext.TenantId;
+                    break;
+                case ClassCategory classCategory when classCategory.TenantId == Guid.Empty:
+                    classCategory.TenantId = _tenantContext.TenantId;
                     break;
             }
         }

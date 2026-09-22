@@ -27,5 +27,8 @@ internal sealed class ClassCategoryConfiguration : IEntityTypeConfiguration<Clas
 
         // A tenant may not list the same option twice under the same dropdown.
         builder.HasIndex(c => new { c.TenantId, c.CategoryType, c.Name }).IsUnique().HasFilter("[Deleted] = 0");
+        // Tenant is populated manually by the repository. TenentId is nvarchar(450) while Tenants.Id is
+        // uniqueidentifier, so a real FK is not possible on this table.
+        builder.Ignore(c => c.Tenant);
     }
 }

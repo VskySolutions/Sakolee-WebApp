@@ -11,6 +11,7 @@ namespace Sakolee.Domain.Entities;
 /// </summary>
 public class ClassCategory
 {
+    #region Properties
     public Guid Id { get; set; }
 
     /// <summary>Owning tenant — maps to the physical "TenentId" column (typo preserved from the live schema).</summary>
@@ -30,4 +31,10 @@ public class ClassCategory
     public Guid? UpdatedById { get; set; }
 
     public bool Deleted { get; set; }
+
+    /// <summary>
+    /// Navigation property for the owning tenant.
+    /// </summary>
+    public Tenant? Tenant { get; set; }
+    #endregion
 }
