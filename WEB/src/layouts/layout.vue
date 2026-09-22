@@ -1,10 +1,14 @@
 <template>
   <q-layout view="lHh Lpr lFf">
     <q-header class="header sakolee-layout no-shadow">
-      <q-toolbar class="header-top flex items-center justify-between">
-        <div class="sakolee-layout-header-ham-input">
-          <q-btn v-if="isLoggedIn" flat padding="0" icon="o_menu" class="text-black sakolee-layout-header-btn" aria-label="Menu" @click="toggleLeftDrawer" />
-          <div class="global-search-input q-mt-md">
+      <q-toolbar class="header-top">
+        <div class="sakolee-layout-header-left">
+          <!-- Toggle -->
+          <q-btn v-if="isLoggedIn" flat padding="0" class="text-black sakolee-layout-header-btn" aria-label="Menu" @click="toggleLeftDrawer">
+            <span class="material-symbols-outlined fs-24">menu</span>
+          </q-btn>
+          <!-- Search Input -->
+          <div class="global-search-input">
             <app-text-field placeholder="Global Search...">
               <template #prepend>
                 <q-icon name="o_search" />
@@ -20,7 +24,7 @@
           </q-btn>
         </div>
         <!-- User menu when signed in, otherwise a login action -->
-        <div class="row q-gutter-sm items-center no-wrap">
+        <div class="sakolee-layout-header-right">
           <!-- Active Tenant switcher -->
           <q-btn-dropdown
             v-if="isLoggedIn && hasMultipleTenants"
@@ -28,7 +32,7 @@
             no-caps
             icon="o_apartment"
             :label="activeTenantLabel"
-            class="text-grey-9"
+            class="no-padding tenant-scope-control"
           >
             <q-list>
               <q-item-label header class="text-grey-7">Switch tenant</q-item-label>
@@ -53,19 +57,26 @@
 
           <!-- Active-tenant roles: the user's roles for the active tenant, shown on every
                authenticated screen alongside their name (in user-info). -->
-          <div v-if="isLoggedIn && activeRoles.length" class="gt-xs row items-center q-gutter-xs">
+          <!-- <div v-if="isLoggedIn && activeRoles.length" class="gt-xs row items-center q-gutter-xs">
             <q-chip
               v-for="r in activeRoles" :key="r" dense square color="teal-1" text-color="primary"
               class="text-capitalize q-my-none"
             >
               {{ r }}
             </q-chip>
-          </div>
+          </div> -->
 
           <!-- Super-Admin tenant scope. -->
-          <app-tenant-scope-select v-if="isLoggedIn" class="gt-xs" />
+          <app-tenant-scope-select v-if="isLoggedIn" class="tenant-scope-select" />
 
-          <notification-centre v-if="isLoggedIn" />
+          <!-- Help -->
+          <div class="header-icon-btn" flat round dense>
+            <span class="material-symbols-outlined fs-22 text-2e">help_outline</span>
+          </div>
+          <!-- Notification -->
+          <notification-centre class="header-icon-btn" v-if="isLoggedIn" />
+          <div class="line" />
+          <!-- User Profile -->
           <user-info v-if="isLoggedIn" />
           <q-btn v-else unelevated color="primary" no-caps icon="o_login" label="Login" :to="{ name: 'login' }" />
         </div>
@@ -96,8 +107,8 @@
       show-if-above
       :mini="menuCollapsed"
       :width="279"
-      :mini-width="70"
-      :breakpoint="1024"
+      :mini-width="90"
+      :breakpoint="1023"
       bordered
       class="bg-white"
     >
@@ -130,11 +141,11 @@
             :to="{ name: 'settings' }"
           >
             <q-item-section avatar>
-              <q-icon name="o_settings" />
+              <q-icon name="o_settings" size="24px" />
             </q-item-section>
 
-            <q-item-section class="q-mini-drawer-hide">
-              <q-item-label>Settings</q-item-label>
+            <q-item-section :class="menuCollapsed ? 'q-mini-drawer-hide' : ''">
+              <q-item-label class="fw-500">Settings</q-item-label>
             </q-item-section>
           </q-item>
 
@@ -146,11 +157,11 @@
             @click="handleLogout"
           >
             <q-item-section avatar>
-              <q-icon name="o_logout" />
+              <q-icon name="o_logout" size="24px" />
             </q-item-section>
 
-            <q-item-section class="q-mini-drawer-hide">
-              <q-item-label>Logout</q-item-label>
+            <q-item-section :class="menuCollapsed ? 'q-mini-drawer-hide' : ''">
+              <q-item-label class="fw-500">Logout</q-item-label>
             </q-item-section>
           </q-item>
 
@@ -320,6 +331,7 @@ const handleLogout = async () => {
 .drawer-menu {
   flex: 1 1 auto;
   min-height: 0;
+  padding: 0 14px;
 }
 
 /* Fixed bottom section */

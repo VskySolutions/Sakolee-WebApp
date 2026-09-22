@@ -26,7 +26,9 @@
   // ---- Semantic accents ----
   // The prototype takes these straight from Tailwind's palette rather than naming them as tokens;
   // the source class is noted against each so they stay traceable.
-  --primary-tint: #eef2ff;        // indigo-50  — selected rows, icon tiles, quiet banners
+  // 
+  // --primary-tint: #eef2ff;        // indigo-50  — selected rows, icon tiles, quiet banners
+  // --primary-tint: #faf8ff;        // indigo-50  — selected rows, icon tiles, quiet banners
   --primary-tint-strong: #e0e7ff; // indigo-100
   --success: #059669;             // emerald-600
   --success-tint: #ecfdf5;        // emerald-50

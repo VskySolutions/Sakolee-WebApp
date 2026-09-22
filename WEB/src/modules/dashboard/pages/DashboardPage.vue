@@ -1,10 +1,19 @@
 <template>
   <q-page padding class="dashboard-overview">
     <!-- Page heading: crumbs, then the title block. -->
-    <app-breadcrumbs :items="[{ label: 'Home', to: '/' }, { label: 'Dashboard' }]" no-margin class="dashboard-overview__crumbs" />
+    <!-- <app-breadcrumbs :items="[{ label: 'Home', to: '/' }, { label: 'Dashboard' }]" no-margin class="dashboard-overview__crumbs" /> -->
 
-    <h1 class="dashboard-overview__title">Dashboard Overview</h1>
-    <div class="dashboard-overview__subtitle q-mb-lg">
+    <q-breadcrumbs class="text-brown">
+      <template #separator>
+        <q-icon size="1.0em" name="o_chevron_right" color="primary" />
+      </template>
+
+      <q-breadcrumbs-el label="Home" class="text-86 fw-700 text-uppercase sfs-11" />
+      <q-breadcrumbs-el label="Dashboard" class="text-primary fw-700 text-uppercase sfs-11" />
+    </q-breadcrumbs>
+
+    <h1 class="dashboard-overview__title">Dashboard</h1>
+    <div class="dashboard-overview__subtitle q-mb-lg text-54">
       Quick overview of your studio's daily activities, student activity, alerts and business performance.
     </div>
 
@@ -86,9 +95,28 @@
 
     <!-- ---- Announcements ---- -->
     <div class="row q-col-gutter-md">
-      <div class="col-12">
+      <div class="col-8">
         <q-skeleton v-if="loading" type="rect" height="180px" class="dashboard-overview__skeleton" />
         <announcements-panel v-else :announcements="announcements" @post="onPostAnnouncement" />
+      </div>
+      <div class="col-4">
+        <div class="bg-white border border-outline-variant/50 rounded-2xl p-5 shadow-xs">
+          <h3 class="text-sm font-bold text-on-surface pb-3 border-b border-outline-variant/30">Quick Links</h3>
+          <div class="grid grid-cols-3 gap-2 mt-4 text-center">
+            <div class="p-3 bg-surface-container-low rounded-xl hover:bg-surface-container cursor-pointer" @click="$router.push('/families/quick-registration')">
+              <span class="material-symbols-outlined fs-22 text-primary">family_restroom</span>
+              <span class="block text-[10px] font-semibold mt-1">Families</span>
+            </div>
+            <div class="p-3 bg-surface-container-low rounded-xl hover:bg-surface-container cursor-pointer" @click="$router.push('/students')">
+              <span class="material-symbols-outlined fs-22 text-primary">group</span>
+              <span class="block text-[10px] font-semibold mt-1">Students</span>
+            </div>
+            <div class="p-3 bg-surface-container-low rounded-xl hover:bg-surface-container cursor-pointer" @click="$router.push('/classes')">
+              <span class="material-symbols-outlined fs-22 text-primary">school</span>
+              <span class="block text-[10px] font-semibold mt-1">Classes</span>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </q-page>
@@ -160,17 +188,53 @@ const onPostAnnouncement = () => notify.info("Posting announcements isn't availa
 }
 
 .dashboard-overview__title {
-  font-size: 30px;
+  font-size: 28px;
   font-weight: 700;
   line-height: 1.2;
-  margin: 12px 0 4px;
+  margin: 4px 0 4px;
   color: var(--on-surface);
 }
 
 .dashboard-overview__subtitle {
-  font-size: 13px;
+  font-size: 12px;
   color: var(--outline);
 }
 
 .dashboard-overview__skeleton { border-radius: 16px; }
+
+.panel { border-radius: 16px; height: 100%; }
+
+.panel__title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--on-surface);
+}
+
+.panel__action { font-weight: 600; font-size: 12px; }
+
+.note {
+  background: var(--surface-container-low);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 10px 12px;
+}
+
+.note__title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--on-surface);
+}
+
+.note__date {
+  font-size: 11px;
+  color: var(--outline);
+  margin-left: 12px;
+  white-space: nowrap;
+}
+
+.note__body {
+  font-size: 11px;
+  color: var(--on-surface-variant);
+  margin: 2px 0 0;
+}
 </style>

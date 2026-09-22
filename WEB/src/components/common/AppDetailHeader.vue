@@ -8,7 +8,10 @@
            stay right-aligned there rather than Back dropping away from the buttons it belongs with. -->
       <div class="app-detail-header__actions">
         <slot name="actions" />
-        <q-btn outline no-caps color="primary" icon="o_arrow_back" label="Back" @click="goBack" />
+        <q-btn outline no-caps color="primary" class="br-12" @click="goBack">
+          <q-icon name="o_arrow_back" size="20px" class="q-pr-sm" />
+          Back
+        </q-btn>
       </div>
     </q-card-section>
   </q-card>

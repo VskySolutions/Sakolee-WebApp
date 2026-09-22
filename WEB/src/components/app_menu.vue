@@ -15,7 +15,7 @@
           @click="onItem(item)"
         >
           <q-item-section avatar><q-icon :name="item.icon" size="24px" /></q-item-section>
-          <q-item-section>{{ item.label }}</q-item-section>
+          <q-item-section class="fs-14 fw-500">{{ item.label }}</q-item-section>
           <q-tooltip v-if="mini" anchor="center right" self="center left">{{ item.label }}</q-tooltip>
         </q-item>
       </template>
@@ -31,7 +31,7 @@
         @mouseleave="scheduleFlyoutClose"
         @click="openFlyout(section.key)"
       >
-        <q-item-section avatar><q-icon :name="section.icon" size="20px" /></q-item-section>
+        <q-item-section avatar><q-icon :name="section.icon" size="24px" /></q-item-section>
         <q-item-section>{{ section.label }}</q-item-section>
 
         <q-menu
@@ -96,7 +96,7 @@
           class="app-menu__nested"
           @click="onItem(item)"
         >
-          <q-item-section avatar><q-icon :name="item.icon" size="22px" /></q-item-section>
+          <q-item-section avatar><q-icon :name="item.icon" size="20px" class="fw-400" /></q-item-section>
           <q-item-section>{{ item.label }}</q-item-section>
         </q-item>
       </q-expansion-item>
@@ -261,7 +261,7 @@ const sections = [
       // { label: "My Mentions", icon: "o_alternate_email", to: { name: "uf_mentions" }, permissions: null },
       // { label: "My Pinned", icon: "o_push_pin", to: { name: "uf_pinned" }, permissions: null },
       // { label: "Notification Preferences", icon: "o_tune", to: { name: "uf_notification_preferences" }, permissions: null },
-      { label: "Logout", icon: "o_logout", action: "logout", permissions: null },
+      // { label: "Logout", icon: "o_logout", action: "logout", permissions: null },
       // { label: "Logout all devices", icon: "o_devices", action: "logoutAll", permissions: null }
     ]
   }
@@ -293,7 +293,7 @@ const setOpen = (key, open) => {
 <style scoped>
 /* Compact spacing — the drawer holds many items. */
 .app-menu :deep(.q-item) {
-  min-height: 34px;
+  min-height: 40px;
 }
 /* Tighten the icon gutter so icon + label sit close together. */
 .app-menu :deep(.q-item__section--avatar) {
@@ -311,11 +311,13 @@ const setOpen = (key, open) => {
 }
 .app-menu :deep(.app-menu__group .q-item__section--avatar) {
   min-width: 30px;
-  padding-right: 6px;
+  padding-right: 10px;
 }
 /* Indent the items within a group so the hierarchy reads clearly. */
 .app-menu__nested {
   padding-left: 20px;
+  font-size: 14px;
+  font-weight: 400;
 }
 
 /* The rail's flyout. Portaled to the body, so .app-menu selectors cannot reach it — spacing restated. */
