@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Sakolee.Infrastructure.Persistence;
 
@@ -11,9 +12,11 @@ using Sakolee.Infrastructure.Persistence;
 namespace Sakolee.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(SakoleeDbContext))]
-    partial class SakoleeDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260922093442_AddClassCategoryColumnsToClass")]
+    partial class AddClassCategoryColumnsToClass
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -2283,15 +2286,6 @@ namespace Sakolee.Infrastructure.Persistence.Migrations
                     b.Property<bool?>("Allergies")
                         .HasColumnType("bit");
 
-                    b.Property<string>("AllergiesNotes")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
-                    b.Property<bool>("AllowTextMessaging")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bit")
-                        .HasDefaultValue(true);
-
                     b.Property<DateTime?>("BirthDate")
                         .HasColumnType("datetime2");
 
@@ -2320,10 +2314,6 @@ namespace Sakolee.Infrastructure.Persistence.Migrations
                     b.Property<bool?>("Disabilities")
                         .HasColumnType("bit");
 
-                    b.Property<string>("DisabilitiesNotes")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
                     b.Property<string>("FamilyName")
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
@@ -2350,14 +2340,6 @@ namespace Sakolee.Infrastructure.Persistence.Migrations
                     b.Property<string>("GradeLevel")
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
-
-                    b.Property<string>("HasImmunizations")
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
-
-                    b.Property<string>("HealthInsuranceCarrier")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
 
                     b.Property<string>("ImmunizationNotes")
                         .HasColumnType("nvarchar(max)");

@@ -6,6 +6,9 @@ public sealed class CreateClassRequest
     public Guid? RoomId { get; set; }
     public Guid? SessionId { get; set; }
     public Guid? PrimaryInstructorId { get; set; }
+    public Guid? Category1Id { get; set; }
+    public Guid? Category2Id { get; set; }
+    public Guid? Category3Id { get; set; }
     public string ClassName { get; set; } = string.Empty;
     public string? AdditionalInstructors { get; set; }
     public DateTime? StartDate { get; set; }
@@ -47,6 +50,9 @@ public sealed class UpdateClassRequest
     public Guid? RoomId { get; set; }
     public Guid? SessionId { get; set; }
     public Guid? PrimaryInstructorId { get; set; }
+    public Guid? Category1Id { get; set; }
+    public Guid? Category2Id { get; set; }
+    public Guid? Category3Id { get; set; }
     public string ClassName { get; set; } = string.Empty;
     public string? AdditionalInstructors { get; set; }
     public DateTime? StartDate { get; set; }
@@ -90,6 +96,9 @@ public sealed record ClassSummary(
     Guid? RoomId,
     Guid? SessionId,
     Guid? PrimaryInstructorId,
+    Guid? Category1Id,
+    Guid? Category2Id,
+    Guid? Category3Id,
     string? ClassName,
     string? AdditionalInstructors,
     DateTime? StartDate,

@@ -61,6 +61,8 @@ public class Student
 
     public string? FamilyName { get; set; }
 
+    /// <summary>Legacy flag, superseded by <see cref="Entities.Person.Gender"/> (the current student form's
+    /// Gender select writes there instead) — preserved as-is, no longer written by new saves.</summary>
     public bool? Gender { get; set; }
 
     public DateTime? BirthDate { get; set; }
@@ -75,15 +77,22 @@ public class Student
 
     public string? TShirtSize { get; set; }
 
+    /// <summary>Legacy flag, superseded by <see cref="DisabilitiesNotes"/> — preserved as-is, no longer
+    /// written by new saves.</summary>
     public bool? Disabilities { get; set; }
 
     public string? SpecialNeeds { get; set; }
 
+    /// <summary>Legacy flag, superseded by <see cref="AllergiesNotes"/> — preserved as-is, no longer
+    /// written by new saves.</summary>
     public bool? Allergies { get; set; }
 
     public string? Medications { get; set; }
 
     public string? PrimaryDoctor { get; set; }
+
+    /// <summary>Whether immunizations are up to date: "Yes", "No", or "Exempt".</summary>
+    public string? HasImmunizations { get; set; }
 
     public string? ImmunizationNotes { get; set; }
 
@@ -94,4 +103,14 @@ public class Student
 
     /// <summary>Free text on the live schema, not a flag — preserved as-is.</summary>
     public string? MassEmailOptOut { get; set; }
+
+    public string? HealthInsuranceCarrier { get; set; }
+
+    /// <summary>Free-text description of any disabilities (see <see cref="Disabilities"/> remarks).</summary>
+    public string? DisabilitiesNotes { get; set; }
+
+    /// <summary>Free-text description of any allergies (see <see cref="Allergies"/> remarks).</summary>
+    public string? AllergiesNotes { get; set; }
+
+    public bool AllowTextMessaging { get; set; } = true;
 }

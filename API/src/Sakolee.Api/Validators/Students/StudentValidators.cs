@@ -22,6 +22,11 @@ public sealed class CreateStudentRequestValidator : AbstractValidator<CreateStud
         RuleFor(x => x.PrimaryDoctor).MaximumLength(50).When(x => x.PrimaryDoctor is not null);
         RuleFor(x => x.FeeNote).MaximumLength(300).When(x => x.FeeNote is not null);
         RuleFor(x => x.FeeAmount).GreaterThanOrEqualTo(0).When(x => x.FeeAmount.HasValue);
+        RuleFor(x => x.Gender).MaximumLength(32).When(x => x.Gender is not null);
+        RuleFor(x => x.HasImmunizations).MaximumLength(20).When(x => x.HasImmunizations is not null);
+        RuleFor(x => x.HealthInsuranceCarrier).MaximumLength(100).When(x => x.HealthInsuranceCarrier is not null);
+        RuleFor(x => x.DisabilitiesNotes).MaximumLength(500).When(x => x.DisabilitiesNotes is not null);
+        RuleFor(x => x.AllergiesNotes).MaximumLength(500).When(x => x.AllergiesNotes is not null);
     }
 }
 
@@ -43,5 +48,10 @@ public sealed class UpdateStudentRequestValidator : AbstractValidator<UpdateStud
         RuleFor(x => x.PrimaryDoctor).MaximumLength(50).When(x => x.PrimaryDoctor is not null);
         RuleFor(x => x.FeeNote).MaximumLength(300).When(x => x.FeeNote is not null);
         RuleFor(x => x.FeeAmount).GreaterThanOrEqualTo(0).When(x => x.FeeAmount.HasValue);
+        RuleFor(x => x.Gender).MaximumLength(32).When(x => x.Gender is not null);
+        RuleFor(x => x.HasImmunizations).MaximumLength(20).When(x => x.HasImmunizations is not null);
+        RuleFor(x => x.HealthInsuranceCarrier).MaximumLength(100).When(x => x.HealthInsuranceCarrier is not null);
+        RuleFor(x => x.DisabilitiesNotes).MaximumLength(500).When(x => x.DisabilitiesNotes is not null);
+        RuleFor(x => x.AllergiesNotes).MaximumLength(500).When(x => x.AllergiesNotes is not null);
     }
 }
