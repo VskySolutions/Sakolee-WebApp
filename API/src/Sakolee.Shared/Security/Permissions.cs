@@ -60,6 +60,11 @@ public static class Permissions
     /// <summary>Create, edit, reorder, and delete a tenant's own option lists and values.</summary>
     public const string OptionSetsManage = "optionSets.manage";
 
+    // Locations
+    public const string LocationsRead = "locations.read";
+    public const string LocationsWrite = "locations.write";
+    public const string LocationsDelete = "locations.delete";
+
     /// <summary>Every defined permission key.</summary>
     public static readonly IReadOnlyList<string> All = new[]
     {
@@ -67,6 +72,7 @@ public static class Permissions
         PersonsRead, PersonsWrite, PersonsDelete,
         StudentsRead, StudentsWrite, StudentsDelete,
         ClassesRead, ClassesWrite, ClassesDelete,
+        LocationsRead, LocationsWrite, LocationsDelete,
         UsersRead, UsersWrite, UsersResetPassword, UsersGroupManagement,
         RolesRead, RolesWrite, RolesAssign,
         GroupsManage,
@@ -87,6 +93,9 @@ public static class Permissions
         StudentsRead, StudentsWrite, StudentsDelete,
         // Classes carry no TenantId yet (see the Class entity remarks) but are administered the same way.
         ClassesRead, ClassesWrite, ClassesDelete,
+        // Location
+        LocationsRead, LocationsWrite, LocationsDelete,
+        // Users
         UsersRead, UsersWrite, UsersResetPassword, UsersGroupManagement,
         // Tenant Admins manage the roles of users in their OWN tenant, and build roles of their own to
         // assign. The permission alone is not the whole boundary. UsersController confines them to their

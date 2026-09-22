@@ -1,5 +1,5 @@
 <template>
-  <q-list class="app-menu q-py-xs">
+  <q-list class="app-menu q-py-xs q-gutter-y-sm">
     <template v-for="section in visibleSections" :key="section.key">
       <!-- Ungrouped items (no label, e.g. Dashboard) render flat at the top. -->
       <template v-if="!section.label">
@@ -11,10 +11,10 @@
           clickable
           :to="item.to"
           :exact="item.exact"
-          active-class="text-primary bg-teal-1"
+          active-class="active-menu-class"
           @click="onItem(item)"
         >
-          <q-item-section avatar><q-icon :name="item.icon" size="20px" /></q-item-section>
+          <q-item-section avatar><q-icon :name="item.icon" size="24px" /></q-item-section>
           <q-item-section>{{ item.label }}</q-item-section>
           <q-tooltip v-if="mini" anchor="center right" self="center left">{{ item.label }}</q-tooltip>
         </q-item>
@@ -63,7 +63,7 @@
               clickable
               :to="item.to"
               :exact="item.exact"
-              active-class="text-primary bg-teal-1"
+              active-class="active-menu-class"
               @click="onItem(item)"
             >
               <q-item-section avatar><q-icon :name="item.icon" size="20px" /></q-item-section>
@@ -80,7 +80,8 @@
         :icon="section.icon"
         :label="section.label"
         :model-value="isOpen(section)"
-        header-class="app-menu__group text-primary text-weight-bold"
+        header-class="app-menu__group"
+        class="sakolee-desktop-menu-class"
         @update:model-value="(v) => setOpen(section.key, v)"
       >
         <q-item
@@ -91,11 +92,11 @@
           clickable
           :to="item.to"
           :exact="item.exact"
-          active-class="text-primary bg-teal-1"
+          active-class="text-primary"
           class="app-menu__nested"
           @click="onItem(item)"
         >
-          <q-item-section avatar><q-icon :name="item.icon" size="20px" /></q-item-section>
+          <q-item-section avatar><q-icon :name="item.icon" size="22px" /></q-item-section>
           <q-item-section>{{ item.label }}</q-item-section>
         </q-item>
       </q-expansion-item>
@@ -117,6 +118,8 @@ defineProps({
 
 const authStore = useAuthStore();
 const router = useRouter();
+const loggedUserRole = computed(() => authStore.user?.tenants[0]?.roleNames[0]);
+console.log("Logged User Role:", loggedUserRole.value);
 
 // Which group is showing its children beside the rail. One at a time — they would overlap otherwise.
 const flyoutKey = ref(null);
@@ -157,6 +160,34 @@ const sections = [
     ]
   },
   {
+    // Family RECORDS — parents and household accounts. Not to be confused with Family Statuses,
+    // which is the lookup list of status names that a family record's status field draws from;
+    // that lives under Masters.
+    //
+    // The domain has no Family entity or controller yet. Quick Registration is built as a form the
+    // intake API can be wired into; the rest stay parked until their pages exist.
+    key: "families",
+    label: "Families",
+    icon: "o_family_restroom",
+    items: [
+      // Ungated, matching the route — there is no family permission in the catalogue yet.
+      { label: "Quick Registration", icon: "o_how_to_reg", to: { name: "family_quick_registration" }, permissions: null }
+      // { label: "All Families", icon: "o_groups", to: "/families", permissions: null },
+      // { label: "Email/Text Families", icon: "o_mail", to: "/families/email", permissions: null },
+      // { label: "Drop Unpaid Families", icon: "o_money_off", to: "/families/drop-unpaid", permissions: null },
+      // { label: "Lead Files", icon: "o_contact_page", to: "/families/leads", permissions: null },
+      // { label: "Family Report", icon: "o_summarize", to: "/families/report", permissions: null }
+    ]
+  },
+  {
+    key: "students",
+    label: "Students",
+    icon: "o_group",
+    items: [
+      { label: "All Students", icon: "o_person", to: "/students", permissions: [Permissions.StudentsRead] }
+    ]
+  },
+  {
     key: "administration",
     label: "Administration",
     icon: "o_corporate_fare",
@@ -170,7 +201,21 @@ const sections = [
     label: "Class",
     icon: "o_school",
     items: [
-      { label: "All Classes", icon: "o_list_alt", to: "/classes", permissions: [Permissions.ClassesRead] },
+      { label: "All Classes", icon: "o_class", to: "/classes", permissions: [Permissions.ClassesRead] },
+    ]
+  },
+  {
+    // Tenant lookup lists — the value sets that dropdowns on the entity forms are populated from.
+    // FamilyStatus is one of these: { FamilyStatusId, TenantId, Name }, nothing more, and it backs
+    // the "Family Status" field on a family record.
+    key: "masters",
+    label: "Masters",
+    icon: "o_list_alt",
+    items: [
+      // Ungated, matching the family-status route itself — there is no family-status permission in
+      // the catalogue yet, so gating here would hide the page from everyone.
+      { label: "Family Statuses", icon: "o_flag", to: "/familystatus", permissions: null },
+      { label: "Studio Locations", icon: "o_location_on", to: "/locations", permissions: [Permissions.LocationsRead] }
     ]
   },
   {
@@ -222,6 +267,7 @@ const sections = [
 ];
 
 const canSee = (permissions) => !permissions || authStore.hasAnyPermission(permissions);
+console.log("Can See Permissionis:", canSee());
 
 const visibleSections = computed(() =>
   sections
@@ -253,13 +299,14 @@ const setOpen = (key, open) => {
   min-width: 32px;
   padding-right: 8px;
 }
-/* Slim, uppercase collapsible group headers in the theme colour. */
+/* Collapsible group headers, set as the prototype's nav sets them: 14px, medium weight, normal
+   case — not the small-caps treatment the rest of the app uses for section labels. */
 .app-menu :deep(.app-menu__group) {
-  min-height: 38px;
+  min-height: 40px;
   padding: 4px 12px;
-  font-size: 11px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--on-surface);
 }
 .app-menu :deep(.app-menu__group .q-item__section--avatar) {
   min-width: 30px;
@@ -286,10 +333,8 @@ const setOpen = (key, open) => {
 .app-menu__flyout-head {
   min-height: auto;
   padding: 8px 16px 4px;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--q-primary);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--on-surface);
 }
 </style>

@@ -58,7 +58,7 @@
     <!-- Side-Drawer Dialog: Create / Update Form Modal -->
     <q-dialog v-model="dialogOpen" position="right" maximized>
       <q-card class="column full-height" style="width: 500px; max-width: 100vw;">
-        
+
         <!-- Dialog Header Banner -->
         <q-card-section class="row items-center q-pb-none bg-primary text-white">
           <div class="text-h6">{{ editing ? 'Edit Family Status' : 'Create Family Status' }}</div>
@@ -69,7 +69,7 @@
         <!-- Dialog Scrollable Body Content & Reactive Form Container -->
         <q-card-section class="col q-pa-md scroll">
           <q-form ref="formRef" greedy @submit.prevent="submitForm">
-            
+
             <!-- Primary Entity Property: Family Status Name -->
             <app-text-field
               v-model="form.name"
@@ -93,7 +93,7 @@
 
 <script setup>
 import { ref, reactive, computed, watch } from "vue";
-import { useRouter } from "vue-router";
+// import { useRouter } from "vue-router";
 import { debounce } from "quasar";
 
 import { api, familyStatusApi, getApiErrorMessage, EntityType } from "services/api";
@@ -108,7 +108,7 @@ import AppListHeader from "components/common/AppListHeader.vue";
 import AppTextField from "components/common/AppTextField.vue";
 
 // Initialize core routing, notifications, and confirmation dialogs
-const router = useRouter();
+// const router = useRouter();
 const { showDeleted, canManageDeleted } = useDeletedRecords();
 const notify = useNotify();
 const { confirm } = useConfirm();
@@ -121,65 +121,65 @@ const saving = ref(false);
 const formRef = ref(null);
 
 // Form payload data model binding structure
-const form = reactive({ 
-  name: "", 
+const form = reactive({
+  name: "",
 });
 
 // Data Grid Column Configuration Schema
 const columns = computed(() => [
   { name: "familyStatusId", label: "ID", field: "familyStatusId", align: "left", sortable: true, default: true },
   { name: "name", label: "Status Name", field: "name", align: "left", sortable: true, default: true },
-  { 
-    name: "createdOn", 
-    label: "Created On", 
+  {
+    name: "createdOn",
+    label: "Created On",
     field: (row) => {
-      if (!row) return '-';
-      const key = Object.keys(row).find(k => k.toLowerCase() === 'createdon' || k.toLowerCase() === 'createdat');
-      return key ? row[key] : (row.CreatedOn || row.createdOn || row.createdAt || '-');
-    }, 
-    align: "left", 
-    sortable: true, 
+      if (!row) return "-";
+      const key = Object.keys(row).find(k => k.toLowerCase() === "createdon" || k.toLowerCase() === "createdat");
+      return key ? row[key] : (row.CreatedOn || row.createdOn || row.createdAt || "-");
+    },
+    align: "left",
+    sortable: true,
     default: true,
     format: (val) => {
-      if (!val || val === '-') return '-';
+      if (!val || val === "-") return "-";
       const date = new Date(val);
-      return isNaN(date.getTime()) ? String(val) : date.toLocaleString(); 
+      return isNaN(date.getTime()) ? String(val) : date.toLocaleString();
     }
   },
   { name: "actions", label: "Actions", field: "actions", align: "left" }
 ]);
 
 // Server-side List Management Composable without tenant restrictions
-const { 
-    rows, 
-    loading, 
-    totalRecords, 
-    selected, 
-    search, 
-    pagination, 
-    load, 
-    onRequest 
+const {
+  rows,
+  loading,
+  totalRecords,
+  selected,
+  search,
+  pagination,
+  load,
+  onRequest
 } = useListTable({
-    pageKey: "family-status",
-    fetcher: ({ page, limit, sortBy, descending }) => {
-        return familyStatusApi.list({
-            page,
-            limit,
-            sortBy,
-            descending,
-            search: search.value || undefined
-        }).then((r) => ({ 
-            data: r?.data, 
-            total: r?.meta?.totalRecords || r?.totalRecords || 0 
-        }));
-    },
-    onError: (err) => notify.error(getApiErrorMessage(err))
+  pageKey: "family-status",
+  fetcher: ({ page, limit, sortBy, descending }) => {
+    return familyStatusApi.list({
+      page,
+      limit,
+      sortBy,
+      descending,
+      search: search.value || undefined
+    }).then((r) => ({
+      data: r?.data,
+      total: r?.meta?.totalRecords || r?.totalRecords || 0
+    }));
+  },
+  onError: (err) => notify.error(getApiErrorMessage(err))
 });
 
 // Debounced reload handler resetting pagination index upon search term changes
-const reload = debounce(() => { 
-  pagination.value.page = 1; 
-  load(); 
+const reload = debounce(() => {
+  pagination.value.page = 1;
+  load();
 }, 300);
 
 // Watch for search updates to automatically refresh table data
@@ -203,11 +203,11 @@ const openEditDialog = async (id) => {
   editingId.value = id;
   editing.value = true;
   dialogOpen.value = true;
-  
+
   try {
     const response = await api.get(`/api/admin/family-statuses/${id}`);
     const item = response?.data?.data || response?.data;
-    
+
     if (item) {
       form.name = item.name || "";
     }

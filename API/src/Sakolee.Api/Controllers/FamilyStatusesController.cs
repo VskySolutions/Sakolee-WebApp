@@ -1,8 +1,10 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
+using Sakolee.Api.Security;
 using Sakolee.Domain.Entities;
 using Sakolee.Infrastructure.Persistence;
 
@@ -10,6 +12,7 @@ namespace Sakolee.Api.Controllers
 {
     [Route("api/admin/family-statuses")]
     [ApiController]
+    [Authorize]
     public class FamilyStatusesController : ControllerBase
     {
         #region Private Fields & Constructor
@@ -46,11 +49,14 @@ namespace Sakolee.Api.Controllers
             [FromQuery] string sortBy = null,
             [FromQuery] bool descending = false)
         {
-            // Initialize base queryable data source context (by default filtering out soft-deleted records)
+            // Initialize base queryable data source context (by default filtering out soft-deleted records).
+            // The ambient tenant query filter (SakoleeDbContext) already restricts this to the caller's
+            // active/viewed tenant, so switching tenants changes what this query returns automatically.
             var query = _context.FamilyStatuses.Where(x => !x.IsDeleted).AsQueryable();
 
-            // Apply tenant filtering constraint if a valid tenant identifier is provided
-            if (tenantId.HasValue)
+            // A client-supplied tenantId is only honoured for a Super Admin explicitly cross-tenant filtering;
+            // for everyone else it is ignored (the ambient filter already pins them to their own tenant).
+            if (tenantId.HasValue && User.IsSuperAdmin())
             {
                 query = query.Where(x => x.TenantId == tenantId.Value);
             }
@@ -147,7 +153,13 @@ namespace Sakolee.Api.Controllers
                 return BadRequest(new { message = "Invalid request payload provided." });
             }
 
+            if (User.GetActiveTenantId() is not { } activeTenantId)
+            {
+                return Unauthorized(new { message = "Tenant could not be resolved." });
+            }
+
             model.FamilyStatusId = Guid.NewGuid();
+            model.TenantId = activeTenantId;
             model.CreatedOn = DateTime.UtcNow;
             model.IsDeleted = false;
 
@@ -182,8 +194,9 @@ namespace Sakolee.Api.Controllers
                 return NotFound(new { message = "Family status record not found." });
             }
 
+            // TenantId is not editable via update — it is stamped once at creation from the caller's
+            // active tenant, and the ambient query filter already scoped `existing` to that tenant.
             existing.Name = model.Name;
-            existing.TenantId = model.TenantId;
 
             _context.FamilyStatuses.Update(existing);
             await _context.SaveChangesAsync();

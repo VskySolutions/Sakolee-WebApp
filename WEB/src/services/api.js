@@ -119,6 +119,7 @@ export const familyStatusApi = {
   update: (id, payload) => api.put(`/api/admin/family-statuses/${id}`, payload).then(unwrap),
   delete: (id) => api.delete(`/api/admin/family-statuses/${id}`).then(unwrap)
 };
+
 export const personApi = {
   list: (params) => api.get("/api/admin/persons", { params }).then(envelope),
   get: (id) => api.get(`/api/admin/persons/${id}`).then(unwrap),
@@ -128,6 +129,14 @@ export const personApi = {
   // Lightweight options for the user-create Person dropdown (each carries isUser). `tenantId` reads ANOTHER
   // tenant's people — what the tenant-management screen creates accounts from — and is honoured only.
   selectable: (tenantId) => api.get("/api/admin/persons/selectable", { params: { tenantId } }).then(unwrap)
+};
+
+export const studentApi = {
+  list: (params) => api.get("/api/admin/students", { params }).then(envelope),
+  get: (id) => api.get(`/api/admin/students/${id}`).then(unwrap),
+  create: (payload) => api.post("/api/admin/students", payload).then(unwrap),
+  update: (id, payload) => api.put(`/api/admin/students/${id}`, payload).then(unwrap),
+  remove: (id) => api.delete(`/api/admin/students/${id}`).then(envelope)
 };
 
 export const userApi = {
@@ -464,4 +473,16 @@ export const dashboardApi = {
   getLayout: () => api.get("/api/dashboard/layout").then(unwrap),
   // payload: { widgetOrder, hiddenWidgets, collapsedWidgets }
   saveLayout: (payload) => api.put("/api/dashboard/layout", payload).then(unwrap)
+};
+
+export const locationApi = {
+  list: (params) => api.get("/api/admin/locations", { params }).then(envelope),
+
+  get: (id) => api.get(`/api/admin/locations/${id}`).then(unwrap),
+
+  create: (payload) => api.post("/api/admin/locations", payload).then(unwrap),
+
+  update: (id, payload) => api.put(`/api/admin/locations/${id}`, payload).then(unwrap),
+
+  remove: (id) => api.delete(`/api/admin/locations/${id}`).then(envelope)
 };

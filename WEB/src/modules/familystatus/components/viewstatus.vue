@@ -18,7 +18,6 @@
     <!-- Main Card Container: Wraps the entity details view interface -->
     <q-card v-else flat bordered class="q-pa-md">
       <q-form class="q-gutter-md">
-        
         <!-- Foreign Key Selection: Tenant lookup dropdown input (Disabled for view-only) -->
         <app-select
           v-model="form.tenantId"
@@ -71,9 +70,9 @@ const loading = ref(false);
 const tenantOptions = ref([]);
 
 // Form Data Model Binding Structure (View-only)
-const form = reactive({ 
+const form = reactive({
   tenantId: null,
-  name: "", 
+  name: "",
 });
 
 // Global Error Handler
@@ -87,19 +86,19 @@ onMounted(async () => {
 
   try {
     // Fetch tenant options using direct admin endpoint
-    const tenantResponse = await api.get('/api/admin/tenants', { params: { limit: 100 } }).catch(() => null);
+    const tenantResponse = await api.get("/api/admin/tenants", { params: { limit: 100 } }).catch(() => null);
     const rawTenants = tenantResponse?.data?.data || tenantResponse?.data || [];
-    
-    tenantOptions.value = rawTenants.map((t) => ({ 
-      label: t.name, 
-      value: t.tenantId || t.tenantid 
+
+    tenantOptions.value = rawTenants.map((t) => ({
+      label: t.name,
+      value: t.tenantId || t.tenantid
     }));
 
     // Fetch existing record details to display
     if (familyStatusId) {
       const response = await api.get(`/api/admin/family-statuses/${familyStatusId}`);
       const item = response?.data?.data || response?.data;
-      
+
       if (item) {
         form.tenantId = item.tenantId || item.tenantid || null;
         form.name = item.name || "";
