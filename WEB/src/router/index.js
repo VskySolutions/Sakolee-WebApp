@@ -34,6 +34,7 @@ import universalRoutes from "modules/universal/routes";
 import familystatusRoutes from "modules/familystatus/routes";
 import locationRoutes from "modules/location/routes";
 import classCategoryRoutes from "modules/class-category/routes";
+import sessionRoutes from "modules/session/routes";
 
 routes.push(...accountRoutes);
 routes.push(...authRoutes);
@@ -54,6 +55,8 @@ routes.push(...universalRoutes);
 routes.push(...familystatusRoutes);
 routes.push(...locationRoutes);
 routes.push(...classCategoryRoutes);
+routes.push(...sessionRoutes);
+
 export default route(function ({ store }) {
   const createHistory = process.env.SERVER
     ? createMemoryHistory

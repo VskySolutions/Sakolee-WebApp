@@ -18,18 +18,7 @@
     <!-- Main Card Container: Wraps the entity details view interface -->
     <q-card v-else flat bordered class="q-pa-md">
       <q-form class="q-gutter-md">
-        <!-- Foreign Key Selection: Tenant lookup dropdown input (Disabled for view-only) -->
-        <app-select
-          v-model="form.tenantId"
-          :options="tenantOptions"
-          label="Tenant"
-          emit-value
-          map-options
-          readonly
-          disable
-          class="q-mb-md"
-        />
-
+        
         <!-- Primary Entity Field: Family status name input (Disabled for view-only) -->
         <app-text-field
           v-model="form.name"
@@ -55,7 +44,6 @@ import { api, getApiErrorMessage } from "services/api";
 import { useNotify } from "composables/useNotify";
 
 import AppDetailHeader from "components/common/AppDetailHeader.vue";
-import AppSelect from "components/common/AppSelect.vue";
 import AppTextField from "components/common/AppTextField.vue";
 
 // Composables & Instance Initializations
@@ -66,13 +54,9 @@ const notify = useNotify();
 const familyStatusId = route.params.id;
 const loading = ref(false);
 
-// Holds dropdown source collections for tenants
-const tenantOptions = ref([]);
-
-// Form Data Model Binding Structure (View-only)
-const form = reactive({
-  tenantId: null,
-  name: "",
+// Form Data Model Binding Structure (View-only, containing only status name)
+const form = reactive({ 
+  name: "", 
 });
 
 // Global Error Handler
@@ -85,22 +69,12 @@ onMounted(async () => {
   loading.value = true;
 
   try {
-    // Fetch tenant options using direct admin endpoint
-    const tenantResponse = await api.get("/api/admin/tenants", { params: { limit: 100 } }).catch(() => null);
-    const rawTenants = tenantResponse?.data?.data || tenantResponse?.data || [];
-
-    tenantOptions.value = rawTenants.map((t) => ({
-      label: t.name,
-      value: t.tenantId || t.tenantid
-    }));
-
     // Fetch existing record details to display
     if (familyStatusId) {
       const response = await api.get(`/api/admin/family-statuses/${familyStatusId}`);
       const item = response?.data?.data || response?.data;
-
+      
       if (item) {
-        form.tenantId = item.tenantId || item.tenantid || null;
         form.name = item.name || "";
       }
     }

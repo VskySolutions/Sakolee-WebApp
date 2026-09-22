@@ -217,6 +217,7 @@ const sections = [
       { label: "Family Statuses", icon: "o_flag", to: "/familystatus", permissions: null },
       { label: "Studio Locations", icon: "o_location_on", to: "/locations", permissions: [Permissions.LocationsRead] },
       { label: "Class Categories", icon: "o_category", to: "/class-categories", permissions: [Permissions.ClassesRead]}
+      { label: "Class Sessions", icon: "o_date_range", to: "/sessions", permissions: null }
     ]
   },
   {

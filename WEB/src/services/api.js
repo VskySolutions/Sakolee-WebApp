@@ -120,6 +120,15 @@ export const familyStatusApi = {
   delete: (id) => api.delete(`/api/admin/family-statuses/${id}`).then(unwrap)
 };
 
+// Session API mapping (Add this inside your services/api.js)
+export const classSessionApi = {
+  list: (params) => api.get("/api/admin/sessions", { params }).then(envelope),
+  get: (id) => api.get(`/api/admin/sessions/${id}`).then(unwrap),
+  create: (payload) => api.post("/api/admin/sessions", payload).then(unwrap),
+  update: (id, payload) => api.put(`/api/admin/sessions/${id}`, payload).then(unwrap),
+  delete: (id) => api.delete(`/api/admin/sessions/${id}`).then(unwrap)
+};
+
 export const personApi = {
   list: (params) => api.get("/api/admin/persons", { params }).then(envelope),
   get: (id) => api.get(`/api/admin/persons/${id}`).then(unwrap),
