@@ -7,7 +7,6 @@ namespace Sakolee.Application.Abstractions.Persistence;
 /// </summary>
 public interface IClassCategoryRepository
 {
-    #region Get
     /// <summary>
     /// Gets every non-deleted category owned by the given tenant.
     /// Supports searching by category name or category type.
@@ -25,26 +24,18 @@ public interface IClassCategoryRepository
     /// </summary>
     Task<bool> ExistsByNameAsync(Guid tenantId, string name, Guid? excludeId = null, CancellationToken cancellationToken = default);
 
-    #endregion
-
-    #region Create
     /// <summary>
     /// Adds a class category to the current DbContext.
     /// </summary>
     Task AddAsync(ClassCategory classCategory,CancellationToken cancellationToken = default);
-    #endregion
 
-    #region Update
     /// <summary>
     /// Marks a class category as modified in the current DbContext.
     /// </summary>
     void Update(ClassCategory classCategory);
-    #endregion
 
-    #region Delete
     /// <summary>
     /// Removes a class category from the current DbContext.
     /// </summary>
     void Remove(ClassCategory classCategory);
-    #endregion
 }

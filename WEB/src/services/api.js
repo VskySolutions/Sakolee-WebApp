@@ -111,6 +111,14 @@ export const classCategoryApi = {
   remove: (id) => api.delete(`/api/admin/class-categories/${id}`).then(envelope)
 };
 
+export const billingCycleApi = {
+  list: (params) => api.get("/api/admin/billing-cycles", { params }).then(envelope),
+  get: (id) => api.get(`/api/admin/billing-cycles/${id}`).then(unwrap),
+  create: (payload) => api.post("/api/admin/billing-cycles", payload).then(unwrap),
+  update: (id, payload) => api.put(`/api/admin/billing-cycles/${id}`, payload).then(unwrap),
+  remove: (id) => api.delete(`/api/admin/billing-cycles/${id}`).then(envelope)
+};
+
 // Family Status API mapping
 export const familyStatusApi = {
   list: (params) => api.get("/api/admin/family-statuses", { params }).then(envelope),

@@ -216,7 +216,8 @@ const sections = [
       // the catalogue yet, so gating here would hide the page from everyone.
       { label: "Family Statuses", icon: "o_flag", to: "/familystatus", permissions: null },
       { label: "Studio Locations", icon: "o_location_on", to: "/locations", permissions: [Permissions.LocationsRead] },
-      { label: "Class Categories", icon: "o_category", to: "/class-categories", permissions: [Permissions.ClassesRead]}
+      { label: "Class Categories", icon: "o_category", to: "/class-categories", permissions: [Permissions.ClassesRead]},
+      { label: "Billing Cycles", icon: "o_autorenew", to: "/billing-cycles", permissions: [Permissions.BillingCyclesRead]},
       { label: "Class Sessions", icon: "o_date_range", to: "/sessions", permissions: null }
     ]
   },

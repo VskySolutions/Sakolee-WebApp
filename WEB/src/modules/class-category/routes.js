@@ -1,9 +1,7 @@
 export default [
   {
     path: "/class-categories",
-
     component: () => import("layouts/layout.vue"),
-
     children: [
       {
         path: "",

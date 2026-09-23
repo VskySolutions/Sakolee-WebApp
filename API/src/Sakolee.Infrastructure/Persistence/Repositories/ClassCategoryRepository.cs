@@ -20,57 +20,45 @@ internal sealed class ClassCategoryRepository : IClassCategoryRepository
     public ClassCategoryRepository(SakoleeDbContext dbContext) => _dbContext = dbContext;
     #endregion
 
-    #region Get
+    #region List 
     /// <summary>
     /// Gets all non-deleted Class Categories belonging to the specified tenant.
     /// Supports searching by category name or category type.
     /// </summary>
-    public async Task<IReadOnlyList<ClassCategory>> ListByTenantAsync(
-    Guid tenantId, string? search = null, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<ClassCategory>> ListByTenantAsync(Guid tenantId, string? search = null, CancellationToken cancellationToken = default)
     {
-        var query = _dbContext.ClassCategories
-            .Where(c => !c.Deleted && c.TenantId == tenantId);
-
+        var query = _dbContext.ClassCategories.Where(c => !c.Deleted && c.TenantId == tenantId);
+        // Apply search filtering only when search text is provided.
         if (!string.IsNullOrWhiteSpace(search))
         {
             search = search.Trim();
-            query = query.Where(c =>
-                c.Name.Contains(search) ||
-                (c.CategoryType != null && c.CategoryType.Contains(search)));
+            // Search by either Category Name or Category Type.
+            // CategoryType can be null, so check for null before using Contains().
+            query = query.Where(c =>c.Name.Contains(search) || (c.CategoryType != null && c.CategoryType.Contains(search)));
         }
-
-        var items = await query
-            .OrderBy(c => c.CategoryType)
-            .ThenBy(c => c.Name)
-            .ToListAsync(cancellationToken);
-
+        // If categories are found, get the tenant information
+        // and assign it to each category.
+        var items = await query.OrderBy(c => c.CategoryType).ThenBy(c => c.Name).ToListAsync(cancellationToken);
         if (items.Count > 0)
         {
-            var tenant = await _dbContext.Tenants
-                .FirstOrDefaultAsync(t => t.Id == tenantId, cancellationToken);
+            var tenant = await _dbContext.Tenants.FirstOrDefaultAsync(t => t.Id == tenantId, cancellationToken);
             foreach (var item in items) item.Tenant = tenant;
         }
-
         return items;
     }
+    #endregion
 
+    #region Get 
     /// <summary>
     /// Gets a non-deleted Class Category by id for the specified tenant.
     /// </summary>
-    public async Task<ClassCategory?> GetByIdAsync(
-     Guid id, Guid tenantId, CancellationToken cancellationToken = default)
+    public async Task<ClassCategory?> GetByIdAsync(Guid id, Guid tenantId, CancellationToken cancellationToken = default)
     {
-        var category = await _dbContext.ClassCategories
-            .FirstOrDefaultAsync(
-                c => c.Id == id && c.TenantId == tenantId && !c.Deleted,
-                cancellationToken);
-
+        var category = await _dbContext.ClassCategories.FirstOrDefaultAsync(c => c.Id == id && c.TenantId == tenantId && !c.Deleted, cancellationToken);
         if (category is not null)
         {
-            category.Tenant = await _dbContext.Tenants
-                .FirstOrDefaultAsync(t => t.Id == tenantId, cancellationToken);
+            category.Tenant = await _dbContext.Tenants.FirstOrDefaultAsync(t => t.Id == tenantId, cancellationToken);
         }
-
         return category;
     }
     #endregion
@@ -79,7 +67,6 @@ internal sealed class ClassCategoryRepository : IClassCategoryRepository
     /// <summary>
     /// Checks whether a non-deleted Class Category with the specified
     /// name already exists for the given tenant.
-    ///
     /// When excludeId is provided, that record is ignored.
     /// This is required during update so that a category does not
     /// conflict with itself.
@@ -97,27 +84,26 @@ internal sealed class ClassCategoryRepository : IClassCategoryRepository
     #endregion
 
     #region Create
-
-    public Task AddAsync(
-        ClassCategory classCategory,
-        CancellationToken cancellationToken = default)
-        => _dbContext.ClassCategories
-            .AddAsync(classCategory, cancellationToken)
-            .AsTask();
+    /// <summary>
+    /// Adds a new Class Category to the database context.
+    /// </summary>
+    public Task AddAsync(ClassCategory classCategory,CancellationToken cancellationToken = default) => _dbContext.ClassCategories.AddAsync(classCategory, cancellationToken).AsTask();
 
     #endregion
 
     #region Update
-
-    public void Update(ClassCategory classCategory)
-        => _dbContext.ClassCategories.Update(classCategory);
+    /// <summary>
+    /// Updates an existing Class Category in the database context.
+    /// </summary>
+    public void Update(ClassCategory classCategory) => _dbContext.ClassCategories.Update(classCategory);
 
     #endregion
 
     #region Delete
-
-    public void Remove(ClassCategory classCategory)
-        => _dbContext.ClassCategories.Remove(classCategory);
+    /// <summary>
+    /// Removes the specified Class Category from the database context.
+    /// </summary>
+    public void Remove(ClassCategory classCategory) => _dbContext.ClassCategories.Remove(classCategory);
 
     #endregion
 }
