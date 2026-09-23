@@ -46,5 +46,11 @@ internal sealed class StudentConfiguration : IEntityTypeConfiguration<Student>
         builder.Property(s => s.PrimaryDoctor).HasMaxLength(50);
         // Medications, ImmunizationNotes, SkillNotes, TextOptIn, MassEmailOptOut are nvarchar(max) —
         // no length cap on the live column.
+
+        builder.Property(s => s.HasImmunizations).HasMaxLength(20);
+        builder.Property(s => s.HealthInsuranceCarrier).HasMaxLength(100);
+        builder.Property(s => s.DisabilitiesNotes).HasMaxLength(500);
+        builder.Property(s => s.AllergiesNotes).HasMaxLength(500);
+        builder.Property(s => s.AllowTextMessaging).HasDefaultValue(true);
     }
 }

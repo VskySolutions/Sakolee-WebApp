@@ -7,9 +7,9 @@
         :disable="disable" :rules="[(v) => !!v || 'Class name is required']"
       />
 
-      <!-- Category/Location/Room/Session/Instructor: placeholder option lists only — there is no
-           Category/Location/Room/Session/Instructor management feature yet, so these don't save to
-           the class record until that backing data exists. -->
+      <!-- Category 1/2/3 save to the Class record (backed by ClassCategory). Location/Room/Session/
+           Instructor are still placeholder option lists — there is no management feature for them
+           yet, so those don't save to the class record until that backing data exists. -->
       <app-select v-model="form.category1" label="Category 1 *" :options="category1Options" class="col-12 col-sm-6" :disable="disable" />
       <app-select v-model="form.category2" label="Category 2" :options="category2Options" class="col-12 col-sm-6" :disable="disable" />
       <app-select v-model="form.category3" label="Category 3" :options="category3Options" class="col-12 col-sm-6" :disable="disable" />
@@ -140,9 +140,9 @@ const props = defineProps({
 const notify = useNotify();
 
 // Category 1/2/3: real options loaded from ClassCategory (scoped to the caller's active tenant), one
-// flat list told apart by categoryType. Location/Room/Session/Instructor stay demo option lists
-// standing in for the not-yet-built management features. None of these are sent on submit — see
-// classForm.js's toClassPayload.
+// flat list told apart by categoryType — selections save to Class.Category1Id/2Id/3Id (see
+// classForm.js's toClassPayload). Location/Room/Session/Instructor stay demo option lists standing in
+// for the not-yet-built management features and are not sent on submit.
 const classCategories = ref([]);
 onMounted(async () => {
   try {

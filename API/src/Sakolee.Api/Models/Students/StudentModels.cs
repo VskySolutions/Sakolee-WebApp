@@ -1,3 +1,5 @@
+using Sakolee.Api.Models.Profile;
+
 namespace Sakolee.Api.Models.Students;
 
 /// <summary>
@@ -20,7 +22,8 @@ public sealed class CreateStudentRequest
     public DateTime? FeeExpiryDate { get; set; }
     public string? FeeNote { get; set; }
     public Guid? FeeCategoryId { get; set; }
-    public bool? Gender { get; set; }
+    /// <summary>Writes to the linked Person's Gender — see <see cref="Sakolee.Domain.Entities.Student.Gender"/> remarks.</summary>
+    public string? Gender { get; set; }
     public DateTime? BirthDate { get; set; }
     public string? CellPhone { get; set; }
     public string? School { get; set; }
@@ -32,10 +35,21 @@ public sealed class CreateStudentRequest
     public bool? Allergies { get; set; }
     public string? Medications { get; set; }
     public string? PrimaryDoctor { get; set; }
+    public string? HasImmunizations { get; set; }
     public string? ImmunizationNotes { get; set; }
     public string? SkillNotes { get; set; }
     public string? TextOptIn { get; set; }
     public string? MassEmailOptOut { get; set; }
+    public string? HealthInsuranceCarrier { get; set; }
+    public string? DisabilitiesNotes { get; set; }
+    public string? AllergiesNotes { get; set; }
+    public bool AllowTextMessaging { get; set; } = true;
+    /// <summary>Writes to the linked Person's EmergencyContactName.</summary>
+    public string? EmergencyContactName { get; set; }
+    /// <summary>Writes to the linked Person's EmergencyContactNumber.</summary>
+    public string? EmergencyContactNumber { get; set; }
+    /// <summary>Writes to the linked Person's Address — same shape as <c>CreatePersonRequest.Address</c>.</summary>
+    public AddressInput? Address { get; set; }
 }
 
 /// <summary>
@@ -58,7 +72,8 @@ public sealed class UpdateStudentRequest
     public DateTime? FeeExpiryDate { get; set; }
     public string? FeeNote { get; set; }
     public Guid? FeeCategoryId { get; set; }
-    public bool? Gender { get; set; }
+    /// <summary>Writes to the linked Person's Gender — see <see cref="Sakolee.Domain.Entities.Student.Gender"/> remarks.</summary>
+    public string? Gender { get; set; }
     public DateTime? BirthDate { get; set; }
     public string? CellPhone { get; set; }
     public string? School { get; set; }
@@ -70,10 +85,18 @@ public sealed class UpdateStudentRequest
     public bool? Allergies { get; set; }
     public string? Medications { get; set; }
     public string? PrimaryDoctor { get; set; }
+    public string? HasImmunizations { get; set; }
     public string? ImmunizationNotes { get; set; }
     public string? SkillNotes { get; set; }
     public string? TextOptIn { get; set; }
     public string? MassEmailOptOut { get; set; }
+    public string? HealthInsuranceCarrier { get; set; }
+    public string? DisabilitiesNotes { get; set; }
+    public string? AllergiesNotes { get; set; }
+    public bool AllowTextMessaging { get; set; } = true;
+    public string? EmergencyContactName { get; set; }
+    public string? EmergencyContactNumber { get; set; }
+    public AddressInput? Address { get; set; }
 }
 
 /// <summary>
@@ -100,7 +123,7 @@ public sealed record StudentSummary(
     DateTime? FeeExpiryDate,
     string? FeeNote,
     Guid? FeeCategoryId,
-    bool? Gender,
+    string? Gender,
     DateTime? BirthDate,
     string? CellPhone,
     string? Email,
@@ -113,10 +136,17 @@ public sealed record StudentSummary(
     bool? Allergies,
     string? Medications,
     string? PrimaryDoctor,
+    string? HasImmunizations,
     string? ImmunizationNotes,
     string? SkillNotes,
     string? TextOptIn,
     string? MassEmailOptOut,
+    string? HealthInsuranceCarrier,
+    string? DisabilitiesNotes,
+    string? AllergiesNotes,
+    bool AllowTextMessaging,
+    string? EmergencyContactName,
+    string? EmergencyContactNumber,
     string? CreatedBy,
     DateTime CreatedOnUtc,
     string? UpdatedBy,

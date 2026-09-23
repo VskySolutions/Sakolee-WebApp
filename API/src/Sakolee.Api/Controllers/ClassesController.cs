@@ -73,6 +73,7 @@ public sealed class ClassesController : ControllerBase
             UpdatedById = actorId,
         };
         ApplyRequest(entity, request.LocationId, request.RoomId, request.SessionId, request.PrimaryInstructorId,
+            request.Category1Id, request.Category2Id, request.Category3Id,
             request.ClassName, request.AdditionalInstructors, request.StartDate, request.EndDate,
             request.RegistrationOpenDate, request.ActiveDays, request.StartTime, request.EndTime, request.Duration,
             request.TuitionFee, request.BillingMethod, request.BillingCycle, request.RegistrationFee,
@@ -153,6 +154,7 @@ public sealed class ClassesController : ControllerBase
         }
 
         ApplyRequest(entity, request.LocationId, request.RoomId, request.SessionId, request.PrimaryInstructorId,
+            request.Category1Id, request.Category2Id, request.Category3Id,
             request.ClassName, request.AdditionalInstructors, request.StartDate, request.EndDate,
             request.RegistrationOpenDate, request.ActiveDays, request.StartTime, request.EndTime, request.Duration,
             request.TuitionFee, request.BillingMethod, request.BillingCycle, request.RegistrationFee,
@@ -197,6 +199,7 @@ public sealed class ClassesController : ControllerBase
 
     private static void ApplyRequest(
         Class entity, Guid? locationId, Guid? roomId, Guid? sessionId, Guid? primaryInstructorId,
+        Guid? category1Id, Guid? category2Id, Guid? category3Id,
         string className, string? additionalInstructors, DateTime? startDate, DateTime? endDate,
         DateTime? registrationOpenDate, string? activeDays, string? startTime, string? endTime, string? duration,
         decimal? tuitionFee, string? billingMethod, string? billingCycle, bool? registrationFee,
@@ -210,6 +213,9 @@ public sealed class ClassesController : ControllerBase
         entity.RoomId = roomId;
         entity.SessionId = sessionId;
         entity.PrimaryInstructorId = primaryInstructorId;
+        entity.Category1Id = category1Id;
+        entity.Category2Id = category2Id;
+        entity.Category3Id = category3Id;
         entity.ClassName = className.Trim();
         entity.AdditionalInstructors = additionalInstructors?.Trim();
         entity.StartDate = startDate;
@@ -255,7 +261,8 @@ public sealed class ClassesController : ControllerBase
         => id.HasValue && names.TryGetValue(id.Value, out var name) ? name : null;
 
     private static ClassSummary ToSummary(Class c, IReadOnlyDictionary<Guid, string> names) => new(
-        c.Id, c.LocationId, c.RoomId, c.SessionId, c.PrimaryInstructorId, c.ClassName, c.AdditionalInstructors,
+        c.Id, c.LocationId, c.RoomId, c.SessionId, c.PrimaryInstructorId, c.Category1Id, c.Category2Id, c.Category3Id,
+        c.ClassName, c.AdditionalInstructors,
         c.StartDate, c.EndDate, c.RegistrationOpenDate, c.ActiveDays, c.StartTime, c.EndTime, c.Duration,
         c.TuitionFee, c.BillingMethod, c.BillingCycle, c.RegistrationFee, c.Description, c.Gender, c.MinAge,
         c.MaxAge, c.MaxClassSize, c.MaxWaitlistSize, c.CutoffDate, c.PolicyGroups, c.VirtualClassUrl,

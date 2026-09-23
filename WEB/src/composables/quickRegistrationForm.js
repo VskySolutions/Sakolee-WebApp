@@ -2,9 +2,11 @@
 // ("view-quick-registration"): family, two contacts, address, one student, one class and a
 // payment schedule, all captured on one page.
 //
-// There is no Family entity or endpoint in the domain yet, so nothing here is sent anywhere. The
-// shape below mirrors the prototype's fields so the payload mapper has something to target once
-// the API lands.
+// There is still no Family entity/endpoint, so the family/studio metadata (heardAbout,
+// referralName, studioLocation), the second contact, and payment stay UI-only — nothing for them
+// to save to. But the student profile, address, emergency contact, health insurance and class
+// enrollment all now have a real home on Student/Person (see StudentsController), so
+// toCreateStudentRequest() below maps those onto a real studentApi.create() call.
 
 // The prototype's option lists, kept here rather than in the template so the page stays readable.
 // Each of these is a placeholder for a real lookup — Studio Location, Class and the rest will come
@@ -61,7 +63,9 @@ const blankContact = (relation) => ({
   relation,
   email: "",
   phone: "",
-  phoneCountry: null
+  phoneCountry: null,
+  // Prototype shows this only for the primary contact — carried on both for a symmetric shape.
+  textOptIn: true
 });
 
 export const blankQuickRegistrationForm = () => ({
@@ -99,9 +103,12 @@ export const blankQuickRegistrationForm = () => ({
   // Step 5 — Enrollment
   className: "",
   enrollmentDate: "",
+  trialEnrollment: false,
+  emailInstructorNotice: true,
 
   // Step 6 — Payment. Card details are deliberately absent: see the page's payment section.
-  paymentMethod: "card"
+  paymentMethod: "card",
+  acceptPolicies: false
 });
 
 // Shapes the form for the intake endpoint. Written now so the page has one place to change when
@@ -151,4 +158,35 @@ export const toQuickRegistrationPayload = (form) => ({
   },
   // The gateway returns a token for card/ACH; only the choice of method belongs in our payload.
   payment: { method: form.paymentMethod }
+});
+
+// Maps the parts of the form that DO have a real backing field today onto a CreateStudentRequest
+// (see StudentsController.Create). The primary contact's email/phone become the student's login
+// email/cell phone — there is no separate guardian-login concept in this domain, so the adult who
+// registers the child is who signs in. `classId` is the real Class.Id selected in the page (fetched
+// from classApi — the composable's own CLASS_OPTIONS are demo labels, not real ids).
+export const toCreateStudentRequest = (form, classId) => ({
+  firstName: form.student.firstName,
+  lastName: form.student.lastName,
+  familyName: form.familyName || null,
+  birthDate: form.student.birthDate || null,
+  gender: form.student.gender || null,
+  tShirtSize: form.student.tshirtSize || null,
+  gradeLevel: form.student.gradeLevel || null,
+  specialNeeds: form.student.medicalNotes || null,
+  email: form.primaryContact.email,
+  cellPhone: form.primaryContact.phone || null,
+  classId: classId || null,
+  admissionDate: form.enrollmentDate || null,
+  healthInsuranceCarrier: form.insuranceCarrier || null,
+  emergencyContactName: form.emergencyContactName || null,
+  emergencyContactNumber: form.emergencyPhone || null,
+  address: form.streetAddress || form.city || form.state || form.postalCode
+    ? {
+      addressLine1: form.streetAddress || null,
+      cityName: form.city || null,
+      stateName: form.state || null,
+      postalCode: form.postalCode || null
+    }
+    : null
 });

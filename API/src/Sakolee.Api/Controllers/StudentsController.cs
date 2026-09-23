@@ -1,3 +1,4 @@
+using Sakolee.Api.Models.Profile;
 using Sakolee.Api.Models.Students;
 using Sakolee.Api.Security;
 using Sakolee.Application.Abstractions.Auditing;
@@ -37,6 +38,7 @@ public sealed class StudentsController : ControllerBase
 {
     private readonly IStudentRepository _students;
     private readonly IPersonRepository _persons;
+    private readonly IAddressRepository _addresses;
     private readonly IUserRepository _users;
     private readonly IRoleRepository _roles;
     private readonly IPasswordHasher _passwordHasher;
@@ -48,6 +50,7 @@ public sealed class StudentsController : ControllerBase
     public StudentsController(
         IStudentRepository students,
         IPersonRepository persons,
+        IAddressRepository addresses,
         IUserRepository users,
         IRoleRepository roles,
         IPasswordHasher passwordHasher,
@@ -58,6 +61,7 @@ public sealed class StudentsController : ControllerBase
     {
         _students = students;
         _persons = persons;
+        _addresses = addresses;
         _users = users;
         _roles = roles;
         _passwordHasher = passwordHasher;
@@ -120,14 +124,21 @@ public sealed class StudentsController : ControllerBase
             FirstName = firstName,
             LastName = lastName,
             DisplayName = fullName,
+            Gender = string.IsNullOrWhiteSpace(request.Gender) ? null : request.Gender.Trim(),
             DateOfBirth = request.BirthDate,
             PrimaryEmail = email,
             MobileNumber = request.CellPhone?.Trim(),
+            EmergencyContactName = request.EmergencyContactName?.Trim(),
+            EmergencyContactNumber = request.EmergencyContactNumber?.Trim(),
             IsActive = true,
             LastProfileUpdatedOn = now,
             SourceEntityType = EntityType.Student,
         };
         person.TenantMappings.Add(new TenantPersonMapping { Id = Guid.NewGuid(), TenantId = tenantId });
+        if (request.Address is { } addressInput)
+        {
+            await UpsertAddressAsync(person, addressInput, cancellationToken);
+        }
         await _persons.AddAsync(person, cancellationToken);
 
         // 2. The student row itself, linked to the Person above.
@@ -145,7 +156,6 @@ public sealed class StudentsController : ControllerBase
             FeeExpiryDate = request.FeeExpiryDate,
             FeeNote = request.FeeNote?.Trim(),
             FeeCategoryId = request.FeeCategoryId,
-            Gender = request.Gender,
             BirthDate = request.BirthDate,
             CellPhone = request.CellPhone?.Trim(),
             School = request.School?.Trim(),
@@ -157,10 +167,15 @@ public sealed class StudentsController : ControllerBase
             Allergies = request.Allergies,
             Medications = request.Medications,
             PrimaryDoctor = request.PrimaryDoctor?.Trim(),
+            HasImmunizations = request.HasImmunizations,
             ImmunizationNotes = request.ImmunizationNotes,
             SkillNotes = request.SkillNotes,
             TextOptIn = request.TextOptIn,
             MassEmailOptOut = request.MassEmailOptOut,
+            HealthInsuranceCarrier = request.HealthInsuranceCarrier?.Trim(),
+            DisabilitiesNotes = request.DisabilitiesNotes?.Trim(),
+            AllergiesNotes = request.AllergiesNotes?.Trim(),
+            AllowTextMessaging = request.AllowTextMessaging,
             CreatedOnUtc = now,
             CreatedById = actorId,
             UpdatedOnUtc = now,
@@ -315,6 +330,13 @@ public sealed class StudentsController : ControllerBase
             {
                 person.DisplayName = person.FullName;
             }
+            person.Gender = string.IsNullOrWhiteSpace(request.Gender) ? null : request.Gender.Trim();
+            person.EmergencyContactName = request.EmergencyContactName?.Trim();
+            person.EmergencyContactNumber = request.EmergencyContactNumber?.Trim();
+            if (request.Address is { } addressInput)
+            {
+                await UpsertAddressAsync(person, addressInput, cancellationToken);
+            }
             person.LastProfileUpdatedOn = DateTime.UtcNow;
             _persons.Update(person);
 
@@ -340,7 +362,6 @@ public sealed class StudentsController : ControllerBase
         student.FeeExpiryDate = request.FeeExpiryDate;
         student.FeeNote = request.FeeNote?.Trim();
         student.FeeCategoryId = request.FeeCategoryId;
-        student.Gender = request.Gender;
         student.BirthDate = request.BirthDate;
         student.CellPhone = request.CellPhone?.Trim();
         student.School = request.School?.Trim();
@@ -352,10 +373,15 @@ public sealed class StudentsController : ControllerBase
         student.Allergies = request.Allergies;
         student.Medications = request.Medications;
         student.PrimaryDoctor = request.PrimaryDoctor?.Trim();
+        student.HasImmunizations = request.HasImmunizations;
         student.ImmunizationNotes = request.ImmunizationNotes;
         student.SkillNotes = request.SkillNotes;
         student.TextOptIn = request.TextOptIn;
         student.MassEmailOptOut = request.MassEmailOptOut;
+        student.HealthInsuranceCarrier = request.HealthInsuranceCarrier?.Trim();
+        student.DisabilitiesNotes = request.DisabilitiesNotes?.Trim();
+        student.AllergiesNotes = request.AllergiesNotes?.Trim();
+        student.AllowTextMessaging = request.AllowTextMessaging;
         student.UpdatedOnUtc = DateTime.UtcNow;
         student.UpdatedById = CurrentActorId();
         _students.Update(student);
@@ -422,6 +448,43 @@ public sealed class StudentsController : ControllerBase
     private static Person? PersonFor(IReadOnlyDictionary<Guid, Person> persons, Student student)
         => student.PersonId is { } id && persons.TryGetValue(id, out var person) ? person : null;
 
+    /// <summary>Creates or updates the linked Person's Address — mirrors PersonsController's helper of
+    /// the same name.</summary>
+    private async Task UpsertAddressAsync(Person person, AddressInput input, CancellationToken cancellationToken)
+    {
+        var address = person.AddressId is { } addressId
+            ? await _addresses.GetByIdAsync(addressId, cancellationToken)
+            : null;
+
+        var isNew = address is null;
+        address ??= new Address { Id = Guid.NewGuid() };
+
+        address.AddressType = Enum.TryParse<AddressType>(input.AddressType, ignoreCase: true, out var type) ? type : AddressType.Home;
+        address.AddressLine1 = input.AddressLine1;
+        address.AddressLine2 = input.AddressLine2;
+        address.Landmark = input.Landmark;
+        address.BuildingName = input.BuildingName;
+        address.FloorNumber = input.FloorNumber;
+        address.UnitNumber = input.UnitNumber;
+        address.CountryCode = input.CountryCode;
+        address.CountryName = input.CountryName;
+        address.StateCode = input.StateCode;
+        address.StateName = input.StateName;
+        address.CityName = input.CityName;
+        address.PostalCode = input.PostalCode;
+
+        if (isNew)
+        {
+            await _addresses.AddAsync(address, cancellationToken);
+            person.AddressId = address.Id;
+            person.Address = address;
+        }
+        else
+        {
+            _addresses.Update(address);
+        }
+    }
+
     private Guid? CurrentActorId()
         => Guid.TryParse(_actorAccessor.GetCurrentActor(), out var id) ? id : null;
 
@@ -449,9 +512,10 @@ public sealed class StudentsController : ControllerBase
 
     private static StudentSummary ToSummary(Student s, Person? person, IReadOnlyDictionary<Guid, string> names) => new(
         s.Id, s.PersonId, s.ParentId, person?.FirstName, person?.LastName, s.FamilyName, s.StudentNumber, s.AdmissionDate,
-        s.ClassId, s.Active, s.FeeAmount, s.FeeExpiryDate, s.FeeNote, s.FeeCategoryId, s.Gender, s.BirthDate,
+        s.ClassId, s.Active, s.FeeAmount, s.FeeExpiryDate, s.FeeNote, s.FeeCategoryId, person?.Gender, s.BirthDate,
         s.CellPhone, person?.PrimaryEmail, s.School, s.GradeLevel, s.Transportation, s.TShirtSize, s.Disabilities,
-        s.SpecialNeeds, s.Allergies, s.Medications, s.PrimaryDoctor, s.ImmunizationNotes, s.SkillNotes,
-        s.TextOptIn, s.MassEmailOptOut,
+        s.SpecialNeeds, s.Allergies, s.Medications, s.PrimaryDoctor, s.HasImmunizations, s.ImmunizationNotes, s.SkillNotes,
+        s.TextOptIn, s.MassEmailOptOut, s.HealthInsuranceCarrier, s.DisabilitiesNotes, s.AllergiesNotes, s.AllowTextMessaging,
+        person?.EmergencyContactName, person?.EmergencyContactNumber,
         NameOf(names, s.CreatedById), s.CreatedOnUtc, NameOf(names, s.UpdatedById), s.UpdatedOnUtc);
 }
