@@ -1088,6 +1088,47 @@ namespace Sakolee.Infrastructure.Persistence.Migrations
                     b.ToTable("EntityTags", (string)null);
                 });
 
+            modelBuilder.Entity("Sakolee.Domain.Entities.FamilyRelation", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("Active")
+                        .HasColumnType("bit");
+
+                    b.Property<Guid?>("CreatedById")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedOnUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("Deleted")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("DeletedOnUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid?>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("UpdatedById")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("UpdatedOnUtc")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId");
+
+                    b.ToTable("FamilyRelations");
+                });
+
             modelBuilder.Entity("Sakolee.Domain.Entities.Family", b =>
                 {
                     b.Property<string>("Id")
@@ -2792,6 +2833,54 @@ namespace Sakolee.Infrastructure.Persistence.Migrations
                     b.ToTable("Students", (string)null);
                 });
 
+            modelBuilder.Entity("Sakolee.Domain.Entities.TShirtSize", b =>
+                {
+                    b.Property<string>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("CreatedById")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime>("CreatedOnUtc")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("sysutcdatetime()");
+
+                    b.Property<bool>("Deleted")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("TenantId")
+                        .IsRequired()
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)")
+                        .HasColumnName("TenentId");
+
+                    b.Property<string>("UpdatedById")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime?>("UpdatedOnUtc")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "Name")
+                        .IsUnique()
+                        .HasFilter("[Deleted] = 0");
+
+                    b.ToTable("TShirtSize", (string)null);
+                });
+
             modelBuilder.Entity("Sakolee.Domain.Entities.Tag", b =>
                 {
                     b.Property<Guid>("Id")
@@ -3335,6 +3424,15 @@ namespace Sakolee.Infrastructure.Persistence.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("Sakolee.Domain.Entities.BillingMethod", b =>
+                {
+                    b.HasOne("Sakolee.Domain.Entities.Tenant", "Tenant")
+                        .WithMany()
+                        .HasForeignKey("TenantId");
+
+                    b.Navigation("Tenant");
+                });
+
             modelBuilder.Entity("Sakolee.Domain.Entities.ChecklistItem", b =>
                 {
                     b.HasOne("Sakolee.Domain.Entities.Checklist", "Checklist")
@@ -3385,6 +3483,15 @@ namespace Sakolee.Infrastructure.Persistence.Migrations
                         .IsRequired();
 
                     b.Navigation("Tag");
+                });
+
+            modelBuilder.Entity("Sakolee.Domain.Entities.FamilyRelation", b =>
+                {
+                    b.HasOne("Sakolee.Domain.Entities.Tenant", "Tenant")
+                        .WithMany()
+                        .HasForeignKey("TenantId");
+
+                    b.Navigation("Tenant");
                 });
 
             modelBuilder.Entity("Sakolee.Domain.Entities.Family", b =>

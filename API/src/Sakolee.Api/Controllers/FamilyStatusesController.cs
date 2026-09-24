@@ -73,11 +73,15 @@ public sealed class FamilyStatusesController : ControllerBase
         }
 
         // Check if a family status with the exact same name already exists in the system
-        if (await _familyStatuses.ExistsAsync(request.Name, cancellationToken))
+        var trimmedName = request.Name.Trim();
+
+        if (await _familyStatuses.ExistsAsync(trimmedName, null, cancellationToken))
         {
             return BadRequest(ApiResponseFactory.Error(
                 ApiErrorCodes.ValidationFailed, "Validation failed.", "A family status with this name already exists."));
         }
+
+      
 
         // Retrieve and validate the active tenant identifier from the current user context
         var tenantId = User.GetActiveTenantId() ?? Guid.Empty;
@@ -216,7 +220,15 @@ public sealed class FamilyStatusesController : ControllerBase
 
         if (!string.IsNullOrWhiteSpace(request.Name))
         {
-            familyStatus.Name = request.Name.Trim();
+            var trimmedName = request.Name.Trim();
+
+            if (await _familyStatuses.ExistsAsync(trimmedName, id, cancellationToken))
+            {
+                return BadRequest(ApiResponseFactory.Error(
+                    ApiErrorCodes.ValidationFailed, "Validation failed.", "A family status with this name already exists."));
+            }
+
+            familyStatus.Name = trimmedName;
         }
 
         if (request.IsActive.HasValue)

@@ -284,6 +284,7 @@ svg { fill: none; stroke: currentColor; stroke-width: 1.8px; stroke-linecap: rou
   min-height: 100svh;
   padding-top: 50px;
   overflow: hidden;
+  padding-top: 135px;
   background:
     radial-gradient(circle at 73% 22%, #3525cd26, transparent 34%),
     radial-gradient(circle at 18% 75%, #3525cd0d, transparent 29%),
@@ -448,7 +449,7 @@ svg { fill: none; stroke: currentColor; stroke-width: 1.8px; stroke-linecap: rou
     font-weight: 720;
     line-height: .96;
     letter-spacing: -.065em;
-    text-shadow: 0 18px 60px #1e1b2e75;
+    // text-shadow: 0 18px 60px #1e1b2e75;
 
     span {
       display: block;
@@ -618,39 +619,91 @@ svg { fill: none; stroke: currentColor; stroke-width: 1.8px; stroke-linecap: rou
     }
   }
 
+  // .hero-ticker {
+  //   position: absolute;
+  //   inset: auto 0 0;
+  //   height: 56px;
+  //   display: flex;
+  //   align-items: center;
+  //   overflow: hidden;
+  //   background: #ffffffe0;
+  //   border-block: 1px solid var(--line);
+
+  //   // @media (max-width: 1257px) {
+  //   //   height: auto;
+  //   // }
+
+  //   > div {
+  //     width: max-content;
+  //     display: flex;
+  //     align-items: center;
+  //     gap: 28px;
+  //     color: #1e1b2e8f;
+  //     font-size: 10px;
+  //     letter-spacing: .13em;
+  //     text-transform: uppercase;
+  //     animation: 28s linear infinite marquee;
+  //     @media (max-width: 1257px) {
+  //       // height: auto;
+  //     }
+  //   }
+
+  //   i {
+  //     width: 5px; height: 5px;
+  //     flex: 0 0 5px;
+  //     border-radius: 50%;
+  //     background: var(--blue);
+  //     box-shadow: 0 0 10px var(--blue);
+  //   }
+  // }
+
   .hero-ticker {
-    position: absolute;
-    inset: auto 0 0;
-    height: 56px;
+  position: absolute;
+  inset: auto 0 0;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  background: #ffffffe0;
+  border-block: 1px solid var(--line);
+
+  > div {
+    width: max-content;
+    min-width: max-content;
+    flex: 0 0 max-content;
+
     display: flex;
     align-items: center;
-    overflow: hidden;
-    background: #ffffffe0;
-    border-block: 1px solid var(--line);
+    gap: 28px;
 
-    > div {
-      width: max-content;
-      display: flex;
-      align-items: center;
-      gap: 28px;
-      color: #1e1b2e8f;
-      font-size: 10px;
-      letter-spacing: .13em;
-      text-transform: uppercase;
-      animation: 28s linear infinite marquee;
-    }
+    color: #1e1b2e8f;
+    font-size: 10px;
+    letter-spacing: .13em;
+    text-transform: uppercase;
 
-    i {
-      width: 5px; height: 5px;
-      flex: 0 0 5px;
-      border-radius: 50%;
-      background: var(--blue);
-      box-shadow: 0 0 10px var(--blue);
-    }
+    // Important: prevent text from wrapping
+    white-space: nowrap;
+
+    animation: 28s linear infinite marquee;
   }
 
+  span {
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
+
+  i {
+    width: 5px;
+    height: 5px;
+    flex: 0 0 5px;
+    border-radius: 50%;
+    background: var(--blue);
+    box-shadow: 0 0 10px var(--blue);
+  }
+}
+
   @media (max-width: 980px) {
-    padding-top: 30px;
+    padding-top: 80px;
 
     .hero-inner {
       grid-template-columns: 1fr;
@@ -685,7 +738,7 @@ svg { fill: none; stroke: currentColor; stroke-width: 1.8px; stroke-linecap: rou
   }
 
   @media (max-width: 600px) {
-    padding-top: 20px;
+    padding-top: 50px;
 
     .hero-inner {
       width: min(calc(100% - 30px), 1180px);
@@ -893,19 +946,25 @@ svg { fill: none; stroke: currentColor; stroke-width: 1.8px; stroke-linecap: rou
     h3 {
       margin: 34px 0 11px;
       color: var(--ink);
-      font-size: 24px;
+      font-size: 22px;
       font-weight: 600;
       line-height: 1.35;
       letter-spacing: -.025em;
+      @media (max-width: 600px) {
+        font-size: 20px !important;
+      }
     }
 
     > p {
       max-width: 540px;
       margin: 0;
       color: #1e1b2eb8;
-      font-size: 20px;
+      font-size: 16px;
       font-weight: 400;
       line-height: 1.55;
+      @media (max-width: 600px) {
+        font-size: 14px !important;
+      }
     }
 
     ul {
@@ -921,8 +980,11 @@ svg { fill: none; stroke: currentColor; stroke-width: 1.8px; stroke-linecap: rou
       align-items: flex-start;
       gap: 8px;
       color: #1e1b2eb8;
-      font-size: 18px;
+      font-size: 16px;
       line-height: 1.5;
+       @media (max-width: 600px) {
+        font-size: 14px !important;
+      }
 
       svg {
         width: 18px; height: 18px;
@@ -941,6 +1003,14 @@ svg { fill: none; stroke: currentColor; stroke-width: 1.8px; stroke-linecap: rou
     border: 1px solid #3525cd1a;
     border-radius: 14px;
     background: linear-gradient(135deg, #f9f8ff, #fff);
+    background-color: #3525cd06;
+    background-image: linear-gradient(#3525cd09 1px, #0000 1px), linear-gradient(90deg, #3525cd09 1px, #0000 1px), none;
+    background-position: 0 0, 0 0, 0 0;
+    background-repeat: repeat, repeat, repeat;
+    background-size: 22px 22px;
+    background-attachment: scroll, scroll, scroll;
+    background-origin: padding-box, padding-box, padding-box;
+    background-clip: border-box, border-box, border-box;
 
     // .visual-orbit {
     //   position: absolute;
@@ -967,26 +1037,40 @@ svg { fill: none; stroke: currentColor; stroke-width: 1.8px; stroke-linecap: rou
     .visual-orbit i{background:#fff;border-radius:50%;width:8px;height:8px;position:absolute;top:12px;left:4px;box-shadow:0 0 10px #3525cd}
      @keyframes visualSpin{to{transform:rotate(360deg)}}
 
-    .visual-node {
-      position: absolute;
-      width: 7px; height: 7px;
-      border-radius: 50%;
-      background: var(--primary);
-      box-shadow: 0 0 10px #3525cd73;
+    // .visual-node {
+    //   position: absolute;
+    //   width: 7px; height: 7px;
+    //   border-radius: 50%;
+    //   background: var(--primary);
+    //   box-shadow: 0 0 10px #3525cd73;
 
-      &.node-one { left: 43%; top: 30%; }
-      &.node-two { left: 58%; top: 64%; }
-      &.node-three { right: 12%; top: 24%; }
-    }
+    //   &.node-one { left: 43%; top: 30%; }
+    //   &.node-two { left: 58%; top: 64%; }
+    //   &.node-three { right: 12%; top: 24%; }
+    // }
 
-    .visual-path {
-      position: absolute;
-      height: 1px;
-      background: #3525cd4d;
-      transform-origin: left center;
+    .visual-node{background:#fff;border:2px solid #3525cd;border-radius:50%;width:9px;height:9px;animation:2.4s ease-in-out infinite nodePulse;position:absolute;box-shadow:0 0 12px #3525cd6b}
+    .node-one{top:26px;left:44%}
+    .node-two{animation-delay:-.8s;top:74px;left:61%}
+    .node-three{animation-delay:-1.6s;top:42px;right:21px}
+    @keyframes nodePulse{50%{background:#3525cd;transform:scale(1.55)}}
 
-      &.path-one { width: 35%; left: 24%; top: 55%; transform: rotate(-12deg); }
-      &.path-two { width: 38%; left: 43%; top: 44%; transform: rotate(12deg); }
+    // .visual-path {
+    //   position: absolute;
+    //   height: 1px;
+    //   background: #3525cd4d;
+    //   transform-origin: left center;
+
+    //   &.path-one { width: 35%; left: 24%; top: 55%; transform: rotate(-12deg); }
+    //   &.path-two { width: 38%; left: 43%; top: 44%; transform: rotate(12deg); }
+    // }
+
+    .visual-path{transform-origin:0;background:linear-gradient(90deg,#3525cd,#6c5ce729);height:1px;position:absolute;overflow:hidden}
+    .visual-path:after{content:"";background:#fff;width:32px;height:2px;animation:2.8s linear infinite dataTravel;position:absolute;top:-1px;box-shadow:0 0 10px #3525cd}
+    .path-one{width:44%;top:32px;left:45%;transform:rotate(8deg)}
+    .path-two{width:35%;top:82px;left:62%;transform:rotate(-18deg)}
+    @keyframes dataTravel{0%{left:-35px}
+     to{left:100%}
     }
 
     // .visual-bars {
@@ -1014,7 +1098,14 @@ svg { fill: none; stroke: currentColor; stroke-width: 1.8px; stroke-linecap: rou
     .visual-bars i:nth-child(3){height:68%;animation-delay:-.8s}
     .visual-bars i:nth-child(4){height:100%;animation-delay:-1.2s}
     @keyframes barWave{50%{opacity:.5;transform:scaleY(.45)}}
+    
   }
+
+  .visual-2 .visual-orbit,.visual-6 .visual-orbit{left:auto;right:22px}
+  .visual-2 .node-one,.visual-6 .node-one{left:20px}
+  .visual-2 .node-two,.visual-6 .node-two{left:31%}
+  .visual-2 .path-one,.visual-6 .path-one{width:60%;left:8%;transform:rotate(-5deg)}
+  .visual-3 .visual-orbit,.visual-5 .visual-orbit,.visual-7 .visual-orbit{width:70px;height:70px;top:27px}
 
   @media (max-width: 980px) {
     .feature-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -1132,17 +1223,23 @@ svg { fill: none; stroke: currentColor; stroke-width: 1.8px; stroke-linecap: rou
     h3 {
       margin: 27px 0 15px;
       color: var(--ink);
-      font-size: 24px;
+      font-size: 22px;
       font-weight: 600;
       line-height: 1.35;
       letter-spacing: -.045em;
+      @media (max-width: 600px) {
+        font-size: 20px !important;
+      }
     }
 
     > p,
     li {
-      font-size: 18px;
+      font-size: 16px;
       font-weight: 400;
       line-height: 1.5;
+      @media (max-width: 600px) {
+        font-size: 14px !important;
+      }
     }
 
     > p { margin: 0; color: #1e1b2eb8; }
@@ -1206,8 +1303,21 @@ svg { fill: none; stroke: currentColor; stroke-width: 1.8px; stroke-linecap: rou
     background: #fff;
     border-bottom: 1px solid var(--line);
 
-    strong { color: var(--ink); font-size: 21px; line-height: 1.4; }
-    span { padding: 7px 11px; color: #fff; background: var(--primary); border-radius: 20px; font-size: 15px; line-height: 1.4; font-weight: 750; white-space: nowrap; }
+    strong { 
+      color: var(--ink); font-size: 21px; line-height: 1.4;
+      @media (max-width: 600px) {
+        font-size: 18px !important;
+      }
+     }
+    span { 
+      padding: 7px 11px; color: #fff; background: var(--primary); border-radius: 20px; font-size: 15px; line-height: 1.4; font-weight: 750; white-space: nowrap;
+      @media (max-width: 338px) {
+        white-space: wrap;
+        padding: 0;
+        text-align: center;
+        font-size: 12px !important;
+      }
+     }
   }
 
   .enrollment-list { display: grid; }
@@ -1227,8 +1337,18 @@ svg { fill: none; stroke: currentColor; stroke-width: 1.8px; stroke-linecap: rou
     &:hover { padding-left: 29px; background: #3525cd14; }
 
     strong, small { display: block; }
-    strong { color: var(--ink); font-size: 21px; line-height: 1.4; }
-    small { margin-top: 5px; color: #1e1b2e8c; font-size: 15px; line-height: 1.45; }
+    strong { 
+      color: var(--ink); font-size: 18px; line-height: 1.4;
+      @media (max-width: 600px) {
+        font-size: 16px !important;
+      }
+     }
+    small { 
+      margin-top: 5px; color: #1e1b2e8c; font-size: 14px; line-height: 1.45;
+      @media (max-width: 600px) {
+        font-size: 12px !important;
+      }
+     }
 
     em {
       padding: 7px 11px;
@@ -1419,7 +1539,10 @@ svg { fill: none; stroke: currentColor; stroke-width: 1.8px; stroke-linecap: rou
   }
 
   .quote-stars { color: var(--primary); letter-spacing: 4px; font-size: 12px; }
-  .quote-copy { margin: 23px 0 32px; color: #1e1b2eb8; font-size: 17px; line-height: 1.65; }
+  .quote-copy { 
+    margin: 23px 0 32px; color: #1e1b2eb8; font-size: 14px; line-height: 1.65;
+
+   }
 
   .featured-quote footer,
   .testimonial-card footer {
@@ -1558,7 +1681,7 @@ svg { fill: none; stroke: currentColor; stroke-width: 1.8px; stroke-linecap: rou
       small { color: #1e1b2e73; font-size: 10px; font-weight: 500; }
     }
 
-    > p { min-height: 44px; margin: 0; color: #1e1b2e9e; font-size: 12px; line-height: 1.65; }
+    > p { min-height: 44px; margin: 0; color: #1e1b2e9e; font-size: 14px; line-height: 1.65; }
 
     ul {
       display: grid;
@@ -1573,7 +1696,7 @@ svg { fill: none; stroke: currentColor; stroke-width: 1.8px; stroke-linecap: rou
       align-items: flex-start;
       gap: 8px;
       color: #1e1b2eb8;
-      font-size: 11px;
+      font-size: 14px;
       line-height: 1.45;
 
       svg { width: 14px; height: 14px; flex: 0 0 14px; margin-top: 1px; color: var(--primary); }
@@ -1845,6 +1968,15 @@ svg { fill: none; stroke: currentColor; stroke-width: 1.8px; stroke-linecap: rou
 50%{transform:scaleY(1.15)}
 }
 
+  input,
+  optgroup,
+  select,
+  textarea {
+    font-size: 13px !important;
+    font-family: inherit !important;
+    margin: 0 !important;
+    color: #676768 !important;
+  }
   input:focus,
   textarea:focus,
   select:focus {
@@ -1855,3 +1987,4 @@ svg { fill: none; stroke: currentColor; stroke-width: 1.8px; stroke-linecap: rou
   .q-field--focused .q-field__control:before {
     box-shadow: none !important;
   }
+  

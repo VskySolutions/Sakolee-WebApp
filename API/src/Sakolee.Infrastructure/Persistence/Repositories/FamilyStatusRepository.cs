@@ -111,6 +111,8 @@ internal sealed class FamilyStatusRepository : IFamilyStatusRepository
         return (items, total);
     }
 
+
+
     /// <summary>
     /// Retrieves a selectable list of active family statuses for dropdown bindings.
     /// </summary>
@@ -129,6 +131,23 @@ internal sealed class FamilyStatusRepository : IFamilyStatusRepository
     }
 
     #endregion
+
+    /// <summary>
+    /// Checks whether a family status with the specified name already exists (case-insensitive), optionally excluding a specific ID for updates.
+    /// </summary>
+    public Task<bool> ExistsAsync(string name, Guid? excludeId = null, CancellationToken cancellationToken = default)
+    {
+        var query = _dbContext.FamilyStatuses.AsQueryable();
+
+        if (excludeId.HasValue)
+        {
+            query = query.Where(f => f.FamilyStatusId != excludeId.Value);
+        }
+
+        return query.AnyAsync(f => f.Name.ToLower() == name.ToLower(), cancellationToken);
+    }
+
+
 
     #region Command Operations (Add, Update, Remove)
 

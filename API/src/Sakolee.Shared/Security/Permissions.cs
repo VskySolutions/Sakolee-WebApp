@@ -22,16 +22,24 @@ public static class Permissions
     public const string FamilyStatusesWrite = "familyStatuses.write";
     public const string FamilyStatusesDelete = "familyStatuses.delete";
 
+    // Family Realtion
+    public const string FamilyRelationsRead = " familyRelations.read";
+    public const string FamilyRelationsWrite = "familyRelations.write";
+    public const string FamilyRelationsDelete = "familyRelations.delete";
+
     // Sessions (Dance academy session master records)
-    public const string SessionsRead = "sessions.read";
-    public const string SessionsWrite = "sessions.write";
-    public const string SessionsDelete = "sessions.delete";
+    public const string ClassSessionsRead = "classSessions.read";
+    public const string ClassSessionsWrite = "classSessions.write";
+    public const string ClassSessionsDelete = "classSessions.delete";
 
     // Families (household records — contacts + students, see Family entity)
     public const string FamiliesRead = "families.read";
     public const string FamiliesWrite = "families.write";
     public const string FamiliesDelete = "families.delete";
 
+    public const string BillingMethodsRead = "billingMethods.read";
+    public const string BillingMethodsWrite = "billingMethods.write";
+    public const string BillingMethodsDelete = "billingMethods.delete";
     // Students
     public const string StudentsRead = "students.read";
     public const string StudentsWrite = "students.write";
@@ -51,6 +59,11 @@ public static class Permissions
     public const string BillingCyclesRead = "billingCycles.read"; 
     public const string BillingCyclesWrite = "billingCycles.write";
     public const string BillingCyclesDelete = "billingCycles.delete";
+
+    // T-Shirt Sizes
+    public const string TShirtSizesRead = "tShirtSizes.read";
+    public const string TShirtSizesWrite = "tShirtSizes.write";
+    public const string TShirtSizesDelete = "tShirtSizes.delete";
 
     // Users
     public const string UsersRead = "users.read";
@@ -97,11 +110,14 @@ public static class Permissions
         PersonsRead, PersonsWrite, PersonsDelete,
         FamilyStatusesRead,FamilyStatusesWrite,FamilyStatusesDelete,
         FamiliesRead, FamiliesWrite, FamiliesDelete,
-        SessionsRead, SessionsWrite, SessionsDelete,
+          FamilyRelationsRead, FamilyRelationsWrite, FamilyRelationsDelete,
+        ClassSessionsRead, ClassSessionsWrite, ClassSessionsDelete,
+        BillingMethodsRead, BillingMethodsWrite, BillingMethodsDelete,
         StudentsRead, StudentsWrite, StudentsDelete,
         ClassesRead, ClassesWrite, ClassesDelete,
         ClassCategoriesRead, ClassCategoriesWrite, ClassCategoriesDelete, 
         BillingCyclesRead, BillingCyclesWrite, BillingCyclesDelete,
+        TShirtSizesRead,TShirtSizesWrite,TShirtSizesDelete,
         LocationsRead, LocationsWrite, LocationsDelete,
         UsersRead, UsersWrite, UsersResetPassword, UsersGroupManagement,
         RolesRead, RolesWrite, RolesAssign,
@@ -120,9 +136,17 @@ public static class Permissions
         // Deleting persons stays Super-Admin-only (PersonsDelete intentionally excluded here).
         PersonsRead, PersonsWrite,
         FamilyStatusesRead,FamilyStatusesWrite,FamilyStatusesDelete,
+
+        //Class Session
         // Families are owned entirely within a tenant, so Tenant Admins get full CRUD.
         FamiliesRead, FamiliesWrite, FamiliesDelete,
-        SessionsRead, SessionsWrite, SessionsDelete,
+        ClassSessionsRead, ClassSessionsWrite, ClassSessionsDelete,
+
+        //Billing Method
+         BillingMethodsRead, BillingMethodsWrite, BillingMethodsDelete,
+
+         //Family Relation
+         FamilyRelationsRead, FamilyRelationsWrite, FamilyRelationsDelete,
         // Students are owned entirely within a tenant, so Tenant Admins get full CRUD.
         StudentsRead, StudentsWrite, StudentsDelete,
         // Classes carry no TenantId yet (see the Class entity remarks) but are administered the same way.
@@ -131,6 +155,8 @@ public static class Permissions
         ClassCategoriesRead, ClassCategoriesWrite, ClassCategoriesDelete, 
         // Billing Cycles
         BillingCyclesRead, BillingCyclesWrite, BillingCyclesDelete,
+        //T-Shirt Sizes
+        TShirtSizesRead,TShirtSizesWrite,TShirtSizesDelete,
         // Location
         LocationsRead, LocationsWrite, LocationsDelete,
         // Users

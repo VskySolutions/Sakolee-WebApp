@@ -61,10 +61,10 @@
 
           <div class="product-hero-scene">
             <div class="product-halo" />
-            <img class="product-shot shot-dashboard" src="https://sakolee.publicvm.com/product/dashboard.png" alt="Sakolee studio dashboard">
-            <img class="product-shot shot-onboarding" src="https://sakolee.publicvm.com/product/onboarding.png" alt="Automated onboarding interface">
-            <img class="product-shot shot-billing" src="https://sakolee.publicvm.com/product/billing.png" alt="Billing interface">
-            <img class="product-shot shot-schedule" src="https://sakolee.publicvm.com/product/schedule.png" alt="Studio schedule interface">
+            <img class="product-shot shot-dashboard" src="~assets/dashboard.png" alt="Sakolee studio dashboard">
+            <img class="product-shot shot-onboarding" src="~assets/onboarding.png" alt="Automated onboarding interface">
+            <img class="product-shot shot-billing" src="~assets/billing.png" alt="Billing interface">
+            <img class="product-shot shot-schedule" src="~assets/schedule.png" alt="Studio schedule interface">
             <span class="scene-particle particle-one" />
             <span class="scene-particle particle-two" />
             <span class="scene-particle particle-three" />
@@ -87,7 +87,7 @@
     </section>
 
     <!-- FEATURES -->
-    <section id="features" class="section features-section">
+    <!-- <section id="features" class="section features-section">
       <div class="section-shell">
         <div class="section-heading reveal">
           <div>
@@ -129,6 +129,538 @@
               </li>
             </ul>
           </article>
+        </div>
+      </div>
+    </section> -->
+
+    <!-- FEATURES -->
+    <section id="features" class="section features-section">
+      <div class="section-shell">
+
+        <div class="section-heading reveal">
+          <div>
+            <p class="section-kicker">
+              <span />
+              Everything in one place
+            </p>
+
+            <h2>Every module your<br>studio needs</h2>
+          </div>
+
+          <p>
+            Built from the ground up for dance studios — not retrofitted from
+            generic business software.
+          </p>
+        </div>
+
+        <div class="feature-grid">
+
+          <!-- 01 Student Enrollment -->
+          <article class="feature-card wide reveal">
+            <div class="feature-card-head">
+              <span class="feature-number">01</span>
+
+              <span class="feature-arrow">
+                <svg viewBox="0 0 20 20" aria-hidden="true">
+                  <path d="M4 10h11M11 6l4 4-4 4" />
+                </svg>
+              </span>
+            </div>
+
+            <div class="feature-visual visual-1" aria-hidden="true">
+              <span class="visual-orbit">
+                <i />
+              </span>
+
+              <span class="visual-node node-one" />
+              <span class="visual-node node-two" />
+              <span class="visual-node node-three" />
+
+              <span class="visual-path path-one" />
+              <span class="visual-path path-two" />
+
+              <span class="visual-bars">
+                <i />
+                <i />
+                <i />
+                <i />
+              </span>
+            </div>
+
+            <h3>Student enrollment</h3>
+
+            <p>
+              New students, transfers, drops, and trial programs — with
+              per-student onboarding task checklists and a full activity history
+              for every record.
+            </p>
+
+            <ul>
+              <li>
+                <svg viewBox="0 0 20 20" aria-hidden="true">
+                  <path d="m4 10.5 3.5 3.5L16 6" />
+                </svg>
+                New student onboarding projects
+              </li>
+
+              <li>
+                <svg viewBox="0 0 20 20" aria-hidden="true">
+                  <path d="m4 10.5 3.5 3.5L16 6" />
+                </svg>
+                Class transfer management
+              </li>
+
+              <li>
+                <svg viewBox="0 0 20 20" aria-hidden="true">
+                  <path d="m4 10.5 3.5 3.5L16 6" />
+                </svg>
+                Trial student pipeline
+              </li>
+
+              <li>
+                <svg viewBox="0 0 20 20" aria-hidden="true">
+                  <path d="m4 10.5 3.5 3.5L16 6" />
+                </svg>
+                Drop request tracking
+              </li>
+
+              <li>
+                <svg viewBox="0 0 20 20" aria-hidden="true">
+                  <path d="m4 10.5 3.5 3.5L16 6" />
+                </svg>
+                Wait list management
+              </li>
+            </ul>
+          </article>
+
+          <!-- 02 Enrollment Operations -->
+          <article class="feature-card wide accent reveal">
+            <div class="feature-card-head">
+              <span class="feature-number">02</span>
+
+              <span class="feature-arrow">
+                <svg viewBox="0 0 20 20" aria-hidden="true">
+                  <path d="M4 10h11M11 6l4 4-4 4" />
+                </svg>
+              </span>
+            </div>
+
+            <div class="feature-visual visual-2" aria-hidden="true">
+              <span class="visual-orbit"><i /></span>
+              <span class="visual-node node-one" />
+              <span class="visual-node node-two" />
+              <span class="visual-node node-three" />
+              <span class="visual-path path-one" />
+              <span class="visual-path path-two" />
+              <span class="visual-bars"><i /><i /><i /><i />
+              </span>
+            </div>
+
+            <h3>Enrollment Operations &amp; Tasks Management</h3>
+
+            <p>
+              Every onboarding, enrollment, and drop request runs as a structured
+              project with auto-generated tasks — so nothing slips through the
+              cracks.
+            </p>
+
+            <ul>
+              <li>
+                <svg viewBox="0 0 20 20" aria-hidden="true">
+                  <path d="m4 10.5 3.5 3.5L16 6" />
+                </svg>
+                Onboarding, enrollment, and drop project types
+              </li>
+
+              <li>
+                <svg viewBox="0 0 20 20" aria-hidden="true">
+                  <path d="m4 10.5 3.5 3.5L16 6" />
+                </svg>
+                Automatic task generation per project
+              </li>
+
+              <li>
+                <svg viewBox="0 0 20 20" aria-hidden="true">
+                  <path d="m4 10.5 3.5 3.5L16 6" />
+                </svg>
+                Manual task creation and editing
+              </li>
+
+              <li>
+                <svg viewBox="0 0 20 20" aria-hidden="true">
+                  <path d="m4 10.5 3.5 3.5L16 6" />
+                </svg>
+                Progress monitoring by status and date
+              </li>
+
+              <li>
+                <svg viewBox="0 0 20 20" aria-hidden="true">
+                  <path d="m4 10.5 3.5 3.5L16 6" />
+                </svg>
+                Notes and full task history
+              </li>
+            </ul>
+          </article>
+
+          <!-- 03 Class Management -->
+          <article class="feature-card standard reveal">
+            <div class="feature-card-head">
+              <span class="feature-number">03</span>
+
+              <span class="feature-arrow">
+                <svg viewBox="0 0 20 20" aria-hidden="true">
+                  <path d="M4 10h11M11 6l4 4-4 4" />
+                </svg>
+              </span>
+            </div>
+
+            <div class="feature-visual visual-3" aria-hidden="true">
+              <span class="visual-orbit">
+                <i />
+              </span>
+
+              <span class="visual-node node-one" />
+              <span class="visual-node node-two" />
+              <span class="visual-node node-three" />
+
+              <span class="visual-path path-one" />
+              <span class="visual-path path-two" />
+
+              <span class="visual-bars">
+                <i />
+                <i />
+                <i />
+                <i />
+              </span>
+            </div>
+
+            <h3>Class management</h3>
+
+            <p>
+              Schedules, instructors, locations, and real-time capacity — kept
+              accurate and visible to everyone on your team, always.
+            </p>
+
+            <ul>
+              <li>
+                <svg viewBox="0 0 20 20" aria-hidden="true">
+                  <path d="m4 10.5 3.5 3.5L16 6" />
+                </svg>
+                Class schedules and sessions
+              </li>
+
+              <li>
+                <svg viewBox="0 0 20 20" aria-hidden="true">
+                  <path d="m4 10.5 3.5 3.5L16 6" />
+                </svg>
+                Instructor assignments
+              </li>
+
+              <li>
+                <svg viewBox="0 0 20 20" aria-hidden="true">
+                  <path d="m4 10.5 3.5 3.5L16 6" />
+                </svg>
+                Capacity and enrollment tracking
+              </li>
+
+              <li>
+                <svg viewBox="0 0 20 20" aria-hidden="true">
+                  <path d="m4 10.5 3.5 3.5L16 6" />
+                </svg>
+                Waiting list management
+              </li>
+            </ul>
+          </article>
+
+          <!-- 04 Recital Management -->
+          <article class="feature-card standard reveal">
+            <div class="feature-card-head">
+              <span class="feature-number">04</span>
+
+              <span class="feature-arrow">
+                <svg viewBox="0 0 20 20" aria-hidden="true">
+                  <path d="M4 10h11M11 6l4 4-4 4" />
+                </svg>
+              </span>
+            </div>
+
+            <div class="feature-visual visual-4" aria-hidden="true">
+              <span class="visual-orbit">
+                <i />
+              </span>
+
+              <span class="visual-node node-one" />
+              <span class="visual-node node-two" />
+              <span class="visual-node node-three" />
+
+              <span class="visual-path path-one" />
+              <span class="visual-path path-two" />
+
+              <span class="visual-bars">
+                <i />
+                <i />
+                <i />
+                <i />
+              </span>
+            </div>
+
+            <h3>Recital management</h3>
+
+            <p>
+              Themes, costumes, music, lighting cues, participant tracking, and
+              volunteer approvals — organized end to end for every show.
+            </p>
+
+            <ul>
+              <li>
+                <svg viewBox="0 0 20 20" aria-hidden="true">
+                  <path d="m4 10.5 3.5 3.5L16 6" />
+                </svg>
+                Performance sequences and themes
+              </li>
+
+              <li>
+                <svg viewBox="0 0 20 20" aria-hidden="true">
+                  <path d="m4 10.5 3.5 3.5L16 6" />
+                </svg>
+                Music and lights cue library
+              </li>
+
+              <li>
+                <svg viewBox="0 0 20 20" aria-hidden="true">
+                  <path d="m4 10.5 3.5 3.5L16 6" />
+                </svg>
+                Participant tracking
+              </li>
+
+              <li>
+                <svg viewBox="0 0 20 20" aria-hidden="true">
+                  <path d="m4 10.5 3.5 3.5L16 6" />
+                </svg>
+                Costume form approvals
+              </li>
+            </ul>
+          </article>
+
+          <!-- 05 Costume Library -->
+          <article class="feature-card standard reveal">
+            <div class="feature-card-head">
+              <span class="feature-number">05</span>
+
+              <span class="feature-arrow">
+                <svg viewBox="0 0 20 20" aria-hidden="true">
+                  <path d="M4 10h11M11 6l4 4-4 4" />
+                </svg>
+              </span>
+            </div>
+
+            <div class="feature-visual visual-5" aria-hidden="true">
+              <span class="visual-orbit">
+                <i />
+              </span>
+
+              <span class="visual-node node-one" />
+              <span class="visual-node node-two" />
+              <span class="visual-node node-three" />
+
+              <span class="visual-path path-one" />
+              <span class="visual-path path-two" />
+
+              <span class="visual-bars">
+                <i />
+                <i />
+                <i />
+                <i />
+              </span>
+            </div>
+
+            <h3>Costume library and inventory</h3>
+
+            <p>
+              Every costume record in one place — associated to categories,
+              materials or measurements, and tracked through stock and handover
+              status all season.
+            </p>
+
+            <ul>
+              <li>
+                <svg viewBox="0 0 20 20" aria-hidden="true">
+                  <path d="m4 10.5 3.5 3.5L16 6" />
+                </svg>
+                Costume records with details and accessories
+              </li>
+
+              <li>
+                <svg viewBox="0 0 20 20" aria-hidden="true">
+                  <path d="m4 10.5 3.5 3.5L16 6" />
+                </svg>
+                Allocation of costumes to participants
+              </li>
+
+              <li>
+                <svg viewBox="0 0 20 20" aria-hidden="true">
+                  <path d="m4 10.5 3.5 3.5L16 6" />
+                </svg>
+                Student measurement import in Excel
+              </li>
+
+              <li>
+                <svg viewBox="0 0 20 20" aria-hidden="true">
+                  <path d="m4 10.5 3.5 3.5L16 6" />
+                </svg>
+                Inventory quantities and stock movements
+              </li>
+
+              <li>
+                <svg viewBox="0 0 20 20" aria-hidden="true">
+                  <path d="m4 10.5 3.5 3.5L16 6" />
+                </svg>
+                Handover tracking and status history
+              </li>
+            </ul>
+          </article>
+
+          <!-- 06 Costume Order -->
+          <article class="feature-card wide reveal">
+            <div class="feature-card-head">
+              <span class="feature-number">06</span>
+
+              <span class="feature-arrow">
+                <svg viewBox="0 0 20 20" aria-hidden="true">
+                  <path d="M4 10h11M11 6l4 4-4 4" />
+                </svg>
+              </span>
+            </div>
+
+            <div class="feature-visual visual-6" aria-hidden="true">
+              <span class="visual-orbit">
+                <i />
+              </span>
+
+              <span class="visual-node node-one" />
+              <span class="visual-node node-two" />
+              <span class="visual-node node-three" />
+
+              <span class="visual-path path-one" />
+              <span class="visual-path path-two" />
+
+              <span class="visual-bars">
+                <i />
+                <i />
+                <i />
+                <i />
+              </span>
+            </div>
+
+            <h3>Costume order management</h3>
+
+            <p>
+              The full procurement cycle from order creation to delivery, plus a
+              dedicated workflow for returns — vendors, pricing, and status tracked
+              end to end.
+            </p>
+
+            <ul>
+              <li>
+                <svg viewBox="0 0 20 20" aria-hidden="true">
+                  <path d="m4 10.5 3.5 3.5L16 6" />
+                </svg>
+                Order creation with vendor and pricing details
+              </li>
+
+              <li>
+                <svg viewBox="0 0 20 20" aria-hidden="true">
+                  <path d="m4 10.5 3.5 3.5L16 6" />
+                </svg>
+                Order status tracking from creation to delivery
+              </li>
+
+              <li>
+                <svg viewBox="0 0 20 20" aria-hidden="true">
+                  <path d="m4 10.5 3.5 3.5L16 6" />
+                </svg>
+                Edit, delete, and view full order history
+              </li>
+
+              <li>
+                <svg viewBox="0 0 20 20" aria-hidden="true">
+                  <path d="m4 10.5 3.5 3.5L16 6" />
+                </svg>
+                Return requests with reason and status tracking
+              </li>
+
+              <li>
+                <svg viewBox="0 0 20 20" aria-hidden="true">
+                  <path d="m4 10.5 3.5 3.5L16 6" />
+                </svg>
+                Search and filter across orders and returns
+              </li>
+            </ul>
+          </article>
+
+          <!-- 07 Email Automation -->
+          <article class="feature-card wide reveal">
+            <div class="feature-card-head">
+              <span class="feature-number">07</span>
+
+              <span class="feature-arrow">
+                <svg viewBox="0 0 20 20" aria-hidden="true">
+                  <path d="M4 10h11M11 6l4 4-4 4" />
+                </svg>
+              </span>
+            </div>
+
+            <div class="feature-visual visual-7" aria-hidden="true">
+              <span class="visual-orbit">
+                <i />
+              </span>
+
+              <span class="visual-node node-one" />
+              <span class="visual-node node-two" />
+              <span class="visual-node node-three" />
+
+              <span class="visual-path path-one" />
+              <span class="visual-path path-two" />
+
+              <span class="visual-bars">
+                <i />
+                <i />
+                <i />
+                <i />
+              </span>
+            </div>
+
+            <h3>Email automation</h3>
+
+            <p>
+              Reusable templates, scheduled and automated sends, and
+              per-recipient delivery logs — for students, parents, and staff.
+            </p>
+
+            <ul>
+              <li>
+                <svg viewBox="0 0 20 20" aria-hidden="true">
+                  <path d="m4 10.5 3.5 3.5L16 6" />
+                </svg>
+                Template library with attachments
+              </li>
+
+              <li>
+                <svg viewBox="0 0 20 20" aria-hidden="true">
+                  <path d="m4 10.5 3.5 3.5L16 6" />
+                </svg>
+                Manual and automated scheduling
+              </li>
+
+              <li>
+                <svg viewBox="0 0 20 20" aria-hidden="true">
+                  <path d="m4 10.5 3.5 3.5L16 6" />
+                </svg>
+                Delivery logs and status tracking
+              </li>
+            </ul>
+          </article>
+
         </div>
       </div>
     </section>
@@ -287,7 +819,7 @@
           <p>Join dance studios already running smoother, calmer operations with Sakolee.</p>
         </div>
         <div class="cta-actions cta-actions-btns">
-          <a class="button button-primary q-pa-md br-12 fw-700 border-price flex" href="#top">
+          <a class="button button-primary q-pa-md br-12 fw-700 border-price flex justify-center items-center" href="#top">
             Book a free demo
             <svg viewBox="0 0 20 20" class="q-ml-sm" aria-hidden="true"><path d="M4 10h11M11 6l4 4-4 4" /></svg>
           </a>
@@ -348,15 +880,15 @@ onBeforeUnmount(() => {
   observer?.disconnect();
 });
 
-const features = [
-  { number: "01", title: "Student enrollment", layout: "wide", delay: "0s", description: "New students, transfers, drops, and trial programs — with per-student onboarding task checklists and a full activity history for every record.", bullets: ["New student onboarding projects", "Class transfer management", "Trial student pipeline", "Drop request tracking", "Wait list management"] },
-  { number: "02", title: "Enrollment Operations & Tasks Management", layout: "wide", accent: true, delay: ".08s", description: "Every onboarding, enrollment, and drop request runs as a structured project with auto-generated tasks — so nothing slips through the cracks.", bullets: ["Onboarding, enrollment, and drop project types", "Automatic task generation per project", "Manual task creation and editing", "Progress monitoring by status and date", "Notes and full task history"] },
-  { number: "03", title: "Class management", layout: "standard", delay: ".16s", description: "Schedules, instructors, locations, and real-time capacity — kept accurate and visible to everyone on your team, always.", bullets: ["Class schedules and sessions", "Instructor assignments", "Capacity and enrollment tracking", "Waiting list management"] },
-  { number: "04", title: "Recital management", layout: "standard", delay: "0s", description: "Themes, costumes, music, lighting cues, participant tracking, and volunteer approvals — organized end to end for every show.", bullets: ["Performance sequences and themes", "Music and lights cue library", "Participant tracking", "Costume form approvals"] },
-  { number: "05", title: "Costume library and inventory", layout: "standard", delay: ".08s", description: "Every costume record in one place — associated to categories, materials or measurements, and tracked through stock and handover status all season.", bullets: ["Costume records with details and accessories", "Allocation of costumes to participants", "Student measurement import in Excel", "Inventory quantities and stock movements", "Handover tracking and status history"] },
-  { number: "06", title: "Costume order management", layout: "wide", delay: ".16s", description: "The full procurement cycle from order creation to delivery, plus a dedicated workflow for returns — vendors, pricing, and status tracked end to end.", bullets: ["Order creation with vendor and pricing details", "Order status tracking from creation to delivery", "Edit, delete, and view full order history", "Return requests with reason and status tracking", "Search and filter across orders and returns"] },
-  { number: "07", title: "Email automation", layout: "wide", delay: "0s", description: "Reusable templates, scheduled and automated sends, and per-recipient delivery logs — for students, parents, and staff.", bullets: ["Template library with attachments", "Manual and automated scheduling", "Delivery logs and status tracking"] }
-];
+// const features = [
+//   { number: "01", title: "Student enrollment", layout: "wide", delay: "0s", description: "New students, transfers, drops, and trial programs — with per-student onboarding task checklists and a full activity history for every record.", bullets: ["New student onboarding projects", "Class transfer management", "Trial student pipeline", "Drop request tracking", "Wait list management"] },
+//   { number: "02", title: "Enrollment Operations & Tasks Management", layout: "wide", accent: true, delay: ".08s", description: "Every onboarding, enrollment, and drop request runs as a structured project with auto-generated tasks — so nothing slips through the cracks.", bullets: ["Onboarding, enrollment, and drop project types", "Automatic task generation per project", "Manual task creation and editing", "Progress monitoring by status and date", "Notes and full task history"] },
+//   { number: "03", title: "Class management", layout: "standard", delay: ".16s", description: "Schedules, instructors, locations, and real-time capacity — kept accurate and visible to everyone on your team, always.", bullets: ["Class schedules and sessions", "Instructor assignments", "Capacity and enrollment tracking", "Waiting list management"] },
+//   { number: "04", title: "Recital management", layout: "standard", delay: "0s", description: "Themes, costumes, music, lighting cues, participant tracking, and volunteer approvals — organized end to end for every show.", bullets: ["Performance sequences and themes", "Music and lights cue library", "Participant tracking", "Costume form approvals"] },
+//   { number: "05", title: "Costume library and inventory", layout: "standard", delay: ".08s", description: "Every costume record in one place — associated to categories, materials or measurements, and tracked through stock and handover status all season.", bullets: ["Costume records with details and accessories", "Allocation of costumes to participants", "Student measurement import in Excel", "Inventory quantities and stock movements", "Handover tracking and status history"] },
+//   { number: "06", title: "Costume order management", layout: "wide", delay: ".16s", description: "The full procurement cycle from order creation to delivery, plus a dedicated workflow for returns — vendors, pricing, and status tracked end to end.", bullets: ["Order creation with vendor and pricing details", "Order status tracking from creation to delivery", "Edit, delete, and view full order history", "Return requests with reason and status tracking", "Search and filter across orders and returns"] },
+//   { number: "07", title: "Email automation", layout: "wide", delay: "0s", description: "Reusable templates, scheduled and automated sends, and per-recipient delivery logs — for students, parents, and staff.", bullets: ["Template library with attachments", "Manual and automated scheduling", "Delivery logs and status tracking"] }
+// ];
 
 const previewData = [
   { index: "01", tab: "Onboarding automation", title: "Enrollment Operations & Tasks Management", description: "Every onboarding, enrollment, and drop request runs as a project. The moment one starts, Sakolee generates its task checklist automatically and assigns each task to the right staff member — no manual setup required.", bullets: ["Three project categories: onboarding, enrollment, and drop", "Tasks auto-generated the moment a project is created", "Automatic assignment to staff based on role", "Manual task creation for anything outside the template", "Progress monitoring by status, student, project, and date", "Notes and complete activity history on every task"], head: "Sofia M. — onboarding project", status: "4 of 6 tasks done", rows: [["Welcome call", "Auto-assigned · Front desk", "Complete", "complete"], ["Enrollment paperwork", "Auto-assigned · Front desk", "Complete", "complete"], ["Measurements collected", "Auto-assigned · Instructor", "Complete", "complete"], ["Class placement confirmed", "Auto-assigned · Admin", "Complete", "complete"], ["Welcome packet sent", "Auto-assigned · Front desk", "In progress", "in-progress"], ["First class check-in", "Manual task · Instructor", "Scheduled", "scheduled"]] },

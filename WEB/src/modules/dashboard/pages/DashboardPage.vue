@@ -124,7 +124,7 @@
 
 <script setup>
 import { computed } from "vue";
-import AppBreadcrumbs from "components/common/AppBreadcrumbs.vue";
+// import AppBreadcrumbs from "components/common/AppBreadcrumbs.vue";
 import StudioSectionHeader from "components/dashboard/studio/StudioSectionHeader.vue";
 import StudioAlertCard from "components/dashboard/studio/StudioAlertCard.vue";
 import StudioMetricCard from "components/dashboard/studio/StudioMetricCard.vue";

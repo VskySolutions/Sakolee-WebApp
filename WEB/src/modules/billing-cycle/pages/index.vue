@@ -20,7 +20,7 @@
     <app-data-table
       page-key="billing-cycles"
       row-key="billingCycleId"
-      title="All Billing Cycles"
+      title="Billing Cycles"
       :rows="rows"
       :columns="columns"
       :loading="loading"
@@ -31,7 +31,7 @@
     >
       <!-- Action buttons for viewing, editing, and deleting -->
       <template #body-cell-actions="cell">
-        <q-td :props="cell" text-class="text-center">
+        <q-td :props="cell" text-class="text-center" style="padding-right: 150px !important;">
           <!-- View button -->
           <q-btn
             v-if="canRead"
@@ -81,65 +81,36 @@
       :billing-cycle="selectedBillingCycle"
       @saved="load"
     />
-    <!-- Dialog used to display Billing Cycle details -->
-    <q-dialog
+    <!-- Drawer used to display Billing Cycle details -->
+    <app-form-drawer
       v-model="viewOpen"
-      position="right"
-      transition-show="slide-left"
-      transition-hide="slide-right"
+      title="View Billing Cycle"
+      :saving="viewLoading"
+      :save-label="''"
+      @cancel="closeView"
     >
-      <q-card
-        class="column no-wrap"
-        style="
-          width: 350px;
-          max-width: 100vw;
-          max-height: 70vh;
-        "
-      >
-        <!-- Dialog header -->
-        <q-card-section class="row items-center">
-          <div class="text-h6 text-primary">
-            Billing Cycle Details
-          </div>
-          <q-space />
-          <!-- Close details dialog -->
-          <q-btn
-            icon="o_close"
-            flat
-            round
-            dense
-            v-close-popup
-          />
-        </q-card-section>
+      <div class="q-gutter-md">
+        <app-text-field
+          v-model="viewBillingCycle.name"
+          label="Name"
+          readonly
+        />
+        <app-text-field
+          v-model="viewBillingCycle.tenantName"
+          label="Tenant"
+          readonly
+        />
         <q-separator />
-        <!-- Display selected Billing Cycle details -->
-        <q-card-section class="col scroll">
-          <q-list>
-            <q-item
-              v-for="field in viewFields"
-              :key="field.label"
-            >
-              <q-item-section>
-                <q-item-label caption>
-                  {{ field.label }}
-                </q-item-label>
-              </q-item-section>
-              <q-item-section side>
-                <q-item-label v-if="field.badge">
-                  <q-badge color="primary">
-                    {{ field.value }}
-                  </q-badge>
-                </q-item-label>
-                <!-- Display normal text value -->
-                <q-item-label v-else>
-                  {{ field.value }}
-                </q-item-label>
-              </q-item-section>
-            </q-item>
-          </q-list>
-        </q-card-section>
-      </q-card>
-    </q-dialog>
+        <div>
+          <div class="text-caption text-grey-7">
+            Created On
+          </div>
+          <div class="text-body1">
+            {{ formatDateTime(viewBillingCycle.createdOnUtc) }}
+          </div>
+        </div>
+      </div>
+    </app-form-drawer>
   </q-page>
 </template>
 
@@ -153,6 +124,8 @@ import { usePermissions } from "composables/usePermissions";
 import { useListTable } from "composables/useListTable";
 import AppDataTable from "components/common/AppDataTable.vue";
 import AppListHeader from "components/common/AppListHeader.vue";
+import AppFormDrawer from "components/common/AppFormDrawer.vue";
+import AppTextField from "components/common/AppTextField.vue";
 import CreateEdit from "modules/billing-cycle/components/CreateEdit.vue";
 
 const notify = useNotify();
@@ -209,7 +182,9 @@ const columns = [
     name: "actions",
     label: "Actions",
     field: "actions",
-    align: "left"
+    align: "right",
+    style: "padding-right: 150px !important;",
+    headerStyle: "padding-right: 190px !important;"
   }
 ];
 
@@ -238,34 +213,55 @@ const formOpen = ref(false);
 const editing = ref(false);
 const selectedBillingCycle = ref(null);
 const viewOpen = ref(false);
-const viewed = ref(null);
-
-// Prepare fields to display in the view dialog.
-const viewFields = computed(() =>
-  viewed.value
-    ? [
-        {
-          label: "Name",
-          value: viewed.value.name || "—"
-        },
-        {
-          label: "Tenant",
-          value: viewed.value.tenantName || "—"
-        },
-        {
-          label: "Created On",
-          value: formatDateTime(
-            viewed.value.createdOnUtc
-          )
-        }
-      ]
-    : []
-);
-
-// Open the view dialog for the selected Billing Cycle.
-const openView = (row) => {
-  viewed.value = row;
+const viewLoading = ref(false);
+// Define the structure of the Billing Cycle being viewed.
+const viewBillingCycle = ref({
+  billingCycleId: null,
+  name: "",
+  tenantName: "",
+  createdOnUtc: null
+});
+// Reset the viewBillingCycle to its initial state.
+const resetViewBillingCycle = () => {
+  viewBillingCycle.value = {
+    billingCycleId: null,
+    name: "",
+    tenantName: "",
+    createdOnUtc: null
+  };
+};
+// Open the View drawer for the selected Billing Cycle.
+const openView = async (row) => {
+  resetViewBillingCycle();
   viewOpen.value = true;
+  viewLoading.value = true;
+// Fetch the latest Billing Cycle details from the API to ensure accurate information is displayed.
+  try {
+    const billingCycle = await billingCycleApi.get(
+      row.billingCycleId
+    );
+    viewBillingCycle.value = {
+      billingCycleId: billingCycle?.billingCycleId,
+      name: billingCycle?.name || "",
+      tenantName: billingCycle?.tenantName || "",
+      createdOnUtc: billingCycle?.createdOnUtc || null
+    };
+  } catch (error) {
+    viewOpen.value = false;
+    notify.error(
+      getApiErrorMessage(
+        error,
+        "Unable to load billing cycle."
+      )
+    );
+  } finally {
+    viewLoading.value = false;
+  }
+};
+// Close the View drawer and reset the viewBillingCycle state.
+const closeView = () => {
+  viewOpen.value = false;
+  resetViewBillingCycle();
 };
 
 // Open the form for creating a new Billing Cycle.

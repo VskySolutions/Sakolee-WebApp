@@ -17,14 +17,14 @@
       <q-btn flat dense no-caps color="grey-7" label="Clear all" @click="$emit('clear')" />
     </div>
 
-    <q-drawer v-model="open" side="right" overlay bordered :width="width" class="app-filter-drawer column no-wrap">
+    <q-drawer v-model="open" side="right" overlay bordered :width="width" overlay-class="app-drawer-overlay" class="app-filter-drawer column no-wrap bg-ff">
       <!-- Drag handle: resize the filter drawer (double-click resets); width persists until logout. -->
       <div class="app-filter-drawer__resizer" @mousedown="startResize" @dblclick="resetWidth" />
 
-      <div class="row items-center q-pa-md bg-primary text-white">
-        <div class="text-h6">Filters</div>
+      <div class="row items-center q-pa-md text-white">
+        <div class="text-2e fs-16 fw-700">Filters</div>
         <q-space />
-        <q-btn flat round dense color="white" icon="o_close" @click="open = false" />
+        <q-btn flat round dense class="text-86" icon="o_close" @click="open = false" />
       </div>
       <q-separator />
       <q-scroll-area class="col">
@@ -35,8 +35,8 @@
       </q-scroll-area>
       <q-separator />
       <div class="row justify-end q-gutter-sm q-pa-md bg-grey-1">
-        <q-btn flat no-caps color="grey-8" label="Clear all" @click="$emit('clear')" />
-        <q-btn unelevated no-caps color="primary" label="Done" @click="open = false" />
+        <q-btn flat no-caps color="grey-8" label="Clear all" class="grey-border br-12 text-2e sakolee-drawer-cancel-btn" @click="$emit('clear')" />
+        <q-btn unelevated no-caps color="primary" label="Done" class="fs-12 br-12 sakolee-drawer-save-btn" padding="8px 20px" @click="open = false" />
       </div>
     </q-drawer>
   </div>
@@ -88,4 +88,5 @@ const { width, startResize, resetWidth } = useDrawerResize({
   background: var(--q-primary);
   opacity: 0.4;
 }
+
 </style>

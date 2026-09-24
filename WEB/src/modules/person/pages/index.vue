@@ -1,6 +1,6 @@
 <template>
   <q-page padding>
-    <app-list-header
+    <!-- <app-list-header
       :breadcrumbs="[{ label: 'Home', icon: 'o_home', to: '/' }, { label: 'Person' }]"
       :search="search"
       show-search
@@ -10,6 +10,77 @@
       :show-add="canWrite"
       add-label="Create Person"
       show-back
+      @update:search="search = $event"
+      @filters="filterOpen = true"
+      @add="openCreate"
+      @back="$router.back()"
+    /> -->
+
+    <!-- <app-list-header
+      :breadcrumbs="[
+        { label: 'Home', to: '/dashboard' },
+        { label: 'Person' }
+      ]"
+      title="All Persons"
+      description="Manage people, accounts, contact information and tenant assignments."
+      :search="search"
+      show-search
+      search-placeholder="Search name, email or code"
+      show-filters
+      :filter-count="filterChips.length"
+      :show-add="canWrite"
+      add-label="Create Person"
+      show-back
+      @update:search="search = $event"
+      @filters="filterOpen = true"
+      @add="openCreate"
+      @back="$router.back()"
+    /> -->
+
+    <!-- <app-list-header
+      :breadcrumbs="[
+        { label: 'Home', to: '/' },
+        { label: 'Person' }
+      ]"
+      title="Person"
+      description="Manage people, user accounts, and person records."
+      :search="search"
+      show-search
+      search-placeholder="Search name, email or code"
+      show-filters
+      :filter-count="filterChips.length"
+      :show-add="canWrite"
+      add-label="Create Person"
+      show-back
+      @update:search="search = $event"
+      @filters="filterOpen = true"
+      @add="openCreate"
+      @back="$router.back()"
+    /> -->
+
+    <app-list-header
+      :breadcrumbs="[
+        { label: 'Home', to: '/' },
+        { label: 'Person' }
+      ]"
+
+      title="Person"
+
+      description="Manage all persons in your organization."
+
+      :search="search"
+
+      show-search
+      search-placeholder="Search name, email or code"
+
+      show-filters
+      :filter-count="filterChips.length"
+
+      :show-add="canWrite"
+      add-label="Create Person"
+
+      show-back
+
       @update:search="search = $event"
       @filters="filterOpen = true"
       @add="openCreate"

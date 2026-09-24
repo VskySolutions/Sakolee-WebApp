@@ -20,7 +20,7 @@
     <app-data-table
       page-key="class-categories"
       row-key="classCategoryId"
-      title="All Class Categories"
+      title="Class Categories"
       :rows="rows"
       :columns="columns"
       :loading="loading"
@@ -39,7 +39,7 @@
       </template>
       <!-- Action buttons for viewing, editing, and deleting -->
       <template #body-cell-actions="cell">
-        <q-td :props="cell" text-class="text-center">
+         <q-td :props="cell" text-class="text-center" style="padding-right: 150px !important;">
           <!-- View button -->
           <q-btn
             v-if="canRead"
@@ -89,66 +89,41 @@
       :category="selectedCategory"
       @saved="load"
     />
-     <!-- Dialog used to display Class Category details -->
-    <q-dialog
+    <!-- View Class Category -->
+    <app-form-drawer
       v-model="viewOpen"
-      position="right"
-      transition-show="slide-left"
-      transition-hide="slide-right"
+      title="View Class Category"
+      :saving="viewLoading"
+      :save-label="''"
+      @cancel="closeView"
     >
-      <q-card
-        class="column no-wrap"
-        style="
-          width: 350px;
-          max-width: 100vw;
-          max-height: 70vh;
-        "
-      >
-      <!-- Dialog header -->
-        <q-card-section class="row items-center">
-          <div class="text-h6 text-primary">
-            Class Category Details
-          </div>
-          <q-space />
-           <!-- Close details dialog -->
-          <q-btn
-            icon="o_close"
-            flat
-            round
-            dense
-            v-close-popup
-          />
-        </q-card-section>
+      <div class="q-gutter-md">
+        <app-text-field
+          v-model="viewCategory.name"
+          label="Name"
+          readonly
+        />
+        <app-text-field
+          v-model="viewCategory.categoryType"
+          label="Category Type"
+          readonly
+        />
+        <app-text-field
+          v-model="viewCategory.tenantName"
+          label="Tenant"
+          readonly
+        />
         <q-separator />
-        <!-- Display selected category details -->
-        <q-card-section class="col scroll">
-          <q-list>
-            <q-item
-              v-for="field in viewFields"
-              :key="field.label"
-            >
-              <q-item-section>
-                <q-item-label caption>
-                  {{ field.label }}
-                </q-item-label>
-              </q-item-section>
-              <q-item-section side>
-                <!-- Display value as a badge when required -->
-                <q-item-label v-if="field.badge">
-                  <q-badge color="primary">
-                    {{ field.value }}
-                  </q-badge>
-                </q-item-label>
-                 <!-- Display normal text value -->
-                <q-item-label v-else>
-                  {{ field.value }}
-                </q-item-label>
-              </q-item-section>
-            </q-item>
-          </q-list>
-        </q-card-section>
-      </q-card>
-    </q-dialog>
+        <div>
+          <div class="text-caption text-grey-7">
+            Created On
+          </div>
+          <div class="text-body1">
+            {{ formatDateTime(viewCategory.createdOnUtc) }}
+          </div>
+        </div>
+      </div>
+    </app-form-drawer>
   </q-page>
 </template>
 
@@ -162,6 +137,8 @@ import { usePermissions } from "composables/usePermissions";
 import { useListTable } from "composables/useListTable";
 import AppDataTable from "components/common/AppDataTable.vue";
 import AppListHeader from "components/common/AppListHeader.vue";
+import AppFormDrawer from "components/common/AppFormDrawer.vue";
+import AppTextField from "components/common/AppTextField.vue";
 import ClassCategoryForm from "modules/class-category/components/ClassCategoryForm.vue";
 
 const notify = useNotify();
@@ -219,7 +196,9 @@ const columns = [
     name: "actions",
     label: "Actions",
     field: "actions",
-    align: "left"
+    align: "right",
+    style: "padding-right: 150px !important;",
+    headerStyle: "padding-right: 190px !important;"
   }
 ];
 
@@ -273,36 +252,61 @@ const formOpen = ref(false);
 const editing = ref(false);
 const selectedCategory = ref(null);
 const viewOpen = ref(false);
-const viewed = ref(null);
-
-// Prepare fields to display in the view dialog.
-const viewFields = computed(() =>
-  viewed.value
-    ? [
-      { label: "Name", value: viewed.value.name },
-      {
-        label: "Category Type",
-        value: viewed.value.categoryType || "—",
-        badge: !!viewed.value.categoryType
-      },
-      { label: "Tenant", value: viewed.value.tenantName || "—" },
-      { label: "Created On", value: formatDateTime(viewed.value.createdOnUtc) }
-    ]
-    : []
-);
-
-// Open the view dialog for the selected category.
-const openView = (row) => {
-  viewed.value = row;
-  viewOpen.value = true;
+const viewLoading = ref(false);
+// Define the structure of the category being viewed.
+const viewCategory = ref({
+  classCategoryId: null,
+  name: "",
+  categoryType: "",
+  tenantName: "",
+  createdOnUtc: null
+});
+// Reset the viewCategory to its initial state.
+const resetViewCategory = () => {
+  viewCategory.value = {
+    classCategoryId: null,
+    name: "",
+    categoryType: "",
+    tenantName: "",
+    createdOnUtc: null
+  };
 };
-
-// const editFromView = () => {
-//   const row = viewed.value;
-//   viewOpen.value = false;
-//   openEdit(row);
-// };
-
+// Open the view dialog for the selected Class Category and load its details.
+const openView = async (row) => {
+  // Reset the viewCategory to ensure no stale data is displayed.
+  resetViewCategory();
+  viewOpen.value = true;
+  viewLoading.value = true;
+  try {
+    const category = await classCategoryApi.get(
+      row.classCategoryId
+    );
+    // Set the viewCategory with the fetched data for display.
+    viewCategory.value = {
+      classCategoryId: category?.classCategoryId,
+      name: category?.name || "",
+      categoryType: category?.categoryType || "",
+      tenantName: category?.tenantName || "",
+      createdOnUtc: category?.createdOnUtc || null
+    };
+  } catch (error) {
+    viewOpen.value = false;
+    notify.error(
+      getApiErrorMessage(
+        error,
+        "Unable to load class category."
+      )
+    );
+  } finally {
+    viewLoading.value = false;
+  }
+};
+// Load Class Categories when the page is opened.
+const closeView = () => {
+  viewOpen.value = false;
+  resetViewCategory();
+};
+// Open the form for creating a new category.
 const openCreate = () => {
   selectedCategory.value = null;
   editing.value = false;

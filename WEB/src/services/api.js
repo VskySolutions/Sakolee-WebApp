@@ -119,6 +119,15 @@ export const billingCycleApi = {
   remove: (id) => api.delete(`/api/admin/billing-cycles/${id}`).then(envelope)
 };
 
+// T-Shirt Size API mapping.
+export const tShirtSizeApi = {
+  list: (params) =>api.get("/api/admin/t-shirt-sizes", { params }).then(envelope),
+  get: (id) =>api.get(`/api/admin/t-shirt-sizes/${id}`).then(unwrap),
+  create: (payload) =>api.post("/api/admin/t-shirt-sizes", payload).then(unwrap),
+  update: (id, payload) =>api.put(`/api/admin/t-shirt-sizes/${id}`, payload).then(unwrap),
+  remove: (id) =>api.delete(`/api/admin/t-shirt-sizes/${id}`).then(envelope)
+};
+
 // Family Status API mapping
 export const familyStatusApi = {
   list: (params) => api.get("/api/admin/family-statuses", { params }).then(envelope),
@@ -516,4 +525,31 @@ export const locationApi = {
   update: (id, payload) => api.put(`/api/admin/locations/${id}`, payload).then(unwrap),
 
   remove: (id) => api.delete(`/api/admin/locations/${id}`).then(envelope)
+};
+
+/**
+ * API service for managing billing method operations.
+ */
+export const billingMethodApi = {
+  list: (params) => api.get("/api/admin/billing-methods", { params }).then(envelope),
+
+  get: (id) => api.get(`/api/admin/billing-methods/${id}`).then(unwrap),
+
+  create: (payload) => api.post("/api/admin/billing-methods", payload).then(unwrap),
+
+  update: (id, payload) => api.put(`/api/admin/billing-methods/${id}`, payload).then(unwrap),
+
+  delete: (id) => api.delete(`/api/admin/billing-methods/${id}`).then(envelope)
+
+  //delete: (id) => api.delete(`/api/admin/billing-methods/${id}`).then(envelope)
+  
+};
+
+
+export const familyRelationApi = {
+  list: (params) => api.get("/api/admin/family-relations", { params }).then(envelope),
+  get: (id) => api.get(`/api/admin/family-relations/${id}`).then(unwrap),
+  create: (payload) => api.post("/api/admin/family-relations", payload).then(unwrap),
+  update: (id, payload) => api.put(`/api/admin/family-relations/${id}`, payload).then(unwrap),
+  delete: (id) => api.delete(`/api/admin/family-relations/${id}`).then(unwrap)
 };

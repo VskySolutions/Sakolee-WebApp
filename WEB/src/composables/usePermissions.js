@@ -30,9 +30,32 @@ export const Permissions = Object.freeze({
   BillingCyclesRead: "billingCycles.read",
   BillingCyclesWrite: "billingCycles.write",
   BillingCyclesDelete: "billingCycles.delete",
+  // T-Shirt Size permissions.
+  TShirtSizesRead: "tShirtSizes.read",
+  TShirtSizesWrite: "tShirtSizes.write",
+  TShirtSizesDelete: "tShirtSizes.delete",
   LocationsRead: "locations.read",
   LocationsWrite: "locations.write",
   LocationsDelete: "locations.delete",
+
+  // Family Statuses Permissions
+  FamilyStatusesRead: "familyStatuses.read",
+  FamilyStatusesWrite: "familyStatuses.write",
+  FamilyStatusesDelete: "familyStatuses.delete",
+  // Class Sessions Permissions
+  ClassSessionsRead: "classSessions.read",
+  ClassSessionsWrite: "classSessions.write",
+  ClassSessionsDelete: "classSessions.delete",
+  // Bank Methods Permissions
+  BillingMethodsRead: "billingMethods.read",
+  BillingMethodsWrite: "billingMethods.write",
+  BillingMethodsDelete: "billingMethods.delete",
+
+  //Family Relations Permissions
+  FamilyRelationsRead : " familyRelations.read",
+  FamilyRelationsWrite : "familyRelations.write",
+  FamilyRelationsDelete : "familyRelations.delete",
+
   UsersRead: "users.read",
   UsersWrite: "users.write",
   UsersResetPassword: "users.reset_password",

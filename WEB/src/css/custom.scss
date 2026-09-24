@@ -524,6 +524,10 @@ body {
 .text-86{ color: #767586 !important; }
 .text-54{ color: #464554 !important; }
 
+.bg-ff{ background-color: #faf8ff !important; }
+
+.grey-border{ border: 1px solid #c7c4d7b3; }
+
 .sfs-11{ font-size: 11px !important; }
 
 .br-12{ border-radius: 12px !important; }
@@ -791,4 +795,18 @@ body {
     }
   }
 
+}
+
+.page-top-btns{
+  font-size: 12px !important;
+}
+
+
+.sakolee-drawer-save-btn{
+  font-size: 12px !important;
+  padding: 8px 12px !important;
+}
+.sakolee-drawer-cancel-btn{
+  font-size: 12px !important;
+  padding: 8px 12px !important;
 }

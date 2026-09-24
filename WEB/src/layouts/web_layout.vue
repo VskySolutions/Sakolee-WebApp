@@ -7,7 +7,7 @@
             <span class="brand-mark" aria-hidden="true">
               <i /><i /><i />
             </span>
-            <span>Sakolee</span>
+            <span class="text-2e fs-16 fw-700">Sakolee</span>
           </span>
         </a>
 
@@ -39,7 +39,7 @@
       </div>
     </q-header>
 
-    <q-page-container>
+    <q-page-container style="padding-top: 0px !important;">
       <router-view />
     </q-page-container>
   </q-layout>
