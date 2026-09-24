@@ -68,7 +68,7 @@ public sealed class SessionsController : ControllerBase
     /// <param name="cancellationToken">Propagates notification that operations should be canceled.</param>
     /// <returns>Returns the created session detail response object.</returns>
     [HttpPost]
-    [RequirePermission(Permissions.SessionsWrite)]
+    [RequirePermission(Permissions.ClassSessionsWrite)]
     [ProducesResponseType<ApiResponse<SessionDetail>>(StatusCodes.Status201Created)]
     public async Task<IActionResult> Create([FromBody] CreateSessionRequest request, CancellationToken cancellationToken)
     {
@@ -205,7 +205,7 @@ public sealed class SessionsController : ControllerBase
     /// <param name="cancellationToken">Propagates notification that operations should be canceled.</param>
     /// <returns>Returns the detailed session record if found.</returns>
     [HttpGet("{id:guid}")]
-    [RequirePermission(Permissions.SessionsRead)]
+    [RequirePermission(Permissions.ClassSessionsRead)]
     public async Task<IActionResult> GetById(Guid id, CancellationToken cancellationToken)
     {
         // Load the session entity handling tenant scoping rules
@@ -242,7 +242,7 @@ public sealed class SessionsController : ControllerBase
     /// <param name="cancellationToken">Propagates notification that operations should be canceled.</param>
     /// <returns>Returns the updated session detail response object.</returns>
     [HttpPut("{id:guid}")]
-    [RequirePermission(Permissions.SessionsWrite)]
+    [RequirePermission(Permissions.ClassSessionsWrite)]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateSessionRequest request, CancellationToken cancellationToken)
     {
         var session = await LoadAsync(id, cancellationToken);
@@ -251,9 +251,23 @@ public sealed class SessionsController : ControllerBase
             return NotFound(ApiResponseFactory.NotFound("Session not found."));
         }
 
+        //if (!string.IsNullOrWhiteSpace(request.Name))
+        //{
+        //    session.Name = request.Name.Trim();
+        //}
+
         if (!string.IsNullOrWhiteSpace(request.Name))
         {
-            session.Name = request.Name.Trim();
+            var trimmedName = request.Name.Trim();
+
+            // Tenant-wise duplicate name check during update (excluding current session ID)
+            if (await _sessions.NameExistsAsync(trimmedName, session.TenantId, id, cancellationToken))
+            {
+                return BadRequest(ApiResponseFactory.Error(
+                    ApiErrorCodes.ValidationFailed, "Validation failed.", "A session with this name already exists."));
+            }
+
+            session.Name = trimmedName;
         }
 
         if (request.IsActive.HasValue)
@@ -294,11 +308,11 @@ public sealed class SessionsController : ControllerBase
     /// <param name="cancellationToken">Propagates notification that operations should be canceled.</param>
     /// <returns>Returns a success status response upon successful soft deletion.</returns>
     [HttpDelete("{id:guid}")]
-    [RequirePermission(Permissions.SessionsDelete)]
+    [RequirePermission(Permissions.ClassSessionsDelete)]
     public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
     {
         // Verify delete permissions if the caller is not a super admin
-        if (!User.IsSuperAdmin() && !User.HasPermission(Permissions.SessionsDelete))
+        if (!User.IsSuperAdmin() && !User.HasPermission(Permissions.ClassSessionsDelete))
         {
             return StatusCode(StatusCodes.Status403Forbidden,
                 ApiResponseFactory.Forbidden("You do not have permission to delete sessions."));

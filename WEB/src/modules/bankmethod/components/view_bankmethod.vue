@@ -1,5 +1,5 @@
 <template>
-  <!-- Side-Drawer Dialog Component: View Family Status Details Modal -->
+  <!-- Side-Drawer Dialog Component: View Billing Method Details Modal -->
   <q-dialog v-model="isOpen" position="right">
     <q-card class="column shadow-24 rounded-borders" style="width: 420px; max-width: 90vw; height: auto; max-height: 85vh;">
       
@@ -7,7 +7,7 @@
       <q-card-section class="row items-center justify-between bg-primary text-white q-px-md q-py-sm">
         <div class="text-h6 text-weight-bold row items-center q-gutter-sm">
           <q-icon name="o_visibility" size="22px" />
-          <div>Family Status Details</div>
+          <div>Billing Method Details</div>
         </div>
         <q-btn icon="o_close" flat round dense v-close-popup />
       </q-card-section>
@@ -20,17 +20,17 @@
         </div>
 
         <template v-else>
-          <!-- Field: Tenant Name ->
+          <!-- Field: Billing Method Name -->
           <div class="row items-center">
-            <div class="col-5 text-weight-bold text-grey-7">Tenant Name:</div>
-            <div class="col-7 text-dark">{{ form.tenantName || '-' }}</div>
-          </div-->
+            <div class="col-5 text-weight-bold text-grey-7">Method Name:</div>
+            <div class="col-7 text-dark">{{ form.name || '-' }}</div>
+          </div>
           <q-separator />
 
-          <!-- Field: Status Name -->
+          <!-- Field: Active Status -->
           <div class="row items-center">
-            <div class="col-5 text-weight-bold text-grey-7">Status Name:</div>
-            <div class="col-7 text-dark">{{ form.name || '-' }}</div>
+            <div class="col-5 text-weight-bold text-grey-7">Status:</div>
+            <div class="col-7 text-dark">{{ form.active ? 'Active' : 'Inactive' }}</div>
           </div>
           <q-separator />
 
@@ -52,9 +52,8 @@
 
 <script setup>
 import { ref, reactive, watch } from "vue";
-import { familyStatusApi, getApiErrorMessage } from "services/api";
+import { billingMethodApi, getApiErrorMessage } from "services/api";
 import { useNotify } from "composables/useNotify";
-import { useTenantOptions } from "composables/useTenantOptions";
 
 // Props definition to manage modal visibility and target record ID
 const props = defineProps({
@@ -70,11 +69,10 @@ const props = defineProps({
 
 const emit = defineEmits(["update:modelValue"]);
 const notify = useNotify();
-const { tenantOptions, loadTenants } = useTenantOptions();
 
 // Local drawer visibility synchronization with parent component
 const isOpen = ref(props.modelValue);
-watch(() => props.modelValue, async (val) => {
+watch(() => props.modelValue, (val) => {
   isOpen.value = val;
   if (val && props.recordId) {
     fetchRecordDetails(props.recordId);
@@ -88,43 +86,24 @@ watch(isOpen, (val) => {
 // Component state references
 const loading = ref(false);
 const form = reactive({
-  tenantName: "",
   name: "",
+  active: true,
   createdOnUtc: ""
 });
 
 /**
- * Fetches specific family status record details from the API endpoint for viewing.
+ * Fetches specific billing method record details from the API endpoint for viewing.
  * @param {String|Number} id - Target entity identifier.
  */
 const fetchRecordDetails = async (id) => {
   loading.value = true;
-  
   try {
-    // Attempt loading tenant options safely prior to mapping
-    try {
-      if (loadTenants) await loadTenants();
-    } catch (tenantErr) {
-      console.warn("Could not load tenant options:", tenantErr);
-    }
-
-    const response = await familyStatusApi.get(id);
+    const response = await billingMethodApi.get(id);
     const item = response?.data?.data || response?.data || response;
 
     if (item) {
-      // Map status name with multi-property fallbacks
-      form.name = item.name || item.Name || item.familyStatusName || item.FamilyStatusName || "-";
-      
-      // Resolve tenant name with robust fallback mapping matching list/detail view behavior
-      let resolvedTenant = item.tenantName || item.tenant_name || item.tenant?.name;
-      if (!resolvedTenant && tenantOptions?.value) {
-        const tenantId = item.tenantId || item.tenantid || item.TenantId;
-        if (tenantId) {
-          const found = tenantOptions.value.find((t) => t.value === tenantId || t.id === tenantId);
-          resolvedTenant = found ? found.label : tenantId;
-        }
-      }
-      form.tenantName = resolvedTenant || "-";
+      form.name = item.name || item.Name || item.billingMethodName || item.BillingMethodName || "-";
+      form.active = item.active !== undefined ? item.active : (item.Active !== undefined ? item.Active : true);
 
       // Format creation date string with multiple fallbacks
       const rawDate = item.createdOnUtc || item.CreatedOnUtc || item.createdOn || item.CreatedOn || item.createdAt || item.CreatedAt;
@@ -135,7 +114,7 @@ const fetchRecordDetails = async (id) => {
         form.createdOnUtc = "-";
       }
     } else {
-      notify.error("Family status record details could not be found.");
+      notify.error("Billing method record details could not be found.");
     }
   } catch (err) {
     notify.error(getApiErrorMessage(err));

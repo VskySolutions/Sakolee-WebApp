@@ -5,7 +5,7 @@
       
       <!-- Dialog Header Banner -->
       <q-card-section class="row items-center q-pb-none bg-primary text-white">
-        <div class="text-h6">{{ isEditing ? 'Edit Family Status' : 'Create Family Status' }}</div>
+        <div class="text-h6">{{ isEditing ? 'Edit Family Relation' : 'Create Family Relation' }}</div>
         <q-space />
         <q-btn icon="o_close" flat round dense v-close-popup />
       </q-card-section>
@@ -18,13 +18,13 @@
         </div>
 
         <q-form v-else ref="formRef" greedy @submit.prevent="submitForm">
-          <!-- Primary Entity Property: Family Status Name -->
+          <!-- Primary Entity Property: Family Relation Name -->
           <app-text-field
             v-model="form.name"
-            label="Status Name"
+            label="Relation Name"
             required
             class="q-mb-md"
-            :rules="[(v) => !!v || 'Status name is required']"
+            :rules="[(v) => !!v || 'Relation name is required']"
           />
         </q-form>
       </q-card-section>
@@ -40,7 +40,7 @@
 
 <script setup>
 import { ref, reactive, computed, watch } from "vue";
-import { api, familyStatusApi, getApiErrorMessage } from "services/api";
+import { api, familyRelationApi, getApiErrorMessage } from "services/api";
 import { useNotify } from "composables/useNotify";
 
 import AppTextField from "components/common/AppTextField.vue";
@@ -93,7 +93,8 @@ const isEditing = computed(() => !!props.editingId);
 const fetchRecordDetails = async (id) => {
   loading.value = true;
   try {
-    const response = await api.get(`/api/admin/family-statuses/${id}`);
+    // Alternatively, you can use familyRelationApi.getById(id) if available in your service definition
+    const response = await api.get(`/api/admin/family-relations/${id}`);
     const item = response?.data?.data || response?.data || response;
     if (item) {
       form.name = item.name || "";
@@ -117,12 +118,12 @@ const submitForm = async () => {
     const payload = { name: form.name };
 
     if (isEditing.value && props.editingId) {
-      await familyStatusApi.update(props.editingId, payload);
-      notify.success("Family status updated successfully.");
+      await familyRelationApi.update(props.editingId, payload);
+      notify.success("Family relation updated successfully.");
       emit("saved", false);
     } else {
-      await familyStatusApi.create(payload);
-      notify.success("Family status created successfully.");
+      await familyRelationApi.create(payload);
+      notify.success("Family relation created successfully.");
       emit("saved", true);
     }
 

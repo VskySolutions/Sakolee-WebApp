@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Sakolee.Infrastructure.Persistence;
 
@@ -11,9 +12,11 @@ using Sakolee.Infrastructure.Persistence;
 namespace Sakolee.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(SakoleeDbContext))]
-    partial class SakoleeDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260922121910_AddBankMethodTable")]
+    partial class AddBankMethodTable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -328,7 +331,7 @@ namespace Sakolee.Infrastructure.Persistence.Migrations
                     b.ToTable("AuditTrail", (string)null);
                 });
 
-            modelBuilder.Entity("Sakolee.Domain.Entities.BillingMethod", b =>
+            modelBuilder.Entity("Sakolee.Domain.Entities.BankMethods", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -366,7 +369,7 @@ namespace Sakolee.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("TenantId");
 
-                    b.ToTable("BillingMethod");
+                    b.ToTable("BankMethods");
                 });
 
             modelBuilder.Entity("Sakolee.Domain.Entities.Checklist", b =>
@@ -1067,47 +1070,6 @@ namespace Sakolee.Infrastructure.Persistence.Migrations
                         .HasFilter("[Deleted] = 0");
 
                     b.ToTable("EntityTags", (string)null);
-                });
-
-            modelBuilder.Entity("Sakolee.Domain.Entities.FamilyRelation", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<bool>("Active")
-                        .HasColumnType("bit");
-
-                    b.Property<Guid?>("CreatedById")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime>("CreatedOnUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<bool>("Deleted")
-                        .HasColumnType("bit");
-
-                    b.Property<DateTime?>("DeletedOnUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<Guid?>("TenantId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid?>("UpdatedById")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime>("UpdatedOnUtc")
-                        .HasColumnType("datetime2");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("TenantId");
-
-                    b.ToTable("FamilyRelations");
                 });
 
             modelBuilder.Entity("Sakolee.Domain.Entities.FamilyStatus", b =>
@@ -3100,7 +3062,7 @@ namespace Sakolee.Infrastructure.Persistence.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("Sakolee.Domain.Entities.BillingMethod", b =>
+            modelBuilder.Entity("Sakolee.Domain.Entities.BankMethods", b =>
                 {
                     b.HasOne("Sakolee.Domain.Entities.Tenant", "Tenant")
                         .WithMany()
@@ -3159,15 +3121,6 @@ namespace Sakolee.Infrastructure.Persistence.Migrations
                         .IsRequired();
 
                     b.Navigation("Tag");
-                });
-
-            modelBuilder.Entity("Sakolee.Domain.Entities.FamilyRelation", b =>
-                {
-                    b.HasOne("Sakolee.Domain.Entities.Tenant", "Tenant")
-                        .WithMany()
-                        .HasForeignKey("TenantId");
-
-                    b.Navigation("Tenant");
                 });
 
             modelBuilder.Entity("Sakolee.Domain.Entities.FamilyStatus", b =>

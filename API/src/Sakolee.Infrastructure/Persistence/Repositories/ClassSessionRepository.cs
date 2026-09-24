@@ -78,6 +78,7 @@ internal sealed class ClassSessionRepository : IClassSessionRepository
 
     #endregion
 
+
     #region Sorting Configuration
 
     // Defines allowable sort mappings for class session queries.

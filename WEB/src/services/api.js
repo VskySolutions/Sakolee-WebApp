@@ -492,3 +492,30 @@ export const locationApi = {
 
   remove: (id) => api.delete(`/api/admin/locations/${id}`).then(envelope)
 };
+
+/**
+ * API service for managing billing method operations.
+ */
+export const billingMethodApi = {
+  list: (params) => api.get("/api/admin/billing-methods", { params }).then(envelope),
+
+  get: (id) => api.get(`/api/admin/billing-methods/${id}`).then(unwrap),
+
+  create: (payload) => api.post("/api/admin/billing-methods", payload).then(unwrap),
+
+  update: (id, payload) => api.put(`/api/admin/billing-methods/${id}`, payload).then(unwrap),
+
+  delete: (id) => api.delete(`/api/admin/billing-methods/${id}`).then(envelope)
+
+  //delete: (id) => api.delete(`/api/admin/billing-methods/${id}`).then(envelope)
+  
+};
+
+
+export const familyRelationApi = {
+  list: (params) => api.get("/api/admin/family-relations", { params }).then(envelope),
+  get: (id) => api.get(`/api/admin/family-relations/${id}`).then(unwrap),
+  create: (payload) => api.post("/api/admin/family-relations", payload).then(unwrap),
+  update: (id, payload) => api.put(`/api/admin/family-relations/${id}`, payload).then(unwrap),
+  delete: (id) => api.delete(`/api/admin/family-relations/${id}`).then(unwrap)
+};

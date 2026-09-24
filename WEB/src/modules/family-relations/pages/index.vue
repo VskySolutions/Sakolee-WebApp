@@ -2,12 +2,12 @@
   <q-page padding>
     <!-- Page Header Component: Manages breadcrumb navigation, live search inputs, and entity creation triggers -->
     <app-list-header
-      :breadcrumbs="[{ label: 'Home', icon: 'o_home', to: '/' }, { label: 'Family Statuses' }]"
+      :breadcrumbs="[{ label: 'Home', icon: 'o_home', to: '/' }, { label: 'Family Relations' }]"
       :search="search"
       show-search
-      search-placeholder="Search family status name"
+      search-placeholder="Search family relation name"
       show-add
-      add-label="Create Family Status"
+      add-label="Create Family Relation"
       show-back
       @update:search="search = $event"
       @add="openCreateDialog"
@@ -16,9 +16,9 @@
 
     <!-- Core Data Table Grid Component: Handles server-side pagination, sorting, row selection, and dataset display -->
     <app-data-table
-      page-key="family-status-v"
-      :row-key="(row) => row.familyStatusId || row.FamilyStatusId || row.id"
-      title="All Family Statuses"
+      page-key="family-relation-v"
+      :row-key="(row) => row.familyRelationId || row.FamilyRelationId || row.id"
+      title="All Family Relations"
       :rows="rows"
       :columns="columns"
       :loading="loading"
@@ -55,30 +55,85 @@
 
     <!-- Soft-Deleted Entities Management Panel -->
     <deleted-records-panel
-      v-if="canManageDeleted" :entity-type="EntityType.FamilyStatus" :show="showDeleted" @restored="load"
+      v-if="canManageDeleted" :entity-type="EntityType.FamilyRelation" :show="showDeleted" @restored="load"
     />
 
     <!-- Create / Edit Form Drawer Component -->
-    <family-status-form-drawer
+    <family-relation-form-drawer
       v-model="formDrawerOpen"
       :editing-id="editingId"
       @saved="handleSaved"
     />
 
-    <!-- View Details Drawer Component -->
-    <family-status-view-drawer
-      v-model="viewDrawerOpen"
-      :record-id="viewingId"
-    />
+    <!-- Side-Drawer Dialog Component: View Family Relation Details Modal -->
+    <q-dialog v-model="viewDrawerOpen" position="right">
+      <q-card class="column shadow-24 rounded-borders" style="width: 450px; max-width: 90vw; height: 100vh; max-height: 100vh;">
+        
+        <!-- Dialog Header Banner -->
+        <q-card-section class="row items-center justify-between bg-primary text-white q-px-md q-py-sm">
+          <div class="text-h6 text-weight-bold row items-center q-gutter-sm">
+            <q-icon name="o_visibility" size="22px" />
+            <div>Family Relation Details</div>
+          </div>
+          <q-btn icon="o_close" flat round dense v-close-popup />
+        </q-card-section>
+
+        <!-- Dialog Scrollable Body Content -->
+        <q-card-section class="col q-pa-md q-gutter-md scroll">
+          <!-- Loading Spinner Overlay during fetch operations -->
+          <div v-if="viewLoading" class="row flex-center q-pa-xl">
+            <q-spinner color="primary" size="40px" />
+          </div>
+
+          <template v-else>
+            <!-- Field: Family Relation Name -->
+            <div class="row items-center">
+              <div class="col-5 text-weight-bold text-grey-7">Relation Name:</div>
+              <div class="col-7 text-dark">{{ viewForm.name || '-' }}</div>
+            </div>
+            <q-separator />
+
+            <!-- Field: Active Status -->
+            <div class="row items-center">
+              <div class="col-5 text-weight-bold text-grey-7">Active Status:</div>
+              <div class="col-7">
+                <q-chip dense :color="viewForm.active ? 'positive' : 'grey'" text-color="white">
+                  {{ viewForm.active ? 'Active' : 'Inactive' }}
+                </q-chip>
+              </div>
+            </div>
+            <q-separator />
+
+            <!-- Field: Tenant Name -->
+            <div class="row items-center">
+              <div class="col-5 text-weight-bold text-grey-7">Tenant Name:</div>
+              <div class="col-7 text-dark">{{ viewForm.tenantName || '-' }}</div>
+            </div>
+            <q-separator />
+
+            <!-- Field: Created Date -->
+            <div class="row items-center">
+              <div class="col-5 text-weight-bold text-grey-7">Created Date:</div>
+              <div class="col-7 text-dark">{{ viewForm.createdOnUtc || '-' }}</div>
+            </div>
+          </template>
+        </q-card-section>
+
+        <!-- Dialog Footer Action Triggers -->
+        <q-card-actions align="right" class="q-pa-md bg-grey-1">
+          <q-btn flat label="Close" color="primary" v-close-popup />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
   </q-page>
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted } from "vue";
+import { ref, reactive, computed, watch, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import { debounce } from "quasar";
 
-import { familyStatusApi, getApiErrorMessage, EntityType } from "services/api";
+import { familyRelationApi, getApiErrorMessage, EntityType } from "services/api";
 import { useNotify } from "composables/useNotify";
 import { useConfirm } from "composables/useConfirm";
 import { useListTable } from "composables/useListTable";
@@ -90,9 +145,8 @@ import AppDataTable from "components/common/AppDataTable.vue";
 import DeletedRecordsPanel from "components/universal/DeletedRecordsPanel.vue";
 import AppListHeader from "components/common/AppListHeader.vue";
 
-// Import separate modular drawer components
-import FamilyStatusFormDrawer from "src/modules/familystatus/components/create_edit_status.vue";
-import FamilyStatusViewDrawer from "src/modules/familystatus/components/viewstatus.vue";
+// Import Form Drawer Component
+import FamilyRelationFormDrawer from "src/modules/family-relations/components/create_edit.vue";
 
 // Initialize core routing, notifications, and tenant management composables
 const router = useRouter();
@@ -106,22 +160,30 @@ const { refreshTenants } = useTenantScope();
 const formDrawerOpen = ref(false);
 const viewDrawerOpen = ref(false);
 const editingId = ref(null);
-const viewingId = ref(null);
+
+// View Drawer state variables and data bindings
+const viewLoading = ref(false);
+const viewForm = reactive({
+  name: "",
+  active: true,
+  tenantName: "",
+  createdOnUtc: ""
+});
 
 // Data Grid Column Configuration Schema with enhanced fallback handling for Tenant Name and Creation Date display
 const columns = computed(() => [
   { 
-    name: "familyStatusId", 
+    name: "familyRelationId", 
     label: "ID", 
     field: (row) => {
       if (!row) return '-';
-      return row.familyStatusId || row.FamilyStatusId || row.family_status_id || row.id || row.Id || '-';
+      return row.familyRelationId || row.FamilyRelationId || row.family_relation_id || row.id || row.Id || '-';
     }, 
     align: "left", 
     sortable: true, 
     default: true 
   },
-  { name: "name", label: "Status Name", field: "name", align: "left", sortable: true, default: true },
+  { name: "name", label: "Relation Name", field: "name", align: "left", sortable: true, default: true },
   { 
     name: "tenantName", 
     label: "Tenant Name", 
@@ -158,7 +220,7 @@ const columns = computed(() => [
       return isNaN(date.getTime()) ? String(val) : date.toLocaleString(); 
     }
   },
-  { name: "actions", label: "Actions", field: "actions", align: "right" ,style: "padding-right: 50px !important;", headerStyle: "padding-right: 70px !important;"}
+  { name: "actions", label: "Actions", field: "actions", align: "right", style: "padding-right: 50px !important;", headerStyle: "padding-right: 70px !important;" }
 ]);
 
 // Server-side List Management Composable configured with default sorting to display newest created records at the top
@@ -172,11 +234,11 @@ const {
     load, 
     onRequest 
 } = useListTable({
-    pageKey: "family-status",
+    pageKey: "family-relation",
     defaultSortBy: "createdOnUtc",
     defaultDescending: true,
     fetcher: ({ page, limit, sortBy, descending }) => {
-        return familyStatusApi.list({
+        return familyRelationApi.list({
             page,
             limit,
             sortBy: sortBy || "createdOnUtc",
@@ -219,7 +281,7 @@ const openCreateDialog = () => {
  * @param {Object} row - Target entity row data instance.
  */
 const openEditDialog = (row) => {
-  const id = row.familyStatusId || row.FamilyStatusId || row.id;
+  const id = row.familyRelationId || row.FamilyRelationId || row.id;
   if (!id) {
     notify.error("Invalid record identifier.");
     return;
@@ -229,17 +291,46 @@ const openEditDialog = (row) => {
 };
 
 /**
- * Opens the view details drawer for a specific record.
+ * Opens the view details right drawer and fetches record info.
  * @param {Object} row - Target entity row data instance.
  */
-const openViewDrawer = (row) => {
-  const id = row.familyStatusId || row.FamilyStatusId || row.id;
+const openViewDrawer = async (row) => {
+  const id = row.familyRelationId || row.FamilyRelationId || row.id;
   if (!id) {
     notify.error("Invalid record identifier for viewing.");
     return;
   }
-  viewingId.value = id;
+
   viewDrawerOpen.value = true;
+  viewLoading.value = true;
+
+  try {
+    const response = await familyRelationApi.get(id);
+    const item = response?.data?.data || response?.data || response;
+
+    if (item) {
+      viewForm.name = item.name || item.Name || "-";
+      viewForm.active = item.active !== undefined ? item.active : (item.Active !== undefined ? item.Active : true);
+      
+      // Resolve Tenant Name
+      const tId = item.tenantId || item.TenantId;
+      const foundTenant = tenantOptions.value.find((t) => t.value === tId || t.id === tId);
+      viewForm.tenantName = item.tenantName || item.tenant_name || (foundTenant ? foundTenant.label : (tId || "-"));
+
+      // Format Date
+      const rawDate = item.createdOnUtc || item.CreatedOnUtc || item.createdOn || item.CreatedOn;
+      if (rawDate) {
+        const date = new Date(rawDate);
+        viewForm.createdOnUtc = isNaN(date.getTime()) ? String(rawDate) : date.toLocaleString();
+      } else {
+        viewForm.createdOnUtc = "-";
+      }
+    }
+  } catch (err) {
+    notify.error(getApiErrorMessage(err));
+  } finally {
+    viewLoading.value = false;
+  }
 };
 
 /**
@@ -260,14 +351,14 @@ const handleSaved = (isNew) => {
  * @param {Object} row - Entity row model instance.
  */
 const deleteRecord = async (row) => {
-  const id = row.familyStatusId || row.FamilyStatusId || row.id;
+  const id = row.familyRelationId || row.FamilyRelationId || row.id;
   if (!id) {
     notify.error("Invalid record identifier for deletion.");
     return;
   }
 
   const ok = await confirm({
-    title: "Delete family status",
+    title: "Delete family relation",
     message: `Are you sure you want to delete "${row.name}"?`,
     confirmLabel: "Delete",
     type: "danger"
@@ -275,8 +366,8 @@ const deleteRecord = async (row) => {
   if (!ok) return;
 
   try {
-    await familyStatusApi.delete(id);
-    notify.success("Family status deleted successfully.");
+    await familyRelationApi.delete(id);
+    notify.success("Family relation deleted successfully.");
     load();
   } catch (err) {
     notify.error(getApiErrorMessage(err));
@@ -290,8 +381,8 @@ const deleteRecord = async (row) => {
 const bulkDelete = async (sel) => {
   if (!sel.length) return;
   const ok = await confirm({
-    title: "Delete selected statuses",
-    message: `Are you sure you want to delete ${sel.length} status(es)?`,
+    title: "Delete selected relations",
+    message: `Are you sure you want to delete ${sel.length} relation(s)?`,
     confirmLabel: "Delete",
     type: "danger"
   });
@@ -299,10 +390,10 @@ const bulkDelete = async (sel) => {
 
   try {
     await Promise.all(sel.map((r) => {
-      const id = r.familyStatusId || r.FamilyStatusId || r.id;
-      return familyStatusApi.delete(id);
+      const id = r.familyRelationId || r.FamilyRelationId || r.id;
+      return familyRelationApi.delete(id);
     }));
-    notify.success("Selected statuses deleted successfully.");
+    notify.success("Selected relations deleted successfully.");
     selected.value = [];
     load();
   } catch (err) {

@@ -214,9 +214,13 @@ const sections = [
     items: [
       // Ungated, matching the family-status route itself — there is no family-status permission in
       // the catalogue yet, so gating here would hide the page from everyone.
-      { label: "Family Statuses", icon: "o_flag", to: "/familystatus", permissions: null },
+      { label: "Family Statuses", icon: "o_flag", to: "/familystatus", permissions: [Permissions.FamilyStatusesRead]  },
       { label: "Studio Locations", icon: "o_location_on", to: "/locations", permissions: [Permissions.LocationsRead] },
-      { label: "Class Sessions", icon: "o_date_range", to: "/sessions", permissions: null }
+      { label: "Class Sessions", icon: "o_date_range", to: "/sessions", permissions: [Permissions.ClassSessionsRead] },
+      { label: "Billing Methods", icon: "o_account_balance", to: "/billing-methods", permissions: [Permissions.BillingMethodsRead] },
+      { label: "Family Relations", icon: "o_supervised_user_circle", to: "/family-relations", permissions: [Permissions.FamilyRelationsRead] }
+      
+      
     ]
   },
   {

@@ -16,7 +16,8 @@ public interface IFamilyStatusRepository
     Task<IReadOnlyList<FamilyStatus>> GetByIdsAsync(IEnumerable<Guid> ids, CancellationToken cancellationToken = default);
 
     /// <summary>Checks if a family status with the given name already exists.</summary>
-    Task<bool> ExistsAsync(string name, CancellationToken cancellationToken = default);
+    // Task<bool> ExistsAsync(string name, CancellationToken cancellationToken = default);
+    Task<bool> ExistsAsync(string name, Guid? excludeId = null, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Paginated list with optional free-text search (name) and optional

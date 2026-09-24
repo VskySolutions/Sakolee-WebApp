@@ -41,8 +41,9 @@ public class SakoleeDbContext : DbContext, IDataProtectionKeyContext
     public DbSet<FamilyStatus> FamilyStatuses { get; set; }
 
     public DbSet<ClassSessions> ClassSessions { get; set; }
+    public DbSet<BillingMethod> BillingMethod { get; set; }
 
-
+    public DbSet<FamilyRelation> FamilyRelations { get; set; }
     public DbSet<User> Users => Set<User>();
 
     public DbSet<UserTenantRole> UserTenantRoles => Set<UserTenantRole>();
@@ -186,6 +187,12 @@ public class SakoleeDbContext : DbContext, IDataProtectionKeyContext
         modelBuilder.Entity<Role>().HasQueryFilter(e => !e.Deleted);
         //modelBuilder.Entity<Location>().HasQueryFilter(e => !_tenantContext.IsResolved || e.TenantId == _tenantContext.TenantId);
         modelBuilder.Entity<Location>().HasQueryFilter(e => (!_tenantContext.IsResolved || e.TenantId == _tenantContext.TenantId) && !e.Deleted);
+
+        // Apply tenant-based filtering and soft-delete condition for BankMethod entity
+        modelBuilder.Entity<BillingMethod>().HasQueryFilter(e => (!_tenantContext.IsResolved || e.TenantId == _tenantContext.TenantId) && !e.Deleted);
+
+        modelBuilder.Entity<FamilyRelation>().HasQueryFilter(e => (!_tenantContext.IsResolved || e.TenantId == _tenantContext.TenantId) && !e.Deleted);
+
         modelBuilder.Entity<TenantRole>().HasQueryFilter(e => !e.Deleted);
         modelBuilder.Entity<Address>().HasQueryFilter(e => !e.Deleted);
         modelBuilder.Entity<Media>().HasQueryFilter(e => !e.Deleted);
@@ -225,8 +232,8 @@ public class SakoleeDbContext : DbContext, IDataProtectionKeyContext
                 case EntityState.Added:
                     entry.Entity.CreatedOnUtc = now;
                     entry.Entity.CreatedById = actorId;
-                    entry.Entity.UpdatedOnUtc = now;
-                    entry.Entity.UpdatedById = actorId;
+                    //entry.Entity.UpdatedOnUtc = now;
+                    //entry.Entity.UpdatedById = actorId;
                     entry.Entity.Deleted = false;
                     break;
 
@@ -352,6 +359,14 @@ public class SakoleeDbContext : DbContext, IDataProtectionKeyContext
 
                 case ClassSessions classsessions when classsessions.TenantId != null || classsessions.TenantId == Guid.Empty:
                     classsessions.TenantId = _tenantContext.TenantId;
+                    break;
+
+                case BillingMethod bankMethod when bankMethod.TenantId is null || bankMethod.TenantId == Guid.Empty:
+                    bankMethod.TenantId = _tenantContext.TenantId;
+                    break;
+
+                case FamilyRelation familyRelation when familyRelation.TenantId == Guid.Empty:
+                    familyRelation.TenantId = _tenantContext.TenantId;
                     break;
             }
         }

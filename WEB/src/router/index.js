@@ -34,6 +34,8 @@ import universalRoutes from "modules/universal/routes";
 import familystatusRoutes from "modules/familystatus/routes";
 import locationRoutes from "modules/location/routes";
 import sessionRoutes from "modules/session/routes";
+import bankmethodRoutes from "modules/bankmethod/routes";
+import familyrelationRoutes from "modules/family-relations/routes";
 
 routes.push(...accountRoutes);
 routes.push(...authRoutes);
@@ -54,7 +56,8 @@ routes.push(...universalRoutes);
 routes.push(...familystatusRoutes);
 routes.push(...locationRoutes);
 routes.push(...sessionRoutes);
-
+routes.push(...bankmethodRoutes);
+routes.push(...familyrelationRoutes);
 export default route(function ({ store }) {
   const createHistory = process.env.SERVER
     ? createMemoryHistory
