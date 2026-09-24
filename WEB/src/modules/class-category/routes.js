@@ -9,7 +9,7 @@ export default [
         component: () => import("modules/class-category/pages/index.vue"),
         meta: {
           requiresAuth: true,
-          permissions: ["classes.read"],
+          permissions: ["classCategories.read"],
           title: "Class Categories"
         }
       }

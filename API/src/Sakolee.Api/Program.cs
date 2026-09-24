@@ -82,7 +82,7 @@ using (var scope = app.Services.CreateScope())
     // Migrations/Scripts, not a blind replay of the full migration history. The chain has several
     // migrations that don't match the live schema (built by hand over time), so auto-migrating here
     // fails partway through rather than being a no-op.
-    //dbContext.Database.Migrate();
+    dbContext.Database.Migrate();
 
     // Seed a bootstrap Super Admin on first run so the platform is usable out of the box.
     await Sakolee.Api.Startup.BootstrapSeeder.SeedAsync(scope.ServiceProvider, builder.Configuration);

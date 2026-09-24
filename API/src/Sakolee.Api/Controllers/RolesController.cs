@@ -23,6 +23,13 @@ namespace Sakolee.Api.Controllers;
 [ProducesResponseType<ApiErrorResponse>(StatusCodes.Status500InternalServerError)]
 public sealed class RolesController : ControllerBase
 {
+    /// <summary>
+    /// Non-system roles the code looks up by name — "Administrator" (a tenant's default admin, see
+    /// TenantsController) and <see cref="Roles.Parent"/> (family contacts, see FamiliesController). Their
+    /// names are fixed and they cannot be deleted; their permission sets may still be tuned.
+    /// </summary>
+    private static readonly HashSet<string> FixedNameRoles = new(StringComparer.OrdinalIgnoreCase) { "Administrator", Roles.Parent };
+
     private readonly IRoleRepository _roles;
     private readonly ITenantRepository _tenants;
     private readonly IUserRepository _users;
@@ -221,6 +228,7 @@ public sealed class RolesController : ControllerBase
             return accessError!;
         }
 
+        var permissionsChanged = false;
         if (request.Permissions is not null)
         {
             var invalid = InvalidPermissions(request.Permissions);
@@ -237,12 +245,14 @@ public sealed class RolesController : ControllerBase
                     return ceiling;
                 }
             }
-            role.Permissions = Normalize(request.Permissions);
+            var permissions = Normalize(request.Permissions);
+            permissionsChanged = !permissions.ToHashSet(StringComparer.Ordinal).SetEquals(role.Permissions);
+            role.Permissions = permissions;
         }
 
-        // System role names are fixed, and so is "Administrator"'s; their permission sets may still be
+        // System role names are fixed, and so are the FixedNameRoles'; their permission sets may still be
         // tuned.
-        if (!role.IsSystem && !string.Equals(role.Name, "Administrator", StringComparison.OrdinalIgnoreCase)
+        if (!role.IsSystem && !FixedNameRoles.Contains(role.Name)
             && !string.IsNullOrWhiteSpace(request.Name))
         {
             var name = request.Name.Trim();
@@ -253,7 +263,7 @@ public sealed class RolesController : ControllerBase
             }
             role.Name = name;
         }
-        // The display label is free to change even when the name is fixed (system roles, Administrator) —
+        // The display label is free to change even when the name is fixed (system roles, FixedNameRoles) —
         // it carries no lookup significance, unlike Name.
         if (request.DisplayName is not null)
         {
@@ -267,6 +277,12 @@ public sealed class RolesController : ControllerBase
         _roles.Update(role);
         await _audit.AddAsync(nameof(Role), role.Id.ToString(), "Updated", cancellationToken: cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
+        // Holders' access tokens carry the old permission set as claims — force a re-issue so a revoked
+        // permission (menu, route, API) stops working now rather than when the token expires.
+        if (permissionsChanged)
+        {
+            await _users.InvalidateSessionsForRoleAsync(role.Id, cancellationToken);
+        }
         return Ok(ApiResponseFactory.Success(await ToResponseAsync(role, cancellationToken), "Role updated."));
     }
 
@@ -283,9 +299,9 @@ public sealed class RolesController : ControllerBase
         {
             return StatusCode(StatusCodes.Status403Forbidden, ApiResponseFactory.Forbidden("System roles cannot be deleted."));
         }
-        if (string.Equals(role.Name, "Administrator", StringComparison.OrdinalIgnoreCase))
+        if (FixedNameRoles.Contains(role.Name))
         {
-            return StatusCode(StatusCodes.Status403Forbidden, ApiResponseFactory.Forbidden("The Administrator role cannot be deleted."));
+            return StatusCode(StatusCodes.Status403Forbidden, ApiResponseFactory.Forbidden($"The {role.Name} role cannot be deleted."));
         }
 
         _roles.Remove(role); // soft delete via interceptor

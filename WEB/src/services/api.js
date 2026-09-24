@@ -164,6 +164,8 @@ export const studentApi = {
   // Registration) — `students` is an array of CreateStudentRequest payloads; the response is
   // { students: [...] }, all created together or, on any failure, none of them.
   createBulk: (students) => api.post("/api/admin/students/bulk", { students }).then(unwrap),
+  // Which of `emails` already belong to a login account → { inUse: [...] }.
+  emailsInUse: (emails) => api.post("/api/admin/students/emails-in-use", { emails }).then(unwrap),
   update: (id, payload) => api.put(`/api/admin/students/${id}`, payload).then(unwrap),
   remove: (id) => api.delete(`/api/admin/students/${id}`).then(envelope)
 };

@@ -64,6 +64,15 @@ public sealed class CreateStudentsBulkRequest
     public IReadOnlyList<CreateStudentRequest> Students { get; set; } = Array.Empty<CreateStudentRequest>();
 }
 
+/// <summary>Emails to check against existing login accounts before a multi-step registration saves anything.</summary>
+public sealed class EmailsInUseRequest
+{
+    public IReadOnlyList<string> Emails { get; set; } = Array.Empty<string>();
+}
+
+/// <summary>The subset of the requested emails that already belong to a login account.</summary>
+public sealed record EmailsInUseResponse(IReadOnlyList<string> InUse);
+
 /// <summary>The result of a <see cref="CreateStudentsBulkRequest"/> — one <see cref="StudentResponse"/>
 /// per student, in the same order they were submitted.</summary>
 public sealed record CreateStudentsBulkResponse(IReadOnlyList<StudentResponse> Students);

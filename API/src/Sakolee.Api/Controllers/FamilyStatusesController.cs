@@ -122,9 +122,11 @@ public sealed class FamilyStatusesController : ControllerBase
     #region List Endpoint
 
     /// <summary>
-    /// Retrieves a paginated list of family status records.
+    /// Retrieves a paginated list of family status records. Also readable with families.read: the
+    /// Family form loads this list for its status dropdown.
     /// </summary>
     [HttpGet]
+    [RequireAnyPermission(Permissions.FamilyStatusesRead, Permissions.FamiliesRead)]
     public async Task<IActionResult> List(
         [FromQuery] int page = 1,
         [FromQuery] int limit = 20,

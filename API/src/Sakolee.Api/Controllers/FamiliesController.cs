@@ -96,7 +96,7 @@ public sealed class FamiliesController : ControllerBase
     #region Create Endpoint
 
     /// <summary>
-    /// Creates a new family. Mints the primary contact's CRM Person + login account (Guardian role) and
+    /// Creates a new family. Mints the primary contact's CRM Person + login account (Parent role) and
     /// its own <see cref="FamilyPersonMapping"/> row, the Family (<c>Families</c>) row itself with the
     /// primary contact's identity inlined, and — when supplied — the same for a secondary contact.
     /// </summary>
@@ -140,16 +140,16 @@ public sealed class FamiliesController : ControllerBase
             }
         }
 
-        // Seeded on every startup (BootstrapSeeder) — see Roles.Guardian remarks.
-        var guardianRole = await _roles.GetByNameAsync(Roles.Guardian, cancellationToken)
-            ?? throw new InvalidOperationException("The Guardian system role was not seeded.");
+        // Created at startup when missing (BootstrapSeeder) — see Roles.Parent remarks.
+        var parentRole = await _roles.GetByNameAsync(Roles.Parent, cancellationToken)
+            ?? throw new InvalidOperationException("The Parent role was not found.");
 
         var now = DateTime.UtcNow;
         var actorId = CurrentActorId();
 
         // 1. The primary contact's CRM Person + login account.
         var (primaryPerson, primaryTempPassword) = await MintContactAsync(
-            request.FirstName, request.LastName, primaryEmail, request.CellPhone, tenantId, guardianRole, now, cancellationToken);
+            request.FirstName, request.LastName, primaryEmail, request.CellPhone, tenantId, parentRole, now, cancellationToken);
 
         // 2. The Family (Parents) row itself, with the primary contact's identity inlined.
         var family = new Family
@@ -213,7 +213,7 @@ public sealed class FamiliesController : ControllerBase
         {
             var (secondaryPerson, secondaryTempPassword) = await MintContactAsync(
                 secondaryInput.FirstName, secondaryInput.LastName, secondaryInput.Email.Trim(), secondaryInput.Phone,
-                tenantId, guardianRole, now, cancellationToken);
+                tenantId, parentRole, now, cancellationToken);
 
             var secondaryMapping = BuildContactMappingRow(
                 family.Id, secondaryPerson.Id, secondaryInput.FirstName, secondaryInput.LastName, secondaryInput.Email.Trim(),
@@ -513,11 +513,11 @@ public sealed class FamiliesController : ControllerBase
 
     #region Contact Minting & Sync Helpers
 
-    /// <summary>Mints a new contact Person + login account (Guardian role) — shared by the primary and
+    /// <summary>Mints a new contact Person + login account (Parent role) — shared by the primary and
     /// secondary contact, each of which also gets its own <see cref="FamilyPersonMapping"/> row (see
     /// that entity's remarks).</summary>
     private async Task<(Person Person, string TemporaryPassword)> MintContactAsync(
-        string firstName, string lastName, string email, string? phone, Guid tenantId, Role guardianRole,
+        string firstName, string lastName, string email, string? phone, Guid tenantId, Role parentRole,
         DateTime now, CancellationToken cancellationToken)
     {
         var trimmedFirst = firstName.Trim();
@@ -543,7 +543,7 @@ public sealed class FamiliesController : ControllerBase
         person.TenantMappings.Add(new TenantPersonMapping { Id = Guid.NewGuid(), TenantId = tenantId });
         await _persons.AddAsync(person, cancellationToken);
 
-        // The login account, carrying the Guardian role in the active tenant.
+        // The login account, carrying the Parent role in the active tenant.
         var temporaryPassword = _passwordHasher.GenerateTemporaryPassword();
         var (hash, salt) = _passwordHasher.Hash(temporaryPassword);
         var user = new User
@@ -565,8 +565,8 @@ public sealed class FamiliesController : ControllerBase
             Id = Guid.NewGuid(),
             UserId = userId,
             TenantId = tenantId,
-            Role = RoleAssignment.MapLegacyRole(guardianRole, null),
-            RoleId = guardianRole.Id,
+            Role = RoleAssignment.MapLegacyRole(parentRole, null),
+            RoleId = parentRole.Id,
         }, cancellationToken);
 
         return (person, temporaryPassword);
@@ -646,10 +646,10 @@ public sealed class FamiliesController : ControllerBase
         {
             // Email uniqueness already validated by the caller (Update) before any mutation began.
             var email = input.Email.Trim();
-            var guardianRole = await _roles.GetByNameAsync(Roles.Guardian, cancellationToken)
-                ?? throw new InvalidOperationException("The Guardian system role was not seeded.");
+            var parentRole = await _roles.GetByNameAsync(Roles.Parent, cancellationToken)
+                ?? throw new InvalidOperationException("The Parent role was not found.");
             var (person, tempPassword) = await MintContactAsync(
-                input.FirstName, input.LastName, email, input.Phone, family.TenantId, guardianRole, now, cancellationToken);
+                input.FirstName, input.LastName, email, input.Phone, family.TenantId, parentRole, now, cancellationToken);
 
             var contact = BuildContactMappingRow(
                 family.Id, person.Id, input.FirstName, input.LastName, email, input.Phone, input.Relation,

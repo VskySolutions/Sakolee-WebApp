@@ -159,13 +159,23 @@ onMounted(async () => {
   }
 });
 
-const categoryOptions = (categoryType) => computed(() =>
-  classCategories.value
+// The class's saved category is always offered under its name (from the class row itself), even when
+// the loaded list lacks it — the list failed to load, or the class belongs to another tenant than the
+// caller's active one. Without it the select falls back to showing the raw id.
+const categoryOptions = (categoryType, field) => computed(() => {
+  const options = classCategories.value
     .filter((c) => c.categoryType === categoryType)
-    .map((c) => ({ label: c.name, value: c.classCategoryId })));
-const category1Options = categoryOptions("Category 1");
-const category2Options = categoryOptions("Category 2");
-const category3Options = categoryOptions("Category 3");
+    .map((c) => ({ label: c.name, value: c.classCategoryId }));
+  const savedId = form.value[field];
+  const savedName = form.value[`${field}Name`];
+  if (savedId && savedName && !options.some((o) => o.value === savedId)) {
+    options.unshift({ label: savedName, value: savedId });
+  }
+  return options;
+});
+const category1Options = categoryOptions("Category 1", "category1");
+const category2Options = categoryOptions("Category 2", "category2");
+const category3Options = categoryOptions("Category 3", "category3");
 const locationOptions = ["North Studio", "Downtown Campus", "Westside Academy"];
 const roomOptions = ["Studio A", "Studio B", "Main Gym"];
 const sessionOptions = ["Spring 2024", "Fall 2024", "Winter 2025"];

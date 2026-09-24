@@ -24,6 +24,20 @@ public static class ClaimsPrincipalExtensions
         => principal.FindAll(ClaimTypeNames.Role).Any(c => string.Equals(c.Value, Roles.SuperAdmin, StringComparison.Ordinal));
 
     /// <summary>
+    /// True when every role the caller holds in the active tenant is a family-contact role
+    /// (<see cref="Roles.Parent"/>/<see cref="Roles.Guardian"/>). Such a caller only ever sees their own
+    /// family's records, whatever permissions those roles carry; a caller who also holds any other role
+    /// (Staff, Administrator, …) is not limited this way.
+    /// </summary>
+    public static bool IsFamilyContactOnly(this ClaimsPrincipal principal)
+    {
+        var roles = principal.GetRoles().ToList();
+        return roles.Count > 0 && roles.All(role =>
+            string.Equals(role, Roles.Parent, StringComparison.Ordinal)
+            || string.Equals(role, Roles.Guardian, StringComparison.Ordinal));
+    }
+
+    /// <summary>
     /// True when the caller holds the given permission — either via an explicit permission claim or,
     /// as a fallback (API-key/pre-RBAC callers).
     /// </summary>

@@ -72,9 +72,9 @@ public static class BootstrapSeeder
             Id = Guid.NewGuid(),
             PersonCode = "PER-" + Guid.NewGuid().ToString("N")[..10].ToUpperInvariant(),
             UserId = adminId,
-            FirstName = "Bootstrap",
-            LastName = "Super Admin",
-            DisplayName = "Bootstrap Super Admin",
+            FirstName = "Super",
+            LastName = "Admin",
+            DisplayName = "Super Admin",
             PrimaryEmail = email,
             IsActive = true,
         };
@@ -84,7 +84,7 @@ public static class BootstrapSeeder
         {
             Id = adminId,
             Email = email,
-            DisplayName = "Bootstrap Super Admin",
+            DisplayName = "Super Admin",
             PersonId = person.Id,
             PasswordHash = hash,
             Salt = salt,
@@ -132,6 +132,20 @@ public static class BootstrapSeeder
                 existing.Permissions = permissions.ToList();
                 roles.Update(existing);
             }
+        }
+
+        // Family contacts' role. Created when missing only — its permissions are admin-managed, so an
+        // existing one is never overwritten.
+        if (await roles.GetByNameAsync(Roles.Parent, cancellationToken) is null)
+        {
+            await roles.AddAsync(new Role
+            {
+                Id = Guid.NewGuid(),
+                Name = Roles.Parent,
+                Description = "A family contact's own login account.",
+                IsSystem = false,
+                Permissions = new List<string>(),
+            }, cancellationToken);
         }
 
         await unitOfWork.SaveChangesAsync(cancellationToken);

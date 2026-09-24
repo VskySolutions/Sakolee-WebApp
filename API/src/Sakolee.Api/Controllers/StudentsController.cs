@@ -39,6 +39,7 @@ namespace Sakolee.Api.Controllers;
 public sealed class StudentsController : ControllerBase
 {
     private readonly IStudentRepository _students;
+    private readonly IFamilyRepository _families;
     private readonly IPersonRepository _persons;
     private readonly IAddressRepository _addresses;
     private readonly IUserRepository _users;
@@ -51,6 +52,7 @@ public sealed class StudentsController : ControllerBase
 
     public StudentsController(
         IStudentRepository students,
+        IFamilyRepository families,
         IPersonRepository persons,
         IAddressRepository addresses,
         IUserRepository users,
@@ -62,6 +64,7 @@ public sealed class StudentsController : ControllerBase
         IAuditTrailService audit)
     {
         _students = students;
+        _families = families;
         _persons = persons;
         _addresses = addresses;
         _users = users;
@@ -99,6 +102,11 @@ public sealed class StudentsController : ControllerBase
         }
         var tenantId = _tenantContext.TenantId;
 
+        if (await CheckOwnFamiliesAsync(new[] { request.FamilyId }, cancellationToken) is { } notOwnFamily)
+        {
+            return notOwnFamily;
+        }
+
         var email = request.Email.Trim();
         if (await _users.EmailExistsAsync(email, cancellationToken))
         {
@@ -125,6 +133,33 @@ public sealed class StudentsController : ControllerBase
     }
 
     /// <summary>
+    /// Which of the given emails already belong to a login account. Quick Registration saves the family
+    /// and its students in separate calls, so it checks every contact and student email here first — a
+    /// taken student email found only by <see cref="CreateBulk"/> would leave the family saved without
+    /// its students.
+    /// </summary>
+    [HttpPost("emails-in-use")]
+    [RequirePermission(Permissions.StudentsWrite)]
+    [ProducesResponseType<ApiResponse<EmailsInUseResponse>>(StatusCodes.Status200OK)]
+    public async Task<IActionResult> EmailsInUse([FromBody] EmailsInUseRequest request, CancellationToken cancellationToken)
+    {
+        var inUse = new List<string>();
+        foreach (var email in request.Emails
+            .Where(e => !string.IsNullOrWhiteSpace(e))
+            .Select(e => e.Trim())
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Take(50))
+        {
+            if (await _users.EmailExistsAsync(email, cancellationToken))
+            {
+                inUse.Add(email);
+            }
+        }
+
+        return Ok(ApiResponseFactory.Success(new EmailsInUseResponse(inUse), "Emails checked."));
+    }
+
+    /// <summary>
     /// Creates several students in one call — e.g. registering siblings under the same family in one
     /// pass (see the Quick Registration wizard). All students are created in a single transaction: any
     /// failure (a duplicate email against an existing user, an unseeded role, etc.) rolls back the
@@ -142,13 +177,19 @@ public sealed class StudentsController : ControllerBase
         }
         var tenantId = _tenantContext.TenantId;
 
+        if (await CheckOwnFamiliesAsync(request.Students.Select(s => s.FamilyId), cancellationToken) is { } notOwnFamily)
+        {
+            return notOwnFamily;
+        }
+
         // Every email already checked against existing users, up front, before any entity is staged —
         // a within-batch duplicate is already rejected by CreateStudentsBulkRequestValidator.
         foreach (var email in request.Students.Select(s => s.Email.Trim()).Distinct(StringComparer.OrdinalIgnoreCase))
         {
             if (await _users.EmailExistsAsync(email, cancellationToken))
             {
-                return Conflict(ApiResponseFactory.Error(ApiErrorCodes.DuplicateIdentifier, "Email already in use.", email));
+                return Conflict(ApiResponseFactory.Error(ApiErrorCodes.DuplicateIdentifier, "Email already in use.",
+                    $"The email \"{email}\" is already used by another account."));
             }
         }
 
@@ -303,6 +344,11 @@ public sealed class StudentsController : ControllerBase
         limit = Math.Clamp(limit, 1, 100);
 
         var all = await _students.ListAsync(_tenantContext.IsResolved ? _tenantContext.TenantId : null, cancellationToken);
+        // A parent sees only their own children.
+        if (await ContactFamilyIdsAsync(cancellationToken) is { } familyIds)
+        {
+            all = all.Where(s => s.FamilyId is { } familyId && familyIds.Contains(familyId)).ToList();
+        }
         var persons = await LoadPersonsAsync(all, cancellationToken);
         IEnumerable<Student> filteredSet = all;
 
@@ -355,6 +401,10 @@ public sealed class StudentsController : ControllerBase
         if (student is null)
         {
             return NotFound(ApiResponseFactory.NotFound("Student not found."));
+        }
+        if (await CheckOwnFamiliesAsync(new[] { request.FamilyId }, cancellationToken) is { } notOwnFamily)
+        {
+            return notOwnFamily;
         }
 
         var person = student.PersonId is { } personId ? await _persons.GetByIdAsync(personId, cancellationToken) : null;
@@ -497,7 +547,51 @@ public sealed class StudentsController : ControllerBase
         {
             return null;
         }
+        // A parent only ever reaches their own children — anyone else's reads as not found.
+        if (await ContactFamilyIdsAsync(cancellationToken) is { } familyIds
+            && !(student.FamilyId is { } familyId && familyIds.Contains(familyId)))
+        {
+            return null;
+        }
         return student;
+    }
+
+    /// <summary>
+    /// The families whose students the caller is limited to, or <c>null</c> when the caller is not
+    /// limited. A caller whose only roles are family-contact roles (Parent/Guardian — see
+    /// <see cref="ClaimsPrincipalExtensions.IsFamilyContactOnly"/>) sees only the students of the
+    /// families they are a contact on; an empty set when they are a contact on none.
+    /// </summary>
+    private async Task<IReadOnlySet<Guid>?> ContactFamilyIdsAsync(CancellationToken cancellationToken)
+    {
+        if (!User.IsFamilyContactOnly())
+        {
+            return null;
+        }
+
+        var user = User.GetUserId() is { } userId ? await _users.GetByIdAsync(userId, cancellationToken) : null;
+        if (user?.PersonId is not { } personId)
+        {
+            return new HashSet<Guid>();
+        }
+
+        return (await _families.ListFamilyIdsForContactAsync(personId, cancellationToken)).ToHashSet();
+    }
+
+    /// <summary>
+    /// For a caller limited to their own families: a Forbidden result unless every student being created
+    /// is placed in one of those families. <c>null</c> when the create may go ahead.
+    /// </summary>
+    private async Task<IActionResult?> CheckOwnFamiliesAsync(IEnumerable<Guid?> familyIds, CancellationToken cancellationToken)
+    {
+        if (await ContactFamilyIdsAsync(cancellationToken) is not { } own)
+        {
+            return null;
+        }
+
+        return familyIds.All(id => id is { } familyId && own.Contains(familyId))
+            ? null
+            : StatusCode(StatusCodes.Status403Forbidden, ApiResponseFactory.Forbidden("Students can only be added to your own family."));
     }
 
     /// <summary>Batch-loads the Persons linked to a set of students, keyed by their id — the join Student

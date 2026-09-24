@@ -456,6 +456,21 @@ const nextStep = async () => {
   }
 
   saving.value = true;
+  // Emails already taken by an existing account are caught here, before anything saves — otherwise a
+  // taken student email is only found after the family (and its contact logins) already exists.
+  try {
+    const { inUse = [] } = await studentApi.emailsInUse(allEmails);
+    if (inUse.length) {
+      notify.warning(`Already used by another account: ${inUse.join(", ")}. Every contact and student needs a new email.`);
+      saving.value = false;
+      return;
+    }
+  } catch (err) {
+    notify.error(getApiErrorMessage(err));
+    saving.value = false;
+    return;
+  }
+
   // The family (+ its contacts) has to exist before a student can name it as familyId — separate API
   // calls, not one transaction, so each is caught on its own: a student-creation failure after the
   // family (or an earlier student) already saved must not read as "nothing happened."

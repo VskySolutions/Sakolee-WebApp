@@ -143,6 +143,7 @@ public sealed class SessionsController : ControllerBase
     /// <param name="cancellationToken">Propagates notification that operations should be canceled.</param>
     /// <returns>Returns a paginated list of session summaries.</returns>
     [HttpGet]
+    [RequirePermission(Permissions.SessionsRead)]
     public async Task<IActionResult> List(
         [FromQuery] int page = 1,
         [FromQuery] int limit = 20,

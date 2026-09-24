@@ -123,6 +123,11 @@ export const classFormFromRow = (row) => ({
   category1: row.category1Id || "",
   category2: row.category2Id || "",
   category3: row.category3Id || "",
+  // Display-only (never sent back): the saved categories' names, for when the dropdown's own option
+  // list doesn't include them — see ClassFormFields' categoryOptions.
+  category1Name: row.category1Name || "",
+  category2Name: row.category2Name || "",
+  category3Name: row.category3Name || "",
   location: "",
   room: "",
   session: "",

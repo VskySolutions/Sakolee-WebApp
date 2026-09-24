@@ -136,4 +136,9 @@ public sealed record ClassSummary(
     string? CreatedBy,
     DateTime CreatedOnUtc,
     string? UpdatedBy,
-    DateTime? UpdatedOnUtc);
+    DateTime? UpdatedOnUtc,
+    // Names of the saved Category 1/2/3 — filled on the single-class read only (the view/edit form
+    // shows them even when the category dropdown's own list can't be loaded).
+    string? Category1Name = null,
+    string? Category2Name = null,
+    string? Category3Name = null);

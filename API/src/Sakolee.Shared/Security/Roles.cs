@@ -23,4 +23,12 @@ public static class Roles
     /// by RBAC grant.
     /// </summary>
     public const string Guardian = "Guardian";
+
+    /// <summary>
+    /// The role given to a family contact's login account when a family is created. Unlike the system
+    /// roles above it is NOT a system role: BootstrapSeeder only creates it when missing, and its
+    /// permission set is left for admins to tune. Its name is fixed (FamiliesController looks it up by
+    /// name), so it cannot be renamed or deleted.
+    /// </summary>
+    public const string Parent = "Parent";
 }

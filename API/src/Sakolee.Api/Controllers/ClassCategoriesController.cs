@@ -46,10 +46,11 @@ public sealed class ClassCategoriesController : ControllerBase
     #region List 
 
     /// <summary>
-    /// Gets all non-deleted Class Categories for the caller's active tenant.
+    /// Gets all non-deleted Class Categories for the caller's active tenant. Also readable with
+    /// classes.read: the Class form loads this list for its category dropdown.
     /// </summary>
     [HttpGet]
-    [RequirePermission(Permissions.ClassCategoriesRead)]
+    [RequireAnyPermission(Permissions.ClassCategoriesRead, Permissions.ClassesRead)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<IActionResult> List([FromQuery] string? search = null,CancellationToken cancellationToken = default)
     {
