@@ -1,5 +1,7 @@
 <template>
   <q-page padding>
+    <!-- Create is retired here — students are created via Family registration (Quick Registration or
+         the Family page), which mints the Person/login and its FamilyId link together. -->
     <app-list-header
       :breadcrumbs="[{ label: 'Home', icon: 'o_home', to: '/' }, { label: 'Student' }]"
       :search="search"
@@ -7,12 +9,9 @@
       search-placeholder="Search name or email"
       show-filters
       :filter-count="filterChips.length"
-      :show-add="canWrite"
-      add-label="Create Student"
       show-back
       @update:search="search = $event"
       @filters="filterOpen = true"
-      @add="openCreate"
       @back="$router.back()"
     />
 
@@ -40,9 +39,10 @@
 
       <template #body-cell-actions="cell">
         <q-td :props="cell">
-          <q-btn v-if="canWrite" type="a" flat round dense color="primary" icon="o_edit" @click="openEdit(cell.row)">
-            <q-tooltip>Edit</q-tooltip>
+          <q-btn type="a" flat round dense color="primary" icon="o_visibility" @click="openView(cell.row)">
+            <q-tooltip>View</q-tooltip>
           </q-btn>
+          <!-- Edit is retired here too — see the header note above. -->
           <q-btn v-if="canDelete" type="a" flat round dense color="negative" icon="o_delete" @click="remove(cell.row)">
             <q-tooltip>Delete</q-tooltip>
           </q-btn>
@@ -50,69 +50,61 @@
       </template>
     </app-data-table>
 
-    <!-- Create / Edit drawer -->
-    <app-form-drawer
-      v-model="formOpen"
-      :title="editing ? 'Edit Student' : 'Create Student'"
-      :saving="saving"
-      @submit="submitForm"
-      @cancel="resetForm"
-    >
-      <q-form ref="formRef" greedy>
-        <div class="row q-col-gutter-md">
-          <div class="col-12 text-subtitle2 text-grey-8 q-mt-sm">Identity</div>
-          <app-text-field v-model="form.firstName" label="First Name" required class="col-12 col-sm-6" :rules="[(v) => !!v || 'First name is required']" />
-          <app-text-field v-model="form.lastName" label="Last Name" required class="col-12 col-sm-6" :rules="[(v) => !!v || 'Last name is required']" />
-          <app-text-field v-model="form.familyName" label="Family Name" class="col-12 col-sm-6" />
-          <app-text-field v-model="form.studentNumber" label="Student Number" class="col-12 col-sm-6" />
-          <app-date-field v-model="form.birthDate" label="Date of Birth" class="col-12 col-sm-6" />
-          <app-date-field v-model="form.admissionDate" label="Admission Date" class="col-12 col-sm-6" />
-          <div class="col-12 col-sm-6"><q-toggle v-model="form.gender" label="Gender (on/off, per the live schema)" /></div>
-          <app-text-field
-            v-model="form.email" label="Email" required class="col-12 col-sm-6"
-            :error="!!emailError" :error-message="emailError"
-            :rules="[(v) => !!v || 'Email is required']"
-            hint="A login account is created for the student with this email."
-          />
-          <app-text-field v-model="form.cellPhone" label="Cell Phone" class="col-12 col-sm-6" />
+    <!-- View drawer — read-only display, not a disabled form: this page no longer creates or edits
+         students, so nothing here is ever typed into. -->
+    <app-form-drawer v-model="formOpen" title="View Student" hide-save @cancel="resetForm">
+      <div class="row q-col-gutter-md">
+        <div class="col-12 text-subtitle2 text-grey-8 q-mt-sm">Identity</div>
+        <app-readonly-field :model-value="form.firstName" label="First Name" class="col-12 col-sm-6" />
+        <app-readonly-field :model-value="form.lastName" label="Last Name" class="col-12 col-sm-6" />
+        <app-readonly-field :model-value="form.familyName" label="Family Name" class="col-12 col-sm-6" />
+        <app-readonly-field :model-value="form.studentNumber" label="Student Number" class="col-12 col-sm-6" />
+        <app-readonly-field :model-value="form.gender" label="Gender" class="col-12 col-sm-6" />
+        <app-readonly-field :model-value="formatDate(form.birthDate)" label="Date of Birth" class="col-12 col-sm-6" />
+        <app-readonly-field :model-value="formatDate(form.admissionDate)" label="Admission Date" class="col-12 col-sm-6" />
+        <app-readonly-field :model-value="form.allowTextMessaging ? 'Yes' : 'No'" label="Allow Text Messaging" class="col-12 col-sm-6" />
+        <app-readonly-field :model-value="form.email" label="Email" class="col-12 col-sm-6" />
+        <app-readonly-field :model-value="form.cellPhone" label="Cell Phone" class="col-12 col-sm-6" />
 
-          <div class="col-12 text-subtitle2 text-grey-8 q-mt-sm">School</div>
-          <app-text-field v-model="form.school" label="School" class="col-12 col-sm-6" />
-          <app-text-field v-model="form.gradeLevel" label="Grade Level" class="col-12 col-sm-6" />
-          <app-text-field v-model="form.transportation" label="Transportation" class="col-12 col-sm-6" />
-          <app-text-field v-model="form.tShirtSize" label="T-Shirt Size" class="col-12 col-sm-6" />
+        <div class="col-12 text-subtitle2 text-grey-8 q-mt-sm">School</div>
+        <app-readonly-field :model-value="form.school" label="School" class="col-12 col-sm-6" />
+        <app-readonly-field :model-value="form.gradeLevel" label="Grade Level" class="col-12 col-sm-6" />
+        <app-readonly-field :model-value="form.transportation" label="Transportation" class="col-12 col-sm-6" />
+        <app-readonly-field :model-value="form.tShirtSize" label="T-Shirt Size" class="col-12 col-sm-6" />
 
-          <div class="col-12 text-subtitle2 text-grey-8 q-mt-sm">Fee</div>
-          <app-text-field v-model.number="form.feeAmount" label="Fee Amount" type="number" class="col-12 col-sm-6" />
-          <app-date-field v-model="form.feeExpiryDate" label="Fee Expiry Date" class="col-12 col-sm-6" />
-          <app-text-field v-model="form.feeNote" label="Fee Note" class="col-12" />
+        <div class="col-12 text-subtitle2 text-grey-8 q-mt-sm">Fee</div>
+        <app-readonly-field :model-value="form.feeAmount" label="Fee Amount" class="col-12 col-sm-6" />
+        <app-readonly-field :model-value="formatDate(form.feeExpiryDate)" label="Fee Expiry Date" class="col-12 col-sm-6" />
+        <app-readonly-field :model-value="form.feeNote" label="Fee Note" class="col-12" />
 
-          <div class="col-12 text-subtitle2 text-grey-8 q-mt-sm">Health & Notes</div>
-          <div class="col-12 col-sm-4"><q-toggle v-model="form.disabilities" label="Disabilities" /></div>
-          <div class="col-12 col-sm-4"><q-toggle v-model="form.allergies" label="Allergies" /></div>
-          <app-text-field v-model="form.specialNeeds" label="Special Needs" class="col-12 col-sm-4" />
-          <app-text-field v-model="form.primaryDoctor" label="Primary Doctor" class="col-12 col-sm-6" />
-          <app-text-field v-model="form.medications" label="Medications" type="textarea" class="col-12" />
-          <app-text-field v-model="form.immunizationNotes" label="Immunization Notes" type="textarea" class="col-12" />
-          <app-text-field v-model="form.skillNotes" label="Skill Notes" type="textarea" class="col-12" />
-          <app-text-field v-model="form.textOptIn" label="Text Opt-In" class="col-12 col-sm-6" />
-          <app-text-field v-model="form.massEmailOptOut" label="Mass Email Opt-Out" class="col-12 col-sm-6" />
+        <div class="col-12 text-subtitle2 text-grey-8 q-mt-sm">Medical</div>
+        <app-readonly-field :model-value="form.primaryDoctor" label="Primary Doctor" class="col-12 col-sm-6" />
+        <app-readonly-field :model-value="form.healthInsuranceCarrier" label="Health Insurance Carrier" class="col-12 col-sm-6" />
+        <app-readonly-field :model-value="form.hasImmunizations" label="Has Immunizations?" class="col-12 col-sm-6" />
+        <app-readonly-field :model-value="form.immunizationNotes" label="Immunizations" class="col-12 col-sm-6" />
+        <app-readonly-field :model-value="form.medications" label="Medications" class="col-12" />
+        <app-readonly-field :model-value="form.disabilitiesNotes" label="Disabilities" class="col-12 col-sm-6" />
+        <app-readonly-field :model-value="form.allergiesNotes" label="Allergies" class="col-12 col-sm-6" />
+        <app-readonly-field :model-value="form.specialNeeds" label="Special Needs" class="col-12" />
 
-          <div v-if="editing" class="col-12">
-            <q-toggle v-model="form.active" label="Active" />
-          </div>
+        <div class="col-12 text-subtitle2 text-grey-8 q-mt-sm">Notes</div>
+        <app-readonly-field :model-value="form.skillNotes" label="Skill Notes" class="col-12" />
+        <app-readonly-field :model-value="form.textOptIn" label="Text Opt-In" class="col-12 col-sm-6" />
+        <app-readonly-field :model-value="form.massEmailOptOut" label="Mass Email Opt-Out" class="col-12 col-sm-6" />
+
+        <div class="col-12 q-mt-sm">
+          <app-field-label label="Status" />
+          <q-badge :color="form.active ? 'positive' : 'grey'">{{ form.active ? "Active" : "Inactive" }}</q-badge>
         </div>
-      </q-form>
+      </div>
     </app-form-drawer>
-
-    <temp-password-dialog v-model="tempPwOpen" :password="tempPassword" />
   </q-page>
 </template>
 
 <script setup>
 import { ref, reactive, computed, watch } from "vue";
 import { debounce } from "quasar";
-import { studentApi, getApiErrorMessage, getApiErrorCode, ApiErrorCodes } from "services/api";
+import { studentApi, getApiErrorMessage } from "services/api";
 import { useNotify } from "composables/useNotify";
 import { useConfirm } from "composables/useConfirm";
 import { useListTable } from "composables/useListTable";
@@ -125,16 +117,14 @@ import AppFormDrawer from "components/common/AppFormDrawer.vue";
 import AppFilterDrawer from "components/common/AppFilterDrawer.vue";
 import AppListHeader from "components/common/AppListHeader.vue";
 import AppSelect from "components/common/AppSelect.vue";
-import AppTextField from "components/common/AppTextField.vue";
-import AppDateField from "components/common/AppDateField.vue";
-import TempPasswordDialog from "components/temp_password_dialog.vue";
+import AppReadonlyField from "components/common/AppReadonlyField.vue";
+import AppFieldLabel from "components/common/AppFieldLabel.vue";
 
 const notify = useNotify();
 const { confirm } = useConfirm();
 const auditColumns = useAuditColumns();
 const { formatDate } = useDateFormat();
 const { has } = usePermissions();
-const canWrite = computed(() => has(Permissions.StudentsWrite));
 const canDelete = computed(() => has(Permissions.StudentsDelete));
 
 // firstName/lastName/email are joined in from the linked Person and are not sortable server-side
@@ -186,25 +176,17 @@ const clearFilters = () => {
   filters.active = null;
 };
 
-// ---- Create / Edit ----
-// Creating a student mints its own CRM Person (and login account, with the Student role) from the
-// identity fields below — there is no existing Person to pick, unlike the old linked-Person flow.
+// ---- View ----
 const formOpen = ref(false);
-const editing = ref(false);
-const saving = ref(false);
-const emailError = ref("");
-const formRef = ref(null);
-const tempPwOpen = ref(false);
-const tempPassword = ref("");
 const blankForm = () => ({
-  studentId: null,
   firstName: "",
   lastName: "",
   familyName: "",
   studentNumber: "",
   admissionDate: "",
   birthDate: "",
-  gender: false,
+  gender: "",
+  allowTextMessaging: true,
   email: "",
   cellPhone: "",
   school: "",
@@ -214,12 +196,14 @@ const blankForm = () => ({
   feeAmount: null,
   feeExpiryDate: "",
   feeNote: "",
-  disabilities: false,
-  allergies: false,
-  specialNeeds: "",
   primaryDoctor: "",
+  healthInsuranceCarrier: "",
+  hasImmunizations: "Yes",
   medications: "",
   immunizationNotes: "",
+  disabilitiesNotes: "",
+  allergiesNotes: "",
+  specialNeeds: "",
   skillNotes: "",
   textOptIn: "",
   massEmailOptOut: "",
@@ -229,27 +213,19 @@ const form = reactive(blankForm());
 
 const resetForm = () => {
   Object.assign(form, blankForm());
-  emailError.value = "";
-  editing.value = false;
 };
 
-const openCreate = () => {
+const openView = (row) => {
   resetForm();
-  formOpen.value = true;
-};
-
-const openEdit = (row) => {
-  resetForm();
-  editing.value = true;
   Object.assign(form, {
-    studentId: row.studentId,
     firstName: row.firstName || "",
     lastName: row.lastName || "",
     familyName: row.familyName || "",
     studentNumber: row.studentNumber || "",
     admissionDate: row.admissionDate ? row.admissionDate.substring(0, 10) : "",
     birthDate: row.birthDate ? row.birthDate.substring(0, 10) : "",
-    gender: !!row.gender,
+    gender: row.gender || "",
+    allowTextMessaging: row.allowTextMessaging ?? true,
     email: row.email || "",
     cellPhone: row.cellPhone || "",
     school: row.school || "",
@@ -259,81 +235,20 @@ const openEdit = (row) => {
     feeAmount: row.feeAmount ?? null,
     feeExpiryDate: row.feeExpiryDate ? row.feeExpiryDate.substring(0, 10) : "",
     feeNote: row.feeNote || "",
-    disabilities: !!row.disabilities,
-    allergies: !!row.allergies,
-    specialNeeds: row.specialNeeds || "",
     primaryDoctor: row.primaryDoctor || "",
+    healthInsuranceCarrier: row.healthInsuranceCarrier || "",
+    hasImmunizations: row.hasImmunizations || "Yes",
     medications: row.medications || "",
     immunizationNotes: row.immunizationNotes || "",
+    disabilitiesNotes: row.disabilitiesNotes || "",
+    allergiesNotes: row.allergiesNotes || "",
+    specialNeeds: row.specialNeeds || "",
     skillNotes: row.skillNotes || "",
     textOptIn: row.textOptIn || "",
     massEmailOptOut: row.massEmailOptOut || "",
     active: row.active
   });
   formOpen.value = true;
-};
-
-const submitForm = async ({ clearDraft } = {}) => {
-  emailError.value = "";
-  const valid = await formRef.value?.validate();
-  if (!valid) return;
-
-  const payload = {
-    firstName: form.firstName,
-    lastName: form.lastName,
-    familyName: form.familyName || null,
-    studentNumber: form.studentNumber || null,
-    admissionDate: form.admissionDate || null,
-    birthDate: form.birthDate || null,
-    gender: form.gender,
-    email: form.email || null,
-    cellPhone: form.cellPhone || null,
-    school: form.school || null,
-    gradeLevel: form.gradeLevel || null,
-    transportation: form.transportation || null,
-    tShirtSize: form.tShirtSize || null,
-    feeAmount: form.feeAmount,
-    feeExpiryDate: form.feeExpiryDate || null,
-    feeNote: form.feeNote || null,
-    disabilities: form.disabilities,
-    specialNeeds: form.specialNeeds || null,
-    allergies: form.allergies,
-    medications: form.medications || null,
-    primaryDoctor: form.primaryDoctor || null,
-    immunizationNotes: form.immunizationNotes || null,
-    skillNotes: form.skillNotes || null,
-    textOptIn: form.textOptIn || null,
-    massEmailOptOut: form.massEmailOptOut || null
-  };
-
-  saving.value = true;
-  try {
-    if (editing.value) {
-      await studentApi.update(form.studentId, { ...payload, active: form.active });
-      notify.success("Student updated.");
-    } else {
-      const created = await studentApi.create(payload);
-      notify.success("Student created.");
-      // A login account (with the Student role) is minted alongside the student — its temporary
-      // password is only ever shown here.
-      if (created?.temporaryPassword) {
-        tempPassword.value = created.temporaryPassword;
-        tempPwOpen.value = true;
-      }
-    }
-    clearDraft?.();
-    formOpen.value = false;
-    resetForm();
-    load();
-  } catch (err) {
-    if (getApiErrorCode(err) === ApiErrorCodes.DuplicateIdentifier) {
-      emailError.value = "A student with this email already exists.";
-    } else {
-      notify.error(getApiErrorMessage(err));
-    }
-  } finally {
-    saving.value = false;
-  }
 };
 
 const remove = async (row) => {

@@ -32,6 +32,11 @@ public static class Permissions
     public const string ClassSessionsWrite = "classSessions.write";
     public const string ClassSessionsDelete = "classSessions.delete";
 
+    // Families (household records — contacts + students, see Family entity)
+    public const string FamiliesRead = "families.read";
+    public const string FamiliesWrite = "families.write";
+    public const string FamiliesDelete = "families.delete";
+
     public const string BillingMethodsRead = "billingMethods.read";
     public const string BillingMethodsWrite = "billingMethods.write";
     public const string BillingMethodsDelete = "billingMethods.delete";
@@ -44,6 +49,16 @@ public static class Permissions
     public const string ClassesRead = "classes.read";
     public const string ClassesWrite = "classes.write";
     public const string ClassesDelete = "classes.delete";
+
+    // Class Categories
+    public const string ClassCategoriesRead = "classCategories.read";
+    public const string ClassCategoriesWrite = "classCategories.write"; 
+    public const string ClassCategoriesDelete = "classCategories.delete";
+    
+    // Billing Cycles
+    public const string BillingCyclesRead = "billingCycles.read"; 
+    public const string BillingCyclesWrite = "billingCycles.write";
+    public const string BillingCyclesDelete = "billingCycles.delete";
 
     // Users
     public const string UsersRead = "users.read";
@@ -89,11 +104,14 @@ public static class Permissions
         TenantsRead, TenantsWrite, TenantsArchive,
         PersonsRead, PersonsWrite, PersonsDelete,
         FamilyStatusesRead,FamilyStatusesWrite,FamilyStatusesDelete,
+        FamiliesRead, FamiliesWrite, FamiliesDelete,
           FamilyRelationsRead, FamilyRelationsWrite, FamilyRelationsDelete,
         ClassSessionsRead, ClassSessionsWrite, ClassSessionsDelete,
         BillingMethodsRead, BillingMethodsWrite, BillingMethodsDelete,
         StudentsRead, StudentsWrite, StudentsDelete,
         ClassesRead, ClassesWrite, ClassesDelete,
+        ClassCategoriesRead, ClassCategoriesWrite, ClassCategoriesDelete, 
+        BillingCyclesRead, BillingCyclesWrite, BillingCyclesDelete,
         LocationsRead, LocationsWrite, LocationsDelete,
         UsersRead, UsersWrite, UsersResetPassword, UsersGroupManagement,
         RolesRead, RolesWrite, RolesAssign,
@@ -114,6 +132,8 @@ public static class Permissions
         FamilyStatusesRead,FamilyStatusesWrite,FamilyStatusesDelete,
 
         //Class Session
+        // Families are owned entirely within a tenant, so Tenant Admins get full CRUD.
+        FamiliesRead, FamiliesWrite, FamiliesDelete,
         ClassSessionsRead, ClassSessionsWrite, ClassSessionsDelete,
 
         //Billing Method
@@ -125,6 +145,10 @@ public static class Permissions
         StudentsRead, StudentsWrite, StudentsDelete,
         // Classes carry no TenantId yet (see the Class entity remarks) but are administered the same way.
         ClassesRead, ClassesWrite, ClassesDelete,
+        // Class Categories
+        ClassCategoriesRead, ClassCategoriesWrite, ClassCategoriesDelete, 
+        // Billing Cycles
+        BillingCyclesRead, BillingCyclesWrite, BillingCyclesDelete,
         // Location
         LocationsRead, LocationsWrite, LocationsDelete,
         // Users
@@ -149,17 +173,21 @@ public static class Permissions
     /// <summary>A student holds no platform permissions — access to their own record is by ownership.</summary>
     public static IReadOnlyList<string> ForStudent() => Array.Empty<string>();
 
+    /// <summary>A family contact (Guardian) holds no platform permissions — same reasoning as <see cref="ForStudent"/>.</summary>
+    public static IReadOnlyList<string> ForGuardian() => Array.Empty<string>();
+
     /// <summary>
-    /// The seeded permission set for a system role name (SuperAdmin/TenantAdmin/Student), or an empty set
-    /// for any other name (including custom roles). Used as the fallback when an assignment carries no
-    /// explicit permission keys and when a caller holds only a role claim (API-key callers, pre-RBAC
-    /// tokens).
+    /// The seeded permission set for a system role name (SuperAdmin/TenantAdmin/Student/Guardian), or an
+    /// empty set for any other name (including custom roles). Used as the fallback when an assignment
+    /// carries no explicit permission keys and when a caller holds only a role claim (API-key callers,
+    /// pre-RBAC tokens).
     /// </summary>
     public static IReadOnlyList<string> ForSystemRole(string? roleName) => roleName switch
     {
         Roles.SuperAdmin => ForSuperAdmin(),
         Roles.TenantAdmin => ForTenantAdmin(),
         Roles.Student => ForStudent(),
+        Roles.Guardian => ForGuardian(),
         _ => Array.Empty<string>(),
     };
 }

@@ -63,6 +63,10 @@ public class SakoleeDbContext : DbContext, IDataProtectionKeyContext
 
     public DbSet<Student> Students => Set<Student>();
 
+    public DbSet<Family> Families => Set<Family>();
+
+    public DbSet<FamilyPersonMapping> FamilyPersonMappings => Set<FamilyPersonMapping>();
+
     public DbSet<Class> Classes => Set<Class>();
 
     public DbSet<ClassCategory> ClassCategories => Set<ClassCategory>();
@@ -115,7 +119,7 @@ public class SakoleeDbContext : DbContext, IDataProtectionKeyContext
     public DbSet<DeletedRecordRetentionConfig> DeletedRecordRetentionConfigs => Set<DeletedRecordRetentionConfig>();
     public DbSet<FieldModifiedLog> FieldModifiedLogs => Set<FieldModifiedLog>();
     public DbSet<ModifiedLogFieldConfig> ModifiedLogFieldConfigs => Set<ModifiedLogFieldConfig>();
-
+    public DbSet<BillingCycle> BillingCycles => Set<BillingCycle>();
     /// <summary>Data Protection key ring storage (Multi-Tenancy ADR-002).</summary>
     public DbSet<DataProtectionKey> DataProtectionKeys => Set<DataProtectionKey>();
 
@@ -144,6 +148,8 @@ public class SakoleeDbContext : DbContext, IDataProtectionKeyContext
         modelBuilder.Entity<SmtpAccount>().HasQueryFilter(e => (!_tenantContext.IsResolved || e.TenantId == _tenantContext.TenantId) && !e.Deleted);
         // Family statuses are tenant-scoped; switching the active/viewed tenant must change what this list returns.
         modelBuilder.Entity<FamilyStatus>().HasQueryFilter(e => (!_tenantContext.IsResolved || e.TenantId == _tenantContext.TenantId) && !e.IsDeleted);
+        // Families are tenant-scoped the same way (direct TenantId, not resolved through a contact).
+        modelBuilder.Entity<Family>().HasQueryFilter(e => (!_tenantContext.IsResolved || e.TenantId == _tenantContext.TenantId) && !e.Deleted);
 
         // Universal Features (Phase 14): every UF table is tenant-scoped + soft-deletable, so it
         // carries the combined ambient-tenant + soft-delete filter. FieldModifiedLog is the lone
@@ -198,7 +204,6 @@ public class SakoleeDbContext : DbContext, IDataProtectionKeyContext
         modelBuilder.Entity<Media>().HasQueryFilter(e => !e.Deleted);
         modelBuilder.Entity<PermissionGroupTemplate>().HasQueryFilter(e => !e.Deleted);
         modelBuilder.Entity<DashboardLayout>().HasQueryFilter(e => !e.Deleted);
-
     }
 
     public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
@@ -278,6 +283,9 @@ public class SakoleeDbContext : DbContext, IDataProtectionKeyContext
                     break;
                 case Person person when person.TenantId is null || person.TenantId == Guid.Empty:
                     person.TenantId = _tenantContext.TenantId;
+                    break;
+                case Family family when family.TenantId == Guid.Empty:
+                    family.TenantId = _tenantContext.TenantId;
                     break;
                 case UserGroup userGroup when userGroup.TenantId == Guid.Empty:
                     userGroup.TenantId = _tenantContext.TenantId;

@@ -103,9 +103,20 @@ export const classApi = {
 };
 
 export const classCategoryApi = {
-  // Class form's Category 1/2/3 dropdown options — one flat list, scoped to the caller's active
-  // tenant; each row carries which dropdown it belongs to via categoryType.
-  list: () => api.get("/api/admin/class-categories").then(unwrap)
+  // Class Category records scoped to the caller's active tenant.
+  list: (params) => api.get("/api/admin/class-categories", { params }).then(envelope),
+  get: (id) => api.get(`/api/admin/class-categories/${id}`).then(unwrap),
+  create: (payload) => api.post("/api/admin/class-categories", payload).then(unwrap),
+  update: (id, payload) => api.put(`/api/admin/class-categories/${id}`, payload).then(unwrap),
+  remove: (id) => api.delete(`/api/admin/class-categories/${id}`).then(envelope)
+};
+
+export const billingCycleApi = {
+  list: (params) => api.get("/api/admin/billing-cycles", { params }).then(envelope),
+  get: (id) => api.get(`/api/admin/billing-cycles/${id}`).then(unwrap),
+  create: (payload) => api.post("/api/admin/billing-cycles", payload).then(unwrap),
+  update: (id, payload) => api.put(`/api/admin/billing-cycles/${id}`, payload).then(unwrap),
+  remove: (id) => api.delete(`/api/admin/billing-cycles/${id}`).then(envelope)
 };
 
 // Family Status API mapping
@@ -137,10 +148,22 @@ export const personApi = {
   selectable: (tenantId) => api.get("/api/admin/persons/selectable", { params: { tenantId } }).then(unwrap)
 };
 
+export const familyApi = {
+  list: (params) => api.get("/api/admin/families", { params }).then(envelope),
+  get: (id) => api.get(`/api/admin/families/${id}`).then(unwrap),
+  create: (payload) => api.post("/api/admin/families", payload).then(unwrap),
+  update: (id, payload) => api.put(`/api/admin/families/${id}`, payload).then(unwrap),
+  remove: (id) => api.delete(`/api/admin/families/${id}`).then(envelope)
+};
+
 export const studentApi = {
   list: (params) => api.get("/api/admin/students", { params }).then(envelope),
   get: (id) => api.get(`/api/admin/students/${id}`).then(unwrap),
   create: (payload) => api.post("/api/admin/students", payload).then(unwrap),
+  // Creates several students in one transaction (e.g. siblings registered together via Quick
+  // Registration) — `students` is an array of CreateStudentRequest payloads; the response is
+  // { students: [...] }, all created together or, on any failure, none of them.
+  createBulk: (students) => api.post("/api/admin/students/bulk", { students }).then(unwrap),
   update: (id, payload) => api.put(`/api/admin/students/${id}`, payload).then(unwrap),
   remove: (id) => api.delete(`/api/admin/students/${id}`).then(envelope)
 };

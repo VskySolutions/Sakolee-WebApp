@@ -21,8 +21,18 @@ public class Student
 {
     public Guid Id { get; set; }
 
-    /// <summary>Owning parent (Parents table — no Domain entity for it yet).</summary>
-    public Guid? ParentId { get; set; }
+    /// <summary>
+    /// Owning family. FK onto <see cref="Entities.Family"/>.<see cref="Entities.Family.Id"/> — the
+    /// physical constraint (<c>FK_Students_Families</c>) predates the Family entity, back when its
+    /// target table was still an unmodelled, differently-named <c>Parents</c> table (renamed to
+    /// <c>Families</c> by <c>RenameParentsAndParentContactsToFamilies</c>); the column itself was also
+    /// named <c>ParentId</c> from that era, renamed to <c>FamilyId</c> by
+    /// <c>RenameStudentsParentIdToFamilyId</c>. No EF navigation/relationship is configured here, the
+    /// same way <see cref="PersonId"/> carries none: this column is a plain <c>nvarchar(450)</c> on the
+    /// live schema, so the association is resolved by callers (e.g. <c>FamiliesController</c>) rather
+    /// than by EF.
+    /// </summary>
+    public Guid? FamilyId { get; set; }
 
     /// <summary>
     /// The linked CRM Person — every student created through <c>StudentsController</c> has one (minted
@@ -61,6 +71,8 @@ public class Student
 
     public string? FamilyName { get; set; }
 
+    /// <summary>Legacy flag, superseded by <see cref="Entities.Person.Gender"/> (the current student form's
+    /// Gender select writes there instead) — preserved as-is, no longer written by new saves.</summary>
     public bool? Gender { get; set; }
 
     public DateTime? BirthDate { get; set; }
@@ -75,15 +87,22 @@ public class Student
 
     public string? TShirtSize { get; set; }
 
+    /// <summary>Legacy flag, superseded by <see cref="DisabilitiesNotes"/> — preserved as-is, no longer
+    /// written by new saves.</summary>
     public bool? Disabilities { get; set; }
 
     public string? SpecialNeeds { get; set; }
 
+    /// <summary>Legacy flag, superseded by <see cref="AllergiesNotes"/> — preserved as-is, no longer
+    /// written by new saves.</summary>
     public bool? Allergies { get; set; }
 
     public string? Medications { get; set; }
 
     public string? PrimaryDoctor { get; set; }
+
+    /// <summary>Whether immunizations are up to date: "Yes", "No", or "Exempt".</summary>
+    public string? HasImmunizations { get; set; }
 
     public string? ImmunizationNotes { get; set; }
 
@@ -94,4 +113,14 @@ public class Student
 
     /// <summary>Free text on the live schema, not a flag — preserved as-is.</summary>
     public string? MassEmailOptOut { get; set; }
+
+    public string? HealthInsuranceCarrier { get; set; }
+
+    /// <summary>Free-text description of any disabilities (see <see cref="Disabilities"/> remarks).</summary>
+    public string? DisabilitiesNotes { get; set; }
+
+    /// <summary>Free-text description of any allergies (see <see cref="Allergies"/> remarks).</summary>
+    public string? AllergiesNotes { get; set; }
+
+    public bool AllowTextMessaging { get; set; } = true;
 }

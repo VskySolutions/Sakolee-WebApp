@@ -4,6 +4,6 @@ module.exports = {
   API_BASE_URL: "http://localhost:5032",
   WEB_BASE_URL: "http://localhost:9000",
   BUILD_PUBLIC_PATH: "",
-  PUBLISH_FOLDER: "",
+  PUBLISH_PATH: "D:/Vaibhav/Publish/Sakolee/Dev",
   IGNORE_PUBLIC_FOLDER: false
 };

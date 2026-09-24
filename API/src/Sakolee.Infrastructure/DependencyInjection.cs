@@ -67,15 +67,19 @@ public static class DependencyInjection
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddScoped<IAuditTrailRepository, AuditTrailRepository>();
         services.AddScoped<IAuditTrailService, AuditTrailService>();
+        services.AddScoped<IBillingCycleRepository, BillingCycleRepository>();
         services.AddScoped<ITenantRepository, TenantRepository>();
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
         services.AddScoped<IPasswordResetTokenRepository, PasswordResetTokenRepository>();
         services.AddScoped<IRoleRepository, RoleRepository>();
         services.AddScoped<IPersonRepository, PersonRepository>();
+        services.AddScoped<IStudentRepository, StudentRepository>();
         services.AddScoped<IClassRepository, ClassRepository>();
         services.AddScoped<IClassCategoryRepository, ClassCategoryRepository>();
+
         services.AddScoped<IFamilyStatusRepository, FamilyStatusRepository>();
+        services.AddScoped<IFamilyRepository, FamilyRepository>();
         services.AddScoped<IClassSessionRepository, ClassSessionRepository>();
         services.AddScoped<IBillingMethodRepository, BillingMethodRepository>();
             services.AddScoped<IFamilyRelationRepository, FamilyRelationRepository>();

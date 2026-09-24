@@ -108,6 +108,7 @@ public static class BootstrapSeeder
             (Roles.SuperAdmin, "Full platform access.", Permissions.ForSuperAdmin()),
             (Roles.TenantAdmin, "Manage a tenant's users and configuration.", Permissions.ForTenantAdmin()),
             (Roles.Student, "A student's own login account.", Permissions.ForStudent()),
+            (Roles.Guardian, "A family contact's own login account.", Permissions.ForGuardian()),
         };
 
         foreach (var (name, description, permissions) in definitions)

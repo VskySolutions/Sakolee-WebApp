@@ -23,6 +23,9 @@ internal sealed class ClassConfiguration : IEntityTypeConfiguration<Class>
         builder.Property(c => c.RoomId).HasConversion<string>().HasMaxLength(450);
         builder.Property(c => c.SessionId).HasConversion<string>().HasMaxLength(450);
         builder.Property(c => c.PrimaryInstructorId).HasConversion<string>().HasMaxLength(450);
+        builder.Property(c => c.Category1Id).HasConversion<string>().HasMaxLength(450);
+        builder.Property(c => c.Category2Id).HasConversion<string>().HasMaxLength(450);
+        builder.Property(c => c.Category3Id).HasConversion<string>().HasMaxLength(450);
         builder.Property(c => c.CreatedById).HasConversion<string>().HasMaxLength(450);
         builder.Property(c => c.UpdatedById).HasConversion<string>().HasMaxLength(450);
 

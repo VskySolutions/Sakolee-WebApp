@@ -1,3 +1,5 @@
+using Sakolee.Api.Models.Profile;
+
 namespace Sakolee.Api.Models.Students;
 
 /// <summary>
@@ -7,7 +9,7 @@ namespace Sakolee.Api.Models.Students;
 /// </summary>
 public sealed class CreateStudentRequest
 {
-    public Guid? ParentId { get; set; }
+    public Guid? FamilyId { get; set; }
     public string FirstName { get; set; } = string.Empty;
     public string LastName { get; set; } = string.Empty;
     /// <summary>Required — every student gets a login account, and an account needs an email.</summary>
@@ -20,7 +22,8 @@ public sealed class CreateStudentRequest
     public DateTime? FeeExpiryDate { get; set; }
     public string? FeeNote { get; set; }
     public Guid? FeeCategoryId { get; set; }
-    public bool? Gender { get; set; }
+    /// <summary>Writes to the linked Person's Gender — see <see cref="Sakolee.Domain.Entities.Student.Gender"/> remarks.</summary>
+    public string? Gender { get; set; }
     public DateTime? BirthDate { get; set; }
     public string? CellPhone { get; set; }
     public string? School { get; set; }
@@ -32,11 +35,38 @@ public sealed class CreateStudentRequest
     public bool? Allergies { get; set; }
     public string? Medications { get; set; }
     public string? PrimaryDoctor { get; set; }
+    public string? HasImmunizations { get; set; }
     public string? ImmunizationNotes { get; set; }
     public string? SkillNotes { get; set; }
     public string? TextOptIn { get; set; }
     public string? MassEmailOptOut { get; set; }
+    public string? HealthInsuranceCarrier { get; set; }
+    public string? DisabilitiesNotes { get; set; }
+    public string? AllergiesNotes { get; set; }
+    public bool AllowTextMessaging { get; set; } = true;
+    /// <summary>Writes to the linked Person's EmergencyContactName.</summary>
+    public string? EmergencyContactName { get; set; }
+    /// <summary>Writes to the linked Person's EmergencyContactNumber.</summary>
+    public string? EmergencyContactNumber { get; set; }
+    /// <summary>Writes to the linked Person's Address — same shape as <c>CreatePersonRequest.Address</c>.</summary>
+    public AddressInput? Address { get; set; }
 }
+
+/// <summary>
+/// Request to create several students in one call — e.g. registering siblings under the same family
+/// in one pass (see the Quick Registration wizard). Each entry is a full <see cref="CreateStudentRequest"/>
+/// (most commonly sharing the same <see cref="CreateStudentRequest.FamilyId"/>/<see cref="CreateStudentRequest.ClassId"/>,
+/// though nothing requires that); all students are created in a single transaction — see
+/// <c>StudentsController.CreateBulk</c> — so either every one is created or, on any failure, none are.
+/// </summary>
+public sealed class CreateStudentsBulkRequest
+{
+    public IReadOnlyList<CreateStudentRequest> Students { get; set; } = Array.Empty<CreateStudentRequest>();
+}
+
+/// <summary>The result of a <see cref="CreateStudentsBulkRequest"/> — one <see cref="StudentResponse"/>
+/// per student, in the same order they were submitted.</summary>
+public sealed record CreateStudentsBulkResponse(IReadOnlyList<StudentResponse> Students);
 
 /// <summary>
 /// Request to update a student. <see cref="FirstName"/>/<see cref="LastName"/>/<see cref="Email"/> are
@@ -45,7 +75,7 @@ public sealed class CreateStudentRequest
 /// </summary>
 public sealed class UpdateStudentRequest
 {
-    public Guid? ParentId { get; set; }
+    public Guid? FamilyId { get; set; }
     public string? FirstName { get; set; }
     public string? LastName { get; set; }
     public string? Email { get; set; }
@@ -58,7 +88,8 @@ public sealed class UpdateStudentRequest
     public DateTime? FeeExpiryDate { get; set; }
     public string? FeeNote { get; set; }
     public Guid? FeeCategoryId { get; set; }
-    public bool? Gender { get; set; }
+    /// <summary>Writes to the linked Person's Gender — see <see cref="Sakolee.Domain.Entities.Student.Gender"/> remarks.</summary>
+    public string? Gender { get; set; }
     public DateTime? BirthDate { get; set; }
     public string? CellPhone { get; set; }
     public string? School { get; set; }
@@ -70,10 +101,18 @@ public sealed class UpdateStudentRequest
     public bool? Allergies { get; set; }
     public string? Medications { get; set; }
     public string? PrimaryDoctor { get; set; }
+    public string? HasImmunizations { get; set; }
     public string? ImmunizationNotes { get; set; }
     public string? SkillNotes { get; set; }
     public string? TextOptIn { get; set; }
     public string? MassEmailOptOut { get; set; }
+    public string? HealthInsuranceCarrier { get; set; }
+    public string? DisabilitiesNotes { get; set; }
+    public string? AllergiesNotes { get; set; }
+    public bool AllowTextMessaging { get; set; } = true;
+    public string? EmergencyContactName { get; set; }
+    public string? EmergencyContactNumber { get; set; }
+    public AddressInput? Address { get; set; }
 }
 
 /// <summary>
@@ -88,7 +127,7 @@ public sealed record StudentResponse(
 public sealed record StudentSummary(
     Guid StudentId,
     Guid? PersonId,
-    Guid? ParentId,
+    Guid? FamilyId,
     string? FirstName,
     string? LastName,
     string? FamilyName,
@@ -100,7 +139,7 @@ public sealed record StudentSummary(
     DateTime? FeeExpiryDate,
     string? FeeNote,
     Guid? FeeCategoryId,
-    bool? Gender,
+    string? Gender,
     DateTime? BirthDate,
     string? CellPhone,
     string? Email,
@@ -113,10 +152,17 @@ public sealed record StudentSummary(
     bool? Allergies,
     string? Medications,
     string? PrimaryDoctor,
+    string? HasImmunizations,
     string? ImmunizationNotes,
     string? SkillNotes,
     string? TextOptIn,
     string? MassEmailOptOut,
+    string? HealthInsuranceCarrier,
+    string? DisabilitiesNotes,
+    string? AllergiesNotes,
+    bool AllowTextMessaging,
+    string? EmergencyContactName,
+    string? EmergencyContactNumber,
     string? CreatedBy,
     DateTime CreatedOnUtc,
     string? UpdatedBy,

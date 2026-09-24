@@ -7,12 +7,12 @@
         :disable="disable" :rules="[(v) => !!v || 'Class name is required']"
       />
 
-      <!-- Category/Location/Room/Session/Instructor: placeholder option lists only — there is no
-           Category/Location/Room/Session/Instructor management feature yet, so these don't save to
-           the class record until that backing data exists. -->
-      <app-select v-model="form.category1" label="Category 1 *" :options="category1Options" class="col-12 col-sm-6" :disable="disable" />
-      <app-select v-model="form.category2" label="Category 2" :options="category2Options" class="col-12 col-sm-6" :disable="disable" />
-      <app-select v-model="form.category3" label="Category 3" :options="category3Options" class="col-12 col-sm-6" :disable="disable" />
+      <!-- Category 1/2/3 save to the Class record (backed by ClassCategory). Location/Room/Session/
+           Instructor are still placeholder option lists — there is no management feature for them
+           yet, so those don't save to the class record until that backing data exists. -->
+      <app-select :key="`category1-${categoriesLoaded}`" v-model="form.category1" label="Category 1 *" :options="category1Options" class="col-12 col-sm-6" :disable="disable" />
+      <app-select :key="`category2-${categoriesLoaded}`" v-model="form.category2" label="Category 2" :options="category2Options" class="col-12 col-sm-6" :disable="disable" />
+      <app-select :key="`category3-${categoriesLoaded}`" v-model="form.category3" label="Category 3" :options="category3Options" class="col-12 col-sm-6" :disable="disable" />
       <app-select v-model="form.location" label="Location *" :options="locationOptions" class="col-12 col-sm-6" :disable="disable" />
       <app-select v-model="form.room" label="Room *" :options="roomOptions" class="col-12 col-sm-6" :disable="disable" />
       <app-select v-model="form.session" label="Session *" :options="sessionOptions" class="col-12 col-sm-6" :disable="disable" />
@@ -140,15 +140,22 @@ const props = defineProps({
 const notify = useNotify();
 
 // Category 1/2/3: real options loaded from ClassCategory (scoped to the caller's active tenant), one
-// flat list told apart by categoryType. Location/Room/Session/Instructor stay demo option lists
-// standing in for the not-yet-built management features. None of these are sent on submit — see
-// classForm.js's toClassPayload.
+// flat list told apart by categoryType — selections save to Class.Category1Id/2Id/3Id (see
+// classForm.js's toClassPayload). Location/Room/Session/Instructor stay demo option lists standing in
+// for the not-yet-built management features and are not sent on submit.
 const classCategories = ref([]);
+// The three Category selects mount before this async fetch resolves, and QSelect's value→label
+// mapping (map-options) doesn't reliably re-run once `options` fills in later — an edit page showing
+// a class's saved category renders the raw id instead of its name until this remounts them. Keying
+// on this flag forces that remount the moment real options exist.
+const categoriesLoaded = ref(false);
 onMounted(async () => {
   try {
     classCategories.value = await classCategoryApi.list() || [];
   } catch (err) {
     notify.error(getApiErrorMessage(err));
+  } finally {
+    categoriesLoaded.value = true;
   }
 });
 

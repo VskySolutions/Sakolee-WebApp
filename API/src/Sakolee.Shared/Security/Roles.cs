@@ -16,4 +16,11 @@ public static class Roles
     /// require it to exist.
     /// </summary>
     public const string Student = "Student";
+
+    /// <summary>
+    /// Seeded the same way as <see cref="Student"/> — a family contact's own login account. Carries no
+    /// platform permissions; a contact's access to their own family/student records is by ownership, not
+    /// by RBAC grant.
+    /// </summary>
+    public const string Guardian = "Guardian";
 }

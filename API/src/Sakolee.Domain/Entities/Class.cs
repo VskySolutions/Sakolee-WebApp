@@ -11,6 +11,8 @@ namespace Sakolee.Domain.Entities;
 /// through yet: <see cref="LocationId"/>/<see cref="RoomId"/>/<see cref="SessionId"/>/
 /// <see cref="PrimaryInstructorId"/> reference features that do not exist in this app yet, so a class
 /// row is currently visible platform-wide rather than confined to one tenant.
+/// <see cref="Category1Id"/>/<see cref="Category2Id"/>/<see cref="Category3Id"/> reference
+/// <see cref="ClassCategory"/>, which does carry a TenantId.
 /// </para>
 /// </summary>
 public class Class
@@ -28,6 +30,15 @@ public class Class
 
     /// <summary>The class's primary instructor (no Instructor management feature yet).</summary>
     public Guid? PrimaryInstructorId { get; set; }
+
+    /// <summary>Selected "Category 1" option (see <see cref="ClassCategory"/>).</summary>
+    public Guid? Category1Id { get; set; }
+
+    /// <summary>Selected "Category 2" option (see <see cref="ClassCategory"/>).</summary>
+    public Guid? Category2Id { get; set; }
+
+    /// <summary>Selected "Category 3" option (see <see cref="ClassCategory"/>).</summary>
+    public Guid? Category3Id { get; set; }
 
     public DateTime CreatedOnUtc { get; set; }
 
