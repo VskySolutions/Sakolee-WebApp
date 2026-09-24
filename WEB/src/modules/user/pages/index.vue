@@ -1,7 +1,9 @@
 <template>
   <q-page padding>
     <app-list-header
-      :breadcrumbs="[{ label: 'Home', icon: 'o_home', to: '/' }, { label: 'Users' }]"
+      :breadcrumbs="[{ label: 'Home', to: '/' }, { label: 'Users' }]"
+      title="Users"
+      description="Manage all users."
       :search="search"
       show-search
       search-placeholder="Search name or email"
@@ -26,7 +28,7 @@
     <app-data-table
       page-key="users"
       row-key="userId"
-      title="All users"
+      title="All Users"
       :rows="rows"
       :columns="columns"
       :loading="loading"

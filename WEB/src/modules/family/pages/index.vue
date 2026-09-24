@@ -1,7 +1,9 @@
 <template>
   <q-page padding>
     <app-list-header
-      :breadcrumbs="[{ label: 'Home', icon: 'o_home', to: '/' }, { label: 'Families' }]"
+      :breadcrumbs="[{ label: 'Home', to: '/' }, { label: 'All Families' }]"
+      title="All Families"
+      description="Manage student families and parent records."
       :search="search"
       show-search
       search-placeholder="Search family name"
@@ -23,7 +25,7 @@
     <app-data-table
       page-key="families"
       row-key="familyId"
-      title="All families"
+      title="All Families"
       :rows="rows"
       :columns="columns"
       :loading="loading"

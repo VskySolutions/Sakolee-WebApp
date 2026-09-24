@@ -1,7 +1,9 @@
 <template>
   <q-page padding>
     <app-list-header
-      :breadcrumbs="[{ label: 'Home', icon: 'o_home', to: '/' }, { label: 'Roles' }]"
+      :breadcrumbs="[{ label: 'Home', to: '/' }, { label: 'Roles' }]"
+      title="Roles"
+      description="Manage roles and their permissions."
       :search="search"
       show-search
       search-placeholder="Search roles"

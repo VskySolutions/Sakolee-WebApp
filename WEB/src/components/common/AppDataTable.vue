@@ -299,107 +299,134 @@ const forwardedSlots = computed(() =>
   Object.fromEntries(Object.entries(slots).filter(([name]) => !reserved.includes(name))));
 </script>
 
-<style scoped>
+<style scoped lang="scss">
 .app-data-table {
   border-radius: 12px;
-}
-/* The top bar sits 5px in from the table's sides, so the title and the quick-filter bar under it line
-   up with the grid's own edge rather than floating a gutter inside it. */
-.app-data-table :deep(.q-table__top) {
-  padding-left: 5px;
-  padding-right: 5px;
-}
-.app-data-table :deep(thead tr th) {
-  position: sticky;
-  top: 0;
-  z-index: 1;
-  background: #fff;
-}
-.app-th {
-  position: relative;
-}
 
-/* ---- Personal row marks (pin + colour) ----
-   Both are PRIVATE to the viewer, so both are drawn quietly: a pinned row is a shade warmer than its
-   neighbours, and a coloured one carries a stripe down its left edge. Neither may shout — the row's own
-   status badges are what the reader is scanning for, and a full-width tint would drown them. */
-.app-data-table :deep(tbody tr.app-data-table__row--pinned) {
-  background: #fbfaf5;
-}
-.app-data-table :deep(tbody tr td:first-child) {
-  position: relative;
-}
-/* On the first CELL rather than the row: a <tr> is not a reliable box to paint a border on. The colour
-   arrives as a custom property set per row (see rowStyleFn); with none set this paints nothing. */
-.app-data-table :deep(tbody tr td:first-child)::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: 4px;
-  background: var(--app-row-colour, transparent);
-}
-.app-th__resize {
-  position: absolute;
-  top: 0;
-  right: 0;
-  width: 6px;
-  height: 100%;
-  cursor: col-resize;
-  user-select: none;
-}
-.app-th__resize:hover {
-  background: var(--q-primary);
-  opacity: 0.4;
-}
+  /* Keep the table header and body aligned. */
+  :deep(.q-table__top) {
+    padding-left: 5px;
+    padding-right: 5px;
+  }
 
-/* ---- The actions column is a row of controls, not prose ----
-   It never wraps. A list that has grown a sixth and seventh action — the personal pin and colour, an
-   Edit that only some rows offer — would otherwise fold onto a second line on a narrow window, and a
-   row whose height changes with how many actions it happens to carry is a row that reads as broken.
-   The column sizes itself to what it holds instead, and Quasar's own middle section scrolls sideways
-   if the whole table outgrows the window.
-   Addressed as the LAST cell, which is what the actions column always is — useColumnOrder sinks it
-   there whatever order the reader drags the other columns into.
+  :deep(thead tr th) {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: #fff;
+  }
 
-   ONE RULE FOR ANYTHING PUT IN AN ACTIONS CELL: it must be inline-level. `nowrap` governs inline
-   content only, so a single block-level box breaks the line whatever this says — which is exactly what
-   a <q-separator vertical> did, since QSeparator renders an <hr>. A q-btn is inline-flex and safe; a
-   div, an hr or a q-separator is not.
+  .app-th {
+    position: relative;
+  }
 
-   The children are middle-aligned rather than left on their baselines. Icon buttons and an inline-flex
-   group (the personal marks) compute baselines differently, so on a baseline they sit a pixel or two
-   apart — visible as a ragged row once there are six or seven of them. */
-.app-data-table.with-actions :deep(thead tr th:last-child),
-.app-data-table.with-actions :deep(tbody tr td:last-child) {
-  white-space: nowrap;
-  width: 1%;
-}
-.app-data-table.with-actions :deep(tbody tr td:last-child > *) {
-  vertical-align: middle;
-}
+  /* ---- Personal row marks ---- */
+  :deep(tbody tr.app-data-table__row--pinned) {
+    background: #fbfaf5;
+  }
 
-/* Left-align the selection (checkbox) column header + body cells. */
-.app-data-table.with-selection :deep(thead th:first-child),
-.app-data-table.with-selection :deep(tbody td:first-child) {
-  text-align: left;
-  width: 1%;
-  white-space: nowrap;
-}
+  :deep(tbody tr td:first-child) {
+    position: relative;
+  }
 
-/* Draggable column-reorder rows in the columns menu. */
-.app-col-item {
-  cursor: grab;
-}
-.app-col-item__handle {
-  min-width: 0;
-  padding-right: 4px;
-}
-.app-col-item--drag {
-  opacity: 0.5;
-}
-.app-col-item--over {
-  border-top: 2px solid var(--q-primary);
+  :deep(tbody tr td:first-child)::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: var(--app-row-colour, transparent);
+  }
+
+  /* ---- Column resize handle ---- */
+  .app-th__resize {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 6px;
+    height: 100%;
+    cursor: col-resize;
+    user-select: none;
+
+    &:hover {
+      background: var(--q-primary);
+      opacity: 0.4;
+    }
+  }
+
+  /* ==========================================================
+     ACTIONS COLUMN
+     ----------------------------------------------------------
+     The Actions column stays fixed on the right while the
+     remaining table columns scroll horizontally underneath it.
+
+     Its width is based on the actual action content instead of
+     stretching across the remaining table width.
+     ========================================================== */
+
+  &.with-actions {
+    :deep(thead tr th:last-child),
+    :deep(tbody tr td:last-child) {
+      position: sticky;
+      right: 0;
+
+      /* Size according to the actual action buttons. */
+      width: 1%;
+      min-width: max-content;
+
+      white-space: nowrap;
+      text-align: center;
+
+      /* Keep the fixed column above horizontally scrolling cells. */
+      z-index: 3;
+
+      /* Solid background is important when other columns scroll behind it. */
+      background: #fff;
+
+      /* One consistent separator/shadow for the whole fixed column. */
+      border-left: 1px solid #e5e5eb;
+      // box-shadow: -8px 0 12px -10px rgba(30, 27, 46, 0.35);
+    }
+
+    /* Header must remain above the fixed body cells. */
+    :deep(thead tr th:last-child) {
+      z-index: 5;
+    }
+
+    /* Keep every action inline and vertically aligned. */
+    :deep(tbody tr td:last-child > *) {
+      display: inline-flex;
+      vertical-align: middle;
+    }
+  }
+
+  /* ---- Selection column ---- */
+  &.with-selection {
+    :deep(thead th:first-child),
+    :deep(tbody td:first-child) {
+      width: 1%;
+      white-space: nowrap;
+      text-align: left;
+    }
+  }
+
+  /* ---- Draggable column-reorder rows ---- */
+  .app-col-item {
+    cursor: grab;
+
+    &__handle {
+      min-width: 0;
+      padding-right: 4px;
+    }
+
+    &--drag {
+      opacity: 0.5;
+    }
+
+    &--over {
+      border-top: 2px solid var(--q-primary);
+    }
+  }
 }
 </style>

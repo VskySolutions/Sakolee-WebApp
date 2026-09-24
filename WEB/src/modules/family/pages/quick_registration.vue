@@ -1,13 +1,10 @@
 <template>
   <q-page padding>
-    <app-breadcrumbs
-      :items="[
-        { label: 'Home', icon: 'o_home', to: '/' },
-        { label: 'Quick Registration' }
-      ]"
+    <app-list-header
+      :breadcrumbs="[{ label: 'Home', to: '/' }, { label: 'All Families', to: '/families' }, { label: 'Quick Registration' }]"
+      title="Quick Registration"
+      description="Quick registration form."
     />
-    <div class="wizard-page-title">Quick Registration</div>
-    <div class="wizard-page-subtitle">Quick registration form.</div>
 
     <!-- Step progress tracker -->
     <q-card flat bordered class="wizard-tracker-card">
@@ -286,7 +283,8 @@
 import { computed, onMounted, reactive, ref } from "vue";
 import { useRouter } from "vue-router";
 
-import AppBreadcrumbs from "components/common/AppBreadcrumbs.vue";
+// import AppBreadcrumbs from "components/common/AppBreadcrumbs.vue";
+import AppListHeader from "components/common/AppListHeader.vue";
 import AppTextField from "components/common/AppTextField.vue";
 import AppSelect from "components/common/AppSelect.vue";
 import AppDateField from "components/common/AppDateField.vue";

@@ -31,7 +31,7 @@
     <app-data-table
       page-key="tenants"
       row-key="tenantId"
-      title="All tenants"
+      title="All Tenants"
       :rows="rows"
       :columns="columns"
       :loading="loading"
