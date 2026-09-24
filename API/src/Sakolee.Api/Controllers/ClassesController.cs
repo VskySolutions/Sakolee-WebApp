@@ -29,6 +29,8 @@ public sealed class ClassesController : ControllerBase
 {
     private readonly IClassRepository _classes;
     private readonly IClassCategoryRepository _categories;
+    private readonly ILocationRepository _locations;
+    private readonly IClassSessionRepository _sessions;
     private readonly IUserRepository _users;
     private readonly IActorAccessor _actorAccessor;
     private readonly IUnitOfWork _unitOfWork;
@@ -37,6 +39,8 @@ public sealed class ClassesController : ControllerBase
     public ClassesController(
         IClassRepository classes,
         IClassCategoryRepository categories,
+        ILocationRepository locations,
+        IClassSessionRepository sessions,
         IUserRepository users,
         IActorAccessor actorAccessor,
         IUnitOfWork unitOfWork,
@@ -44,6 +48,8 @@ public sealed class ClassesController : ControllerBase
     {
         _classes = classes;
         _categories = categories;
+        _locations = locations;
+        _sessions = sessions;
         _users = users;
         _actorAccessor = actorAccessor;
         _unitOfWork = unitOfWork;
@@ -146,6 +152,8 @@ public sealed class ClassesController : ControllerBase
             new[] { entity.Category1Id, entity.Category2Id, entity.Category3Id }.Where(id => id.HasValue).Select(id => id!.Value),
             cancellationToken);
         string? CategoryName(Guid? id) => id is { } categoryId && categoryNames.TryGetValue(categoryId, out var name) ? name : null;
+        var location = entity.LocationId is { } locationId ? await _locations.GetByIdAsync(locationId, cancellationToken) : null;
+        var session = entity.SessionId is { } sessionId ? await _sessions.GetByIdAsync(sessionId, cancellationToken) : null;
 
         return Ok(ApiResponseFactory.Success(
             ToSummary(entity, names) with
@@ -153,6 +161,8 @@ public sealed class ClassesController : ControllerBase
                 Category1Name = CategoryName(entity.Category1Id),
                 Category2Name = CategoryName(entity.Category2Id),
                 Category3Name = CategoryName(entity.Category3Id),
+                LocationName = location?.Name,
+                SessionName = session?.Name,
             },
             "Class retrieved."));
     }

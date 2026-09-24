@@ -142,8 +142,9 @@ public sealed class SessionsController : ControllerBase
     /// <param name="descending">Indicates whether sorting should be in descending order (default is true).</param>
     /// <param name="cancellationToken">Propagates notification that operations should be canceled.</param>
     /// <returns>Returns a paginated list of session summaries.</returns>
+    /// <remarks>Also readable with classes.read: the Class form loads this list for its Session dropdown.</remarks>
     [HttpGet]
-    [RequirePermission(Permissions.SessionsRead)]
+    [RequireAnyPermission(Permissions.ClassSessionsRead, Permissions.ClassesRead)]
     public async Task<IActionResult> List(
         [FromQuery] int page = 1,
         [FromQuery] int limit = 20,

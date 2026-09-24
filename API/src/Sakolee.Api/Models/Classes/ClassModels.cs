@@ -141,4 +141,6 @@ public sealed record ClassSummary(
     // shows them even when the category dropdown's own list can't be loaded).
     string? Category1Name = null,
     string? Category2Name = null,
-    string? Category3Name = null);
+    string? Category3Name = null,
+    string? LocationName = null,
+    string? SessionName = null);

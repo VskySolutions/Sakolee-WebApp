@@ -7,15 +7,15 @@
         :disable="disable" :rules="[(v) => !!v || 'Class name is required']"
       />
 
-      <!-- Category 1/2/3 save to the Class record (backed by ClassCategory). Location/Room/Session/
-           Instructor are still placeholder option lists — there is no management feature for them
+      <!-- Category 1/2/3, Location and Session save to the Class record (backed by ClassCategory/
+           Locations/ClassSessions). Room/Instructor are still placeholder option lists — there is no management feature for them
            yet, so those don't save to the class record until that backing data exists. -->
       <app-select :key="`category1-${categoriesLoaded}`" v-model="form.category1" label="Category 1 *" :options="category1Options" class="col-12 col-sm-6" :disable="disable" />
       <app-select :key="`category2-${categoriesLoaded}`" v-model="form.category2" label="Category 2" :options="category2Options" class="col-12 col-sm-6" :disable="disable" />
       <app-select :key="`category3-${categoriesLoaded}`" v-model="form.category3" label="Category 3" :options="category3Options" class="col-12 col-sm-6" :disable="disable" />
-      <app-select v-model="form.location" label="Location *" :options="locationOptions" class="col-12 col-sm-6" :disable="disable" />
+      <app-select :key="`location-${categoriesLoaded}`" v-model="form.location" label="Location *" :options="locationOptions" class="col-12 col-sm-6" :disable="disable" />
       <app-select v-model="form.room" label="Room *" :options="roomOptions" class="col-12 col-sm-6" :disable="disable" />
-      <app-select v-model="form.session" label="Session *" :options="sessionOptions" class="col-12 col-sm-6" :disable="disable" />
+      <app-select :key="`session-${categoriesLoaded}`" v-model="form.session" label="Session *" :options="sessionOptions" class="col-12 col-sm-6" :disable="disable" />
       <app-select v-model="form.primaryInstructor" label="Primary Instructor *" :options="instructorOptions" class="col-12 col-sm-6" :disable="disable" />
       <app-text-field v-model="form.additionalInstructors" label="Additional Instructors (Max 2)" hint="Free text (no instructor list yet)" class="col-12 col-sm-6" :disable="disable" />
     </div>
@@ -118,7 +118,7 @@
 <script setup>
 // The Class create/edit/view field set, defined once and reused by the Add/Edit/View class pages.
 import { ref, computed, watch, onMounted } from "vue";
-import { classCategoryApi, getApiErrorMessage } from "services/api";
+import { classCategoryApi, classSessionApi, locationApi, getApiErrorMessage } from "services/api";
 import { useNotify } from "composables/useNotify";
 import { formatDuration } from "composables/classForm";
 
@@ -141,22 +141,31 @@ const notify = useNotify();
 
 // Category 1/2/3: real options loaded from ClassCategory (scoped to the caller's active tenant), one
 // flat list told apart by categoryType — selections save to Class.Category1Id/2Id/3Id (see
-// classForm.js's toClassPayload). Location/Room/Session/Instructor stay demo option lists standing in
-// for the not-yet-built management features and are not sent on submit.
+// classForm.js's toClassPayload). Location/Session: the tenant's active Locations and ClassSessions,
+// saved to Class.LocationId/SessionId. Room/Instructor stay demo option lists standing in for the
+// not-yet-built management features and are not sent on submit.
 const classCategories = ref([]);
-// The three Category selects mount before this async fetch resolves, and QSelect's value→label
+const locations = ref([]);
+const sessions = ref([]);
+// The Category/Location/Session selects mount before these async fetches resolve, and QSelect's value→label
 // mapping (map-options) doesn't reliably re-run once `options` fills in later — an edit page showing
 // a class's saved category renders the raw id instead of its name until this remounts them. Keying
 // on this flag forces that remount the moment real options exist.
 const categoriesLoaded = ref(false);
 onMounted(async () => {
-  try {
-    classCategories.value = await classCategoryApi.list() || [];
-  } catch (err) {
-    notify.error(getApiErrorMessage(err));
-  } finally {
-    categoriesLoaded.value = true;
-  }
+  // Loaded independently: one list failing must not leave the other empty.
+  const [categoryResult, locationResult, sessionResult] = await Promise.allSettled([
+    classCategoryApi.list(),
+    locationApi.list({ active: true }),
+    classSessionApi.list({ isActive: true, limit: 100 })
+  ]);
+  if (categoryResult.status === "fulfilled") classCategories.value = categoryResult.value?.data || [];
+  else notify.error(getApiErrorMessage(categoryResult.reason));
+  if (locationResult.status === "fulfilled") locations.value = locationResult.value?.data || [];
+  else notify.error(getApiErrorMessage(locationResult.reason));
+  if (sessionResult.status === "fulfilled") sessions.value = sessionResult.value?.data || [];
+  else notify.error(getApiErrorMessage(sessionResult.reason));
+  categoriesLoaded.value = true;
 });
 
 // The class's saved category is always offered under its name (from the class row itself), even when
@@ -176,9 +185,20 @@ const categoryOptions = (categoryType, field) => computed(() => {
 const category1Options = categoryOptions("Category 1", "category1");
 const category2Options = categoryOptions("Category 2", "category2");
 const category3Options = categoryOptions("Category 3", "category3");
-const locationOptions = ["North Studio", "Downtown Campus", "Westside Academy"];
+// Same fallback as the categories: a class whose saved location/session is now inactive (or not in the
+// loaded list) still shows it by name.
+const lookupOptions = (list, field) => computed(() => {
+  const options = list.value.map((item) => ({ label: item.name, value: item.id }));
+  const savedId = form.value[field];
+  const savedName = form.value[`${field}Name`];
+  if (savedId && savedName && !options.some((o) => o.value === savedId)) {
+    options.unshift({ label: savedName, value: savedId });
+  }
+  return options;
+});
+const locationOptions = lookupOptions(locations, "location");
+const sessionOptions = lookupOptions(sessions, "session");
 const roomOptions = ["Studio A", "Studio B", "Main Gym"];
-const sessionOptions = ["Spring 2024", "Fall 2024", "Winter 2025"];
 const instructorOptions = ["Sarah Jenkins", "Michael Chen", "Elena Rodriguez"];
 
 const genderOptions = [

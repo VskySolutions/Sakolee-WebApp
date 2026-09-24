@@ -212,8 +212,8 @@ const sections = [
       { label: "Family Statuses", icon: "o_flag", to: "/familystatus", permissions: [Permissions.FamilyStatusesRead] },
       { label: "Studio Locations", icon: "o_location_on", to: "/locations", permissions: [Permissions.LocationsRead] },
       { label: "Class Categories", icon: "o_category", to: "/class-categories", permissions: [Permissions.ClassCategoriesRead] },
-      { label: "Billing Cycles", icon: "o_autorenew", to: "/billing-cycles", permissions: [Permissions.BillingCyclesRead]},
-      { label: "Class Sessions", icon: "o_date_range", to: "/sessions", permissions: [Permissions.SessionsRead] }
+      { label: "Billing Cycles", icon: "o_autorenew", to: "/billing-cycles", permissions: [Permissions.BillingCyclesRead] },
+      { label: "Class Sessions", icon: "o_date_range", to: "/sessions", permissions: [Permissions.ClassSessionsRead] }
     ]
   },
   {
