@@ -9,7 +9,7 @@ namespace Sakolee.Api.Models.Students;
 /// </summary>
 public sealed class CreateStudentRequest
 {
-    public Guid? ParentId { get; set; }
+    public Guid? FamilyId { get; set; }
     public string FirstName { get; set; } = string.Empty;
     public string LastName { get; set; } = string.Empty;
     /// <summary>Required — every student gets a login account, and an account needs an email.</summary>
@@ -53,13 +53,29 @@ public sealed class CreateStudentRequest
 }
 
 /// <summary>
+/// Request to create several students in one call — e.g. registering siblings under the same family
+/// in one pass (see the Quick Registration wizard). Each entry is a full <see cref="CreateStudentRequest"/>
+/// (most commonly sharing the same <see cref="CreateStudentRequest.FamilyId"/>/<see cref="CreateStudentRequest.ClassId"/>,
+/// though nothing requires that); all students are created in a single transaction — see
+/// <c>StudentsController.CreateBulk</c> — so either every one is created or, on any failure, none are.
+/// </summary>
+public sealed class CreateStudentsBulkRequest
+{
+    public IReadOnlyList<CreateStudentRequest> Students { get; set; } = Array.Empty<CreateStudentRequest>();
+}
+
+/// <summary>The result of a <see cref="CreateStudentsBulkRequest"/> — one <see cref="StudentResponse"/>
+/// per student, in the same order they were submitted.</summary>
+public sealed record CreateStudentsBulkResponse(IReadOnlyList<StudentResponse> Students);
+
+/// <summary>
 /// Request to update a student. <see cref="FirstName"/>/<see cref="LastName"/>/<see cref="Email"/> are
 /// optional here (unlike on create) and, when supplied, patch the linked Person (and, for Email, the
 /// linked login account) rather than the Student row itself — Student carries no copy of its own.
 /// </summary>
 public sealed class UpdateStudentRequest
 {
-    public Guid? ParentId { get; set; }
+    public Guid? FamilyId { get; set; }
     public string? FirstName { get; set; }
     public string? LastName { get; set; }
     public string? Email { get; set; }
@@ -111,7 +127,7 @@ public sealed record StudentResponse(
 public sealed record StudentSummary(
     Guid StudentId,
     Guid? PersonId,
-    Guid? ParentId,
+    Guid? FamilyId,
     string? FirstName,
     string? LastName,
     string? FamilyName,

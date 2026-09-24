@@ -20,7 +20,7 @@ internal sealed class StudentConfiguration : IEntityTypeConfiguration<Student>
 
         // Id-shaped columns are stored as nvarchar(450) rather than uniqueidentifier on this table.
         builder.Property(s => s.Id).HasConversion<string>().HasMaxLength(450);
-        builder.Property(s => s.ParentId).HasConversion<string>().HasMaxLength(450);
+        builder.Property(s => s.FamilyId).HasConversion<string>().HasMaxLength(450);
         builder.Property(s => s.PersonId).HasConversion<string>().HasMaxLength(450);
         builder.Property(s => s.ClassId).HasConversion<string>().HasMaxLength(450);
         builder.Property(s => s.FeeCategoryId).HasConversion<string>().HasMaxLength(450);

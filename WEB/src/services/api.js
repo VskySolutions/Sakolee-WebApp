@@ -140,10 +140,22 @@ export const personApi = {
   selectable: (tenantId) => api.get("/api/admin/persons/selectable", { params: { tenantId } }).then(unwrap)
 };
 
+export const familyApi = {
+  list: (params) => api.get("/api/admin/families", { params }).then(envelope),
+  get: (id) => api.get(`/api/admin/families/${id}`).then(unwrap),
+  create: (payload) => api.post("/api/admin/families", payload).then(unwrap),
+  update: (id, payload) => api.put(`/api/admin/families/${id}`, payload).then(unwrap),
+  remove: (id) => api.delete(`/api/admin/families/${id}`).then(envelope)
+};
+
 export const studentApi = {
   list: (params) => api.get("/api/admin/students", { params }).then(envelope),
   get: (id) => api.get(`/api/admin/students/${id}`).then(unwrap),
   create: (payload) => api.post("/api/admin/students", payload).then(unwrap),
+  // Creates several students in one transaction (e.g. siblings registered together via Quick
+  // Registration) — `students` is an array of CreateStudentRequest payloads; the response is
+  // { students: [...] }, all created together or, on any failure, none of them.
+  createBulk: (students) => api.post("/api/admin/students/bulk", { students }).then(unwrap),
   update: (id, payload) => api.put(`/api/admin/students/${id}`, payload).then(unwrap),
   remove: (id) => api.delete(`/api/admin/students/${id}`).then(envelope)
 };

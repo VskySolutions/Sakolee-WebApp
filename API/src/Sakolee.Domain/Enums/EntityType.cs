@@ -35,4 +35,7 @@ public enum EntityType
     // A student enrolled at the tenant, held as a Person. Used as a Person's SourceEntityType, the same
     // way Client is, so a student created via the Student screen is identifiable as such.
     Student = 17,
+    // A family contact captured via the Families screen, held as a Person. Used as a Person's
+    // SourceEntityType, the same way Student/Client are.
+    FamilyContact = 18,
 }

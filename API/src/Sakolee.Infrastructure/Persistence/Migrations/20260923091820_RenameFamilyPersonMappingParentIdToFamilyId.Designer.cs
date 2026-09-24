@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Sakolee.Infrastructure.Persistence;
 
@@ -11,9 +12,11 @@ using Sakolee.Infrastructure.Persistence;
 namespace Sakolee.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(SakoleeDbContext))]
-    partial class SakoleeDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260923091820_RenameFamilyPersonMappingParentIdToFamilyId")]
+    partial class RenameFamilyPersonMappingParentIdToFamilyId
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1245,11 +1248,6 @@ namespace Sakolee.Infrastructure.Persistence.Migrations
 
                     b.Property<bool>("IsBillingContact")
                         .HasColumnType("bit");
-
-                    b.Property<bool>("IsPrimaryContact")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bit")
-                        .HasDefaultValue(false);
 
                     b.Property<Guid?>("PersonId")
                         .HasColumnType("uniqueidentifier");
@@ -2650,10 +2648,6 @@ namespace Sakolee.Infrastructure.Persistence.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
 
-                    b.Property<string>("FamilyId")
-                        .HasMaxLength(450)
-                        .HasColumnType("nvarchar(450)");
-
                     b.Property<string>("FamilyName")
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
@@ -2697,6 +2691,10 @@ namespace Sakolee.Infrastructure.Persistence.Migrations
 
                     b.Property<string>("Medications")
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ParentId")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
 
                     b.Property<string>("PersonId")
                         .HasMaxLength(450)

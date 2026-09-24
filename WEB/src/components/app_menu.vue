@@ -163,16 +163,13 @@ const sections = [
     // Family RECORDS — parents and household accounts. Not to be confused with Family Statuses,
     // which is the lookup list of status names that a family record's status field draws from;
     // that lives under Masters.
-    //
-    // The domain has no Family entity or controller yet. Quick Registration is built as a form the
-    // intake API can be wired into; the rest stay parked until their pages exist.
     key: "families",
     label: "Families",
     icon: "o_family_restroom",
     items: [
-      // Ungated, matching the route — there is no family permission in the catalogue yet.
+      { label: "All Families", icon: "o_groups", to: "/families", permissions: [Permissions.FamiliesRead] },
+      // Ungated, matching the route — registering a new family isn't limited to families.write holders.
       { label: "Quick Registration", icon: "o_how_to_reg", to: { name: "family_quick_registration" }, permissions: null }
-      // { label: "All Families", icon: "o_groups", to: "/families", permissions: null },
       // { label: "Email/Text Families", icon: "o_mail", to: "/families/email", permissions: null },
       // { label: "Drop Unpaid Families", icon: "o_money_off", to: "/families/drop-unpaid", permissions: null },
       // { label: "Lead Files", icon: "o_contact_page", to: "/families/leads", permissions: null },
@@ -216,7 +213,7 @@ const sections = [
       // the catalogue yet, so gating here would hide the page from everyone.
       { label: "Family Statuses", icon: "o_flag", to: "/familystatus", permissions: null },
       { label: "Studio Locations", icon: "o_location_on", to: "/locations", permissions: [Permissions.LocationsRead] },
-      { label: "Class Categories", icon: "o_category", to: "/class-categories", permissions: [Permissions.ClassesRead]}
+      { label: "Class Categories", icon: "o_category", to: "/class-categories", permissions: [Permissions.ClassesRead] },
       { label: "Class Sessions", icon: "o_date_range", to: "/sessions", permissions: null }
     ]
   },

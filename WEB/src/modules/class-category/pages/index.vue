@@ -274,27 +274,23 @@ const reload = debounce(() => {
 watch(search, reload);
 
 const formOpen = ref(false);
-
 const editing = ref(false);
-
 const selectedCategory = ref(null);
-
 const viewOpen = ref(false);
-
 const viewed = ref(null);
 
 const viewFields = computed(() =>
   viewed.value
     ? [
-        { label: "Name", value: viewed.value.name },
-        {
-          label: "Category Type",
-          value: viewed.value.categoryType || "—",
-          badge: !!viewed.value.categoryType
-        },
-        { label: "Tenant", value: viewed.value.tenantName || "—" },
-        { label: "Created On", value: formatDateTime(viewed.value.createdOnUtc) }
-      ]
+      { label: "Name", value: viewed.value.name },
+      {
+        label: "Category Type",
+        value: viewed.value.categoryType || "—",
+        badge: !!viewed.value.categoryType
+      },
+      { label: "Tenant", value: viewed.value.tenantName || "—" },
+      { label: "Created On", value: formatDateTime(viewed.value.createdOnUtc) }
+    ]
     : []
 );
 
@@ -303,11 +299,11 @@ const openView = (row) => {
   viewOpen.value = true;
 };
 
-const editFromView = () => {
-  const row = viewed.value;
-  viewOpen.value = false;
-  openEdit(row);
-};
+// const editFromView = () => {
+//   const row = viewed.value;
+//   viewOpen.value = false;
+//   openEdit(row);
+// };
 
 const openCreate = () => {
   selectedCategory.value = null;

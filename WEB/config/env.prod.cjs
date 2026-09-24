@@ -4,5 +4,7 @@ module.exports = {
   WEB_BASE_URL: "https://app.example.com",
   BUILD_PUBLIC_PATH: "",
   PUBLISH_FOLDER: "",
+  // Absolute output folder for `npm run build_prod` (see package-scripts.js) — overrides PUBLISH_FOLDER.
+  PUBLISH_PATH: "D:/Vaibhav/Publish/Sakolee/Live",
   IGNORE_PUBLIC_FOLDER: false,
 };

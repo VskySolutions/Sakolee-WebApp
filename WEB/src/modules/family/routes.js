@@ -4,10 +4,16 @@ export default [
     component: () => import("layouts/layout.vue"),
     children: [
       {
+        path: "",
+        name: "families",
+        component: () => import("modules/family/pages/index.vue"),
+        meta: { requiresAuth: true, permissions: ["families.read"], title: "Families" }
+      },
+      {
         path: "quick-registration",
         name: "family_quick_registration",
-        // Ungated: there is no family permission in the catalogue yet, so requiring one here would
-        // shut every role out of the page.
+        // Ungated: Quick Registration collects a family, its contacts, and a student in one pass —
+        // any role reaching this page can register a new family, not just one with families.write.
         component: () => import("modules/family/pages/quick_registration.vue"),
         meta: { requiresAuth: true, title: "Quick Registration" }
       }

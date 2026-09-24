@@ -56,7 +56,9 @@ export default defineConfig((ctx) => {
       env: envConfig,
       publicPath: envConfig.BUILD_PUBLIC_PATH,
       ignorePublicFolder: envConfig.IGNORE_PUBLIC_FOLDER,
-      distDir: "../publish/spa/" + envConfig.PUBLISH_FOLDER,
+      // Test/Live builds publish to an absolute, fixed deployment folder (PUBLISH_PATH); anything
+      // without one (dev) keeps the old relative default alongside the project.
+      distDir: envConfig.PUBLISH_PATH || ("../publish/spa/" + envConfig.PUBLISH_FOLDER),
 
       alias: {
         shared: path.join(__dirname, "./src/shared"),

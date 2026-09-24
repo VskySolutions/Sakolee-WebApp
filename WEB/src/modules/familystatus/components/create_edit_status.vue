@@ -14,12 +14,12 @@
     <q-card flat bordered class="q-pa-md">
       <div class="row justify-between items-center q-mb-md">
         <div class="text-h6">Sessions Management</div>
-        <q-btn 
-          unelevated 
-          color="primary" 
-          icon="o_add" 
-          label="Create Session" 
-          @click="openCreateDialog" 
+        <q-btn
+          unelevated
+          color="primary"
+          icon="o_add"
+          label="Create Session"
+          @click="openCreateDialog"
         />
       </div>
     </q-card>
@@ -31,13 +31,13 @@
         <q-card-section class="row items-center q-pb-none bg-primary text-white">
           <div class="text-h6">{{ editing ? 'Edit Session' : 'Create Session' }}</div>
           <q-space />
-          <q-btn icon="o_close" flat round dense v-close-popup />
+          <q-btn v-close-popup icon="o_close" flat round dense />
         </q-card-section>
 
         <!-- Dialog Body Form Content Container -->
         <q-card-section class="col q-pa-md scroll">
           <q-form ref="formRef" greedy @submit.prevent="submitForm">
-            
+
             <!-- Session Name Input Field -->
             <app-text-field
               v-model="form.sessionName"
@@ -66,7 +66,7 @@
 
         <!-- Dialog Footer Action Triggers -->
         <q-card-actions align="right" class="q-pa-md bg-grey-2">
-          <q-btn flat label="Cancel" color="grey" v-close-popup />
+          <q-btn v-close-popup flat label="Cancel" color="grey" />
           <q-btn unelevated color="primary" :label="editing ? 'Update' : 'Save'" :loading="saving" @click="submitForm" />
         </q-card-actions>
       </q-card>
@@ -76,16 +76,12 @@
 
 <script setup>
 import { ref, reactive } from "vue";
-import { useRoute, useRouter } from "vue-router";
-import { sessionApi, getApiErrorMessage } from "services/api";
+import { classSessionApi, getApiErrorMessage } from "services/api";
 import { useNotify } from "composables/useNotify";
 
 import AppDetailHeader from "components/common/AppDetailHeader.vue";
 import AppTextField from "components/common/AppTextField.vue";
 
-// Router and Utility Composable Declarations
-const route = useRoute();
-const router = useRouter();
 const notify = useNotify();
 
 // Component State and Parameter References
@@ -96,7 +92,7 @@ const saving = ref(false);
 const formRef = ref(null);
 
 // Form Data Payload Model Definition containing session attributes
-const form = reactive({ 
+const form = reactive({
   sessionName: "",
   danceStyle: "",
   timing: ""
@@ -127,11 +123,11 @@ const openEditDialog = async (id) => {
   editingId.value = id;
   editing.value = true;
   dialogOpen.value = true;
-  
+
   try {
-    const response = await sessionApi.get(id);
+    const response = await classSessionApi.get(id);
     const item = response?.data?.data || response?.data || response;
-    
+
     if (item) {
       form.sessionName = item.sessionName || item.name || "";
       form.danceStyle = item.danceStyle || item.style || "";
@@ -158,10 +154,10 @@ const submitForm = async () => {
     };
 
     if (editing.value && editingId.value) {
-      await sessionApi.update(editingId.value, payload);
+      await classSessionApi.update(editingId.value, payload);
       notify.success("Session updated successfully.");
     } else {
-      await sessionApi.create(payload);
+      await classSessionApi.create(payload);
       notify.success("Session created successfully.");
     }
 

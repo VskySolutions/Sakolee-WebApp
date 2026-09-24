@@ -18,7 +18,6 @@
     <!-- Main Card Container: Wraps the entity details view interface -->
     <q-card v-else flat bordered class="q-pa-md">
       <q-form class="q-gutter-md">
-        
         <!-- Primary Entity Field: Family status name input (Disabled for view-only) -->
         <app-text-field
           v-model="form.name"
@@ -55,8 +54,8 @@ const familyStatusId = route.params.id;
 const loading = ref(false);
 
 // Form Data Model Binding Structure (View-only, containing only status name)
-const form = reactive({ 
-  name: "", 
+const form = reactive({
+  name: "",
 });
 
 // Global Error Handler
@@ -73,7 +72,7 @@ onMounted(async () => {
     if (familyStatusId) {
       const response = await api.get(`/api/admin/family-statuses/${familyStatusId}`);
       const item = response?.data?.data || response?.data;
-      
+
       if (item) {
         form.name = item.name || "";
       }
