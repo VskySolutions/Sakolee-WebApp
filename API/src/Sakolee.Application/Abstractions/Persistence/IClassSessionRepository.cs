@@ -18,6 +18,8 @@ public interface IClassSessionRepository
     /// <summary>Checks if a session with the given name already exists.</summary>
     Task<bool> ExistsAsync(string name, CancellationToken cancellationToken = default);
 
+    Task<bool> NameExistsAsync(string name, Guid tenantId, Guid? excludeId = null, CancellationToken cancellationToken = default);
+
     /// <summary>
     /// Paginated list with optional free-text search (name) and optional
     /// structured filters (owning tenant, active state).

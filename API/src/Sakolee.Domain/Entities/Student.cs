@@ -21,8 +21,18 @@ public class Student
 {
     public Guid Id { get; set; }
 
-    /// <summary>Owning parent (Parents table — no Domain entity for it yet).</summary>
-    public Guid? ParentId { get; set; }
+    /// <summary>
+    /// Owning family. FK onto <see cref="Entities.Family"/>.<see cref="Entities.Family.Id"/> — the
+    /// physical constraint (<c>FK_Students_Families</c>) predates the Family entity, back when its
+    /// target table was still an unmodelled, differently-named <c>Parents</c> table (renamed to
+    /// <c>Families</c> by <c>RenameParentsAndParentContactsToFamilies</c>); the column itself was also
+    /// named <c>ParentId</c> from that era, renamed to <c>FamilyId</c> by
+    /// <c>RenameStudentsParentIdToFamilyId</c>. No EF navigation/relationship is configured here, the
+    /// same way <see cref="PersonId"/> carries none: this column is a plain <c>nvarchar(450)</c> on the
+    /// live schema, so the association is resolved by callers (e.g. <c>FamiliesController</c>) rather
+    /// than by EF.
+    /// </summary>
+    public Guid? FamilyId { get; set; }
 
     /// <summary>
     /// The linked CRM Person — every student created through <c>StudentsController</c> has one (minted

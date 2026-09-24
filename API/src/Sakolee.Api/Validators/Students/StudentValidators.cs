@@ -30,6 +30,23 @@ public sealed class CreateStudentRequestValidator : AbstractValidator<CreateStud
     }
 }
 
+public sealed class CreateStudentsBulkRequestValidator : AbstractValidator<CreateStudentsBulkRequest>
+{
+    public CreateStudentsBulkRequestValidator()
+    {
+        RuleFor(x => x.Students).NotEmpty().WithMessage("At least one student is required.");
+        RuleForEach(x => x.Students).SetValidator(new CreateStudentRequestValidator());
+        // Cross-item check: the batch's own emails must be distinct from each other, on top of each
+        // one individually being checked against already-registered emails in StudentsController.
+        RuleFor(x => x.Students)
+            .Must(students => students
+                .Select(s => s.Email.Trim().ToLowerInvariant())
+                .Distinct().Count() == students.Count)
+            .WithMessage("Every student in the batch must have a distinct email.")
+            .When(x => x.Students.Count > 1);
+    }
+}
+
 public sealed class UpdateStudentRequestValidator : AbstractValidator<UpdateStudentRequest>
 {
     public UpdateStudentRequestValidator()

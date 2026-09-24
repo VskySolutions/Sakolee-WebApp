@@ -23,6 +23,8 @@ namespace Sakolee.Api.Controllers;
 /// Creating a student is not a standalone write: it also mints the CRM <see cref="Person"/> master
 /// record behind it (there is no existing one to link to, unlike Person or User creation) and a login
 /// account for that person carrying the <see cref="Roles.Student"/> role — see <see cref="Create"/>.
+/// <see cref="CreateBulk"/> does the same for several students in one transaction, for registering
+/// siblings together (see the Quick Registration wizard).
 /// </para>
 /// </summary>
 [ApiController]
@@ -109,6 +111,79 @@ public sealed class StudentsController : ControllerBase
 
         var now = DateTime.UtcNow;
         var actorId = CurrentActorId();
+        var (student, person, userId, temporaryPassword) = await CreateStudentEntitiesAsync(
+            request, tenantId, studentRole, now, actorId, cancellationToken);
+
+        await _audit.AddAsync(nameof(Student), student.Id.ToString(), "Created",
+            details: student.StudentNumber, cancellationToken: cancellationToken);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+        return StatusCode(StatusCodes.Status201Created,
+            ApiResponseFactory.Success(
+                new StudentResponse(student.Id, person.Id, userId, person.FirstName, person.LastName, student.Active, temporaryPassword),
+                "Student created."));
+    }
+
+    /// <summary>
+    /// Creates several students in one call — e.g. registering siblings under the same family in one
+    /// pass (see the Quick Registration wizard). All students are created in a single transaction: any
+    /// failure (a duplicate email against an existing user, an unseeded role, etc.) rolls back the
+    /// whole batch, since nothing is saved until every entity has been staged.
+    /// </summary>
+    [HttpPost("bulk")]
+    [RequirePermission(Permissions.StudentsWrite)]
+    [ProducesResponseType<ApiResponse<CreateStudentsBulkResponse>>(StatusCodes.Status201Created)]
+    public async Task<IActionResult> CreateBulk([FromBody] CreateStudentsBulkRequest request, CancellationToken cancellationToken)
+    {
+        if (!_tenantContext.IsResolved)
+        {
+            return BadRequest(ApiResponseFactory.Error(
+                ApiErrorCodes.ValidationFailed, "Validation failed.", "An active tenant is required to create a student."));
+        }
+        var tenantId = _tenantContext.TenantId;
+
+        // Every email already checked against existing users, up front, before any entity is staged —
+        // a within-batch duplicate is already rejected by CreateStudentsBulkRequestValidator.
+        foreach (var email in request.Students.Select(s => s.Email.Trim()).Distinct(StringComparer.OrdinalIgnoreCase))
+        {
+            if (await _users.EmailExistsAsync(email, cancellationToken))
+            {
+                return Conflict(ApiResponseFactory.Error(ApiErrorCodes.DuplicateIdentifier, "Email already in use.", email));
+            }
+        }
+
+        var studentRole = await _roles.GetByNameAsync(Roles.Student, cancellationToken)
+            ?? throw new InvalidOperationException("The Student system role was not seeded.");
+
+        var now = DateTime.UtcNow;
+        var actorId = CurrentActorId();
+
+        var responses = new List<StudentResponse>(request.Students.Count);
+        foreach (var studentRequest in request.Students)
+        {
+            var (student, person, userId, temporaryPassword) = await CreateStudentEntitiesAsync(
+                studentRequest, tenantId, studentRole, now, actorId, cancellationToken);
+            await _audit.AddAsync(nameof(Student), student.Id.ToString(), "Created",
+                details: student.StudentNumber, cancellationToken: cancellationToken);
+            responses.Add(new StudentResponse(student.Id, person.Id, userId, person.FirstName, person.LastName, student.Active, temporaryPassword));
+        }
+
+        // One SaveChanges for the whole batch, after every student has been staged — see the class
+        // remarks on this action's all-or-nothing behavior.
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+        return StatusCode(StatusCodes.Status201Created,
+            ApiResponseFactory.Success(new CreateStudentsBulkResponse(responses), $"{responses.Count} student(s) created."));
+    }
+
+    /// <summary>Stages (but does not save) the Person, Student, and login account for one
+    /// <see cref="CreateStudentRequest"/> — the shared core of <see cref="Create"/> and
+    /// <see cref="CreateBulk"/>. Caller is responsible for the tenant/email pre-checks, the audit
+    /// entry, and calling <see cref="IUnitOfWork.SaveChangesAsync"/>.</summary>
+    private async Task<(Student Student, Person Person, Guid UserId, string TemporaryPassword)> CreateStudentEntitiesAsync(
+        CreateStudentRequest request, Guid tenantId, Role studentRole, DateTime now, Guid? actorId, CancellationToken cancellationToken)
+    {
+        var email = request.Email.Trim();
         var firstName = request.FirstName.Trim();
         var lastName = request.LastName.Trim();
         var fullName = string.Join(" ", new[] { firstName, lastName }.Where(s => !string.IsNullOrWhiteSpace(s)));
@@ -146,7 +221,7 @@ public sealed class StudentsController : ControllerBase
         {
             Id = Guid.NewGuid(),
             PersonId = person.Id,
-            ParentId = request.ParentId,
+            FamilyId = request.FamilyId,
             FamilyName = request.FamilyName?.Trim(),
             StudentNumber = request.StudentNumber?.Trim(),
             AdmissionDate = request.AdmissionDate,
@@ -210,14 +285,7 @@ public sealed class StudentsController : ControllerBase
             RoleId = studentRole.Id,
         }, cancellationToken);
 
-        await _audit.AddAsync(nameof(Student), student.Id.ToString(), "Created",
-            details: student.StudentNumber, cancellationToken: cancellationToken);
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
-
-        return StatusCode(StatusCodes.Status201Created,
-            ApiResponseFactory.Success(
-                new StudentResponse(student.Id, person.Id, userId, firstName, lastName, student.Active, temporaryPassword),
-                "Student created."));
+        return (student, person, userId, temporaryPassword);
     }
 
     [HttpGet]
@@ -352,7 +420,7 @@ public sealed class StudentsController : ControllerBase
             }
         }
 
-        student.ParentId = request.ParentId;
+        student.FamilyId = request.FamilyId;
         student.FamilyName = request.FamilyName?.Trim();
         student.StudentNumber = request.StudentNumber?.Trim();
         student.AdmissionDate = request.AdmissionDate;
@@ -511,7 +579,7 @@ public sealed class StudentsController : ControllerBase
         => id.HasValue && names.TryGetValue(id.Value, out var name) ? name : null;
 
     private static StudentSummary ToSummary(Student s, Person? person, IReadOnlyDictionary<Guid, string> names) => new(
-        s.Id, s.PersonId, s.ParentId, person?.FirstName, person?.LastName, s.FamilyName, s.StudentNumber, s.AdmissionDate,
+        s.Id, s.PersonId, s.FamilyId, person?.FirstName, person?.LastName, s.FamilyName, s.StudentNumber, s.AdmissionDate,
         s.ClassId, s.Active, s.FeeAmount, s.FeeExpiryDate, s.FeeNote, s.FeeCategoryId, person?.Gender, s.BirthDate,
         s.CellPhone, person?.PrimaryEmail, s.School, s.GradeLevel, s.Transportation, s.TShirtSize, s.Disabilities,
         s.SpecialNeeds, s.Allergies, s.Medications, s.PrimaryDoctor, s.HasImmunizations, s.ImmunizationNotes, s.SkillNotes,

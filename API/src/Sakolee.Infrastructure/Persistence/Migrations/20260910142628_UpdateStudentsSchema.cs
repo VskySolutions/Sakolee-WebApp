@@ -116,6 +116,10 @@ namespace Sakolee.Infrastructure.Persistence.Migrations
                 oldType: "uniqueidentifier",
                 oldNullable: true);
 
+            migrationBuilder.DropPrimaryKey(
+                name: "PK_Students",
+                table: "Students");
+
             migrationBuilder.AlterColumn<string>(
                 name: "Id",
                 table: "Students",
@@ -124,6 +128,11 @@ namespace Sakolee.Infrastructure.Persistence.Migrations
                 nullable: false,
                 oldClrType: typeof(Guid),
                 oldType: "uniqueidentifier");
+
+            migrationBuilder.AddPrimaryKey(
+                name: "PK_Students",
+                table: "Students",
+                column: "Id");
 
             migrationBuilder.AddColumn<bool>(
                 name: "Active",
@@ -499,6 +508,10 @@ namespace Sakolee.Infrastructure.Persistence.Migrations
                 oldMaxLength: 450,
                 oldNullable: true);
 
+            migrationBuilder.DropPrimaryKey(
+                name: "PK_Students",
+                table: "Students");
+
             migrationBuilder.AlterColumn<Guid>(
                 name: "Id",
                 table: "Students",
@@ -507,6 +520,11 @@ namespace Sakolee.Infrastructure.Persistence.Migrations
                 oldClrType: typeof(string),
                 oldType: "nvarchar(450)",
                 oldMaxLength: 450);
+
+            migrationBuilder.AddPrimaryKey(
+                name: "PK_Students",
+                table: "Students",
+                column: "Id");
 
             migrationBuilder.AddColumn<DateTime>(
                 name: "DateOfBirth",

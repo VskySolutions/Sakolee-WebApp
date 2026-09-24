@@ -79,7 +79,10 @@ public static class DependencyInjection
         services.AddScoped<IClassCategoryRepository, ClassCategoryRepository>();
 
         services.AddScoped<IFamilyStatusRepository, FamilyStatusRepository>();
+        services.AddScoped<IFamilyRepository, FamilyRepository>();
         services.AddScoped<IClassSessionRepository, ClassSessionRepository>();
+        services.AddScoped<IBillingMethodRepository, BillingMethodRepository>();
+            services.AddScoped<IFamilyRelationRepository, FamilyRelationRepository>();
 
 
         services.AddScoped<IUserGroupRepository, UserGroupRepository>();

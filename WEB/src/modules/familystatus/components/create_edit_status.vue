@@ -1,149 +1,112 @@
 <template>
-  <q-page padding>
-    <!-- Page Header with Breadcrumbs and Navigation Links -->
-    <app-detail-header
-      :items="[
-        { label: 'Home', icon: 'o_home', to: '/' },
-        { label: 'Sessions', to: { name: 'sessions' } },
-        { label: 'Management' }
-      ]"
-      :back-to="{ name: 'sessions' }"
-    />
+  <!-- Side-Drawer Dialog Component: Create / Update Form Modal -->
+  <q-dialog v-model="isOpen" position="right">
+    <q-card class="column" style="width: 500px; max-width: 100vw; height: 500px; max-height: 70vh;">
+      
+      <!-- Dialog Header Banner -->
+      <q-card-section class="row items-center q-pb-none bg-primary text-white">
+        <div class="text-h6">{{ isEditing ? 'Edit Family Status' : 'Create Family Status' }}</div>
+        <q-space />
+        <q-btn icon="o_close" flat round dense v-close-popup />
+      </q-card-section>
 
-    <!-- Main Card Container -->
-    <q-card flat bordered class="q-pa-md">
-      <div class="row justify-between items-center q-mb-md">
-        <div class="text-h6">Sessions Management</div>
-        <q-btn 
-          unelevated 
-          color="primary" 
-          icon="o_add" 
-          label="Create Session" 
-          @click="openCreateDialog" 
-        />
-      </div>
+      <!-- Dialog Scrollable Body Content & Reactive Form Container -->
+      <q-card-section class="col q-pa-md scroll">
+        <!-- Loading Spinner Overlay during fetch operations in edit mode -->
+        <div v-if="loading" class="row flex-center q-pa-xl">
+          <q-spinner color="primary" size="40px" />
+        </div>
+
+        <q-form v-else ref="formRef" greedy @submit.prevent="submitForm">
+          <!-- Primary Entity Property: Family Status Name -->
+          <app-text-field
+            v-model="form.name"
+            label="Status Name"
+            required
+            class="q-mb-md"
+            :rules="[(v) => !!v || 'Status name is required']"
+          />
+        </q-form>
+      </q-card-section>
+
+      <!-- Dialog Footer Action Triggers -->
+      <q-card-actions align="right" class="q-pa-md bg-grey-2">
+        <q-btn flat label="Cancel" color="grey" v-close-popup />
+        <q-btn unelevated color="primary" :label="isEditing ? 'Update' : 'Save'" :loading="saving" @click="submitForm" />
+      </q-card-actions>
     </q-card>
-
-    <!-- Create / Edit Right-Side Drawer Dialog -->
-    <q-dialog v-model="dialogOpen" position="right" maximized>
-      <q-card class="column full-height" style="width: 500px; max-width: 100vw; height: 500px;">
-        <!-- Dialog Header Banner -->
-        <q-card-section class="row items-center q-pb-none bg-primary text-white">
-          <div class="text-h6">{{ editing ? 'Edit Session' : 'Create Session' }}</div>
-          <q-space />
-          <q-btn icon="o_close" flat round dense v-close-popup />
-        </q-card-section>
-
-        <!-- Dialog Body Form Content Container -->
-        <q-card-section class="col q-pa-md scroll">
-          <q-form ref="formRef" greedy @submit.prevent="submitForm">
-            
-            <!-- Session Name Input Field -->
-            <app-text-field
-              v-model="form.sessionName"
-              label="Session Name"
-              required
-              class="q-mb-md"
-              :rules="[(v) => !!v || 'Session name is required']"
-            />
-
-            <!-- Dance Style Input Field -->
-            <app-text-field
-              v-model="form.danceStyle"
-              label="Dance Style"
-              class="q-mb-md"
-            />
-
-            <!-- Timing Input Field -->
-            <app-text-field
-              v-model="form.timing"
-              label="Timing"
-              class="q-mb-md"
-            />
-
-          </q-form>
-        </q-card-section>
-
-        <!-- Dialog Footer Action Triggers -->
-        <q-card-actions align="right" class="q-pa-md bg-grey-2">
-          <q-btn flat label="Cancel" color="grey" v-close-popup />
-          <q-btn unelevated color="primary" :label="editing ? 'Update' : 'Save'" :loading="saving" @click="submitForm" />
-        </q-card-actions>
-      </q-card>
-    </q-dialog>
-  </q-page>
+  </q-dialog>
 </template>
 
 <script setup>
-import { ref, reactive } from "vue";
-import { useRoute, useRouter } from "vue-router";
-import { sessionApi, getApiErrorMessage } from "services/api";
+import { ref, reactive, computed, watch } from "vue";
+import { api, familyStatusApi, getApiErrorMessage } from "services/api";
 import { useNotify } from "composables/useNotify";
 
-import AppDetailHeader from "components/common/AppDetailHeader.vue";
 import AppTextField from "components/common/AppTextField.vue";
 
-// Router and Utility Composable Declarations
-const route = useRoute();
-const router = useRouter();
+const props = defineProps({
+  modelValue: {
+    type: Boolean,
+    required: true
+  },
+  editingId: {
+    type: [String, Number],
+    default: null
+  }
+});
+
+const emit = defineEmits(["update:modelValue", "saved"]);
 const notify = useNotify();
 
-// Component State and Parameter References
-const dialogOpen = ref(false);
-const editingId = ref(null);
-const editing = ref(false);
+// Local drawer visibility synchronization
+const isOpen = ref(props.modelValue);
+watch(() => props.modelValue, async (val) => {
+  isOpen.value = val;
+  if (val) {
+    if (props.editingId) {
+      await fetchRecordDetails(props.editingId);
+    } else {
+      form.name = "";
+    }
+  }
+});
+
+watch(isOpen, (val) => {
+  emit("update:modelValue", val);
+});
+
+const loading = ref(false);
 const saving = ref(false);
 const formRef = ref(null);
 
-// Form Data Payload Model Definition containing session attributes
-const form = reactive({ 
-  sessionName: "",
-  danceStyle: "",
-  timing: ""
+const form = reactive({
+  name: ""
 });
 
-/**
- * Initializes state context and opens the drawer dialog in Creation mode.
- */
-const openCreateDialog = () => {
-  editingId.value = null;
-  editing.value = false;
-  form.sessionName = "";
-  form.danceStyle = "";
-  form.timing = "";
-  dialogOpen.value = true;
-};
+const isEditing = computed(() => !!props.editingId);
 
 /**
- * Hydrates target record metadata and opens the drawer dialog in Update mode.
- * @param {string|number} id - Unique primary key identifier of the target entity.
+ * Fetches existing record details for editing mode.
+ * @param {String|Number} id - Target record primary key identifier.
  */
-const openEditDialog = async (id) => {
-  if (!id) {
-    notify.error("Invalid record identifier.");
-    return;
-  }
-
-  editingId.value = id;
-  editing.value = true;
-  dialogOpen.value = true;
-  
+const fetchRecordDetails = async (id) => {
+  loading.value = true;
   try {
-    const response = await sessionApi.get(id);
+    const response = await api.get(`/api/admin/family-statuses/${id}`);
     const item = response?.data?.data || response?.data || response;
-    
     if (item) {
-      form.sessionName = item.sessionName || item.name || "";
-      form.danceStyle = item.danceStyle || item.style || "";
-      form.timing = item.timing || item.time || "";
+      form.name = item.name || "";
     }
   } catch (err) {
     notify.error(getApiErrorMessage(err));
+  } finally {
+    loading.value = false;
   }
 };
 
 /**
- * Validates form integrity constraints and dispatches a POST (Create) or PUT (Update) API transaction.
+ * Validates form constraints and dispatches either a POST (Create) or PUT (Update) API transaction.
  */
 const submitForm = async () => {
   const valid = await formRef.value?.validate();
@@ -151,31 +114,23 @@ const submitForm = async () => {
 
   saving.value = true;
   try {
-    const payload = {
-      sessionName: form.sessionName,
-      danceStyle: form.danceStyle,
-      timing: form.timing
-    };
+    const payload = { name: form.name };
 
-    if (editing.value && editingId.value) {
-      await sessionApi.update(editingId.value, payload);
-      notify.success("Session updated successfully.");
+    if (isEditing.value && props.editingId) {
+      await familyStatusApi.update(props.editingId, payload);
+      notify.success("Family status updated successfully.");
+      emit("saved", false);
     } else {
-      await sessionApi.create(payload);
-      notify.success("Session created successfully.");
+      await familyStatusApi.create(payload);
+      notify.success("Family status created successfully.");
+      emit("saved", true);
     }
 
-    dialogOpen.value = false;
+    isOpen.value = false;
   } catch (err) {
     notify.error(getApiErrorMessage(err));
   } finally {
     saving.value = false;
   }
 };
-
-// Expose methods if parent components need to trigger them directly
-defineExpose({
-  openCreateDialog,
-  openEditDialog
-});
 </script>

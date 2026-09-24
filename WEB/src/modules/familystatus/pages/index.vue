@@ -1,6 +1,6 @@
 <template>
   <q-page padding>
-    <!-- Page Header: Manages breadcrumbs, live search input, creation trigger, and navigation -->
+    <!-- Page Header Component: Manages breadcrumb navigation, live search inputs, and entity creation triggers -->
     <app-list-header
       :breadcrumbs="[{ label: 'Home', icon: 'o_home', to: '/' }, { label: 'Family Statuses' }]"
       :search="search"
@@ -14,9 +14,9 @@
       @back="$router.back()"
     />
 
-    <!-- Core Data Table Grid: Handles server-side pagination, sorting, row selection, and batch actions -->
+    <!-- Core Data Table Grid Component: Handles server-side pagination, sorting, row selection, and dataset display -->
     <app-data-table
-      page-key="family-status"
+      page-key="family-status-v"
       :row-key="(row) => row.familyStatusId || row.FamilyStatusId || row.id"
       title="All Family Statuses"
       :rows="rows"
@@ -29,21 +29,23 @@
       @refresh="load"
       @update:selected="selected = $event"
     >
-      <!-- Slot: Contextual Bulk Actions Toolbar for Multi-select Operations -->
-      <template #bulk-actions="{ selected: sel }" >
+      <!-- Bulk Actions Slot: Provides batch deletion functionality for selected table rows -->
+      <template #bulk-actions="{ selected: sel }">
         <q-btn flat dense no-caps color="negative" label="Delete Selected" @click="bulkDelete(sel)" />
       </template>
 
-      <!-- Slot: Inline Row-level Action Controllers (View, Edit, Delete) -->
+      <!-- Row Actions Slot: Renders individual record operations including view details, editing, and deletion -->
       <template #body-cell-actions="cell">
         <q-td :props="cell" class="text-right" style="padding-right: 50px !important;">
-          <!-- Fixed View Action: Uses a method handler to safely extract ID and navigate -->
-          <q-btn flat round dense color="primary" icon="o_visibility" @click="viewRecord(cell.row)">
-            <q-tooltip>View / Manage</q-tooltip>
+          <!-- View Action: Triggers view drawer modal -->
+          <q-btn flat round dense color="primary" icon="o_visibility" @click="openViewDrawer(cell.row)">
+            <q-tooltip>View Details</q-tooltip>
           </q-btn>
-          <q-btn flat round dense color="primary" icon="o_edit" @click="openEditDialog(cell.row.familyStatusId || cell.row.FamilyStatusId || cell.row.id)">
+          <!-- Edit Action: Triggers form drawer in update mode -->
+          <q-btn flat round dense color="primary" icon="o_edit" @click="openEditDialog(cell.row)">
             <q-tooltip>Edit</q-tooltip>
           </q-btn>
+          <!-- Delete Action: Triggers individual deletion workflow -->
           <q-btn flat round dense color="negative" icon="o_delete" @click="deleteRecord(cell.row)">
             <q-tooltip>Delete</q-tooltip>
           </q-btn>
@@ -56,48 +58,27 @@
       v-if="canManageDeleted" :entity-type="EntityType.FamilyStatus" :show="showDeleted" @restored="load"
     />
 
-    <!-- Side-Drawer Dialog: Create / Update Form Modal -->
-    <q-dialog v-model="dialogOpen" position="right">
-      <q-card class="column" style="width: 500px; max-width: 100vw; height: 500px; max-height: 70vh;">
-        
-        <!-- Dialog Header Banner -->
-        <q-card-section class="row items-center q-pb-none bg-primary text-white">
-          <div class="text-h6">{{ editing ? 'Edit Family Status' : 'Create Family Status' }}</div>
-          <q-space />
-          <q-btn icon="o_close" flat round dense v-close-popup />
-        </q-card-section>
+    <!-- Create / Edit Form Drawer Component -->
+    <family-status-form-drawer
+      v-model="formDrawerOpen"
+      :editing-id="editingId"
+      @saved="handleSaved"
+    />
 
-        <!-- Dialog Scrollable Body Content & Reactive Form Container -->
-        <q-card-section class="col q-pa-md scroll">
-          <q-form ref="formRef" greedy @submit.prevent="submitForm">
-            
-            <!-- Primary Entity Property: Family Status Name -->
-            <app-text-field
-              v-model="form.name"
-              label="Status Name"
-              required
-              class="q-mb-md"
-              :rules="[(v) => !!v || 'Status name is required']"
-            />
-          </q-form>
-        </q-card-section>
-
-        <!-- Dialog Footer Action Triggers -->
-        <q-card-actions align="right" class="q-pa-md bg-grey-2">
-          <q-btn flat label="Cancel" color="grey" v-close-popup />
-          <q-btn unelevated color="primary" :label="editing ? 'Update' : 'Save'" :loading="saving" @click="submitForm" />
-        </q-card-actions>
-      </q-card>
-    </q-dialog>
+    <!-- View Details Drawer Component -->
+    <family-status-view-drawer
+      v-model="viewDrawerOpen"
+      :record-id="viewingId"
+    />
   </q-page>
 </template>
 
 <script setup>
-import { ref, reactive, computed, watch, onMounted } from "vue";
+import { ref, computed, watch, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import { debounce } from "quasar";
 
-import { api, familyStatusApi, getApiErrorMessage, EntityType } from "services/api";
+import { familyStatusApi, getApiErrorMessage, EntityType } from "services/api";
 import { useNotify } from "composables/useNotify";
 import { useConfirm } from "composables/useConfirm";
 import { useListTable } from "composables/useListTable";
@@ -108,7 +89,10 @@ import { useTenantScope } from "composables/useTenantScope";
 import AppDataTable from "components/common/AppDataTable.vue";
 import DeletedRecordsPanel from "components/universal/DeletedRecordsPanel.vue";
 import AppListHeader from "components/common/AppListHeader.vue";
-import AppTextField from "components/common/AppTextField.vue";
+
+// Import separate modular drawer components
+import FamilyStatusFormDrawer from "src/modules/familystatus/components/create_edit_status.vue";
+import FamilyStatusViewDrawer from "src/modules/familystatus/components/viewstatus.vue";
 
 // Initialize core routing, notifications, and tenant management composables
 const router = useRouter();
@@ -118,28 +102,31 @@ const { confirm } = useConfirm();
 const { tenantOptions, loadTenants } = useTenantOptions();
 const { refreshTenants } = useTenantScope();
 
-// Component modal presentation flags and entity reference trackers
-const dialogOpen = ref(false);
+// Drawer visibility states and identifier trackers
+const formDrawerOpen = ref(false);
+const viewDrawerOpen = ref(false);
 const editingId = ref(null);
-const editing = ref(false);
-const saving = ref(false);
-const formRef = ref(null);
+const viewingId = ref(null);
 
-// Form payload data model binding structure containing only the status name field
-const form = reactive({ 
-  name: "" 
-});
-
-// Data Grid Column Configuration Schema with enhanced fallback handling for Tenant Name display
+// Data Grid Column Configuration Schema with enhanced fallback handling for Tenant Name and Creation Date display
 const columns = computed(() => [
-  { name: "familyStatusId", label: "ID", field: "familyStatusId", align: "left", sortable: true, default: true },
+  { 
+    name: "familyStatusId", 
+    label: "ID", 
+    field: (row) => {
+      if (!row) return '-';
+      return row.familyStatusId || row.FamilyStatusId || row.family_status_id || row.id || row.Id || '-';
+    }, 
+    align: "left", 
+    sortable: true, 
+    default: true 
+  },
   { name: "name", label: "Status Name", field: "name", align: "left", sortable: true, default: true },
   { 
     name: "tenantName", 
     label: "Tenant Name", 
     field: (row) => row.tenantName || row.tenant_name || row.tenant?.name || row.tenantId, 
     format: (val, row) => {
-      // Check if tenant object or direct name properties are present
       if (row.tenantName) return row.tenantName;
       if (row.tenant_name) return row.tenant_name;
       if (row.tenant?.name) return row.tenant.name;
@@ -147,7 +134,6 @@ const columns = computed(() => [
       const tenantId = row.tenantId || row.tenantid || row.TenantId;
       if (!tenantId) return '-';
 
-      // Match against loaded tenant options collection
       const found = tenantOptions.value.find((t) => t.value === tenantId || t.id === tenantId);
       return found ? found.label : tenantId;
     },
@@ -175,7 +161,7 @@ const columns = computed(() => [
   { name: "actions", label: "Actions", field: "actions", align: "right" ,style: "padding-right: 50px !important;", headerStyle: "padding-right: 70px !important;"}
 ]);
 
-// Server-side List Management Composable configured to fetch and display records across all tenants
+// Server-side List Management Composable configured with default sorting to display newest created records at the top
 const { 
     rows, 
     loading, 
@@ -187,12 +173,14 @@ const {
     onRequest 
 } = useListTable({
     pageKey: "family-status",
+    defaultSortBy: "createdOnUtc",
+    defaultDescending: true,
     fetcher: ({ page, limit, sortBy, descending }) => {
         return familyStatusApi.list({
             page,
             limit,
-            sortBy,
-            descending,
+            sortBy: sortBy || "createdOnUtc",
+            descending: descending !== undefined ? descending : true,
             search: search.value || undefined,
             allTenants: true 
         }).then((r) => ({ 
@@ -219,83 +207,52 @@ onMounted(async () => {
 });
 
 /**
- * Handles navigation to the detailed view page for a specific record.
- * @param {Object} row - Entity row model instance.
+ * Opens the form drawer in creation mode.
  */
-const viewRecord = (row) => {
+const openCreateDialog = () => {
+  editingId.value = null;
+  formDrawerOpen.value = true;
+};
+
+/**
+ * Opens the form drawer in update/edit mode for a specific record.
+ * @param {Object} row - Target entity row data instance.
+ */
+const openEditDialog = (row) => {
+  const id = row.familyStatusId || row.FamilyStatusId || row.id;
+  if (!id) {
+    notify.error("Invalid record identifier.");
+    return;
+  }
+  editingId.value = id;
+  formDrawerOpen.value = true;
+};
+
+/**
+ * Opens the view details drawer for a specific record.
+ * @param {Object} row - Target entity row data instance.
+ */
+const openViewDrawer = (row) => {
   const id = row.familyStatusId || row.FamilyStatusId || row.id;
   if (!id) {
     notify.error("Invalid record identifier for viewing.");
     return;
   }
-  router.push({ name: 'family_status_detail', params: { id } });
+  viewingId.value = id;
+  viewDrawerOpen.value = true;
 };
 
 /**
- * Initializes state context and opens the drawer dialog in creation mode.
+ * Callback handler executed after a successful record creation or update operation.
  */
-const openCreateDialog = () => {
-  editingId.value = null;
-  editing.value = false;
-  form.name = "";
-  dialogOpen.value = true;
-};
-
-/**
- * Hydrates target record metadata and opens the drawer dialog in edit/update mode.
- * @param {string|number} id - Target entity primary key identifier.
- */
-const openEditDialog = async (id) => {
-  if (!id) {
-    notify.error("Invalid record identifier.");
-    return;
+const handleSaved = (isNew) => {
+  if (isNew) {
+    pagination.value.page = 1;
+    pagination.value.sortBy = "createdOnUtc";
+    pagination.value.descending = true;
   }
-
-  editingId.value = id;
-  editing.value = true;
-  dialogOpen.value = true;
-  
-  try {
-    const response = await api.get(`/api/admin/family-statuses/${id}`);
-    const item = response?.data?.data || response?.data || response;
-    
-    if (item) {
-      form.name = item.name || "";
-    }
-  } catch (err) {
-    notify.error(getApiErrorMessage(err));
-  }
-};
-
-/**
- * Validates form integrity constraints and executes either a POST (Create) or PUT (Update) API transaction.
- */
-const submitForm = async () => {
-  const valid = await formRef.value?.validate();
-  if (!valid) return;
-
-  saving.value = true;
-  try {
-    const payload = {
-      name: form.name
-    };
-
-    if (editing.value && editingId.value) {
-      await familyStatusApi.update(editingId.value, payload);
-      notify.success("Family status updated successfully.");
-    } else {
-      await familyStatusApi.create(payload);
-      notify.success("Family status created successfully.");
-    }
-
-    dialogOpen.value = false;
-    load();
-    refreshTenants();
-  } catch (err) {
-    notify.error(getApiErrorMessage(err));
-  } finally {
-    saving.value = false;
-  }
+  load();
+  refreshTenants();
 };
 
 /**
