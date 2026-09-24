@@ -55,7 +55,7 @@
               icon="o_apartment" label="Manage tenants" @click="openTenants"
             />
             <q-btn
-              v-if="role.canManage && !role.isSystem && !isAdministratorRole" flat no-caps color="negative"
+              v-if="role.canManage && !role.isSystem && !isFixedNameRole" flat no-caps color="negative"
               icon="o_delete" label="Delete role" @click="removeRole"
             />
           </div>
@@ -203,13 +203,15 @@ const canAssign = computed(() => has(Permissions.RolesAssign));
 const canManageMembers = computed(() =>
   canAssign.value && (!role.value?.tenantId || role.value.tenantId === tenantStore.activeTenantId));
 
-// The "Administrator" role is a platform-level custom role, not flagged System, but it must never be
-// deletable or renamable from here (it is not seeded/protected server-side the way SuperAdmin/TenantAdmin are).
-const isAdministratorRole = computed(() => (role.value?.name || "").trim().toLowerCase() === "administrator");
+// The "Administrator" and "Parent" roles are platform-level custom roles, not flagged System, but the
+// server looks them up by name (RolesController.FixedNameRoles), so they can never be
+// deleted or renamed.
+const FIXED_NAME_ROLES = ["administrator", "parent"];
+const isFixedNameRole = computed(() => FIXED_NAME_ROLES.includes((role.value?.name || "").trim().toLowerCase()));
 
-// A system role's name is fixed: the platform seeds it and looks it up by that name. The Administrator
-// role's name is likewise fixed, though nothing server-side enforces it by that lookup.
-const canEditName = computed(() => !!role.value?.canManage && !role.value?.isSystem && !isAdministratorRole.value);
+// A system role's name is fixed: the platform seeds it and looks it up by that name. So are the
+// FIXED_NAME_ROLES' names.
+const canEditName = computed(() => !!role.value?.canManage && !role.value?.isSystem && !isFixedNameRole.value);
 
 const scopeLabel = computed(() => (role.value?.tenantId ? role.value.tenantName || "This tenant" : "Platform"));
 const scopeExplainer = computed(() => (role.value?.tenantId

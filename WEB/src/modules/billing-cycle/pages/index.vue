@@ -6,6 +6,8 @@
         { label: 'Home', icon: 'o_home', to: '/' },
         { label: 'Billing Cycles' }
       ]"
+      title="Billing Cycles"
+      description="Manage your billing cycles here."
       :search="search"
       show-search
       search-placeholder="Search billing cycle name"
@@ -87,26 +89,56 @@
       title="View Billing Cycle"
       :saving="viewLoading"
       :save-label="''"
+      :hide-save="true"
       @cancel="closeView"
     >
       <div class="q-gutter-md">
-        <app-text-field
-          v-model="viewBillingCycle.name"
-          label="Name"
-          readonly
-        />
-        <app-text-field
-          v-model="viewBillingCycle.tenantName"
-          label="Tenant"
-          readonly
-        />
-        <q-separator />
         <div>
-          <div class="text-caption text-grey-7">
+          <div class="text-86 fs-12 fw-500">
+            Name
+          </div>
+          <div class="text-2e fs-4">
+            {{ viewBillingCycle.name || "—" }}
+          </div>
+        </div>
+        <div>
+          <div class="text-86 fs-12 fw-500">
+            Tenant
+          </div>
+          <div class="text-2e fs-4">
+            {{ viewBillingCycle.tenantName || "—" }}
+          </div>
+        </div>
+        <div>
+          <div class="text-86 fs-12 fw-500">
+            Created By
+          </div>
+          <div class="text-2e fs-14">
+            {{ viewBillingCycle.createdBy || "—" }}
+          </div>
+        </div>
+        <div>
+          <div class="text-86 fs-12 fw-500">
             Created On
           </div>
-          <div class="text-body1">
+          <div class="text-2e fs-14">
             {{ formatDateTime(viewBillingCycle.createdOnUtc) }}
+          </div>
+        </div>
+        <div>
+          <div class="text-86 fs-12 fw-500">
+            Updated By
+          </div>
+          <div class="text-2e fs-14">
+            {{ viewBillingCycle.updatedBy || "—" }}
+          </div>
+        </div>
+        <div>
+          <div class="text-86 fs-12 fw-500">
+            Updated On
+          </div>
+          <div class="text-2e fs-14">
+            {{ formatDateTime(viewBillingCycle.updatedOnUtc) }}
           </div>
         </div>
       </div>
@@ -169,10 +201,37 @@ const columns = [
     sortable: true,
     default: true
   },
+   {
+    name: "createdBy",
+    label: "Created By",
+    field: "createdBy",
+    align: "left",
+    sortable: true,
+    default: true,
+    format: (val) => val || "—"
+  },
   {
     name: "createdOnUtc",
     label: "Created On",
     field: "createdOnUtc",
+    align: "left",
+    sortable: true,
+    default: true,
+    format: (val) => formatDateTime(val)
+  },
+  {
+    name: "updatedBy",
+    label: "Updated By",
+    field: "updatedBy",
+    align: "left",
+    sortable: true,
+    default: true,
+    format: (val) => val || "—"
+  },
+  {
+    name: "updatedOnUtc",
+    label: "Updated On",
+    field: "updatedOnUtc",
     align: "left",
     sortable: true,
     default: true,
@@ -219,7 +278,10 @@ const viewBillingCycle = ref({
   billingCycleId: null,
   name: "",
   tenantName: "",
-  createdOnUtc: null
+  createdBy: null,
+  createdOnUtc: null,
+  updatedBy: null,
+  updatedOnUtc: null
 });
 // Reset the viewBillingCycle to its initial state.
 const resetViewBillingCycle = () => {
@@ -227,7 +289,10 @@ const resetViewBillingCycle = () => {
     billingCycleId: null,
     name: "",
     tenantName: "",
-    createdOnUtc: null
+    createdBy: null,
+    createdOnUtc: null,
+    updatedBy: null,
+    updatedOnUtc: null
   };
 };
 // Open the View drawer for the selected Billing Cycle.
@@ -244,7 +309,10 @@ const openView = async (row) => {
       billingCycleId: billingCycle?.billingCycleId,
       name: billingCycle?.name || "",
       tenantName: billingCycle?.tenantName || "",
-      createdOnUtc: billingCycle?.createdOnUtc || null
+      createdBy: billingCycle?.createdBy || "",
+      createdOnUtc: billingCycle?.createdOnUtc || null,
+      updatedBy: billingCycle?.updatedBy || "",
+      updatedOnUtc: billingCycle?.updatedOnUtc || null
     };
   } catch (error) {
     viewOpen.value = false;

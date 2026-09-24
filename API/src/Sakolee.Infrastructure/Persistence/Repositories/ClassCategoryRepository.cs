@@ -20,7 +20,25 @@ internal sealed class ClassCategoryRepository : IClassCategoryRepository
     public ClassCategoryRepository(SakoleeDbContext dbContext) => _dbContext = dbContext;
     #endregion
 
-    #region List 
+    #region Names
+    /// <summary>
+    /// Names of the given (non-deleted) categories, keyed by id.
+    /// </summary>
+    public async Task<IReadOnlyDictionary<Guid, string>> GetNamesAsync(IEnumerable<Guid> ids, CancellationToken cancellationToken = default)
+    {
+        var idList = ids.Distinct().ToList();
+        if (idList.Count == 0)
+        {
+            return new Dictionary<Guid, string>();
+        }
+
+        return await _dbContext.ClassCategories
+            .Where(c => !c.Deleted && idList.Contains(c.Id))
+            .ToDictionaryAsync(c => c.Id, c => c.Name, cancellationToken);
+    }
+    #endregion
+
+    #region List
     /// <summary>
     /// Gets all non-deleted Class Categories belonging to the specified tenant.
     /// Supports searching by category name or category type.

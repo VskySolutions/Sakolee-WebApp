@@ -19,6 +19,12 @@ public interface IClassCategoryRepository
     Task<ClassCategory?> GetByIdAsync(Guid id,Guid tenantId,CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Names of the given (non-deleted) categories, keyed by id — lets a class show its saved Category
+    /// 1/2/3 by name. Not tenant-filtered: the ids come from the class itself.
+    /// </summary>
+    Task<IReadOnlyDictionary<Guid, string>> GetNamesAsync(IEnumerable<Guid> ids, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Checks whether a non-deleted Class Category with the specified
     /// name already exists for the tenant.
     /// </summary>

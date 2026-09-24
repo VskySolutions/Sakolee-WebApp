@@ -82,6 +82,15 @@ internal sealed class FamilyRepository : IFamilyRepository
     public async Task<IReadOnlyList<FamilyPersonMapping>> ListContactsAsync(Guid familyId, CancellationToken cancellationToken = default)
         => await _dbContext.FamilyPersonMappings.Where(c => c.FamilyId == familyId && !c.Deleted).ToListAsync(cancellationToken);
 
+    public async Task<IReadOnlyList<Guid>> ListFamilyIdsForContactAsync(Guid personId, CancellationToken cancellationToken = default)
+        // Families carries the tenant + soft-delete query filter; the primary contact is also inlined on
+        // Family.PersonId, so both are checked.
+        => await _dbContext.Families
+            .Where(f => f.PersonId == personId
+                || _dbContext.FamilyPersonMappings.Any(c => c.FamilyId == f.Id && !c.Deleted && c.PersonId == personId))
+            .Select(f => f.Id)
+            .ToListAsync(cancellationToken);
+
     public async Task AddContactAsync(FamilyPersonMapping contact, CancellationToken cancellationToken = default)
         => await _dbContext.FamilyPersonMappings.AddAsync(contact, cancellationToken);
 

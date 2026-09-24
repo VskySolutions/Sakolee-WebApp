@@ -132,16 +132,40 @@ const blankForm = () => ({
 });
 const form = reactive(blankForm());
 
+// Fields this dialog does not edit. StudentsController.Update writes every field it is sent, so a
+// missing one is saved as null — a missing familyId drops the student out of their family. They are
+// carried over from the loaded record and sent back unchanged.
+const blankPreserved = () => ({
+  familyId: null,
+  classId: null,
+  feeCategoryId: null,
+  disabilities: null,
+  allergies: null,
+  emergencyContactName: null,
+  emergencyContactNumber: null
+});
+const preserved = reactive(blankPreserved());
+
 // Loads the full student record fresh each time the dialog opens — the Family page's own student
 // rows carry only the minimal FamilyStudentSummary shape (name, number, active, classId), not enough
 // to populate a full edit form.
 watch(() => props.modelValue, async (isOpen) => {
   if (!isOpen || !props.studentId) return;
   Object.assign(form, blankForm());
+  Object.assign(preserved, blankPreserved());
   emailError.value = "";
   loading.value = true;
   try {
     const row = await studentApi.get(props.studentId);
+    Object.assign(preserved, {
+      familyId: row.familyId ?? null,
+      classId: row.classId ?? null,
+      feeCategoryId: row.feeCategoryId ?? null,
+      disabilities: row.disabilities ?? null,
+      allergies: row.allergies ?? null,
+      emergencyContactName: row.emergencyContactName ?? null,
+      emergencyContactNumber: row.emergencyContactNumber ?? null
+    });
     Object.assign(form, {
       firstName: row.firstName || "",
       lastName: row.lastName || "",
@@ -187,6 +211,7 @@ const save = async () => {
   if (!valid) return;
 
   const payload = {
+    ...preserved,
     firstName: form.firstName,
     lastName: form.lastName,
     familyName: form.familyName || null,

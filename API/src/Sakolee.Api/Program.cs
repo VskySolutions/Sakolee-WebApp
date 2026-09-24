@@ -63,7 +63,7 @@ builder.Services.AddScoped<Sakolee.Api.Dashboard.IDashboardQueryService, Sakolee
 // CORS for the browser SPA (WEB/). Allowed origins come from configuration
 // (Cors:AllowedOrigins); falls back to the local Quasar dev server ports.
 const string SpaCorsPolicy = "SpaCors";
-var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? ["http://localhost:9000", "http://localhost:9001"];
+var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? ["http://localhost:9000", "http://localhost:9001", "https://sakolee.vskyapplications.com/", "https://dev-sakoleeapi.vskyapplications.com"];
 builder.Services.AddCors(options =>
     options.AddPolicy(SpaCorsPolicy, policy =>
         policy.WithOrigins(allowedOrigins)

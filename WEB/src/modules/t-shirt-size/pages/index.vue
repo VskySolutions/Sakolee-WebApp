@@ -6,6 +6,8 @@
         { label: 'Home', icon: 'o_home', to: '/' },
         { label: 'T-Shirt Sizes' }
       ]"
+      title="T-Shirt Sizes"
+      description="Manage your T-Shirt sizes here."
       :search="search"
       show-search
       search-placeholder="Search T-Shirt size name"
@@ -87,26 +89,56 @@
       title="View T-Shirt Size"
       :saving="viewLoading"
       :save-label="''"
+      :hide-save="true"
       @cancel="closeView"
     >
       <div class="q-gutter-md">
-        <app-text-field
-          v-model="viewTShirtSize.name"
-          label="Name"
-          readonly
-        />
-        <app-text-field
-          v-model="viewTShirtSize.tenantName"
-          label="Tenant"
-          readonly
-        />
-        <q-separator />
         <div>
-          <div class="text-caption text-grey-7">
+          <div class="text-86 fs-12 fw-500">
+            Name
+          </div>
+          <div class="text-2e fs-4">
+            {{ viewTShirtSize.name || "—" }}
+          </div>
+        </div>
+        <div>
+          <div class="text-86 fs-12 fw-500">
+            Tenant
+          </div>
+          <div class="text-2e fs-4">
+            {{ viewTShirtSize.tenantName || "—" }}
+          </div>
+        </div>
+        <div>
+          <div class="text-86 fs-12 fw-500">
+            Created By
+          </div>
+          <div class="text-2e fs-14">
+            {{ viewTShirtSize.createdBy || "—" }}
+          </div>
+        </div>
+        <div>
+          <div class="text-86 fs-12 fw-500">
             Created On
           </div>
-          <div class="text-body1">
+          <div class="text-2e fs-14">
             {{ formatDateTime(viewTShirtSize.createdOnUtc) }}
+          </div>
+        </div>
+        <div>
+          <div class="text-86 fs-12 fw-500">
+            Updated By
+          </div>
+          <div class="text-2e fs-14">
+            {{ viewTShirtSize.updatedBy || "—" }}
+          </div>
+        </div>
+        <div>
+          <div class="text-86 fs-12 fw-500">
+            Updated On
+          </div>
+          <div class="text-2e fs-14">
+            {{ formatDateTime(viewTShirtSize.updatedOnUtc) }}
           </div>
         </div>
       </div>
@@ -124,8 +156,7 @@ import { usePermissions } from "composables/usePermissions";
 import { useListTable } from "composables/useListTable";
 import AppDataTable from "components/common/AppDataTable.vue";
 import AppListHeader from "components/common/AppListHeader.vue";
-import AppFormDrawer from "components/common/AppFormDrawer.vue"; 
-import AppTextField from "components/common/AppTextField.vue";
+import AppFormDrawer from "components/common/AppFormDrawer.vue";
 import CreateEdit from "modules/t-shirt-size/components/CreateEdit.vue";
 
 const notify = useNotify();
@@ -160,9 +191,36 @@ const columns = [
     default: true
   },
   {
+    name: "createdBy",
+    label: "Created By",
+    field: "createdBy",
+    align: "left",
+    sortable: true,
+    default: true,
+    format: (val) => val || "—"
+  },
+  {
     name: "createdOnUtc",
     label: "Created On",
     field: "createdOnUtc",
+    align: "left",
+    sortable: true,
+    default: true,
+    format: (val) => formatDateTime(val)
+  },
+  {
+    name: "updatedBy",
+    label: "Updated By",
+    field: "updatedBy",
+    align: "left",
+    sortable: true,
+    default: true,
+    format: (val) => val || "—"
+  },
+  {
+    name: "updatedOnUtc",
+    label: "Updated On",
+    field: "updatedOnUtc",
     align: "left",
     sortable: true,
     default: true,
@@ -207,7 +265,10 @@ const viewTShirtSize = ref({
   tShirtSizeId: null,
   name: "",
   tenantName: "",
-  createdOnUtc: null
+  createdBy: null,
+  createdOnUtc: null,
+  updatedBy: null,
+  updatedOnUtc: null
 });
 // Reset the viewTShirtSize to its initial state.
 const resetViewTShirtSize = () => {
@@ -215,7 +276,10 @@ const resetViewTShirtSize = () => {
     tShirtSizeId: null,
     name: "",
     tenantName: "",
-    createdOnUtc: null
+    createdBy: null,
+    createdOnUtc: null,
+    updatedBy: null,
+    updatedOnUtc: null
   };
 };
 // Open the View drawer for the selected T-Shirt Size.
@@ -231,7 +295,10 @@ const openView = async (row) => {
       tShirtSizeId: tShirtSize?.tShirtSizeId,
       name: tShirtSize?.name || "",
       tenantName: tShirtSize?.tenantName || "",
-      createdOnUtc: tShirtSize?.createdOnUtc || null
+      createdBy: tShirtSize?.createdBy || "",
+      createdOnUtc: tShirtSize?.createdOnUtc || null,
+      updatedBy: tShirtSize?.updatedBy || "",
+      updatedOnUtc: tShirtSize?.updatedOnUtc || null
     };
   } catch (error) {
     viewOpen.value = false;

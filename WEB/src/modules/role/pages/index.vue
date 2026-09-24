@@ -1,7 +1,9 @@
 <template>
   <q-page padding>
     <app-list-header
-      :breadcrumbs="[{ label: 'Home', icon: 'o_home', to: '/' }, { label: 'Roles' }]"
+      :breadcrumbs="[{ label: 'Home', to: '/' }, { label: 'Roles' }]"
+      title="Roles"
+      description="Manage roles and their permissions."
       :search="search"
       show-search
       search-placeholder="Search roles"
@@ -53,7 +55,7 @@
             <q-tooltip>{{ actionTooltip(cell.row) }}</q-tooltip>
           </q-btn>
           <q-btn
-            v-if="cell.row.canManage && !cell.row.isSystem && !isAdministratorRole(cell.row)"
+            v-if="cell.row.canManage && !cell.row.isSystem && !isFixedNameRole(cell.row)"
             type="a" flat round dense color="negative"
             icon="o_delete" @click="removeRole(cell.row)"
           >
@@ -187,9 +189,11 @@ const loadPermissions = async () => {
   }
 };
 
-// The "Administrator" role is a platform-level custom role, not flagged System, but it must never be
-// deletable from here (it is not seeded/protected server-side the way SuperAdmin/TenantAdmin are).
-const isAdministratorRole = (row) => (row.name || "").trim().toLowerCase() === "administrator";
+// The "Administrator" and "Parent" roles are platform-level custom roles, not flagged System, but the
+// server looks them up by name (RolesController.FixedNameRoles), so they can never be
+// deleted.
+const FIXED_NAME_ROLES = ["administrator", "parent"];
+const isFixedNameRole = (row) => FIXED_NAME_ROLES.includes((row.name || "").trim().toLowerCase());
 
 // ---- Open ----
 // Editing a role happens on the role's own page.

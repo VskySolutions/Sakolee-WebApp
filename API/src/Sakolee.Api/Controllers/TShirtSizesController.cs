@@ -5,6 +5,7 @@ using Sakolee.Api.Security;
 using Sakolee.Application.Abstractions.Persistence;
 using Sakolee.Shared.Contracts;
 using Sakolee.Shared.Security;
+using Sakolee.Application.Abstractions.Security;
 
 namespace Sakolee.Api.Controllers;
 
@@ -23,6 +24,7 @@ public sealed class TShirtSizesController : ControllerBase
 {
     #region Fields
     private readonly ITShirtSizeRepository _tShirtSizes;
+    private readonly IUserRepository _users;
     private readonly IUnitOfWork _unitOfWork;
     #endregion
 
@@ -30,9 +32,10 @@ public sealed class TShirtSizesController : ControllerBase
     /// <summary>
     /// Initializes the T-Shirt Sizes controller.
     /// </summary>
-    public TShirtSizesController(ITShirtSizeRepository tShirtSizes, IUnitOfWork unitOfWork)
+    public TShirtSizesController(ITShirtSizeRepository tShirtSizes, IUserRepository users, IUnitOfWork unitOfWork)
     {
         _tShirtSizes = tShirtSizes;
+        _users = users;
         _unitOfWork = unitOfWork;
     }
     #endregion
@@ -55,10 +58,11 @@ public sealed class TShirtSizesController : ControllerBase
         // Retrieve all non-deleted T-Shirt Sizes belonging to the active tenant.
         // The search value is passed to the repository when provided.
         var tShirtSizes = await _tShirtSizes.ListByTenantAsync(tenantId,search,cancellationToken);
-        // Convert the entity records into lightweight response models
-        // before returning them to the client.
-        var summaries = tShirtSizes.Select(x => new TShirtSizeSummary(x.Id,x.Name,x.TenantId, x.Tenant?.Name ?? string.Empty,x.CreatedOnUtc));
-        // Return the T-Shirt Size list with a success response.
+        // Resolve the Created By and Updated By user IDs into display names.This avoids returning only user IDs in the API response.
+        var nameOf = await AuditNamesAsync(tShirtSizes, cancellationToken);
+        // Convert each T-Shirt Size entity into the response summary model.
+        var summaries = tShirtSizes.Select(x => ToSummary(x, nameOf)).ToList();
+        // Return the T-Shirt Size summaries in the standard API response format.
         return Ok(ApiResponseFactory.Success(summaries,"T-Shirt sizes retrieved."));
     }
     #endregion
@@ -87,7 +91,7 @@ public sealed class TShirtSizesController : ControllerBase
             return NotFound(ApiResponseFactory.NotFound("T-Shirt size not found."));
         }
         // Convert the entity into the response model.
-        var summary = new TShirtSizeSummary(tShirtSize.Id,tShirtSize.Name,tShirtSize.TenantId,tShirtSize.Tenant?.Name ?? string.Empty,tShirtSize.CreatedOnUtc);
+        var summary = ToSummary(tShirtSize,await AuditNamesAsync(new[] { tShirtSize }, cancellationToken));        
         // Return the requested T-Shirt Size.
         return Ok(ApiResponseFactory.Success(summary,"T-Shirt size retrieved."));
     }
@@ -135,7 +139,8 @@ public sealed class TShirtSizesController : ControllerBase
         // Retrieve the newly created record again so that related tenant information is available in the response.
         var createdTShirtSize = await _tShirtSizes.GetByIdAsync(tShirtSize.Id,tenantId,cancellationToken);
         // Create the response model for the newly created record.
-        var summary = new TShirtSizeSummary(tShirtSize.Id,tShirtSize.Name,tShirtSize.TenantId, createdTShirtSize?.Tenant?.Name ?? string.Empty,tShirtSize.CreatedOnUtc);
+        var nameOf = await AuditNamesAsync(new[] { createdTShirtSize ?? tShirtSize },cancellationToken);
+        var summary = ToSummary(createdTShirtSize ?? tShirtSize,nameOf);        
         // Return HTTP 201 Created with the created T-Shirt Size.
         return StatusCode(StatusCodes.Status201Created,ApiResponseFactory.Success(summary,"T-Shirt size created."));
     }
@@ -193,7 +198,8 @@ public sealed class TShirtSizesController : ControllerBase
         // Save the updated record to the database.
         await _unitOfWork.SaveChangesAsync(cancellationToken);
         // Create the response model containing the updated information.
-        var summary = new TShirtSizeSummary(tShirtSize.Id, tShirtSize.Name, tShirtSize.TenantId, tShirtSize.Tenant?.Name ?? string.Empty,tShirtSize.CreatedOnUtc);
+        var nameOf = await AuditNamesAsync(new[] { tShirtSize },cancellationToken);
+        var summary = ToSummary(tShirtSize,nameOf);        
         // Return the updated T-Shirt Size.
         return Ok(ApiResponseFactory.Success(summary,"T-Shirt size updated."));
     }
@@ -236,5 +242,36 @@ public sealed class TShirtSizesController : ControllerBase
         return Ok(ApiResponseFactory.Success(new { tShirtSizeId = tShirtSize.Id }, "T-Shirt size deleted."));
     }
 
+    #endregion
+
+    #region Summary
+
+    /// <summary>
+    /// Converts a T-Shirt Size entity into a summary response model.
+    /// Resolves the Created By and Updated By user IDs into display names.
+    /// </summary>
+    private static TShirtSizeSummary ToSummary(Domain.Entities.TShirtSize tShirtSize,Func<Guid?, string?> nameOf)
+    {
+        // Create the API response model and resolve the audit user names.
+        return new TShirtSizeSummary(tShirtSize.Id,tShirtSize.Name,tShirtSize.TenantId,tShirtSize.Tenant?.Name ?? string.Empty,nameOf(tShirtSize.CreatedById),tShirtSize.CreatedOnUtc,nameOf(tShirtSize.UpdatedById),tShirtSize.UpdatedOnUtc);
+    }
+
+    #endregion
+
+    #region Audit Names
+
+    /// <summary>
+    /// Resolves the Created By and Updated By user IDs for the specified
+    /// T-Shirt Size records into user display names.
+    /// </summary>
+    private async Task<Func<Guid?, string?>> AuditNamesAsync(IEnumerable<Domain.Entities.TShirtSize> rows, CancellationToken cancellationToken)
+    {
+        // Collect all Created By and Updated By user IDs.
+        var ids = rows.SelectMany(x => new[] { x.CreatedById, x.UpdatedById }).Where(id => id.HasValue).Select(id => id!.Value).Distinct();
+        // Retrieve the user names for the collected IDs.
+        var names = await _users.GetFullNamesAsync(ids, cancellationToken);
+        // Return a function that resolves a user ID to its display name.
+        return id => id is { } userId && names.TryGetValue(userId, out var name) ? name : null;
+    }
     #endregion
 }

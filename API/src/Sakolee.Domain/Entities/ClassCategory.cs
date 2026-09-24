@@ -9,7 +9,7 @@ namespace Sakolee.Domain.Entities;
 /// <c>nvarchar(450)</c> rather than <c>uniqueidentifier</c> on the live schema, the same convention
 /// <c>Class</c>/<c>Student</c> use.
 /// </summary>
-public class ClassCategory
+public class ClassCategory 
 {
     #region Properties
     public Guid Id { get; set; }

@@ -3,7 +3,7 @@
 /// <summary>
 /// Represents the Billing Cycle data returned by the API.
 /// </summary>
-public sealed record BillingCycleSummary(Guid BillingCycleId, string Name, Guid TenantId, string TenantName, DateTime CreatedOnUtc);
+public sealed record BillingCycleSummary(Guid BillingCycleId, string Name, Guid TenantId, string TenantName, string? CreatedBy,DateTime CreatedOnUtc,string? UpdatedBy,DateTime? UpdatedOnUtc);
 
 /// <summary>
 /// Request used to create a new Billing Cycle.

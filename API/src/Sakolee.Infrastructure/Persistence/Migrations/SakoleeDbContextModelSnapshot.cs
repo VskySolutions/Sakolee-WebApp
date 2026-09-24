@@ -365,6 +365,17 @@ namespace Sakolee.Infrastructure.Persistence.Migrations
                     .HasColumnType("nvarchar(450)");
 
                 b.Property<DateTime?>("UpdatedOnUtc")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "Name")
+                        .IsUnique()
+                        .HasFilter("[Deleted] = 0");
+
+                    b.ToTable("BillingCycle", (string)null);
+                });
+
                     .HasColumnType("datetime2");
 
                 b.HasKey("Id");

@@ -1,4 +1,5 @@
 import { route } from "quasar/wrappers";
+import { watch } from "vue";
 import { createRouter, createMemoryHistory, createWebHistory, createWebHashHistory } from "vue-router";
 import routes from "./routes";
 import { useAuthStore } from "stores/auth";
@@ -64,6 +65,12 @@ routes.push(...bankmethodRoutes);
 routes.push(...familyrelationRoutes);routes.push(...billingCycleRoutes);
 routes.push(...tShirtSizeRoutes);
 
+// Route meta `permissions` requires any one of the listed permission keys; the deepest matched
+// record's list wins.
+const requiredPermissionsFor = (route) => route.matched.reduce((permissions, record) => {
+  return Array.isArray(record.meta.permissions) ? record.meta.permissions : permissions;
+}, null);
+
 export default route(function ({ store }) {
   const createHistory = process.env.SERVER
     ? createMemoryHistory
@@ -100,11 +107,8 @@ export default route(function ({ store }) {
         return next({ name: "change_password" });
       }
 
-      // Permission gate: route meta `permissions` requires any one of the listed permission keys
-      // (decoded from the active-tenant JWT). The deepest matched record's list wins.
-      const requiredPermissions = to.matched.reduce((permissions, record) => {
-        return Array.isArray(record.meta.permissions) ? record.meta.permissions : permissions;
-      }, null);
+      // Permission gate, against the permissions decoded from the active-tenant JWT.
+      const requiredPermissions = requiredPermissionsFor(to);
 
       if (Array.isArray(requiredPermissions) && requiredPermissions.length) {
         if (!authStore.hasAnyPermission(requiredPermissions)) {
@@ -116,5 +120,18 @@ export default route(function ({ store }) {
 
     next();
   });
+
+  // The guard above only runs on navigation. When the token is re-issued in place (silent refresh after
+  // a role's permissions change, tenant switch, another tab), re-check the page already on screen.
+  const authStore = useAuthStore(store);
+  watch(() => authStore.permissions, () => {
+    const requiredPermissions = requiredPermissionsFor(Router.currentRoute.value);
+    if (authStore.isAuthenticated && Array.isArray(requiredPermissions) && requiredPermissions.length &&
+      !authStore.hasAnyPermission(requiredPermissions)) {
+      useNotify().notifyWarning("You do not have permission to access that page.");
+      Router.replace("/");
+    }
+  });
+
   return Router;
 });

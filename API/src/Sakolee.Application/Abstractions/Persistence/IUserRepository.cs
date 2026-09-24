@@ -54,6 +54,13 @@ public interface IUserRepository
     /// </summary>
     Task<IReadOnlyList<User>> ListActiveByTenantAsync(Guid tenantId, CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Bumps <see cref="User.TokenVersion"/> for every user holding <paramref name="roleId"/> in any tenant,
+    /// so their access tokens (which carry the role's permissions as claims) are rejected and re-issued
+    /// from the role's current permission set on the next silent refresh. Executes immediately.
+    /// </summary>
+    Task InvalidateSessionsForRoleAsync(Guid roleId, CancellationToken cancellationToken = default);
+
     Task AddAsync(User user, CancellationToken cancellationToken = default);
 
     void Update(User user);

@@ -1,7 +1,7 @@
 namespace Sakolee.Api.Models.Classes;
 
 /// <summary>A Class form Category 1/2/3 dropdown option.</summary>
-public sealed record ClassCategorySummary(Guid ClassCategoryId, string Name, string? CategoryType,Guid TenantId,string TenantName,DateTime CreatedOnUtc);
+public sealed record ClassCategorySummary(Guid ClassCategoryId, string Name, string? CategoryType,Guid TenantId,string TenantName, string? CreatedBy, DateTime CreatedOnUtc, string? UpdatedBy, DateTime? UpdatedOnUtc);
 
 /// <summary>
 /// Request used to create a Class Category.

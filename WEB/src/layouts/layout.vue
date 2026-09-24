@@ -74,7 +74,7 @@
             <span class="material-symbols-outlined fs-22 text-2e">help_outline</span>
           </div>
           <!-- Notification -->
-          <notification-centre class="header-icon-btn" v-if="isLoggedIn" />
+          <notification-centre v-if="isLoggedIn" class="header-icon-btn" />
           <div class="line" />
           <!-- User Profile -->
           <user-info v-if="isLoggedIn" />
@@ -114,58 +114,13 @@
     >
       <div class="drawer-content">
 
-        <!-- ========================================= -->
-        <!-- 1. FIXED HEADER / LOGO                   -->
-        <!-- ========================================= -->
+        <!-- Fixed logo -->
         <div class="drawer-header">
           <aside-header />
         </div>
 
-        <!-- ========================================= -->
-        <!-- 2. ONLY THIS SECTION SCROLLS             -->
-        <!-- ========================================= -->
-        <q-scroll-area class="drawer-menu">
-          <AppMenu :mini="menuCollapsed" />
-        </q-scroll-area>
-
-        <!-- ========================================= -->
-        <!-- 3. FIXED BOTTOM MENU                     -->
-        <!-- ========================================= -->
-        <div class="drawer-footer">
-
-          <!-- Settings -->
-          <q-item
-            v-ripple
-            clickable
-            class="drawer-footer-item"
-            :to="{ name: 'settings' }"
-          >
-            <q-item-section avatar>
-              <q-icon name="o_settings" size="24px" />
-            </q-item-section>
-
-            <q-item-section :class="menuCollapsed ? 'q-mini-drawer-hide' : ''">
-              <q-item-label class="fw-500">Settings</q-item-label>
-            </q-item-section>
-          </q-item>
-
-          <!-- Logout -->
-          <q-item
-            v-ripple
-            clickable
-            class="drawer-footer-item logout-item"
-            @click="handleLogout"
-          >
-            <q-item-section avatar>
-              <q-icon name="o_logout" size="24px" />
-            </q-item-section>
-
-            <q-item-section :class="menuCollapsed ? 'q-mini-drawer-hide' : ''">
-              <q-item-label class="fw-500">Logout</q-item-label>
-            </q-item-section>
-          </q-item>
-
-        </div>
+        <!-- Complete menu -->
+        <AppMenu :mini="menuCollapsed" />
 
       </div>
     </q-drawer>
@@ -327,35 +282,4 @@ const handleLogout = async () => {
   flex: 0 0 auto;
 }
 
-/* Only this section is allowed to scroll */
-.drawer-menu {
-  flex: 1 1 auto;
-  min-height: 0;
-  padding: 0 14px;
-}
-
-/* Fixed bottom section */
-.drawer-footer {
-  flex: 0 0 auto;
-  border-top: 1px solid #e5e7eb;
-  background: #ffffff;
-  padding: 8px 0;
-}
-
-/* Footer menu items */
-.drawer-footer-item {
-  min-height: 44px;
-  color: #17233f;
-  padding-left: 18px;
-  padding-right: 18px;
-}
-
-/* Logout styling */
-.logout-item {
-  color: #dc2626;
-}
-
-.drawer-footer-item:hover {
-  background: #f5f6ff;
-}
 </style>

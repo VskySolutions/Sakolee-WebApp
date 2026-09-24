@@ -48,10 +48,11 @@ public sealed class LocationsController : ControllerBase
     // ============================================================
 
     /// <summary>
-    /// Gets all locations belonging to the active tenant.
+    /// Gets all locations belonging to the active tenant. Also readable with classes.read/families.read:
+    /// the Class and Family forms load this list for their Location dropdowns.
     /// </summary>
     [HttpGet]
-    [RequirePermission(Permissions.LocationsRead)]
+    [RequireAnyPermission(Permissions.LocationsRead, Permissions.ClassesRead, Permissions.FamiliesRead)]
     [ProducesResponseType<ApiResponse<IReadOnlyList<LocationSummary>>>(StatusCodes.Status200OK)]
     public async Task<IActionResult> List([FromQuery] string? search = null, [FromQuery] bool? active = null, CancellationToken cancellationToken = default)
     {
