@@ -3,6 +3,8 @@
     <!-- Page Header Component: Manages breadcrumb navigation, live search inputs, and entity creation triggers -->
     <app-list-header
       :breadcrumbs="[{ label: 'Home', icon: 'o_home', to: '/' }, { label: 'Family Statuses' }]"
+      title="Family Statuses"
+      description="Manage your all family statuses."
       :search="search"
       show-search
       search-placeholder="Search family status name"

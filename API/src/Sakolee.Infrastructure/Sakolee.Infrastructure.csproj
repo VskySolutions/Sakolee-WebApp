@@ -1,14 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
-    <Compile Remove="Persistence\Migrations\20260921092732_AddSessionTable.cs" />
-    <Compile Remove="Persistence\Migrations\20260921092732_AddSessionTable.Designer.cs" />
     <Compile Remove="Persistence\Migrations\20260921124053_Location.cs" />
     <Compile Remove="Persistence\Migrations\20260921124053_Location.Designer.cs" />
-    <Compile Remove="Persistence\Migrations\20260921141731_UpdateFamilyStatusAuditing.cs" />
-    <Compile Remove="Persistence\Migrations\20260921141731_UpdateFamilyStatusAuditing.Designer.cs" />
-    <Compile Remove="Persistence\Migrations\20260922070930_AddClassSessions.cs" />
-    <Compile Remove="Persistence\Migrations\20260922070930_AddClassSessions.Designer.cs" />
     <Compile Remove="Persistence\Migrations\20260922072844_AddClassSessionsTable.cs" />
     <Compile Remove="Persistence\Migrations\20260922072844_AddClassSessionsTable.Designer.cs" />
     <Compile Remove="Persistence\Migrations\20260922073617_AddClassSessionsTable.cs" />

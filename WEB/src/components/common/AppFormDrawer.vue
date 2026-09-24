@@ -5,16 +5,16 @@
     overlay
     bordered
     :width="currentWidth"
-    class="app-form-drawer column no-wrap"
+    class="app-form-drawer column no-wrap bg-ff"
   >
     <!-- Drag handle: resize the drawer; the chosen width persists until logout. -->
     <div class="app-form-drawer__resizer" @mousedown="startResize" @dblclick="resetWidth" />
 
     <!-- Fixed header -->
-    <div class="row items-center q-pa-md bg-primary text-white">
-      <div class="text-h6">{{ title }}</div>
+    <div class="row items-center q-pa-md text-white">
+      <div class="text-2e fw-600 fs-18">{{ title }}</div>
       <q-space />
-      <q-btn flat round dense color="white" icon="o_close" @click="onCancel" />
+      <q-btn flat round dense class="text-grey" icon="o_close" @click="onCancel" />
     </div>
     <q-separator />
 
@@ -27,8 +27,8 @@
 
     <!-- Fixed footer -->
     <q-separator />
-    <div class="row justify-end items-center q-gutter-sm q-pa-md bg-grey-1">
-      <q-btn flat no-caps color="grey-8" label="Cancel" @click="onCancel" />
+    <div class="row justify-end items-center q-gutter-sm q-pa-md">
+      <q-btn flat no-caps class="grey-border br-12 text-2e sakolee-drawer-cancel-btn" label="Cancel" @click="onCancel" padding="8px 12px" />
       <!-- Optional extra actions (e.g. "Save as Draft") sit beside the primary action, same row. -->
       <slot name="footer-actions" />
       <q-btn
@@ -40,6 +40,7 @@
         :loading="saving"
         :disable="saving"
         @click="onSubmit"
+        class="fs-12 br-12 sakolee-drawer-cancel-btn" padding="8px 12px"
       />
     </div>
   </q-drawer>

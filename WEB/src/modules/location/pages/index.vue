@@ -2,9 +2,11 @@
   <q-page padding>
     <app-list-header
       :breadcrumbs="[
-        { label: 'Home', icon: 'o_home', to: '/' },
-        { label: 'Locations' }
+        { label: 'Home', to: '/' },
+        { label: 'Studio Locations' }
       ]"
+      title="Studio Locations"
+      description="Manage your all studio locations here."
       :search="search"
       show-search
       search-placeholder="Search locations"
@@ -145,69 +147,69 @@
       title="View Location"
       :saving="viewLoading"
       :save-label="''"
+      :hide-save="true"
       @cancel="closeView"
     >
       <div class="q-gutter-md">
 
-        <app-text-field
-          v-model="viewLocation.name"
-          label="Name"
-          readonly
-        />
+        <div>
+          <div class="text-86 fs-12 fw-500">
+            Name
+          </div>
+
+          <div class="text-2e fs-4">
+            {{ viewLocation.name }}
+          </div>
+        </div>
 
         <div>
-          <div class="text-caption text-grey-7 q-mb-xs">
+          <div class="text-86 fs-12 fw-500">
             Status
           </div>
 
           <q-badge
             :color="viewLocation.active ? 'positive' : 'grey'"
-            class="q-pa-sm"
           >
             {{ viewLocation.active ? "Active" : "Inactive" }}
           </q-badge>
         </div>
 
-        <q-separator />
-
         <div>
-          <div class="text-caption text-grey-7">
+          <div class="text-86 fs-12 fw-500">
             Created By
           </div>
 
-          <div class="text-body1">
+          <div class="text-2e fs-14">
             {{ viewLocation.createdBy || "—" }}
           </div>
         </div>
 
         <div>
-          <div class="text-caption text-grey-7">
+          <div class="text-86 fs-12 fw-500">
             Created On
           </div>
 
-          <div class="text-body1">
+          <div class="text-2e fs-14">
             {{ formatDate(viewLocation.createdOnUtc) }}
           </div>
         </div>
 
-        <q-separator />
-
         <div>
-          <div class="text-caption text-grey-7">
+          <div class="text-86 fs-12 fw-500">
             Updated By
           </div>
 
-          <div class="text-body1">
+          <div class="text-2e fs-14">
             {{ viewLocation.updatedBy || "—" }}
           </div>
         </div>
 
         <div>
-          <div class="text-caption text-grey-7">
+          <div class="text-86 fs-12 fw-500">
             Updated On
           </div>
 
-          <div class="text-body1">
+          <div class="text-2e fs-14">
             {{ formatDate(viewLocation.updatedOnUtc) }}
           </div>
         </div>
