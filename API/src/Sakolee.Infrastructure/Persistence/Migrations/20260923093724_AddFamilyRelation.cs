@@ -64,10 +64,10 @@ namespace Sakolee.Infrastructure.Persistence.Migrations
                         principalColumn: "Id");
                 });
 
-            migrationBuilder.CreateIndex(
-                name: "IX_BillingMethod_TenantId",
-                table: "BillingMethod",
-                column: "TenantId");
+            //migrationBuilder.CreateIndex(
+            //    name: "IX_BillingMethod_TenantId",
+            //    table: "BillingMethod",
+            //    column: "TenantId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_FamilyRelations_TenantId",

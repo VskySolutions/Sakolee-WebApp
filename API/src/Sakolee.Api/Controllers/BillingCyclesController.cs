@@ -5,6 +5,7 @@ using Sakolee.Api.Security;
 using Sakolee.Application.Abstractions.Persistence;
 using Sakolee.Shared.Contracts;
 using Sakolee.Shared.Security;
+using Sakolee.Application.Abstractions.Security;
 
 namespace Sakolee.Api.Controllers;
 
@@ -26,6 +27,8 @@ public sealed class BillingCyclesController : ControllerBase
     private readonly IBillingCycleRepository _billingCycles;
     // Unit of Work used to save database changes.
     private readonly IUnitOfWork _unitOfWork;
+    // Repository used to retrieve user names for audit information.
+    private readonly IUserRepository _users;
 
     #endregion
 
@@ -34,10 +37,11 @@ public sealed class BillingCyclesController : ControllerBase
     /// <summary>
     /// Initializes the Billing Cycles controller.
     /// </summary>
-    public BillingCyclesController(IBillingCycleRepository billingCycles,IUnitOfWork unitOfWork)
+    public BillingCyclesController(IBillingCycleRepository billingCycles,IUnitOfWork unitOfWork, IUserRepository users)
     {
         _billingCycles = billingCycles;
         _unitOfWork = unitOfWork;
+        _users = users;
     }
 
     #endregion
@@ -53,12 +57,18 @@ public sealed class BillingCyclesController : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<IActionResult> List( [FromQuery] string? search = null, CancellationToken cancellationToken = default)
     {
+        // Get the active tenant ID of the currently logged-in user.
+        // If the user does not have an active tenant, return Forbidden.
         if (User.GetActiveTenantId() is not { } tenantId)
         {
             return StatusCode(StatusCodes.Status403Forbidden, ApiResponseFactory.Forbidden( "No active tenant for the caller."));
         }
+        // Get all Billing Cycles for the active tenant.
         var billingCycles = await _billingCycles.ListByTenantAsync(tenantId,search,cancellationToken);
-        var summaries = billingCycles.Select(x => new BillingCycleSummary(x.Id, x.Name, x.TenantId, x.Tenant?.Name ?? string.Empty, x.CreatedOnUtc));
+        // Get the names of users who created or updated the records.
+        var nameOf = await AuditNamesAsync(billingCycles,cancellationToken);
+        // Map Billing Cycle entities to response summaries.
+        var summaries = billingCycles.Select(x => ToSummary(x, nameOf)).ToList();
         return Ok(ApiResponseFactory.Success(summaries,"Billing cycles retrieved."));
     }
     #endregion
@@ -73,18 +83,21 @@ public sealed class BillingCyclesController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetById( Guid id, CancellationToken cancellationToken)
     {
+        // Get the active tenant ID of the currently logged-in user.
+        // If the user does not have an active tenant, return Forbidden.
         if (User.GetActiveTenantId() is not { } tenantId)
         {
             return StatusCode(StatusCodes.Status403Forbidden, ApiResponseFactory.Forbidden("No active tenant for the caller."));
         }
         // Get the Billing Cycle by ID for the active tenant.
         var billingCycle =await _billingCycles.GetByIdAsync(id,tenantId,cancellationToken);
+        // Return Not Found if the Billing Cycle does not exist.
         if (billingCycle is null)
         {
             return NotFound(ApiResponseFactory.NotFound("Billing cycle not found."));
         }
         // Map the Billing Cycle entity to a summary response.
-        var summary = new BillingCycleSummary(billingCycle.Id,billingCycle.Name,billingCycle.TenantId, billingCycle.Tenant?.Name ?? string.Empty, billingCycle.CreatedOnUtc);
+        var summary = ToSummary(billingCycle,await AuditNamesAsync(new[] { billingCycle },cancellationToken));
         return Ok(ApiResponseFactory.Success(summary,"Billing cycle retrieved."));
     }
     #endregion
@@ -102,6 +115,8 @@ public sealed class BillingCyclesController : ControllerBase
     [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> Create([FromBody] CreateBillingCycleRequest request,CancellationToken cancellationToken)
     {
+        // Get the active tenant ID of the currently logged-in user.
+        // If the user does not have an active tenant, return Forbidden.
         if (User.GetActiveTenantId() is not { } tenantId)
         {
             return StatusCode(StatusCodes.Status403Forbidden,ApiResponseFactory.Forbidden("No active tenant for the caller."));
@@ -111,6 +126,7 @@ public sealed class BillingCyclesController : ControllerBase
         {
             return BadRequest(new { message = "Billing cycle name is required." });
         }
+        // Remove leading and trailing spaces from the Billing Cycle name.
         var name = request.Name.Trim();
         // Check whether the same name already exists for the tenant.
         var nameExists = await _billingCycles.ExistsByNameAsync(tenantId,name,cancellationToken: cancellationToken);
@@ -119,14 +135,20 @@ public sealed class BillingCyclesController : ControllerBase
         {
             return Conflict(new { message =$"A billing cycle with the name '{name}' already exists." });
         }
+        // Create a new Billing Cycle entity.
         var billingCycle = new Domain.Entities.BillingCycle{ Id = Guid.NewGuid(), TenantId = tenantId, Name = name, CreatedOnUtc = DateTime.UtcNow, CreatedById = User.GetUserId(), Deleted = false };
         // Add the new Billing Cycle to the database context.
         await _billingCycles.AddAsync(billingCycle,cancellationToken);
         // Save the new Billing Cycle to the database.
         await _unitOfWork.SaveChangesAsync(cancellationToken);
+        // Retrieve the created Billing Cycle to include tenant details.
         var createdBillingCycle = await _billingCycles.GetByIdAsync(billingCycle.Id,tenantId,cancellationToken);
-        // Retrieve the created Billing Cycle to get tenant details.
-        var summary = new BillingCycleSummary( billingCycle.Id, billingCycle.Name, billingCycle.TenantId, createdBillingCycle?.Tenant?.Name ?? string.Empty, billingCycle.CreatedOnUtc);
+        // Use the retrieved entity if available; otherwise use the newly created entity.
+        var created = createdBillingCycle ?? billingCycle;
+        // Get the names of users used in the audit fields.
+        var nameOf = await AuditNamesAsync(new[] { created },cancellationToken);
+        // Map the created Billing Cycle to the response summary.
+        var summary = ToSummary(created,nameOf);
         return StatusCode(StatusCodes.Status201Created,ApiResponseFactory.Success(summary,"Billing cycle created."));
     }
     #endregion
@@ -146,6 +168,8 @@ public sealed class BillingCyclesController : ControllerBase
     [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> Update(Guid id,[FromBody] UpdateBillingCycleRequest request,CancellationToken cancellationToken)
     {
+        // Get the active tenant ID of the currently logged-in user.
+        // If the user does not have an active tenant, return Forbidden.
         if (User.GetActiveTenantId() is not { } tenantId)
         {
             return StatusCode(StatusCodes.Status403Forbidden,ApiResponseFactory.Forbidden("No active tenant for the caller."));
@@ -155,8 +179,11 @@ public sealed class BillingCyclesController : ControllerBase
         {
             return BadRequest(new { message = "Billing cycle name is required." });
         }
+        // Remove leading and trailing spaces from the Billing Cycle name.
         var name = request.Name.Trim();
+        // Get the existing Billing Cycle for the active tenant.
         var billingCycle =await _billingCycles.GetByIdAsync(id, tenantId, cancellationToken);
+        // Return Not Found if the Billing Cycle does not exist.
         if (billingCycle is null)
         {
             return NotFound(ApiResponseFactory.NotFound("Billing cycle not found."));
@@ -169,14 +196,19 @@ public sealed class BillingCyclesController : ControllerBase
         {
             return Conflict(new { message =$"A billing cycle with the name '{name}' already exists." });
         }
+        // Update the Billing Cycle details.
         billingCycle.Name = name;
+        // Update the audit information.
         billingCycle.UpdatedOnUtc = DateTime.UtcNow;
         billingCycle.UpdatedById = User.GetUserId();
         // Mark the Billing Cycle as updated in the database context.
         _billingCycles.Update(billingCycle);
+        // Save the changes to the database.
         await _unitOfWork.SaveChangesAsync(cancellationToken);
         // Map the updated Billing Cycle to the response summary.
-        var summary = new BillingCycleSummary(billingCycle.Id, billingCycle.Name,billingCycle.TenantId,billingCycle.Tenant?.Name ?? string.Empty,billingCycle.CreatedOnUtc);
+        var nameOf = await AuditNamesAsync(new[] { billingCycle },cancellationToken);
+        // Map the updated Billing Cycle to the response summary.
+        var summary = ToSummary(billingCycle,nameOf);
         return Ok(ApiResponseFactory.Success(summary,"Billing cycle updated."));
     }
     #endregion
@@ -192,15 +224,20 @@ public sealed class BillingCyclesController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Delete(Guid id,CancellationToken cancellationToken)
     {
+        // Get the active tenant ID of the currently logged-in user.
+        // If the user does not have an active tenant, return Forbidden.
         if (User.GetActiveTenantId() is not { } tenantId)
         {
             return StatusCode( StatusCodes.Status403Forbidden, ApiResponseFactory.Forbidden( "No active tenant for the caller."));
         }
+        // Get the Billing Cycle by ID for the active tenant.
         var billingCycle =await _billingCycles.GetByIdAsync( id,tenantId, cancellationToken);
+        // Return Not Found if the Billing Cycle does not exist.
         if (billingCycle is null)
         {
             return NotFound(ApiResponseFactory.NotFound("Billing cycle not found."));
         }
+        // Mark the Billing Cycle as deleted instead of physically removing it.
         billingCycle.Deleted = true;
         // Update the audit information.
         billingCycle.UpdatedOnUtc = DateTime.UtcNow;
@@ -211,5 +248,31 @@ public sealed class BillingCyclesController : ControllerBase
         await _unitOfWork.SaveChangesAsync(cancellationToken);
         return Ok(ApiResponseFactory.Success(new { billingCycleId = billingCycle.Id },"Billing cycle deleted."));
     }
+    #endregion
+
+    #region Summary
+    /// <summary>
+    /// Maps a Billing Cycle entity to its response summary.
+    /// </summary>
+    private static BillingCycleSummary ToSummary(Domain.Entities.BillingCycle billingCycle,Func<Guid?, string?> nameOf)
+    {
+        return new BillingCycleSummary(billingCycle.Id,billingCycle.Name,billingCycle.TenantId,billingCycle.Tenant?.Name ?? string.Empty, nameOf(billingCycle.CreatedById),billingCycle.CreatedOnUtc, nameOf(billingCycle.UpdatedById),billingCycle.UpdatedOnUtc);
+    }
+    #endregion
+
+    #region Audit Names
+    /// <summary>
+    /// Retrieves the display names of users referenced by the audit fields.
+    /// </summary>
+    private async Task<Func<Guid?, string?>> AuditNamesAsync(IEnumerable<Domain.Entities.BillingCycle> rows,CancellationToken cancellationToken)
+    {
+        // Collect all CreatedBy and UpdatedBy user IDs from the Billing Cycle records.
+        var ids = rows.SelectMany(x => new[] { x.CreatedById, x.UpdatedById }).Where(id => id.HasValue).Select(id => id!.Value).Distinct();
+        // Retrieve the user names for the collected IDs.
+        var names = await _users.GetFullNamesAsync(ids, cancellationToken);
+        // Return a function that resolves a user ID to the corresponding user name.
+        return id => id is { } userId && names.TryGetValue(userId, out var name) ? name : null;
+    }
+
     #endregion
 }

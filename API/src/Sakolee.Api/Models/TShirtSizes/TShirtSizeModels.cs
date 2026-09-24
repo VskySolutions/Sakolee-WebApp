@@ -3,7 +3,7 @@
 /// <summary>
 /// Represents the T-Shirt Size data returned by the API.
 /// </summary>
-public sealed record TShirtSizeSummary(Guid TShirtSizeId,string Name,Guid TenantId,string TenantName,DateTime CreatedOnUtc);
+public sealed record TShirtSizeSummary(Guid TShirtSizeId,string Name,Guid TenantId,string TenantName, string? CreatedBy,DateTime CreatedOnUtc,string? UpdatedBy,DateTime? UpdatedOnUtc);
 
 /// <summary>
 /// Request used to create a new T-Shirt Size.
