@@ -4,23 +4,23 @@
     <app-list-header
       :breadcrumbs="[
         { label: 'Home', icon: 'o_home', to: '/' },
-        { label: 'Class Categories' }
+        { label: 'Billing Cycles' }
       ]"
       :search="search"
       show-search
-      search-placeholder="Search name or category type"
+      search-placeholder="Search billing cycle name"
       :show-add="canWrite"
-      add-label="Create Class Category"
+      add-label="Create Billing Cycle"
       show-back
       @update:search="search = $event"
       @add="openCreate"
       @back="$router.back()"
     />
-    <!-- Table displaying all Class Categories -->
+    <!-- Table displaying all Billing Cycles -->
     <app-data-table
-      page-key="class-categories"
-      row-key="classCategoryId"
-      title="All Class Categories"
+      page-key="billing-cycles"
+      row-key="billingCycleId"
+      title="All Billing Cycles"
       :rows="rows"
       :columns="columns"
       :loading="loading"
@@ -29,14 +29,6 @@
       @request="onRequest"
       @refresh="load"
     >
-     <!-- Display Category Type as a badge -->
-      <template #body-cell-categoryType="cell">
-        <q-td :props="cell">
-          <q-badge color="primary">
-            {{ cell.value }}
-          </q-badge>
-        </q-td>
-      </template>
       <!-- Action buttons for viewing, editing, and deleting -->
       <template #body-cell-actions="cell">
         <q-td :props="cell" text-class="text-center">
@@ -75,21 +67,21 @@
             dense
             color="negative"
             icon="o_delete"
-            @click="deleteCategory(cell.row)"
+            @click="deleteBillingCycle(cell.row)"
           >
             <q-tooltip>Delete</q-tooltip>
           </q-btn>
         </q-td>
       </template>
     </app-data-table>
-     <!-- Drawer used for creating and editing Class Categories -->
-    <class-category-form
+    <!-- Drawer used for creating and editing Billing Cycles -->
+    <create-edit
       v-model="formOpen"
       :editing="editing"
-      :category="selectedCategory"
+      :billing-cycle="selectedBillingCycle"
       @saved="load"
     />
-     <!-- Dialog used to display Class Category details -->
+    <!-- Dialog used to display Billing Cycle details -->
     <q-dialog
       v-model="viewOpen"
       position="right"
@@ -104,13 +96,13 @@
           max-height: 70vh;
         "
       >
-      <!-- Dialog header -->
+        <!-- Dialog header -->
         <q-card-section class="row items-center">
           <div class="text-h6 text-primary">
-            Class Category Details
+            Billing Cycle Details
           </div>
           <q-space />
-           <!-- Close details dialog -->
+          <!-- Close details dialog -->
           <q-btn
             icon="o_close"
             flat
@@ -120,7 +112,7 @@
           />
         </q-card-section>
         <q-separator />
-        <!-- Display selected category details -->
+        <!-- Display selected Billing Cycle details -->
         <q-card-section class="col scroll">
           <q-list>
             <q-item
@@ -133,13 +125,12 @@
                 </q-item-label>
               </q-item-section>
               <q-item-section side>
-                <!-- Display value as a badge when required -->
                 <q-item-label v-if="field.badge">
                   <q-badge color="primary">
                     {{ field.value }}
                   </q-badge>
                 </q-item-label>
-                 <!-- Display normal text value -->
+                <!-- Display normal text value -->
                 <q-item-label v-else>
                   {{ field.value }}
                 </q-item-label>
@@ -155,45 +146,44 @@
 <script setup>
 import { computed, ref, watch } from "vue";
 import { date, debounce } from "quasar";
-import { classCategoryApi, getApiErrorMessage } from "services/api";
+import { billingCycleApi, getApiErrorMessage } from "services/api";
 import { useNotify } from "composables/useNotify";
 import { useConfirm } from "composables/useConfirm";
 import { usePermissions } from "composables/usePermissions";
 import { useListTable } from "composables/useListTable";
 import AppDataTable from "components/common/AppDataTable.vue";
 import AppListHeader from "components/common/AppListHeader.vue";
-import ClassCategoryForm from "modules/class-category/components/ClassCategoryForm.vue";
+import CreateEdit from "modules/billing-cycle/components/CreateEdit.vue";
 
 const notify = useNotify();
 const { confirm } = useConfirm();
 const { has } = usePermissions();
-const canRead = computed(() => has("classes.read"));
-const canWrite = computed(() => has("classes.write"));
-const canDelete = computed(() => has("classes.delete"));
-
+// Check permissions for Billing Cycle actions.
+const canRead = computed(() =>
+  has("billingCycles.read")
+);
+const canWrite = computed(() =>
+  has("billingCycles.write")
+);
+const canDelete = computed(() =>
+  has("billingCycles.delete")
+);
 // Format UTC date values for display.
 const formatDateTime = (value) => {
-  if (!value) return "—";
-  // DateTime values from SQL Server can arrive without a "Z", and JS would then
-  // read them as local time. Force UTC so the browser converts to the user's timezone.
-  const iso = /(Z|[+-]\d{2}:\d{2})$/i.test(value) ? value : `${value}Z`;
+  if (!value) {
+    return "—";
+  }
+ // Add UTC indicator when the API date does not include timezone information.
+  const iso =/(Z|[+-]\d{2}:\d{2})$/i.test(value) ? value : `${value}Z`;
   return date.formatDate(new Date(iso), "MM/DD/YYYY hh:mm A");
 };
 
-// Define the columns displayed in the Class Category table.
+// Define the columns displayed in the Billing Cycle table.
 const columns = [
   {
     name: "name",
     label: "Name",
     field: "name",
-    align: "left",
-    sortable: true,
-    default: true
-  },
-  {
-    name: "categoryType",
-    label: "Category Type",
-    field: "categoryType",
     align: "left",
     sortable: true,
     default: true
@@ -224,54 +214,29 @@ const columns = [
 ];
 
 // Configure the reusable list table functionality.
-const {
-  rows,
-  loading,
-  totalRecords,
-  search,
-  pagination,
-  load,
-  onRequest
-} = useListTable({
-  pageKey: "class-categories",
-  // Fetch Class Categories from the API.
-  fetcher: ({ page, limit, sortBy, descending }) =>
-    classCategoryApi
-      .list({
-        search: search.value || undefined
-      })
+const { rows, loading, totalRecords, search, pagination, load, onRequest } = useListTable({
+  pageKey: "billing-cycles",
+  // Fetch Billing Cycles from the API.
+  fetcher: ({ page, limit, sortBy, descending }) => billingCycleApi .list({ search: search.value || undefined })
       .then((response) => {
-        // Make sure the API response contains an array
         const data = Array.isArray(response?.data)
-          ? response.data
-          : [];
-        // Return the table data and total record count.
-        return {
-          data,
-          total: data.length
-        };
+          ? response.data : [];
+        return { data, total: data.length };
       }),
-  // Display an error when loading categories fails.
-  onError: (error) => {
-    notify.error(
-      getApiErrorMessage(
-        error,
-        "Unable to load class categories."
-      )
-    );
-  }
+  onError: (error) => { notify.error( getApiErrorMessage( error, "Unable to load billing cycles.") ); }
 });
+
 // Reload the table when the search value changes.
 // Debounce prevents an API call for every keystroke.
 const reload = debounce(() => {
   pagination.value.page = 1;
   load();
 }, 300);
-watch(search, reload);
 
+watch(search, reload);
 const formOpen = ref(false);
 const editing = ref(false);
-const selectedCategory = ref(null);
+const selectedBillingCycle = ref(null);
 const viewOpen = ref(false);
 const viewed = ref(null);
 
@@ -279,86 +244,84 @@ const viewed = ref(null);
 const viewFields = computed(() =>
   viewed.value
     ? [
-      { label: "Name", value: viewed.value.name },
-      {
-        label: "Category Type",
-        value: viewed.value.categoryType || "—",
-        badge: !!viewed.value.categoryType
-      },
-      { label: "Tenant", value: viewed.value.tenantName || "—" },
-      { label: "Created On", value: formatDateTime(viewed.value.createdOnUtc) }
-    ]
+        {
+          label: "Name",
+          value: viewed.value.name || "—"
+        },
+        {
+          label: "Tenant",
+          value: viewed.value.tenantName || "—"
+        },
+        {
+          label: "Created On",
+          value: formatDateTime(
+            viewed.value.createdOnUtc
+          )
+        }
+      ]
     : []
 );
 
-// Open the view dialog for the selected category.
+// Open the view dialog for the selected Billing Cycle.
 const openView = (row) => {
   viewed.value = row;
   viewOpen.value = true;
 };
 
-// const editFromView = () => {
-//   const row = viewed.value;
-//   viewOpen.value = false;
-//   openEdit(row);
-// };
-
+// Open the form for creating a new Billing Cycle.
 const openCreate = () => {
-  selectedCategory.value = null;
+  selectedBillingCycle.value = null;
   editing.value = false;
   formOpen.value = true;
 };
 
-// Load the selected category and open the edit form.
+// Load the selected Billing Cycle and open the edit form.
 const openEdit = async (row) => {
   try {
-    const category = await classCategoryApi.get(
-      row.classCategoryId
+  // Get the latest Billing Cycle details from the API.
+    const billingCycle = await billingCycleApi.get(
+      row.billingCycleId
     );
-      // Set the category data and enable edit mode.
-    selectedCategory.value = category;
+    selectedBillingCycle.value = billingCycle;
     editing.value = true;
     formOpen.value = true;
   } catch (error) {
-    // Show an error if the category cannot be loaded.
     notify.error(
       getApiErrorMessage(
         error,
-        "Unable to load class category."
+        "Unable to load billing cycle."
       )
     );
   }
 };
 
-// Delete the selected Class Category.
-const deleteCategory = async (row) => {
+// Delete the selected Billing Cycle.
+const deleteBillingCycle = async (row) => {
   const confirmed = await confirm({
-    title: "Delete Class Category",
+    title: "Delete Billing Cycle",
     message: `Delete "${row.name}"?`,
     confirmLabel: "Delete",
     type: "danger"
   });
-  // Stop if the user cancels the operation.
+// Stop if the user cancels the operation.
   if (!confirmed) {
     return;
   }
   try {
-    // Delete the category using the API.
-    await classCategoryApi.remove(
-      row.classCategoryId
+    await billingCycleApi.remove(
+      row.billingCycleId
     );
-    notify.success("Class category deleted.");
-    // Reload the table with the latest data.
+    notify.success("Billing cycle deleted.");
     load();
   } catch (error) {
     notify.error(
       getApiErrorMessage(
         error,
-        "Unable to delete class category."
+        "Unable to delete billing cycle."
       )
     );
   }
 };
-// Load Class Categories when the page is opened.
+// Load Billing Cycles when the page is opened.
 load();
 </script>

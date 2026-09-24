@@ -42,6 +42,16 @@ public static class Permissions
     public const string ClassesWrite = "classes.write";
     public const string ClassesDelete = "classes.delete";
 
+    // Class Categories
+    public const string ClassCategoriesRead = "classCategories.read";
+    public const string ClassCategoriesWrite = "classCategories.write"; 
+    public const string ClassCategoriesDelete = "classCategories.delete";
+    
+    // Billing Cycles
+    public const string BillingCyclesRead = "billingCycles.read"; 
+    public const string BillingCyclesWrite = "billingCycles.write";
+    public const string BillingCyclesDelete = "billingCycles.delete";
+
     // Users
     public const string UsersRead = "users.read";
     public const string UsersWrite = "users.write";
@@ -90,6 +100,8 @@ public static class Permissions
         SessionsRead, SessionsWrite, SessionsDelete,
         StudentsRead, StudentsWrite, StudentsDelete,
         ClassesRead, ClassesWrite, ClassesDelete,
+        ClassCategoriesRead, ClassCategoriesWrite, ClassCategoriesDelete, 
+        BillingCyclesRead, BillingCyclesWrite, BillingCyclesDelete,
         LocationsRead, LocationsWrite, LocationsDelete,
         UsersRead, UsersWrite, UsersResetPassword, UsersGroupManagement,
         RolesRead, RolesWrite, RolesAssign,
@@ -115,6 +127,10 @@ public static class Permissions
         StudentsRead, StudentsWrite, StudentsDelete,
         // Classes carry no TenantId yet (see the Class entity remarks) but are administered the same way.
         ClassesRead, ClassesWrite, ClassesDelete,
+        // Class Categories
+        ClassCategoriesRead, ClassCategoriesWrite, ClassCategoriesDelete, 
+        // Billing Cycles
+        BillingCyclesRead, BillingCyclesWrite, BillingCyclesDelete,
         // Location
         LocationsRead, LocationsWrite, LocationsDelete,
         // Users

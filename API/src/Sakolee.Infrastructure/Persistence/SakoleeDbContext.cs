@@ -118,7 +118,7 @@ public class SakoleeDbContext : DbContext, IDataProtectionKeyContext
     public DbSet<DeletedRecordRetentionConfig> DeletedRecordRetentionConfigs => Set<DeletedRecordRetentionConfig>();
     public DbSet<FieldModifiedLog> FieldModifiedLogs => Set<FieldModifiedLog>();
     public DbSet<ModifiedLogFieldConfig> ModifiedLogFieldConfigs => Set<ModifiedLogFieldConfig>();
-
+    public DbSet<BillingCycle> BillingCycles => Set<BillingCycle>();
     /// <summary>Data Protection key ring storage (Multi-Tenancy ADR-002).</summary>
     public DbSet<DataProtectionKey> DataProtectionKeys => Set<DataProtectionKey>();
 
