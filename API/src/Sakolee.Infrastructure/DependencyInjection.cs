@@ -92,7 +92,7 @@ public static class DependencyInjection
         services.AddScoped<IEmailTemplateRepository, EmailTemplateRepository>();
         services.AddScoped<IOptionSetRepository, OptionSetRepository>();
         services.AddScoped<ILocationRepository, LocationRepository>();
-
+        services.AddScoped<ITShirtSizeRepository, TShirtSizeRepository>();
         // Universal Features (Phase 14) repositories.
         services.AddScoped<IActivityEventRepository, ActivityEventRepository>();
         services.AddScoped<INotificationRepository, NotificationRepository>();

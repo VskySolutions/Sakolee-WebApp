@@ -4,23 +4,23 @@
     <app-list-header
       :breadcrumbs="[
         { label: 'Home', icon: 'o_home', to: '/' },
-        { label: 'Billing Cycles' }
+        { label: 'T-Shirt Sizes' }
       ]"
       :search="search"
       show-search
-      search-placeholder="Search billing cycle name"
+      search-placeholder="Search T-Shirt size name"
       :show-add="canWrite"
-      add-label="Create Billing Cycle"
+      add-label="Create T-Shirt Size"
       show-back
       @update:search="search = $event"
       @add="openCreate"
       @back="$router.back()"
     />
-    <!-- Table displaying all Billing Cycles -->
+    <!-- Table displaying all T-Shirt Sizes -->
     <app-data-table
-      page-key="billing-cycles"
-      row-key="billingCycleId"
-      title="Billing Cycles"
+      page-key="t-shirt-sizes"
+      row-key="tShirtSizeId"
+      title="T-Shirt Sizes"
       :rows="rows"
       :columns="columns"
       :loading="loading"
@@ -67,36 +67,36 @@
             dense
             color="negative"
             icon="o_delete"
-            @click="deleteBillingCycle(cell.row)"
+            @click="deleteTShirtSize(cell.row)"
           >
             <q-tooltip>Delete</q-tooltip>
           </q-btn>
         </q-td>
       </template>
     </app-data-table>
-    <!-- Drawer used for creating and editing Billing Cycles -->
+    <!-- Drawer used for creating and editing T-Shirt Sizes -->
     <create-edit
       v-model="formOpen"
       :editing="editing"
-      :billing-cycle="selectedBillingCycle"
+      :t-shirt-size="selectedTShirtSize"
       @saved="load"
     />
-    <!-- Drawer used to display Billing Cycle details -->
+    <!-- Drawer used to display T-Shirt Size details -->
     <app-form-drawer
       v-model="viewOpen"
-      title="View Billing Cycle"
+      title="View T-Shirt Size"
       :saving="viewLoading"
       :save-label="''"
       @cancel="closeView"
     >
       <div class="q-gutter-md">
         <app-text-field
-          v-model="viewBillingCycle.name"
+          v-model="viewTShirtSize.name"
           label="Name"
           readonly
         />
         <app-text-field
-          v-model="viewBillingCycle.tenantName"
+          v-model="viewTShirtSize.tenantName"
           label="Tenant"
           readonly
         />
@@ -106,7 +106,7 @@
             Created On
           </div>
           <div class="text-body1">
-            {{ formatDateTime(viewBillingCycle.createdOnUtc) }}
+            {{ formatDateTime(viewTShirtSize.createdOnUtc) }}
           </div>
         </div>
       </div>
@@ -117,41 +117,31 @@
 <script setup>
 import { computed, ref, watch } from "vue";
 import { date, debounce } from "quasar";
-import { billingCycleApi, getApiErrorMessage } from "services/api";
+import { tShirtSizeApi, getApiErrorMessage } from "services/api";
 import { useNotify } from "composables/useNotify";
 import { useConfirm } from "composables/useConfirm";
 import { usePermissions } from "composables/usePermissions";
 import { useListTable } from "composables/useListTable";
 import AppDataTable from "components/common/AppDataTable.vue";
 import AppListHeader from "components/common/AppListHeader.vue";
-import AppFormDrawer from "components/common/AppFormDrawer.vue";
+import AppFormDrawer from "components/common/AppFormDrawer.vue"; 
 import AppTextField from "components/common/AppTextField.vue";
-import CreateEdit from "modules/billing-cycle/components/CreateEdit.vue";
+import CreateEdit from "modules/t-shirt-size/components/CreateEdit.vue";
 
 const notify = useNotify();
 const { confirm } = useConfirm();
 const { has } = usePermissions();
-// Check permissions for Billing Cycle actions.
-const canRead = computed(() =>
-  has("billingCycles.read")
-);
-const canWrite = computed(() =>
-  has("billingCycles.write")
-);
-const canDelete = computed(() =>
-  has("billingCycles.delete")
-);
+// Check permissions for T-Shirt Size actions.
+const canRead = computed(() => has("tShirtSizes.read"));
+const canWrite = computed(() => has("tShirtSizes.write"));
+const canDelete = computed(() => has("tShirtSizes.delete"));
 // Format UTC date values for display.
-const formatDateTime = (value) => {
-  if (!value) {
-    return "—";
-  }
- // Add UTC indicator when the API date does not include timezone information.
+const formatDateTime = (value) => { if (!value) { return "—"; }
+  // Add UTC indicator when the API date does not include timezone information.
   const iso =/(Z|[+-]\d{2}:\d{2})$/i.test(value) ? value : `${value}Z`;
-  return date.formatDate(new Date(iso), "MM/DD/YYYY hh:mm A");
+  return date.formatDate(new Date(iso),"MM/DD/YYYY hh:mm A");
 };
-
-// Define the columns displayed in the Billing Cycle table.
+// Define the columns displayed in the T-Shirt Size table.
 const columns = [
   {
     name: "name",
@@ -187,18 +177,16 @@ const columns = [
     headerStyle: "padding-right: 190px !important;"
   }
 ];
-
 // Configure the reusable list table functionality.
-const { rows, loading, totalRecords, search, pagination, load, onRequest } = useListTable({
-  pageKey: "billing-cycles",
-  // Fetch Billing Cycles from the API.
-  fetcher: ({ page, limit, sortBy, descending }) => billingCycleApi .list({ search: search.value || undefined })
-      .then((response) => {
-        const data = Array.isArray(response?.data)
-          ? response.data : [];
+const { rows ,loading ,totalRecords ,search ,pagination ,load ,onRequest } = useListTable({
+  pageKey: "t-shirt-sizes",
+  // Fetch T-Shirt Sizes from the API.
+  fetcher: ({ page, limit, sortBy, descending }) =>
+    tShirtSizeApi.list({ search: search.value || undefined })
+      .then((response) => { const data = Array.isArray(response?.data) ? response.data : [];
         return { data, total: data.length };
       }),
-  onError: (error) => { notify.error( getApiErrorMessage( error, "Unable to load billing cycles.") ); }
+  onError: (error) => { notify.error( getApiErrorMessage( error, "Unable to load T-Shirt sizes."));}
 });
 
 // Reload the table when the search value changes.
@@ -211,113 +199,110 @@ const reload = debounce(() => {
 watch(search, reload);
 const formOpen = ref(false);
 const editing = ref(false);
-const selectedBillingCycle = ref(null);
+const selectedTShirtSize = ref(null);
 const viewOpen = ref(false);
 const viewLoading = ref(false);
-// Define the structure of the Billing Cycle being viewed.
-const viewBillingCycle = ref({
-  billingCycleId: null,
+// Define the structure of the T-Shirt Size being viewed.
+const viewTShirtSize = ref({
+  tShirtSizeId: null,
   name: "",
   tenantName: "",
   createdOnUtc: null
 });
-// Reset the viewBillingCycle to its initial state.
-const resetViewBillingCycle = () => {
-  viewBillingCycle.value = {
-    billingCycleId: null,
+// Reset the viewTShirtSize to its initial state.
+const resetViewTShirtSize = () => {
+  viewTShirtSize.value = {
+    tShirtSizeId: null,
     name: "",
     tenantName: "",
     createdOnUtc: null
   };
 };
-// Open the View drawer for the selected Billing Cycle.
+// Open the View drawer for the selected T-Shirt Size.
 const openView = async (row) => {
-  resetViewBillingCycle();
+  resetViewTShirtSize();
   viewOpen.value = true;
   viewLoading.value = true;
-// Fetch the latest Billing Cycle details from the API to ensure accurate information is displayed.
   try {
-    const billingCycle = await billingCycleApi.get(
-      row.billingCycleId
+    const tShirtSize = await tShirtSizeApi.get(
+      row.tShirtSizeId
     );
-    viewBillingCycle.value = {
-      billingCycleId: billingCycle?.billingCycleId,
-      name: billingCycle?.name || "",
-      tenantName: billingCycle?.tenantName || "",
-      createdOnUtc: billingCycle?.createdOnUtc || null
+    viewTShirtSize.value = {
+      tShirtSizeId: tShirtSize?.tShirtSizeId,
+      name: tShirtSize?.name || "",
+      tenantName: tShirtSize?.tenantName || "",
+      createdOnUtc: tShirtSize?.createdOnUtc || null
     };
   } catch (error) {
     viewOpen.value = false;
     notify.error(
       getApiErrorMessage(
         error,
-        "Unable to load billing cycle."
+        "Unable to load T-Shirt size."
       )
     );
   } finally {
     viewLoading.value = false;
   }
 };
-// Close the View drawer and reset the viewBillingCycle state.
+// Close the View drawer and reset the viewTShirtSize state.
 const closeView = () => {
   viewOpen.value = false;
-  resetViewBillingCycle();
+  resetViewTShirtSize();
 };
 
-// Open the form for creating a new Billing Cycle.
+// Open the form for creating a new T-Shirt Size.
 const openCreate = () => {
-  selectedBillingCycle.value = null;
+  selectedTShirtSize.value = null;
   editing.value = false;
   formOpen.value = true;
 };
 
-// Load the selected Billing Cycle and open the edit form.
+// Load the selected T-Shirt Size and open the edit form.
 const openEdit = async (row) => {
   try {
-  // Get the latest Billing Cycle details from the API.
-    const billingCycle = await billingCycleApi.get(
-      row.billingCycleId
-    );
-    selectedBillingCycle.value = billingCycle;
+    // Get the latest T-Shirt Size details from the API.
+    const tShirtSize = await tShirtSizeApi.get(row.tShirtSizeId);
+    selectedTShirtSize.value = tShirtSize;
     editing.value = true;
     formOpen.value = true;
   } catch (error) {
     notify.error(
       getApiErrorMessage(
         error,
-        "Unable to load billing cycle."
+        "Unable to load T-Shirt size."
       )
     );
   }
 };
 
-// Delete the selected Billing Cycle.
-const deleteBillingCycle = async (row) => {
+// Delete the selected T-Shirt Size.
+const deleteTShirtSize = async (row) => {
   const confirmed = await confirm({
-    title: "Delete Billing Cycle",
+    title: "Delete T-Shirt Size",
     message: `Delete "${row.name}"?`,
     confirmLabel: "Delete",
     type: "danger"
   });
-// Stop if the user cancels the operation.
+  // Stop if the user cancels the operation.
   if (!confirmed) {
     return;
   }
   try {
-    await billingCycleApi.remove(
-      row.billingCycleId
+    await tShirtSizeApi.remove(
+      row.tShirtSizeId
     );
-    notify.success("Billing cycle deleted.");
+    notify.success("T-Shirt size deleted.");
     load();
   } catch (error) {
     notify.error(
       getApiErrorMessage(
         error,
-        "Unable to delete billing cycle."
+        "Unable to delete T-Shirt size."
       )
     );
   }
 };
-// Load Billing Cycles when the page is opened.
+// Load T-Shirt Sizes when the page is opened.
 load();
 </script>

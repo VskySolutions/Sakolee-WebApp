@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Sakolee.Infrastructure.Persistence;
 
@@ -11,9 +12,11 @@ using Sakolee.Infrastructure.Persistence;
 namespace Sakolee.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(SakoleeDbContext))]
-    partial class SakoleeDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260923103448_SyncCurrentModel")]
+    partial class SyncCurrentModel
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -2554,54 +2557,6 @@ namespace Sakolee.Infrastructure.Persistence.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Students", (string)null);
-                });
-
-            modelBuilder.Entity("Sakolee.Domain.Entities.TShirtSize", b =>
-                {
-                    b.Property<string>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasMaxLength(450)
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<string>("CreatedById")
-                        .HasMaxLength(450)
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<DateTime>("CreatedOnUtc")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("sysutcdatetime()");
-
-                    b.Property<bool>("Deleted")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bit")
-                        .HasDefaultValue(false);
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<string>("TenantId")
-                        .IsRequired()
-                        .HasMaxLength(450)
-                        .HasColumnType("nvarchar(450)")
-                        .HasColumnName("TenentId");
-
-                    b.Property<string>("UpdatedById")
-                        .HasMaxLength(450)
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<DateTime?>("UpdatedOnUtc")
-                        .HasColumnType("datetime2");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("TenantId", "Name")
-                        .IsUnique()
-                        .HasFilter("[Deleted] = 0");
-
-                    b.ToTable("TShirtSize", (string)null);
                 });
 
             modelBuilder.Entity("Sakolee.Domain.Entities.Tag", b =>

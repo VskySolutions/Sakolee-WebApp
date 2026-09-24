@@ -218,6 +218,7 @@ const sections = [
       { label: "Studio Locations", icon: "o_location_on", to: "/locations", permissions: [Permissions.LocationsRead] },
       { label: "Class Categories", icon: "o_category", to: "/class-categories", permissions: [Permissions.ClassesRead]},
       { label: "Billing Cycles", icon: "o_autorenew", to: "/billing-cycles", permissions: [Permissions.BillingCyclesRead]},
+      { label: "T-Shirt Sizes", icon: "o_checkroom", to: "/t-shirt-sizes", permissions: [Permissions.TShirtSizesRead] },
       { label: "Class Sessions", icon: "o_date_range", to: "/sessions", permissions: null }
     ]
   },

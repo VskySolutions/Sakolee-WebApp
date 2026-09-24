@@ -11,62 +11,62 @@ namespace Sakolee.Infrastructure.Persistence.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropForeignKey(
-                name: "FK_Persons_FamilyStatuses_FamilyStatusId",
-                table: "Persons");
+            //migrationBuilder.DropForeignKey(
+            //    name: "FK_Persons_FamilyStatuses_FamilyStatusId",
+            //    table: "Persons");
 
-            migrationBuilder.DropIndex(
-                name: "IX_Persons_FamilyStatusId",
-                table: "Persons");
+            //migrationBuilder.DropIndex(
+            //    name: "IX_Persons_FamilyStatusId",
+            //    table: "Persons");
 
-            migrationBuilder.DropColumn(
-                name: "FamilyStatusId",
-                table: "Persons");
+            //migrationBuilder.DropColumn(
+            //    name: "FamilyStatusId",
+            //    table: "Persons");
 
-            migrationBuilder.DropColumn(
-                name: "CreatedById",
-                table: "FamilyStatuses");
+            //migrationBuilder.DropColumn(
+            //    name: "CreatedById",
+            //    table: "FamilyStatuses");
 
-            migrationBuilder.DropColumn(
-                name: "CreatedOnUtc",
-                table: "FamilyStatuses");
+            //migrationBuilder.DropColumn(
+            //    name: "CreatedOnUtc",
+            //    table: "FamilyStatuses");
 
-            migrationBuilder.DropColumn(
-                name: "Deleted",
-                table: "FamilyStatuses");
+            //migrationBuilder.DropColumn(
+            //    name: "Deleted",
+            //    table: "FamilyStatuses");
 
-            migrationBuilder.DropColumn(
-                name: "DisplayOrder",
-                table: "FamilyStatuses");
+            //migrationBuilder.DropColumn(
+            //    name: "DisplayOrder",
+            //    table: "FamilyStatuses");
 
-            migrationBuilder.DropColumn(
-                name: "UpdatedById",
-                table: "FamilyStatuses");
+            //migrationBuilder.DropColumn(
+            //    name: "UpdatedById",
+            //    table: "FamilyStatuses");
 
-            migrationBuilder.RenameColumn(
-                name: "UpdatedOnUtc",
-                table: "FamilyStatuses",
-                newName: "CreatedOn");
+            //migrationBuilder.RenameColumn(
+            //    name: "UpdatedOnUtc",
+            //    table: "FamilyStatuses",
+            //    newName: "CreatedOn");
 
-            migrationBuilder.RenameColumn(
-                name: "IsActive",
-                table: "FamilyStatuses",
-                newName: "IsDeleted");
+            //migrationBuilder.RenameColumn(
+            //    name: "IsActive",
+            //    table: "FamilyStatuses",
+            //    newName: "IsDeleted");
 
-            migrationBuilder.RenameColumn(
-                name: "Description",
-                table: "FamilyStatuses",
-                newName: "UpdatedBy");
+            //migrationBuilder.RenameColumn(
+            //    name: "Description",
+            //    table: "FamilyStatuses",
+            //    newName: "UpdatedBy");
 
-            migrationBuilder.RenameColumn(
-                name: "DeletedOnUtc",
-                table: "FamilyStatuses",
-                newName: "UpdatedOn");
+            //migrationBuilder.RenameColumn(
+            //    name: "DeletedOnUtc",
+            //    table: "FamilyStatuses",
+            //    newName: "UpdatedOn");
 
-            migrationBuilder.RenameColumn(
-                name: "Code",
-                table: "FamilyStatuses",
-                newName: "CreatedBy");
+            //migrationBuilder.RenameColumn(
+            //    name: "Code",
+            //    table: "FamilyStatuses",
+            //    newName: "CreatedBy");
         }
 
         /// <inheritdoc />

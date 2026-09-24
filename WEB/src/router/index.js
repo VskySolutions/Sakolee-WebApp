@@ -36,6 +36,7 @@ import locationRoutes from "modules/location/routes";
 import classCategoryRoutes from "modules/class-category/routes";
 import sessionRoutes from "modules/session/routes";
 import billingCycleRoutes from "modules/billing-cycle/routes";
+import tShirtSizeRoutes from "modules/t-shirt-size/routes";
 
 routes.push(...accountRoutes);
 routes.push(...authRoutes);
@@ -58,6 +59,7 @@ routes.push(...locationRoutes);
 routes.push(...classCategoryRoutes);
 routes.push(...sessionRoutes);
 routes.push(...billingCycleRoutes);
+routes.push(...tShirtSizeRoutes);
 
 export default route(function ({ store }) {
   const createHistory = process.env.SERVER

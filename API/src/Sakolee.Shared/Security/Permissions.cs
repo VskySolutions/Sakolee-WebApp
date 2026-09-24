@@ -47,6 +47,11 @@ public static class Permissions
     public const string BillingCyclesWrite = "billingCycles.write";
     public const string BillingCyclesDelete = "billingCycles.delete";
 
+    // T-Shirt Sizes
+    public const string TShirtSizesRead = "tShirtSizes.read";
+    public const string TShirtSizesWrite = "tShirtSizes.write";
+    public const string TShirtSizesDelete = "tShirtSizes.delete";
+
     // Users
     public const string UsersRead = "users.read";
     public const string UsersWrite = "users.write";
@@ -96,6 +101,7 @@ public static class Permissions
         ClassesRead, ClassesWrite, ClassesDelete,
         ClassCategoriesRead, ClassCategoriesWrite, ClassCategoriesDelete, 
         BillingCyclesRead, BillingCyclesWrite, BillingCyclesDelete,
+        TShirtSizesRead,TShirtSizesWrite,TShirtSizesDelete,
         LocationsRead, LocationsWrite, LocationsDelete,
         UsersRead, UsersWrite, UsersResetPassword, UsersGroupManagement,
         RolesRead, RolesWrite, RolesAssign,
@@ -123,6 +129,8 @@ public static class Permissions
         ClassCategoriesRead, ClassCategoriesWrite, ClassCategoriesDelete, 
         // Billing Cycles
         BillingCyclesRead, BillingCyclesWrite, BillingCyclesDelete,
+        //T-Shirt Sizes
+        TShirtSizesRead,TShirtSizesWrite,TShirtSizesDelete,
         // Location
         LocationsRead, LocationsWrite, LocationsDelete,
         // Users
