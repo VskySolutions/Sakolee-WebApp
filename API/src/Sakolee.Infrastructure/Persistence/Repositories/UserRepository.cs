@@ -190,6 +190,12 @@ internal sealed class UserRepository : IUserRepository
             .OrderBy(u => u.DisplayName)
             .ToListAsync(cancellationToken);
 
+    public Task InvalidateSessionsForRoleAsync(Guid roleId, CancellationToken cancellationToken = default)
+        => _dbContext.Users
+            .IgnoreQueryFilters()
+            .Where(u => u.TenantRoles.Any(r => !r.Deleted && r.RoleId == roleId))
+            .ExecuteUpdateAsync(s => s.SetProperty(u => u.TokenVersion, u => u.TokenVersion + 1), cancellationToken);
+
     public async Task<IReadOnlyList<User>> ListActiveByTenantAsync(
         Guid tenantId, CancellationToken cancellationToken = default)
         // The same shape as ListByTenantRolesAsync without the role filter — holding ANY role in the

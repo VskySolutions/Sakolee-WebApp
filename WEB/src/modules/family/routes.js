@@ -12,10 +12,9 @@ export default [
       {
         path: "quick-registration",
         name: "family_quick_registration",
-        // Ungated: Quick Registration collects a family, its contacts, and a student in one pass —
-        // any role reaching this page can register a new family, not just one with families.write.
+        // Part of the Families area: a role without families.read sees neither this nor All Families.
         component: () => import("modules/family/pages/quick_registration.vue"),
-        meta: { requiresAuth: true, title: "Quick Registration" }
+        meta: { requiresAuth: true, permissions: ["families.read"], title: "Quick Registration" }
       }
     ]
   }

@@ -64,10 +64,8 @@ namespace Sakolee.Infrastructure.Persistence.Migrations
                         principalColumn: "Id");
                 });
 
-            //migrationBuilder.CreateIndex(
-            //    name: "IX_BillingMethod_TenantId",
-            //    table: "BillingMethod",
-            //    column: "TenantId");
+            // The BillingMethod table's CreateTable above is commented out, so its index can't be created
+            // here either — AddMissingMasterTables creates both, only where they don't exist yet.
 
             migrationBuilder.CreateIndex(
                 name: "IX_FamilyRelations_TenantId",

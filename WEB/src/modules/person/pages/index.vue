@@ -63,24 +63,16 @@
         { label: 'Home', to: '/' },
         { label: 'Person' }
       ]"
-
       title="Person"
-
-      description="Manage all persons in your organization."
-
+      description="Manage your all person."
       :search="search"
-
       show-search
       search-placeholder="Search name, email or code"
-
       show-filters
       :filter-count="filterChips.length"
-
       :show-add="canWrite"
       add-label="Create Person"
-
       show-back
-
       @update:search="search = $event"
       @filters="filterOpen = true"
       @add="openCreate"
@@ -97,7 +89,7 @@
     <app-data-table
       page-key="persons"
       row-key="id"
-      title="All persons"
+      title="All Persons"
       :rows="rows"
       :columns="columns"
       :loading="loading"

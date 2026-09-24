@@ -34,6 +34,12 @@ public interface IFamilyRepository
 
     Task<IReadOnlyList<FamilyPersonMapping>> ListContactsAsync(Guid familyId, CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Ids of the (active-tenant, non-deleted) families <paramref name="personId"/> is a contact on —
+    /// primary or secondary. Scopes what a Parent login may see to their own family's students.
+    /// </summary>
+    Task<IReadOnlyList<Guid>> ListFamilyIdsForContactAsync(Guid personId, CancellationToken cancellationToken = default);
+
     Task AddContactAsync(FamilyPersonMapping contact, CancellationToken cancellationToken = default);
 
     void UpdateContact(FamilyPersonMapping contact);

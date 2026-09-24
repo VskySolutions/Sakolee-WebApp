@@ -3,7 +3,9 @@
     <!-- Create is retired here — students are created via Family registration (Quick Registration or
          the Family page), which mints the Person/login and its FamilyId link together. -->
     <app-list-header
-      :breadcrumbs="[{ label: 'Home', icon: 'o_home', to: '/' }, { label: 'Student' }]"
+      :breadcrumbs="[{ label: 'Home', to: '/' }, { label: 'All Student' }]"
+      title="All Students"
+      description="Centralized management for all active students."
       :search="search"
       show-search
       search-placeholder="Search name or email"
@@ -22,7 +24,7 @@
     <app-data-table
       page-key="students"
       row-key="studentId"
-      title="All students"
+      title="All Students"
       :rows="rows"
       :columns="columns"
       :loading="loading"

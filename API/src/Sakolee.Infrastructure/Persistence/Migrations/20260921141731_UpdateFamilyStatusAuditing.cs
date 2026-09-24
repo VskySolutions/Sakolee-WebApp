@@ -11,142 +11,16 @@ namespace Sakolee.Infrastructure.Persistence.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.RenameColumn(
-                name: "UpdatedOn",
-                table: "FamilyStatuses",
-                newName: "DeletedOnUtc");
-
-            migrationBuilder.RenameColumn(
-                name: "UpdatedBy",
-                table: "FamilyStatuses",
-                newName: "Description");
-
-            migrationBuilder.RenameColumn(
-                name: "IsDeleted",
-                table: "FamilyStatuses",
-                newName: "IsActive");
-
-            migrationBuilder.RenameColumn(
-                name: "CreatedOn",
-                table: "FamilyStatuses",
-                newName: "UpdatedOnUtc");
-
-            migrationBuilder.RenameColumn(
-                name: "CreatedBy",
-                table: "FamilyStatuses",
-                newName: "Code");
-
-            migrationBuilder.AddColumn<Guid>(
-                name: "FamilyStatusId",
-                table: "Persons",
-                type: "uniqueidentifier",
-                nullable: true);
-
-            migrationBuilder.AddColumn<Guid>(
-                name: "CreatedById",
-                table: "FamilyStatuses",
-                type: "uniqueidentifier",
-                nullable: true);
-
-            migrationBuilder.AddColumn<DateTime>(
-                name: "CreatedOnUtc",
-                table: "FamilyStatuses",
-                type: "datetime2",
-                nullable: false,
-                defaultValue: new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified));
-
-            migrationBuilder.AddColumn<bool>(
-                name: "Deleted",
-                table: "FamilyStatuses",
-                type: "bit",
-                nullable: false,
-                defaultValue: false);
-
-            migrationBuilder.AddColumn<int>(
-                name: "DisplayOrder",
-                table: "FamilyStatuses",
-                type: "int",
-                nullable: false,
-                defaultValue: 0);
-
-            migrationBuilder.AddColumn<Guid>(
-                name: "UpdatedById",
-                table: "FamilyStatuses",
-                type: "uniqueidentifier",
-                nullable: true);
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Persons_FamilyStatusId",
-                table: "Persons",
-                column: "FamilyStatusId");
-
-            migrationBuilder.AddForeignKey(
-                name: "FK_Persons_FamilyStatuses_FamilyStatusId",
-                table: "Persons",
-                column: "FamilyStatusId",
-                principalTable: "FamilyStatuses",
-                principalColumn: "FamilyStatusId");
+            // Intentionally empty. This migration renamed FamilyStatuses columns (IsDeleted -> IsActive,
+            // CreatedBy -> Code, UpdatedBy -> Description, ...) to names the FamilyStatus entity has never
+            // used, which broke Family Statuses on every database it ran on. FamilyStatuses keeps its
+            // original columns; the migration stays only so the history is unchanged.
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropForeignKey(
-                name: "FK_Persons_FamilyStatuses_FamilyStatusId",
-                table: "Persons");
-
-            migrationBuilder.DropIndex(
-                name: "IX_Persons_FamilyStatusId",
-                table: "Persons");
-
-            migrationBuilder.DropColumn(
-                name: "FamilyStatusId",
-                table: "Persons");
-
-            migrationBuilder.DropColumn(
-                name: "CreatedById",
-                table: "FamilyStatuses");
-
-            migrationBuilder.DropColumn(
-                name: "CreatedOnUtc",
-                table: "FamilyStatuses");
-
-            migrationBuilder.DropColumn(
-                name: "Deleted",
-                table: "FamilyStatuses");
-
-            migrationBuilder.DropColumn(
-                name: "DisplayOrder",
-                table: "FamilyStatuses");
-
-            migrationBuilder.DropColumn(
-                name: "UpdatedById",
-                table: "FamilyStatuses");
-
-            migrationBuilder.RenameColumn(
-                name: "UpdatedOnUtc",
-                table: "FamilyStatuses",
-                newName: "CreatedOn");
-
-            migrationBuilder.RenameColumn(
-                name: "IsActive",
-                table: "FamilyStatuses",
-                newName: "IsDeleted");
-
-            migrationBuilder.RenameColumn(
-                name: "Description",
-                table: "FamilyStatuses",
-                newName: "UpdatedBy");
-
-            migrationBuilder.RenameColumn(
-                name: "DeletedOnUtc",
-                table: "FamilyStatuses",
-                newName: "UpdatedOn");
-
-            migrationBuilder.RenameColumn(
-                name: "Code",
-                table: "FamilyStatuses",
-                newName: "CreatedBy");
+            // Intentionally empty — see Up.
         }
     }
 }

@@ -1,7 +1,9 @@
 <template>
   <q-page padding>
     <app-list-header
-      :breadcrumbs="[{ label: 'Home', icon: 'o_home', to: '/' }, { label: 'Classes' }]"
+      :breadcrumbs="[{ label: 'Home', to: '/' }, { label: 'All Classes' }]"
+      title="All Classes"
+      description="Manage all classes."
       :search="search"
       show-search
       search-placeholder="Search class name"

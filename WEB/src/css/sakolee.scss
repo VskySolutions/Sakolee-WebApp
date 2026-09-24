@@ -1988,3 +1988,37 @@ svg { fill: none; stroke: currentColor; stroke-width: 1.8px; stroke-linecap: rou
     box-shadow: none !important;
   }
   
+  .app-data-table[data-v-6a37967c] .q-table__top {
+    padding-left: 5px;
+    padding-right: 5px;
+    background-color: #fafaff !important;
+}
+
+.q-table__container > div:last-child {
+    border-bottom-left-radius: inherit;
+    border-bottom-right-radius: inherit;
+    background-color: #fafaff !important;
+}
+
+.q-table th {
+    border-style: solid;
+    border-width: 0;
+    background-color: #fafaff !important;
+    border-top: 1px solid #f1f1f7;
+    border-bottom: 1px solid #f1f1f7;
+    border-left: 1px solid #f1f1f7;
+    border-right: 1px solid #f1f1f7;
+}
+
+.app-data-table .app-th[data-v-6a37967c] {
+    position: relative;
+    font-size: 13px;
+    font-weight: 600;
+    color: #767b96 !important;
+}
+
+.q-table tbody td {
+    height: 28px;
+    font-size: 13px;
+    color: #5f5d74 !important;
+}

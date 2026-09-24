@@ -1,7 +1,9 @@
 <template>
   <q-page padding>
     <app-list-header
-      :breadcrumbs="[{ label: 'Home', icon: 'o_home', to: '/' }, { label: 'Families' }]"
+      :breadcrumbs="[{ label: 'Home', to: '/' }, { label: 'All Families' }]"
+      title="All Families"
+      description="Manage student families and parent records."
       :search="search"
       show-search
       search-placeholder="Search family name"
@@ -23,7 +25,7 @@
     <app-data-table
       page-key="families"
       row-key="familyId"
-      title="All families"
+      title="All Families"
       :rows="rows"
       :columns="columns"
       :loading="loading"
@@ -274,7 +276,15 @@ const columns = [
 // ---- Reference option lists ----
 const locations = ref([]);
 const familyStatuses = ref([]);
-const locationOptions = computed(() => locations.value.map((l) => ({ label: l.name, value: l.id })));
+// Same list as the Class form's Location. A family whose saved location has since been deactivated
+// still shows it by name (from the family record) rather than as a raw id.
+const locationOptions = computed(() => {
+  const options = locations.value.map((l) => ({ label: l.name, value: l.id }));
+  if (form.studioLocationId && form.studioLocationName && !options.some((o) => o.value === form.studioLocationId)) {
+    options.unshift({ label: form.studioLocationName, value: form.studioLocationId });
+  }
+  return options;
+});
 // FamilyStatusSummary's id field is just "id" (Guid Id), not "familyStatusId" — mirrors the
 // familystatus module's own pages, which fall back through the same mismatch.
 const familyStatusOptions = computed(() => familyStatuses.value.map((s) => ({ label: s.name, value: s.id })));
@@ -361,6 +371,7 @@ const blankSecondaryContact = () => ({ firstName: "", lastName: "", email: "", p
 const blankForm = () => ({
   familyName: "",
   studioLocationId: null,
+  studioLocationName: "", // display-only, never sent
   familyStatusId: null,
   source: "",
   referralName: "",
@@ -422,6 +433,7 @@ const populateFrom = (detail) => {
   Object.assign(form, {
     familyName: detail.familyName || "",
     studioLocationId: detail.studioLocationId || null,
+    studioLocationName: detail.studioLocationName || "",
     familyStatusId: detail.familyStatusId || null,
     source: detail.source || "",
     referralName: detail.referralName || "",
