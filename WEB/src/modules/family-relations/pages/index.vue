@@ -1,401 +1,560 @@
 <template>
   <q-page padding>
-    <!-- Page Header Component: Manages breadcrumb navigation, live search inputs, and entity creation triggers -->
+    <!-- List header with breadcrumbs, search, and creation triggers -->
     <app-list-header
-      :breadcrumbs="[{ label: 'Home', icon: 'o_home', to: '/' }, { label: 'Family Relations' }]"
+      :breadcrumbs="[
+        { label: 'Home', to: '/' },
+        { label: 'Family Relations' }
+      ]"
+      title="Family Relations"
+      description="Manage all family relation types here."
       :search="search"
       show-search
-      search-placeholder="Search family relation name"
-      show-add
-      add-label="Create Family Relation"
+      search-placeholder="Search relations"
+      show-filters
+      :filter-count="filterChips.length"
+      :show-add="canWrite"
+      add-label="Create Relation"
       show-back
       @update:search="search = $event"
-      @add="openCreateDialog"
+      @filters="filterOpen = true"
+      @add="openCreate"
       @back="$router.back()"
     />
 
-    <!-- Core Data Table Grid Component: Handles server-side pagination, sorting, row selection, and dataset display -->
+    <!-- Filter drawer for advanced filtering and columns management -->
+    <app-filter-drawer
+      v-model="filterOpen"
+      :chips="filterChips"
+      @remove="removeFilter"
+      @clear="clearFilters"
+    >
+      <app-column-filters
+        v-model="filters"
+        :columns="filterableColumns"
+      />
+
+      <q-toggle
+        v-if="canManageDeleted"
+        v-model="showDeleted"
+        label="Show deleted?"
+        dense
+        class="q-mt-md"
+      />
+    </app-filter-drawer>
+
+    <!-- Main Data Table displaying relations -->
     <app-data-table
-      page-key="family-relation-v"
-      :row-key="(row) => row.familyRelationId || row.FamilyRelationId || row.id"
-      title="All Family Relations"
-      :rows="rows"
+      page-key="family-relations"
+      row-key="id"
+      title="Relations"
+      :rows="filteredRows"
       :columns="columns"
       :loading="loading"
-      :total-records="totalRecords"
+      :total-records="filteredRows.length"
       :pagination="pagination"
-      selectable
       @request="onRequest"
       @refresh="load"
-      @update:selected="selected = $event"
     >
-      <!-- Bulk Actions Slot: Provides batch deletion functionality for selected table rows -->
-      <template #bulk-actions="{ selected: sel }">
-        <q-btn flat dense no-caps color="negative" label="Delete Selected" @click="bulkDelete(sel)" />
+      <!-- Status column template -->
+      <template #body-cell-active="cell">
+        <q-td :props="cell">
+          <q-badge :color="cell.value ? 'positive' : 'grey'">
+            {{ cell.value ? "Active" : "Inactive" }}
+          </q-badge>
+        </q-td>
       </template>
 
-      <!-- Row Actions Slot: Renders individual record operations including view details, editing, and deletion -->
+      <!-- Row actions column template (View, Edit, Delete) -->
       <template #body-cell-actions="cell">
-        <q-td :props="cell" class="text-right" style="padding-right: 50px !important;">
-          <!-- View Action: Triggers view drawer modal -->
-          <q-btn flat round dense color="primary" icon="o_visibility" @click="openViewDrawer(cell.row)">
-            <q-tooltip>View Details</q-tooltip>
+        <q-td :props="cell">
+          <q-btn
+            flat
+            round
+            dense
+            color="primary"
+            icon="o_visibility"
+            @click="openView(cell.row)"
+          >
+            <q-tooltip>View</q-tooltip>
           </q-btn>
-          <!-- Edit Action: Triggers form drawer in update mode -->
-          <q-btn flat round dense color="primary" icon="o_edit" @click="openEditDialog(cell.row)">
+          <q-btn
+            v-if="canWrite"
+            flat
+            round
+            dense
+            color="primary"
+            icon="o_edit"
+            @click="openEdit(cell.row)"
+          >
             <q-tooltip>Edit</q-tooltip>
           </q-btn>
-          <!-- Delete Action: Triggers individual deletion workflow -->
-          <q-btn flat round dense color="negative" icon="o_delete" @click="deleteRecord(cell.row)">
+          <q-btn
+            v-if="canDelete"
+            flat
+            round
+            dense
+            color="negative"
+            icon="o_delete"
+            @click="removeRelation(cell.row)"
+          >
             <q-tooltip>Delete</q-tooltip>
           </q-btn>
         </q-td>
       </template>
     </app-data-table>
 
-    <!-- Soft-Deleted Entities Management Panel -->
-    <deleted-records-panel
-      v-if="canManageDeleted" :entity-type="EntityType.FamilyRelation" :show="showDeleted" @restored="load"
-    />
+    <!-- =========================================================
+         Create Family Relation Drawer
+         ========================================================= -->
+    <app-form-drawer
+      v-model="createDrawerOpen"
+      title="Create Family Relation"
+      :saving="saving"
+      save-label="Create"
+      @submit="submitCreate"
+      @cancel="resetCreateForm"
+    >
+      <q-form ref="createFormRef" greedy>
+        <app-text-field
+          v-model="createForm.name"
+          label="Relation Name"
+          required
+          class="q-mb-md"
+          :rules="[
+            (v) => !!v?.trim() || 'Relation name is required',
+            (v) => !v || v.trim().length <= 100 || 'Name cannot exceed 100 characters'
+          ]"
+        />
 
-    <!-- Create / Edit Form Drawer Component -->
-    <family-relation-form-drawer
-      v-model="formDrawerOpen"
-      :editing-id="editingId"
-      @saved="handleSaved"
-    />
+        <q-toggle
+          v-model="createForm.active"
+          label="Active"
+        />
+      </q-form>
+    </app-form-drawer>
 
-    <!-- Side-Drawer Dialog Component: View Family Relation Details Modal -->
-    <q-dialog v-model="viewDrawerOpen" position="right">
-      <q-card class="column shadow-24 rounded-borders" style="width: 450px; max-width: 90vw; height: 100vh; max-height: 100vh;">
-        
-        <!-- Dialog Header Banner -->
-        <q-card-section class="row items-center justify-between bg-primary text-white q-px-md q-py-sm">
-          <div class="text-h6 text-weight-bold row items-center q-gutter-sm">
-            <q-icon name="o_visibility" size="22px" />
-            <div>Family Relation Details</div>
+    <!-- =========================================================
+         Edit Family Relation Drawer
+         ========================================================= -->
+    <app-form-drawer
+      v-model="editDrawerOpen"
+      title="Edit Family Relation"
+      :saving="saving"
+      save-label="Save"
+      @submit="submitEdit"
+      @cancel="resetEditForm"
+    >
+      <q-form ref="editFormRef" greedy>
+        <app-text-field
+          v-model="editForm.name"
+          label="Relation Name"
+          required
+          class="q-mb-md"
+          :rules="[
+            (v) => !!v?.trim() || 'Relation name is required',
+            (v) => !v || v.trim().length <= 100 || 'Name cannot exceed 100 characters'
+          ]"
+        />
+
+        <q-toggle
+          v-model="editForm.active"
+          label="Active"
+        />
+      </q-form>
+    </app-form-drawer>
+
+    <!-- =========================================================
+         View Family Relation Drawer
+         ========================================================= -->
+    <app-form-drawer
+      v-model="viewDrawerOpen"
+      title="View Family Relation"
+      :saving="viewLoading"
+      :save-label="''"
+      :hide-save="true"
+      @cancel="closeView"
+    >
+      <div class="q-gutter-md">
+        <div>
+          <div class="text-86 fs-12 fw-500">
+            Relation Name
           </div>
-          <q-btn icon="o_close" flat round dense v-close-popup />
-        </q-card-section>
-
-        <!-- Dialog Scrollable Body Content -->
-        <q-card-section class="col q-pa-md q-gutter-md scroll">
-          <!-- Loading Spinner Overlay during fetch operations -->
-          <div v-if="viewLoading" class="row flex-center q-pa-xl">
-            <q-spinner color="primary" size="40px" />
+          <div class="text-2e fs-4">
+            {{ viewRelation.name }}
           </div>
+        </div>
 
-          <template v-else>
-            <!-- Field: Family Relation Name -->
-            <div class="row items-center">
-              <div class="col-5 text-weight-bold text-grey-7">Relation Name:</div>
-              <div class="col-7 text-dark">{{ viewForm.name || '-' }}</div>
-            </div>
-            <q-separator />
+        <div>
+          <div class="text-86 fs-12 fw-500">
+            Status
+          </div>
+          <q-badge :color="viewRelation.active ? 'positive' : 'grey'">
+            {{ viewRelation.active ? "Active" : "Inactive" }}
+          </q-badge>
+        </div>
 
-            <!-- Field: Active Status -->
-            <div class="row items-center">
-              <div class="col-5 text-weight-bold text-grey-7">Active Status:</div>
-              <div class="col-7">
-                <q-chip dense :color="viewForm.active ? 'positive' : 'grey'" text-color="white">
-                  {{ viewForm.active ? 'Active' : 'Inactive' }}
-                </q-chip>
-              </div>
-            </div>
-            <q-separator />
+        <div>
+          <div class="text-86 fs-12 fw-500">
+            Created By
+          </div>
+          <div class="text-2e fs-14">
+            {{ viewRelation.createdBy || "—" }}
+          </div>
+        </div>
 
-            <!-- Field: Tenant Name -->
-            <div class="row items-center">
-              <div class="col-5 text-weight-bold text-grey-7">Tenant Name:</div>
-              <div class="col-7 text-dark">{{ viewForm.tenantName || '-' }}</div>
-            </div>
-            <q-separator />
+        <div>
+          <div class="text-86 fs-12 fw-500">
+            Created On
+          </div>
+          <div class="text-2e fs-14">
+            {{ formatDate(viewRelation.createdOnUtc) }}
+          </div>
+        </div>
 
-            <!-- Field: Created Date -->
-            <div class="row items-center">
-              <div class="col-5 text-weight-bold text-grey-7">Created Date:</div>
-              <div class="col-7 text-dark">{{ viewForm.createdOnUtc || '-' }}</div>
-            </div>
-          </template>
-        </q-card-section>
+        <div>
+          <div class="text-86 fs-12 fw-500">
+            Updated By
+          </div>
+          <div class="text-2e fs-14">
+            {{ viewRelation.updatedBy || "—" }}
+          </div>
+        </div>
 
-        <!-- Dialog Footer Action Triggers -->
-        <q-card-actions align="right" class="q-pa-md bg-grey-1">
-          <q-btn flat label="Close" color="primary" v-close-popup />
-        </q-card-actions>
-      </q-card>
-    </q-dialog>
+        <div>
+          <div class="text-86 fs-12 fw-500">
+            Updated On
+          </div>
+          <div class="text-2e fs-14">
+            {{ formatDate(viewRelation.updatedOnUtc) }}
+          </div>
+        </div>
+      </div>
+    </app-form-drawer>
   </q-page>
 </template>
 
 <script setup>
-import { ref, reactive, computed, watch, onMounted } from "vue";
-import { useRouter } from "vue-router";
+import { ref, reactive, computed, watch } from "vue";
 import { debounce } from "quasar";
 
-import { familyRelationApi, getApiErrorMessage, EntityType } from "services/api";
+import {
+  familyRelationApi,
+  getApiErrorMessage,
+  getApiErrorCode,
+  ApiErrorCodes
+} from "services/api";
+
+import { usePermissions, Permissions } from "composables/usePermissions";
 import { useNotify } from "composables/useNotify";
 import { useConfirm } from "composables/useConfirm";
 import { useListTable } from "composables/useListTable";
+import { useColumnFilters } from "composables/useColumnFilters";
 import { useDeletedRecords } from "composables/useDeletedRecords";
-import { useTenantOptions } from "composables/useTenantOptions";
-import { useTenantScope } from "composables/useTenantScope";
+import { useAuditColumns } from "composables/useAuditColumns";
 
 import AppDataTable from "components/common/AppDataTable.vue";
-import DeletedRecordsPanel from "components/universal/DeletedRecordsPanel.vue";
+import AppFormDrawer from "components/common/AppFormDrawer.vue";
 import AppListHeader from "components/common/AppListHeader.vue";
+import AppFilterDrawer from "components/common/AppFilterDrawer.vue";
+import AppColumnFilters from "components/common/AppColumnFilters.vue";
+import AppTextField from "components/common/AppTextField.vue";
 
-// Import Form Drawer Component
-import FamilyRelationFormDrawer from "src/modules/family-relations/components/create_edit.vue";
-
-// Initialize core routing, notifications, and tenant management composables
-const router = useRouter();
+const auditColumns = useAuditColumns();
 const { showDeleted, canManageDeleted } = useDeletedRecords();
 const notify = useNotify();
 const { confirm } = useConfirm();
-const { tenantOptions, loadTenants } = useTenantOptions();
-const { refreshTenants } = useTenantScope();
+const { has } = usePermissions();
 
-// Drawer visibility states and identifier trackers
-const formDrawerOpen = ref(false);
-const viewDrawerOpen = ref(false);
-const editingId = ref(null);
+const canWrite = computed(() => has(Permissions.FamilyRelationsWrite));
+const canDelete = computed(() => has(Permissions.FamilyRelationsDelete));
 
-// View Drawer state variables and data bindings
-const viewLoading = ref(false);
-const viewForm = reactive({
-  name: "",
-  active: true,
-  tenantName: "",
-  createdOnUtc: ""
-});
-
-// Data Grid Column Configuration Schema with enhanced fallback handling for Tenant Name and Creation Date display
-const columns = computed(() => [
-  { 
-    name: "familyRelationId", 
-    label: "ID", 
-    field: (row) => {
-      if (!row) return '-';
-      return row.familyRelationId || row.FamilyRelationId || row.family_relation_id || row.id || row.Id || '-';
-    }, 
-    align: "left", 
-    sortable: true, 
-    default: true 
-  },
-  { name: "name", label: "Relation Name", field: "name", align: "left", sortable: true, default: true },
-  { 
-    name: "tenantName", 
-    label: "Tenant Name", 
-    field: (row) => row.tenantName || row.tenant_name || row.tenant?.name || row.tenantId, 
-    format: (val, row) => {
-      if (row.tenantName) return row.tenantName;
-      if (row.tenant_name) return row.tenant_name;
-      if (row.tenant?.name) return row.tenant.name;
-
-      const tenantId = row.tenantId || row.tenantid || row.TenantId;
-      if (!tenantId) return '-';
-
-      const found = tenantOptions.value.find((t) => t.value === tenantId || t.id === tenantId);
-      return found ? found.label : tenantId;
-    },
-    align: "left", 
-    sortable: true, 
+/*
+ * ------------------------------------------------------------
+ * Table columns configuration including audit details and actions.
+ * ------------------------------------------------------------
+ */
+const columns = [
+  {
+    name: "name",
+    label: "Relation Name",
+    field: "name",
+    align: "left",
+    sortable: true,
     default: true
   },
-  { 
-    name: "createdOnUtc", 
-    label: "Created On", 
-    field: (row) => {
-      if (!row) return '-';
-      const key = Object.keys(row).find(k => k.toLowerCase() === 'createdonutc' || k.toLowerCase() === 'createdon' || k.toLowerCase() === 'createdat');
-      return key ? row[key] : (row.CreatedOnUtc || row.createdOnUtc || row.CreatedOn || row.createdOn || row.createdAt || '-');
-    }, 
-    align: "left", 
-    sortable: true, 
+  {
+    name: "active",
+    label: "Status",
+    field: "active",
+    align: "left",
+    sortable: true,
     default: true,
-    format: (val) => {
-      if (!val || val === '-') return '-';
-      const date = new Date(val);
-      return isNaN(date.getTime()) ? String(val) : date.toLocaleString(); 
-    }
+    filterOptions: [
+      { label: "Active", value: true },
+      { label: "Inactive", value: false }
+    ]
   },
-  { name: "actions", label: "Actions", field: "actions", align: "right", style: "padding-right: 50px !important;", headerStyle: "padding-right: 70px !important;" }
-]);
+  ...auditColumns(),
+  {
+    name: "actions",
+    label: "Actions",
+    field: "actions",
+    align: "left"
+  }
+];
 
-// Server-side List Management Composable configured with default sorting to display newest created records at the top
-const { 
-    rows, 
-    loading, 
-    totalRecords, 
-    selected, 
-    search, 
-    pagination, 
-    load, 
-    onRequest 
+/*
+ * ------------------------------------------------------------
+ * List table data fetcher setup with server/client state management.
+ * ------------------------------------------------------------
+ */
+const {
+  rows,
+  loading,
+  search,
+  pagination,
+  load,
+  onRequest
 } = useListTable({
-    pageKey: "family-relation",
-    defaultSortBy: "createdOnUtc",
-    defaultDescending: true,
-    fetcher: ({ page, limit, sortBy, descending }) => {
-        return familyRelationApi.list({
-            page,
-            limit,
-            sortBy: sortBy || "createdOnUtc",
-            descending: descending !== undefined ? descending : true,
-            search: search.value || undefined,
-            allTenants: true 
-        }).then((r) => ({ 
-            data: r?.data, 
-            total: r?.meta?.totalRecords || r?.totalRecords || 0 
-        }));
-    },
-    onError: (err) => notify.error(getApiErrorMessage(err))
+  pageKey: "family-relations",
+  fetcher: ({ sortBy, descending }) =>
+    familyRelationApi.list({
+      search: search.value || undefined,
+      sortBy,
+      descending
+    }).then((response) => ({
+      data: response?.data || [],
+      total: (response?.data || []).length
+    })),
+  onError: (err) => notify.error(getApiErrorMessage(err))
 });
 
-// Debounced reload handler resetting pagination index upon search term modifications
-const reload = debounce(() => { 
-  pagination.value.page = 1; 
-  load(); 
+const filterOpen = ref(false);
+
+const {
+  filters,
+  filterableColumns,
+  filteredRows,
+  filterChips,
+  removeFilter,
+  clearFilters
+} = useColumnFilters(columns, rows, {
+  server: false
+});
+
+const reload = debounce(() => {
+  pagination.value.page = 1;
+  load();
 }, 300);
 
-// Watch for search query input mutations
 watch(search, reload);
 
-// Load tenant options on mount and subsequently refresh table records
-onMounted(async () => {
-  await loadTenants();
-  load();
+/*
+ * ------------------------------------------------------------
+ * View Family Relation Drawer Logic
+ * ------------------------------------------------------------
+ */
+const viewDrawerOpen = ref(false);
+const viewLoading = ref(false);
+
+const viewRelation = reactive({
+  id: null,
+  name: "",
+  active: true,
+  createdBy: "",
+  createdOnUtc: null,
+  updatedBy: "",
+  updatedOnUtc: null
 });
 
-/**
- * Opens the form drawer in creation mode.
- */
-const openCreateDialog = () => {
-  editingId.value = null;
-  formDrawerOpen.value = true;
+const resetViewRelation = () => {
+  viewRelation.id = null;
+  viewRelation.name = "";
+  viewRelation.active = true;
+  viewRelation.createdBy = "";
+  viewRelation.createdOnUtc = null;
+  viewRelation.updatedBy = "";
+  viewRelation.updatedOnUtc = null;
 };
 
-/**
- * Opens the form drawer in update/edit mode for a specific record.
- * @param {Object} row - Target entity row data instance.
- */
-const openEditDialog = (row) => {
-  const id = row.familyRelationId || row.FamilyRelationId || row.id;
-  if (!id) {
-    notify.error("Invalid record identifier.");
-    return;
-  }
-  editingId.value = id;
-  formDrawerOpen.value = true;
-};
-
-/**
- * Opens the view details right drawer and fetches record info.
- * @param {Object} row - Target entity row data instance.
- */
-const openViewDrawer = async (row) => {
-  const id = row.familyRelationId || row.FamilyRelationId || row.id;
-  if (!id) {
-    notify.error("Invalid record identifier for viewing.");
-    return;
-  }
+const openView = async (row) => {
+  resetViewRelation();
 
   viewDrawerOpen.value = true;
   viewLoading.value = true;
 
   try {
-    const response = await familyRelationApi.get(id);
-    const item = response?.data?.data || response?.data || response;
+    const relation = await familyRelationApi.get(row.id);
 
-    if (item) {
-      viewForm.name = item.name || item.Name || "-";
-      viewForm.active = item.active !== undefined ? item.active : (item.Active !== undefined ? item.Active : true);
-      
-      // Resolve Tenant Name
-      const tId = item.tenantId || item.TenantId;
-      const foundTenant = tenantOptions.value.find((t) => t.value === tId || t.id === tId);
-      viewForm.tenantName = item.tenantName || item.tenant_name || (foundTenant ? foundTenant.label : (tId || "-"));
-
-      // Format Date
-      const rawDate = item.createdOnUtc || item.CreatedOnUtc || item.createdOn || item.CreatedOn;
-      if (rawDate) {
-        const date = new Date(rawDate);
-        viewForm.createdOnUtc = isNaN(date.getTime()) ? String(rawDate) : date.toLocaleString();
-      } else {
-        viewForm.createdOnUtc = "-";
-      }
-    }
+    viewRelation.id = relation?.id;
+    viewRelation.name = relation?.name || "";
+    viewRelation.active = relation?.active ?? true;
+    viewRelation.createdBy = relation?.createdBy || "";
+    viewRelation.createdOnUtc = relation?.createdOnUtc || null;
+    viewRelation.updatedBy = relation?.updatedBy || "";
+    viewRelation.updatedOnUtc = relation?.updatedOnUtc || null;
   } catch (err) {
+    viewDrawerOpen.value = false;
     notify.error(getApiErrorMessage(err));
   } finally {
     viewLoading.value = false;
   }
 };
 
-/**
- * Callback handler executed after a successful record creation or update operation.
- */
-const handleSaved = (isNew) => {
-  if (isNew) {
-    pagination.value.page = 1;
-    pagination.value.sortBy = "createdOnUtc";
-    pagination.value.descending = true;
-  }
-  load();
-  refreshTenants();
+const closeView = () => {
+  viewDrawerOpen.value = false;
+  resetViewRelation();
 };
 
-/**
- * Prompts user confirmation and executes a safe soft-delete request for an individual record entry.
- * @param {Object} row - Entity row model instance.
+/*
+ * Global or local date formatter helper.
  */
-const deleteRecord = async (row) => {
-  const id = row.familyRelationId || row.FamilyRelationId || row.id;
-  if (!id) {
-    notify.error("Invalid record identifier for deletion.");
+const formatDate = (value) => {
+  if (!value) {
+    return "—";
+  }
+
+  return new Date(value).toLocaleString();
+};
+
+/*
+ * ------------------------------------------------------------
+ * Create Family Relation Drawer Logic
+ * ------------------------------------------------------------
+ */
+const createDrawerOpen = ref(false);
+const saving = ref(false);
+const createFormRef = ref(null);
+
+const createForm = reactive({
+  name: "",
+  active: true
+});
+
+const resetCreateForm = () => {
+  createForm.name = "";
+  createForm.active = true;
+};
+
+const openCreate = () => {
+  resetCreateForm();
+  createDrawerOpen.value = true;
+};
+
+const submitCreate = async ({ clearDraft } = {}) => {
+  if (!(await createFormRef.value?.validate())) {
     return;
   }
 
-  const ok = await confirm({
-    title: "Delete family relation",
-    message: `Are you sure you want to delete "${row.name}"?`,
-    confirmLabel: "Delete",
-    type: "danger"
-  });
-  if (!ok) return;
+  saving.value = true;
 
   try {
-    await familyRelationApi.delete(id);
-    notify.success("Family relation deleted successfully.");
-    load();
+    const payload = {
+      name: createForm.name.trim(),
+      active: createForm.active
+    };
+
+    await familyRelationApi.create(payload);
+    notify.success("Family relation created successfully.");
+
+    clearDraft?.();
+    createDrawerOpen.value = false;
+    resetCreateForm();
+
+    await load();
   } catch (err) {
-    notify.error(getApiErrorMessage(err));
+    if (getApiErrorCode(err) === ApiErrorCodes.DuplicateIdentifier) {
+      notify.error("A relation with this name already exists.");
+    } else {
+      notify.error(getApiErrorMessage(err));
+    }
+  } finally {
+    saving.value = false;
   }
 };
 
-/**
- * Handles batch processing operations for multi-selected records with confirmation safeguarding.
- * @param {Array} sel - Array of selected row objects.
+/*
+ * ------------------------------------------------------------
+ * Edit Family Relation Drawer Logic
+ * ------------------------------------------------------------
  */
-const bulkDelete = async (sel) => {
-  if (!sel.length) return;
+const editDrawerOpen = ref(false);
+const editingId = ref(null);
+const editFormRef = ref(null);
+
+const editForm = reactive({
+  name: "",
+  active: true
+});
+
+const resetEditForm = () => {
+  editingId.value = null;
+  editForm.name = "";
+  editForm.active = true;
+};
+
+const openEdit = (row) => {
+  editingId.value = row.id;
+  editForm.name = row.name || "";
+  editForm.active = row.active ?? true;
+
+  editDrawerOpen.value = true;
+};
+
+const submitEdit = async ({ clearDraft } = {}) => {
+  if (!(await editFormRef.value?.validate())) {
+    return;
+  }
+
+  saving.value = true;
+
+  try {
+    const payload = {
+      name: editForm.name.trim(),
+      active: editForm.active
+    };
+
+    await familyRelationApi.update(editingId.value, payload);
+    notify.success("Family relation updated successfully.");
+
+    clearDraft?.();
+    editDrawerOpen.value = false;
+    resetEditForm();
+
+    await load();
+  } catch (err) {
+    if (getApiErrorCode(err) === ApiErrorCodes.DuplicateIdentifier) {
+      notify.error("A relation with this name already exists.");
+    } else {
+      notify.error(getApiErrorMessage(err));
+    }
+  } finally {
+    saving.value = false;
+  }
+};
+
+/*
+ * ------------------------------------------------------------
+ * Delete Record Handler
+ * ------------------------------------------------------------
+ */
+const removeRelation = async (row) => {
   const ok = await confirm({
-    title: "Delete selected relations",
-    message: `Are you sure you want to delete ${sel.length} relation(s)?`,
+    title: "Delete family relation",
+    message: `Are you sure you want to delete the relation "${row.name}"?`,
     confirmLabel: "Delete",
     type: "danger"
   });
-  if (!ok) return;
+
+  if (!ok) {
+    return;
+  }
 
   try {
-    await Promise.all(sel.map((r) => {
-      const id = r.familyRelationId || r.FamilyRelationId || r.id;
-      return familyRelationApi.delete(id);
-    }));
-    notify.success("Selected relations deleted successfully.");
-    selected.value = [];
-    load();
+    await familyRelationApi.remove(row.id);
+    notify.success("Family relation deleted successfully.");
+    await load();
   } catch (err) {
     notify.error(getApiErrorMessage(err));
   }

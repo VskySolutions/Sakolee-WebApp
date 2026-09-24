@@ -37,10 +37,13 @@
         bool IsActive,
         string? CreatedBy,
         string? UpdatedBy,
+
+
         DateTime CreatedOn,
         DateTime? UpdatedOn,
         Guid TenantId,                  // Added TenantId
-        string Tenant 
+        string Tenant
+        
     );
 
     /// <summary>

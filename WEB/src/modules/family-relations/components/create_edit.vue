@@ -1,135 +1,114 @@
 <template>
-  <!-- Side-Drawer Dialog Component: Create / Update Form Modal -->
-  <q-dialog v-model="isOpen" position="right">
-    <q-card class="column" style="width: 500px; max-width: 100vw; height: 500px; max-height: 70vh;">
-      
-      <!-- Dialog Header Banner -->
-      <q-card-section class="row items-center q-pb-none bg-primary text-white">
-        <div class="text-h6">{{ isEditing ? 'Edit Family Relation' : 'Create Family Relation' }}</div>
-        <q-space />
-        <q-btn icon="o_close" flat round dense v-close-popup />
-      </q-card-section>
+  <!-- 
+    ============================================================
+    Create Family Relation Drawer Component
+    ============================================================
+  -->
+  <app-form-drawer
+    v-model="isOpen"
+    title="Create Family Relation"
+    :saving="saving"
+    save-label="Create"
+    @submit="submitForm"
+    @cancel="resetForm"
+  >
+    <q-form ref="formRef" greedy>
+      <!-- Relation name input field with required and length validation rules -->
+      <app-text-field
+        v-model="form.name"
+        label="Relation Name"
+        required
+        class="q-mb-md"
+        :rules="[
+          (v) => !!v?.trim() || 'Relation name is required',
+          (v) => !v || v.trim().length <= 100 || 'Name cannot exceed 100 characters'
+        ]"
+      />
 
-      <!-- Dialog Scrollable Body Content & Reactive Form Container -->
-      <q-card-section class="col q-pa-md scroll">
-        <!-- Loading Spinner Overlay during fetch operations in edit mode -->
-        <div v-if="loading" class="row flex-center q-pa-xl">
-          <q-spinner color="primary" size="40px" />
-        </div>
-
-        <q-form v-else ref="formRef" greedy @submit.prevent="submitForm">
-          <!-- Primary Entity Property: Family Relation Name -->
-          <app-text-field
-            v-model="form.name"
-            label="Relation Name"
-            required
-            class="q-mb-md"
-            :rules="[(v) => !!v || 'Relation name is required']"
-          />
-        </q-form>
-      </q-card-section>
-
-      <!-- Dialog Footer Action Triggers -->
-      <q-card-actions align="right" class="q-pa-md bg-grey-2">
-        <q-btn flat label="Cancel" color="grey" v-close-popup />
-        <q-btn unelevated color="primary" :label="isEditing ? 'Update' : 'Save'" :loading="saving" @click="submitForm" />
-      </q-card-actions>
-    </q-card>
-  </q-dialog>
+      <!-- Active status toggle field -->
+      <q-toggle
+        v-model="form.active"
+        label="Active"
+      />
+    </q-form>
+  </app-form-drawer>
 </template>
 
 <script setup>
-import { ref, reactive, computed, watch } from "vue";
-import { api, familyRelationApi, getApiErrorMessage } from "services/api";
+import { ref, reactive, computed } from "vue";
+import { familyRelationApi, getApiErrorMessage, getApiErrorCode, ApiErrorCodes } from "services/api";
 import { useNotify } from "composables/useNotify";
 
+import AppFormDrawer from "components/common/AppFormDrawer.vue";
 import AppTextField from "components/common/AppTextField.vue";
 
 const props = defineProps({
   modelValue: {
     type: Boolean,
     required: true
-  },
-  editingId: {
-    type: [String, Number],
-    default: null
   }
 });
 
 const emit = defineEmits(["update:modelValue", "saved"]);
+
 const notify = useNotify();
-
-// Local drawer visibility synchronization
-const isOpen = ref(props.modelValue);
-watch(() => props.modelValue, async (val) => {
-  isOpen.value = val;
-  if (val) {
-    if (props.editingId) {
-      await fetchRecordDetails(props.editingId);
-    } else {
-      form.name = "";
-    }
-  }
-});
-
-watch(isOpen, (val) => {
-  emit("update:modelValue", val);
-});
-
-const loading = ref(false);
 const saving = ref(false);
 const formRef = ref(null);
 
+/*
+ * Reactive form state for creating a new relation.
+ */
 const form = reactive({
-  name: ""
+  name: "",
+  active: true
 });
 
-const isEditing = computed(() => !!props.editingId);
-
-/**
- * Fetches existing record details for editing mode.
- * @param {String|Number} id - Target record primary key identifier.
+/*
+ * Computed property for two-way binding of the drawer's open/close state.
  */
-const fetchRecordDetails = async (id) => {
-  loading.value = true;
-  try {
-    // Alternatively, you can use familyRelationApi.getById(id) if available in your service definition
-    const response = await api.get(`/api/admin/family-relations/${id}`);
-    const item = response?.data?.data || response?.data || response;
-    if (item) {
-      form.name = item.name || "";
-    }
-  } catch (err) {
-    notify.error(getApiErrorMessage(err));
-  } finally {
-    loading.value = false;
-  }
+const isOpen = computed({
+  get: () => props.modelValue,
+  set: (val) => emit("update:modelValue", val)
+});
+
+/*
+ * Reset form input fields and clear validation states.
+ */
+const resetForm = () => {
+  form.name = "";
+  form.active = true;
+  formRef.value?.resetValidation?.();
 };
 
-/**
- * Validates form constraints and dispatches either a POST (Create) or PUT (Update) API transaction.
+/*
+ * Handle form submission, execute API creation call, and manage duplicate errors.
  */
-const submitForm = async () => {
-  const valid = await formRef.value?.validate();
-  if (!valid) return;
+const submitForm = async ({ clearDraft } = {}) => {
+  if (!(await formRef.value?.validate())) {
+    return;
+  }
 
   saving.value = true;
+
   try {
-    const payload = { name: form.name };
+    const payload = {
+      name: form.name.trim(),
+      active: form.active
+    };
 
-    if (isEditing.value && props.editingId) {
-      await familyRelationApi.update(props.editingId, payload);
-      notify.success("Family relation updated successfully.");
-      emit("saved", false);
-    } else {
-      await familyRelationApi.create(payload);
-      notify.success("Family relation created successfully.");
-      emit("saved", true);
-    }
+    await familyRelationApi.create(payload);
+    notify.success("Family relation created successfully.");
 
+    clearDraft?.();
     isOpen.value = false;
+    resetForm();
+    emit("saved");
   } catch (err) {
-    notify.error(getApiErrorMessage(err));
+    if (getApiErrorCode(err) === ApiErrorCodes.DuplicateIdentifier) {
+      notify.error("A relation with this name already exists.");
+    } else {
+      notify.error(getApiErrorMessage(err));
+    }
   } finally {
     saving.value = false;
   }

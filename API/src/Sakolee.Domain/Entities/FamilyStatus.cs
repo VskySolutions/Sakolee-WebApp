@@ -13,5 +13,6 @@ namespace Sakolee.Domain.Entities
         public string? UpdatedBy { get; set; }
 
         public virtual Tenant? Tenant { get; set; }
+
     }
 }

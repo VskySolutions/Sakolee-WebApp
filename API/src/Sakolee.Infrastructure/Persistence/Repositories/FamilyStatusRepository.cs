@@ -108,6 +108,18 @@ internal sealed class FamilyStatusRepository : IFamilyStatusRepository
             .Take(limit)
             .ToListAsync(cancellationToken);
 
+        var userIds = items
+            .SelectMany(f => new[] { f.CreatedBy, f.UpdatedBy })
+            .Where(id => !string.IsNullOrEmpty(id) && Guid.TryParse(id, out _))
+            .Distinct()
+            .Select(id => Guid.Parse(id!))
+            .ToList();
+
+        
+        var usersDict = await _dbContext.Users
+            .Where(u => userIds.Contains(u.Id))
+            .ToDictionaryAsync(u => u.Id, u => u.DisplayName, cancellationToken);
+
         return (items, total);
     }
 
@@ -138,12 +150,10 @@ internal sealed class FamilyStatusRepository : IFamilyStatusRepository
     public Task<bool> ExistsAsync(string name, Guid? excludeId = null, CancellationToken cancellationToken = default)
     {
         var query = _dbContext.FamilyStatuses.AsQueryable();
-
         if (excludeId.HasValue)
         {
             query = query.Where(f => f.FamilyStatusId != excludeId.Value);
         }
-
         return query.AnyAsync(f => f.Name.ToLower() == name.ToLower(), cancellationToken);
     }
 

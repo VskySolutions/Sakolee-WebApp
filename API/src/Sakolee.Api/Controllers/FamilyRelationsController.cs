@@ -137,9 +137,9 @@ public sealed class FamilyRelationsController : ControllerBase
             return BadRequest(ApiResponseFactory.Error(ApiErrorCodes.ValidationFailed, "Validation failed.", "Family relation name is required."));
         }
 
-        if (name.Length > 100)
+        if (name.Length > 450)
         {
-            return BadRequest(ApiResponseFactory.Error(ApiErrorCodes.ValidationFailed, "Validation failed.", "Family relation name cannot exceed 100 characters."));
+            return BadRequest(ApiResponseFactory.Error(ApiErrorCodes.ValidationFailed, "Validation failed.", "Family relation name cannot exceed 450 characters."));
         }
 
         if (await _familyRelationRepository.NameExistsAsync(name, User.GetActiveTenantId(), cancellationToken: cancellationToken))
@@ -154,7 +154,7 @@ public sealed class FamilyRelationsController : ControllerBase
             Active = request.Active,
             TenantId = User.GetActiveTenantId()!.Value,
 
-            
+
         };
 
         await _familyRelationRepository.AddAsync(familyRelation, cancellationToken);
