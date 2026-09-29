@@ -127,7 +127,14 @@ export const tShirtSizeApi = {
   update: (id, payload) =>api.put(`/api/admin/t-shirt-sizes/${id}`, payload).then(unwrap),
   remove: (id) =>api.delete(`/api/admin/t-shirt-sizes/${id}`).then(envelope)
 };
-
+// Hear About Us API mapping.
+export const hearAboutUsApi = {
+  list: (params) =>api.get("/api/admin/hear-about-us", { params }).then(envelope),
+  get: (id) =>api.get(`/api/admin/hear-about-us/${id}`).then(unwrap),
+  create: (payload) =>api.post("/api/admin/hear-about-us", payload).then(unwrap),
+  update: (id, payload) =>api.put(`/api/admin/hear-about-us/${id}`, payload).then(unwrap),
+  remove: (id) =>api.delete(`/api/admin/hear-about-us/${id}`).then(envelope)
+};
 // Family Status API mapping
 export const familyStatusApi = {
   list: (params) => api.get("/api/admin/family-statuses", { params }).then(envelope),

@@ -30,7 +30,7 @@ internal sealed class TShirtSizeRepository : ITShirtSizeRepository
     /// Gets all non-deleted T-Shirt Sizes belonging to the specified tenant.
     /// Supports searching by T-Shirt Size name.
     /// </summary>
-    public async Task<IReadOnlyList<TShirtSize>> ListByTenantAsync(Guid tenantId, string? search = null,CancellationToken cancellationToken = default)
+    public async Task<(IReadOnlyList<TShirtSize> Items, int Total)> ListByTenantAsync(Guid tenantId, string? search = null, string? sortBy = null,bool descending = false, int page = 1,int limit = 20, CancellationToken cancellationToken = default)
     {
         // Build the query to retrieve only active T-Shirt Sizes for the specified tenant.
         var query = _dbContext.TShirtSizes .Where(x => !x.Deleted && x.TenantId == tenantId);
@@ -40,8 +40,20 @@ internal sealed class TShirtSizeRepository : ITShirtSizeRepository
             search = search.Trim();
             query = query.Where(x => x.Name.Contains(search));
         }
+        // Get the total number of records before pagination.
+        var total = await query.CountAsync(cancellationToken);
+        // Apply sorting.
+        query = sortBy?.ToLowerInvariant() switch
+        {
+            "name" => descending ? query.OrderByDescending(x => x.Name) : query.OrderBy(x => x.Name),
+            "createdonutc" => descending ? query.OrderByDescending(x => x.CreatedOnUtc) : query.OrderBy(x => x.CreatedOnUtc),
+            "updatedonutc" => descending ? query.OrderByDescending(x => x.UpdatedOnUtc) : query.OrderBy(x => x.UpdatedOnUtc),
+            //_ => descending ? query.OrderByDescending(x => x.Name) : query.OrderBy(x => x.Name)
+            // Default: show the most recently created or updated record first.
+            _ => query.OrderByDescending(x => x.UpdatedOnUtc > x.CreatedOnUtc ? x.UpdatedOnUtc : x.CreatedOnUtc)
+        };
         // Execute the query and order the results by T-Shirt Size name.
-        var items = await query.OrderBy(x => x.Name).ToListAsync(cancellationToken);
+        var items = await query.Skip((page - 1) * limit).Take(limit).ToListAsync(cancellationToken);
         // Load the tenant information and associate it with each T-Shirt Size.
         if (items.Count > 0)
         {
@@ -51,7 +63,7 @@ internal sealed class TShirtSizeRepository : ITShirtSizeRepository
                 item.Tenant = tenant;
             }
         }
-        return items;
+        return (items, total);
     }
 
     #endregion

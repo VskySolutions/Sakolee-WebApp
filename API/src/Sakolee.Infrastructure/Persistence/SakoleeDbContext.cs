@@ -121,6 +121,7 @@ public class SakoleeDbContext : DbContext, IDataProtectionKeyContext
     public DbSet<ModifiedLogFieldConfig> ModifiedLogFieldConfigs => Set<ModifiedLogFieldConfig>();
     public DbSet<BillingCycle> BillingCycles => Set<BillingCycle>();
     public DbSet<TShirtSize> TShirtSizes => Set<TShirtSize>();
+    public DbSet<HearAboutUs> HearAboutUs => Set<HearAboutUs>();
     /// <summary>Data Protection key ring storage (Multi-Tenancy ADR-002).</summary>
     public DbSet<DataProtectionKey> DataProtectionKeys => Set<DataProtectionKey>();
 
@@ -207,6 +208,7 @@ public class SakoleeDbContext : DbContext, IDataProtectionKeyContext
         modelBuilder.Entity<DashboardLayout>().HasQueryFilter(e => !e.Deleted);
         //tenant + soft-delete filters for tenant-scoped entities.
         modelBuilder.Entity<TShirtSize>().HasQueryFilter(e =>(!_tenantContext.IsResolved || e.TenantId == _tenantContext.TenantId) && !e.Deleted);
+        modelBuilder.Entity<HearAboutUs>().HasQueryFilter(e =>(!_tenantContext.IsResolved || e.TenantId == _tenantContext.TenantId) && !e.Deleted);
     }
 
     public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
@@ -381,6 +383,9 @@ public class SakoleeDbContext : DbContext, IDataProtectionKeyContext
                     break;
                 case TShirtSize tShirtSize when tShirtSize.TenantId == Guid.Empty:
                     tShirtSize.TenantId = _tenantContext.TenantId;
+                    break;
+                case HearAboutUs hearAboutUs when hearAboutUs.TenantId == Guid.Empty:
+                    hearAboutUs.TenantId = _tenantContext.TenantId;
                     break;
             }
         }

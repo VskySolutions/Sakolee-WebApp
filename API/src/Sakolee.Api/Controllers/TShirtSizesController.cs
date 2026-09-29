@@ -48,22 +48,24 @@ public sealed class TShirtSizesController : ControllerBase
     [HttpGet]
     [RequirePermission(Permissions.TShirtSizesRead)]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task<IActionResult> List([FromQuery] string? search = null,CancellationToken cancellationToken = default)
+    public async Task<IActionResult> List([FromQuery] string? search = null,[FromQuery] string? sortBy = null,[FromQuery] bool descending = false,[FromQuery] int page = 1,[FromQuery] int limit = 20, CancellationToken cancellationToken = default)
     {
         // Get the active tenant ID from the currently logged-in user's claims.
         if (User.GetActiveTenantId() is not { } tenantId)
         {
             return StatusCode(StatusCodes.Status403Forbidden,ApiResponseFactory.Forbidden("No active tenant for the caller."));
         }
-        // Retrieve all non-deleted T-Shirt Sizes belonging to the active tenant.
-        // The search value is passed to the repository when provided.
-        var tShirtSizes = await _tShirtSizes.ListByTenantAsync(tenantId,search,cancellationToken);
+        // Ensure valid pagination values.
+        page = Math.Max(1, page);
+        limit = Math.Clamp(limit, 1, 100);
+        // Get paginated T-Shirt Sizes for the active tenant.
+        var (tShirtSizes, total) =await _tShirtSizes.ListByTenantAsync(tenantId,search,sortBy,descending,page,limit,cancellationToken);
         // Resolve the Created By and Updated By user IDs into display names.This avoids returning only user IDs in the API response.
         var nameOf = await AuditNamesAsync(tShirtSizes, cancellationToken);
         // Convert each T-Shirt Size entity into the response summary model.
         var summaries = tShirtSizes.Select(x => ToSummary(x, nameOf)).ToList();
         // Return the T-Shirt Size summaries in the standard API response format.
-        return Ok(ApiResponseFactory.Success(summaries,"T-Shirt sizes retrieved."));
+        return Ok(ApiResponseFactory.Paginated(summaries,"T-Shirt sizes retrieved.",page,limit,total));
     }
     #endregion
 
@@ -131,7 +133,7 @@ public sealed class TShirtSizesController : ControllerBase
             return Conflict(new { message = $"A T-Shirt size with the name '{name}' already exists." });
         }
         // Create a new T-Shirt Size entity with tenant and audit information.
-        var tShirtSize = new Domain.Entities.TShirtSize { Id = Guid.NewGuid(),TenantId = tenantId, Name = name, CreatedOnUtc = DateTime.UtcNow, CreatedById = User.GetUserId(), Deleted = false };
+        var tShirtSize = new Domain.Entities.TShirtSize { Id = Guid.NewGuid(),TenantId = tenantId, Name = name };
         // Add the new entity to the current DbContext.
         await _tShirtSizes.AddAsync(tShirtSize,cancellationToken);
         // Save the new record to the database.
@@ -190,9 +192,6 @@ public sealed class TShirtSizesController : ControllerBase
         }
         // Update the T-Shirt Size name.
         tShirtSize.Name = name;
-        // Update audit information for the modification.
-        tShirtSize.UpdatedOnUtc = DateTime.UtcNow;
-        tShirtSize.UpdatedById = User.GetUserId();
         // Mark the entity as modified in the current DbContext.
         _tShirtSizes.Update(tShirtSize);
         // Save the updated record to the database.
@@ -231,9 +230,8 @@ public sealed class TShirtSizesController : ControllerBase
         }
         // Mark the record as deleted instead of physically removing it.
         tShirtSize.Deleted = true;
-        // Update audit information for the deletion.
-        tShirtSize.UpdatedOnUtc = DateTime.UtcNow;
-        tShirtSize.UpdatedById = User.GetUserId();
+        // Store the UTC time when the record was deleted.
+        tShirtSize.DeletedOnUtc = DateTime.UtcNow;
         // Mark the entity as modified in the current DbContext.
         _tShirtSizes.Update(tShirtSize);
         // Save the soft-delete changes to the database.

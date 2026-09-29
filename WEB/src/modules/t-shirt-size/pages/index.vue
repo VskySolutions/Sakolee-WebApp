@@ -33,7 +33,7 @@
     >
       <!-- Action buttons for viewing, editing, and deleting -->
       <template #body-cell-actions="cell">
-        <q-td :props="cell" text-class="text-center" style="padding-right: 150px !important;">
+        <q-td :props="cell">
           <!-- View button -->
           <q-btn
             v-if="canRead"
@@ -86,7 +86,7 @@
     <!-- Drawer used to display T-Shirt Size details -->
     <app-form-drawer
       v-model="viewOpen"
-      title="View T-Shirt Size"
+      title="T-Shirt Size Details"
       :saving="viewLoading"
       :save-label="''"
       :hide-save="true"
@@ -230,20 +230,15 @@ const columns = [
     name: "actions",
     label: "Actions",
     field: "actions",
-    align: "right",
-    style: "padding-right: 150px !important;",
-    headerStyle: "padding-right: 190px !important;"
+    align: "left"
   }
 ];
 // Configure the reusable list table functionality.
 const { rows ,loading ,totalRecords ,search ,pagination ,load ,onRequest } = useListTable({
   pageKey: "t-shirt-sizes",
   // Fetch T-Shirt Sizes from the API.
-  fetcher: ({ page, limit, sortBy, descending }) =>
-    tShirtSizeApi.list({ search: search.value || undefined })
-      .then((response) => { const data = Array.isArray(response?.data) ? response.data : [];
-        return { data, total: data.length };
-      }),
+    fetcher: ({  page, limit, sortBy, descending }) => tShirtSizeApi.list({ page, limit ,search: search.value || undefined, sortBy, descending })
+       .then((response) => ({ data: response?.data || [], total: response?.meta?.totalRecords || 0 })),
   onError: (error) => { notify.error( getApiErrorMessage( error, "Unable to load T-Shirt sizes."));}
 });
 

@@ -82,7 +82,7 @@ public static class DependencyInjection
         services.AddScoped<IFamilyRepository, FamilyRepository>();
         services.AddScoped<IClassSessionRepository, ClassSessionRepository>();
         services.AddScoped<IBillingMethodRepository, BillingMethodRepository>();
-            services.AddScoped<IFamilyRelationRepository, FamilyRelationRepository>();
+        services.AddScoped<IFamilyRelationRepository, FamilyRelationRepository>();
 
 
         services.AddScoped<IUserGroupRepository, UserGroupRepository>();
@@ -96,6 +96,7 @@ public static class DependencyInjection
         services.AddScoped<IOptionSetRepository, OptionSetRepository>();
         services.AddScoped<ILocationRepository, LocationRepository>();
         services.AddScoped<ITShirtSizeRepository, TShirtSizeRepository>();
+        services.AddScoped<IHearAboutUsRepository, HearAboutUsRepository>();
         // Universal Features (Phase 14) repositories.
         services.AddScoped<IActivityEventRepository, ActivityEventRepository>();
         services.AddScoped<INotificationRepository, NotificationRepository>();

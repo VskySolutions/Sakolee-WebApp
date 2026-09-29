@@ -33,7 +33,7 @@
     >
       <!-- Action buttons for viewing, editing, and deleting -->
       <template #body-cell-actions="cell">
-        <q-td :props="cell" text-class="text-center" style="padding-right: 150px !important;">
+        <q-td :props="cell">
           <!-- View button -->
           <q-btn
             v-if="canRead"
@@ -86,7 +86,7 @@
     <!-- Drawer used to display Billing Cycle details -->
     <app-form-drawer
       v-model="viewOpen"
-      title="View Billing Cycle"
+      title="Billing Cycle Details"
       :saving="viewLoading"
       :save-label="''"
       :hide-save="true"
@@ -241,23 +241,16 @@ const columns = [
     name: "actions",
     label: "Actions",
     field: "actions",
-    align: "right",
-    style: "padding-right: 150px !important;",
-    headerStyle: "padding-right: 190px !important;"
+    align: "left"
   }
 ];
 
-// Configure the reusable list table functionality.
-const { rows, loading, totalRecords, search, pagination, load, onRequest } = useListTable({
-  pageKey: "billing-cycles",
-  // Fetch Billing Cycles from the API.
-  fetcher: ({ page, limit, sortBy, descending }) => billingCycleApi .list({ search: search.value || undefined })
-      .then((response) => {
-        const data = Array.isArray(response?.data)
-          ? response.data : [];
-        return { data, total: data.length };
-      }),
-  onError: (error) => { notify.error( getApiErrorMessage( error, "Unable to load billing cycles.") ); }
+const { rows ,loading ,totalRecords ,search ,pagination ,load ,onRequest } = useListTable({ pageKey: "billing-cycles",
+  // Fetch Billing Cycles from the API with optional search and sorting.
+  fetcher: ({ page, limit, sortBy, descending }) =>billingCycleApi.list({ page, limit, search: search.value || undefined, sortBy, descending })
+      .then((response) => ({ data: response?.data || [], total: response?.meta?.totalRecords || 0 })),
+  // Handle errors that occur during the API call.
+  onError: (error) => { notify.error( getApiErrorMessage( error, "Unable to load billing cycles."));}
 });
 
 // Reload the table when the search value changes.

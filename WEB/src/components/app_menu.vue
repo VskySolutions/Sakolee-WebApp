@@ -803,10 +803,22 @@ const settingsSection = {
           permissions: [Permissions.ClassCategoriesRead]
         },
         {
+          label: "T-Shirt Sizes",
+          icon: "o_checkroom",
+          to: "/t-shirt-sizes",
+          permissions: [Permissions.TShirtSizesRead]
+        },
+        {
           label: "Billing Cycles",
           icon: "o_autorenew",
           to: "/billing-cycles",
           permissions: [Permissions.BillingCyclesRead]
+        },
+        {
+          label: "Hear About Us",
+          icon: "o_campaign",
+          to: "/hear-about-us",
+          permissions: [Permissions.HearAboutUsRead]
         },
         {
           label: "Class Sessions",

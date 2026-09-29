@@ -40,6 +40,7 @@ import bankmethodRoutes from "modules/bankmethod/routes";
 import familyrelationRoutes from "modules/family-relations/routes";
 import billingCycleRoutes from "modules/billing-cycle/routes";
 import tShirtSizeRoutes from "modules/t-shirt-size/routes";
+import hearAboutUsRoutes from "modules/hear-about-us/routes";
 
 routes.push(...accountRoutes);
 routes.push(...authRoutes);
@@ -64,6 +65,7 @@ routes.push(...sessionRoutes);
 routes.push(...bankmethodRoutes);
 routes.push(...familyrelationRoutes);routes.push(...billingCycleRoutes);
 routes.push(...tShirtSizeRoutes);
+routes.push(...hearAboutUsRoutes);
 
 // Route meta `permissions` requires any one of the listed permission keys; the deepest matched
 // record's list wins.

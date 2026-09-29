@@ -24,9 +24,12 @@ export const Permissions = Object.freeze({
   ClassesRead: "classes.read",
   ClassesWrite: "classes.write",
   ClassesDelete: "classes.delete",
+  
+  // Class Categories Permissions
   ClassCategoriesRead: "classCategories.read",
   ClassCategoriesWrite: "classCategories.write",
   ClassCategoriesDelete: "classCategories.delete",
+  // Billing Cycles Permissions
   BillingCyclesRead: "billingCycles.read",
   BillingCyclesWrite: "billingCycles.write",
   BillingCyclesDelete: "billingCycles.delete",
@@ -34,6 +37,11 @@ export const Permissions = Object.freeze({
   TShirtSizesRead: "tShirtSizes.read",
   TShirtSizesWrite: "tShirtSizes.write",
   TShirtSizesDelete: "tShirtSizes.delete",
+  // Hear About Us Permissions
+  HearAboutUsRead: "hearAboutUs.read",
+  HearAboutUsWrite: "hearAboutUs.write",
+  HearAboutUsDelete: "hearAboutUs.delete",
+
   LocationsRead: "locations.read",
   LocationsWrite: "locations.write",
   LocationsDelete: "locations.delete",

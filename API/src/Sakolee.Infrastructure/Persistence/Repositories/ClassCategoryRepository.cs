@@ -26,15 +26,15 @@ internal sealed class ClassCategoryRepository : IClassCategoryRepository
     /// </summary>
     public async Task<IReadOnlyDictionary<Guid, string>> GetNamesAsync(IEnumerable<Guid> ids, CancellationToken cancellationToken = default)
     {
+        // Remove duplicate IDs and create a list for the query.
         var idList = ids.Distinct().ToList();
+        // Return an empty dictionary when no IDs are provided.
         if (idList.Count == 0)
         {
             return new Dictionary<Guid, string>();
         }
-
-        return await _dbContext.ClassCategories
-            .Where(c => !c.Deleted && idList.Contains(c.Id))
-            .ToDictionaryAsync(c => c.Id, c => c.Name, cancellationToken);
+        // Get category names for the requested IDs.
+        return await _dbContext.ClassCategories.Where(c => !c.Deleted && idList.Contains(c.Id)).ToDictionaryAsync(c => c.Id, c => c.Name, cancellationToken);
     }
     #endregion
 
@@ -43,8 +43,9 @@ internal sealed class ClassCategoryRepository : IClassCategoryRepository
     /// Gets all non-deleted Class Categories belonging to the specified tenant.
     /// Supports searching by category name or category type.
     /// </summary>
-    public async Task<IReadOnlyList<ClassCategory>> ListByTenantAsync(Guid tenantId, string? search = null, CancellationToken cancellationToken = default)
+    public async Task<(IReadOnlyList<ClassCategory> Items, int Total)> ListByTenantAsync(Guid tenantId, string? search = null, string? sortBy = null,bool descending = false, int page = 1,int limit = 20, CancellationToken cancellationToken = default)
     {
+        // Get non-deleted categories for the current tenant.
         var query = _dbContext.ClassCategories.Where(c => !c.Deleted && c.TenantId == tenantId);
         // Apply search filtering only when search text is provided.
         if (!string.IsNullOrWhiteSpace(search))
@@ -54,15 +55,27 @@ internal sealed class ClassCategoryRepository : IClassCategoryRepository
             // CategoryType can be null, so check for null before using Contains().
             query = query.Where(c =>c.Name.Contains(search) || (c.CategoryType != null && c.CategoryType.Contains(search)));
         }
-        // If categories are found, get the tenant information
-        // and assign it to each category.
-        var items = await query.OrderBy(c => c.CategoryType).ThenBy(c => c.Name).ToListAsync(cancellationToken);
+        // Get the total number of records before pagination.
+        var total = await query.CountAsync(cancellationToken);
+        // Apply sorting.
+        query = sortBy?.ToLowerInvariant() switch
+        {
+            "name" => descending? query.OrderByDescending(c => c.Name) : query.OrderBy(c => c.Name),
+            "categorytype" => descending ? query.OrderByDescending(c => c.CategoryType) : query.OrderBy(c => c.CategoryType),
+            "createdonutc" => descending ? query.OrderByDescending(c => c.CreatedOnUtc) : query.OrderBy(c => c.CreatedOnUtc),
+            "updatedonutc" => descending ? query.OrderByDescending(c => c.UpdatedOnUtc) : query.OrderBy(c => c.UpdatedOnUtc),
+            // Default: show the most recently created or updated record first.
+            _ => query.OrderByDescending(x => x.UpdatedOnUtc > x.CreatedOnUtc ? x.UpdatedOnUtc : x.CreatedOnUtc)
+            //_ => descending ? query.OrderByDescending(c => c.CategoryType).ThenByDescending(c => c.Name) : query.OrderBy(c => c.CategoryType).ThenBy(c => c.Name)
+        };
+        // If categories are found, get the tenant information and assign it to each category.
+        var items = await query.Skip((page - 1) * limit).Take(limit).ToListAsync(cancellationToken);
         if (items.Count > 0)
         {
             var tenant = await _dbContext.Tenants.FirstOrDefaultAsync(t => t.Id == tenantId, cancellationToken);
             foreach (var item in items) item.Tenant = tenant;
         }
-        return items;
+        return (items, total);
     }
     #endregion
 
@@ -72,7 +85,9 @@ internal sealed class ClassCategoryRepository : IClassCategoryRepository
     /// </summary>
     public async Task<ClassCategory?> GetByIdAsync(Guid id, Guid tenantId, CancellationToken cancellationToken = default)
     {
+        // Get the category only if it belongs to the tenant and is not deleted.
         var category = await _dbContext.ClassCategories.FirstOrDefaultAsync(c => c.Id == id && c.TenantId == tenantId && !c.Deleted, cancellationToken);
+        // Load tenant details when the category exists.
         if (category is not null)
         {
             category.Tenant = await _dbContext.Tenants.FirstOrDefaultAsync(t => t.Id == tenantId, cancellationToken);
@@ -91,12 +106,16 @@ internal sealed class ClassCategoryRepository : IClassCategoryRepository
     /// </summary>
     public async Task<bool> ExistsByNameAsync(Guid tenantId,string name,Guid? excludeId = null,CancellationToken cancellationToken = default)
     {
+        // Trim the name before checking for duplicates.
         var normalizedName = name.Trim();
+        // Check for an existing non-deleted category with the same name.
         var query = _dbContext.ClassCategories.AsNoTracking().Where(c =>c.TenantId == tenantId && !c.Deleted && c.Name == normalizedName);
+        // Exclude the current category when checking during an update.
         if (excludeId.HasValue)
         {
             query = query.Where(c => c.Id != excludeId.Value);
         }
+        // Return true when a matching category exists.
         return await query.AnyAsync(cancellationToken);
     }
     #endregion

@@ -9,7 +9,7 @@ namespace Sakolee.Domain.Entities;
 /// <c>nvarchar(450)</c> rather than <c>uniqueidentifier</c> on the live schema, the same convention
 /// <c>Class</c>/<c>Student</c> use.
 /// </summary>
-public class ClassCategory 
+public class ClassCategory : AuditableEntity
 {
     #region Properties
     public Guid Id { get; set; }
@@ -21,16 +21,6 @@ public class ClassCategory
 
     /// <summary>Which dropdown this option belongs to on the Class form: "Category 1", "Category 2", or "Category 3".</summary>
     public string? CategoryType { get; set; }
-
-    public DateTime CreatedOnUtc { get; set; }
-
-    public Guid? CreatedById { get; set; }
-
-    public DateTime? UpdatedOnUtc { get; set; }
-
-    public Guid? UpdatedById { get; set; }
-
-    public bool Deleted { get; set; }
 
     /// <summary>
     /// Navigation property for the owning tenant.

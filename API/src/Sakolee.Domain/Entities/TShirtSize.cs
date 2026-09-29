@@ -1,6 +1,6 @@
 ﻿namespace Sakolee.Domain.Entities;
 
-public class TShirtSize
+public class TShirtSize : AuditableEntity
 {
     #region Properties
 
@@ -12,16 +12,6 @@ public class TShirtSize
     public Guid TenantId { get; set; }
 
     public string Name { get; set; } = string.Empty;
-
-    public DateTime CreatedOnUtc { get; set; }
-
-    public Guid? CreatedById { get; set; }
-
-    public DateTime? UpdatedOnUtc { get; set; }
-
-    public Guid? UpdatedById { get; set; }
-
-    public bool Deleted { get; set; }
 
     /// <summary>
     /// Navigation property for the owning tenant.
