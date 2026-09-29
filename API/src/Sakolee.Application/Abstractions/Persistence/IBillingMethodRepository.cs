@@ -17,6 +17,7 @@ public interface IBillingMethodRepository
          string? search,
          Guid? tenantId,
          bool? active,
+         bool? showDeleted,
          SortRequest sort,
          int page,
          int limit,

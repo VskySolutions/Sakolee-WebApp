@@ -11,6 +11,8 @@ namespace Sakolee.Domain.Entities
         public string? CreatedBy { get; set; }
         public DateTime? UpdatedOn { get; set; }
         public string? UpdatedBy { get; set; }
+        public DateTime? DeletedOnUtc { get; set; }
+        public bool? Active { get; set; } = true;
 
         public virtual Tenant? Tenant { get; set; }
 

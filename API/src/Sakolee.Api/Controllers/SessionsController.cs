@@ -102,7 +102,8 @@ public sealed class SessionsController : ControllerBase
             Name = request.Name.Trim(),
             IsDeleted = false,
             CreatedOn = DateTime.UtcNow,
-            CreatedBy = User.GetUserId().ToString()
+            CreatedBy = User.GetUserId().ToString(),
+            Active = request.IsActive ?? true,
         };
 
         // Persist the new record to the database via repository and unit of work
@@ -110,15 +111,20 @@ public sealed class SessionsController : ControllerBase
         await _audit.AddAsync(nameof(ClassSessions), session.Id.ToString(), "Created", details: session.Name, cancellationToken: cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
+        var createdByName = await ResolveUserNameAsync(session.CreatedBy, cancellationToken);
+        var updatedByName = await ResolveUserNameAsync(session.UpdatedBy, cancellationToken);
+
         // Map the created entity to a detailed response DTO matching constructor parameter sequence
         var detail = new SessionDetail(
             session.Id,
             session.Name,
             !session.IsDeleted,
-            session.CreatedBy,
-            session.UpdatedBy,
+            session.Active,
+            createdByName,
+            updatedByName,
             session.CreatedOn,
             session.UpdatedOn,
+            session.DeletedOnUtc,
             session.TenantId,
             session.Tenant?.Name);
 
@@ -151,6 +157,7 @@ public sealed class SessionsController : ControllerBase
         [FromQuery] string? search = null,
         [FromQuery] Guid? tenantId = null,
         [FromQuery] bool? isActive = null,
+        [FromQuery] bool? showDeleted = null,
         [FromQuery] string? sortBy = null,
         [FromQuery] bool descending = true,
         CancellationToken cancellationToken = default)
@@ -166,33 +173,37 @@ public sealed class SessionsController : ControllerBase
 
             // Fetch filtered, sorted, and paginated records from the repository
             var (items, total) = await _sessions.ListAsync(
-                search, scopeTenant, isActive, new SortRequest(sortBy, descending), page, limit,
+                search, scopeTenant, isActive, showDeleted, new SortRequest(sortBy, descending), page, limit,
                 cancellationToken: cancellationToken);
 
             // Project database model items into summary DTOs including Tenant information matching exact constructor signature
-            var summaries = items.Select(s => new SessionSummary(
-                s.Id,
-                s.Name,
-                !s.IsDeleted,
-                s.CreatedBy,
-                s.UpdatedBy,
-                s.CreatedOn,
-                s.UpdatedOn,
-                s.TenantId,
-                s.Tenant != null ? s.Tenant.Name : string.Empty
-            ));
+            var userIds = items.SelectMany(s => new[] { s.CreatedBy, s.UpdatedBy }).Where(id => !string.IsNullOrEmpty(id) && Guid.TryParse(id, out _)).Select(id => Guid.Parse(id!)).Distinct().ToList();
+
+            var userNames = await _users.GetFullNamesAsync(userIds, cancellationToken);
+
+            // Project database model items into summary DTOs including Tenant information matching exact constructor signature
+            var summaries = items.Select(s =>
+            {
+                string? createdByName = s.CreatedBy;
+                if (!string.IsNullOrEmpty(s.CreatedBy) && Guid.TryParse(s.CreatedBy, out var cId) && userNames.TryGetValue(cId, out var cName))
+                {
+                    createdByName = cName;
+                }
+
+                string? updatedByName = s.UpdatedBy;
+                if (!string.IsNullOrEmpty(s.UpdatedBy) && Guid.TryParse(s.UpdatedBy, out var uId) && userNames.TryGetValue(uId, out var uName))
+                {
+                    updatedByName = uName;
+                }
+
+                return new SessionSummary(  s.Id,   s.Name, !s.IsDeleted, createdByName, updatedByName, s.CreatedOn,    s.UpdatedOn,    s.TenantId, s.Tenant != null ? s.Tenant.Name : string.Empty );
+            });
 
             return Ok(ApiResponseFactory.Paginated(summaries, "Sessions retrieved.", page, limit, total));
         }
         catch (Exception ex)
         {
-            return StatusCode(StatusCodes.Status500InternalServerError, new
-            {
-                success = false,
-                message = ex.Message,
-                innerException = ex.InnerException?.Message,
-                stackTrace = ex.StackTrace
-            });
+            return StatusCode(StatusCodes.Status500InternalServerError, new { success = false,  message = ex.Message, innerException = ex.InnerException?.Message,  stackTrace = ex.StackTrace  });
         }
     }
 
@@ -217,17 +228,12 @@ public sealed class SessionsController : ControllerBase
             return NotFound(ApiResponseFactory.NotFound("Session not found."));
         }
 
-        // Map entity details to response DTO
-        var detail = new SessionDetail(
-            session.Id,
-            session.Name,
-            !session.IsDeleted,
-            session.CreatedBy,
-            session.UpdatedBy,
-            session.CreatedOn,
-            session.UpdatedOn,
-            session.TenantId,
-            session.Tenant?.Name);
+        var createdByName = await ResolveUserNameAsync(session.CreatedBy, cancellationToken);
+        var updatedByName = await ResolveUserNameAsync(session.UpdatedBy, cancellationToken);
+
+        // Map entity details to response DTO matching the exact 10 parameters of SessionDetail
+        var detail = new SessionDetail( session.Id, session.Name, session.Active,  session.IsDeleted, createdByName,  updatedByName,  session.CreatedOn,  session.UpdatedOn, session.DeletedOnUtc,  session.TenantId, session.Tenant?.Name
+        );
 
         return Ok(ApiResponseFactory.Success(detail, "Session retrieved."));
     }
@@ -252,12 +258,6 @@ public sealed class SessionsController : ControllerBase
         {
             return NotFound(ApiResponseFactory.NotFound("Session not found."));
         }
-
-        //if (!string.IsNullOrWhiteSpace(request.Name))
-        //{
-        //    session.Name = request.Name.Trim();
-        //}
-
         if (!string.IsNullOrWhiteSpace(request.Name))
         {
             var trimmedName = request.Name.Trim();
@@ -271,30 +271,31 @@ public sealed class SessionsController : ControllerBase
 
             session.Name = trimmedName;
         }
-
         if (request.IsActive.HasValue)
         {
-            session.IsDeleted = !request.IsActive.Value;
+            session.Active = request.IsActive.Value;
         }
 
+        session.IsDeleted = request.IsDeleted;
+        if (session.IsDeleted)
+        {   
+            session.DeletedOnUtc ??= DateTime.UtcNow;
+        }
+        else
+        {  
+            session.DeletedOnUtc = null;
+        }
         session.UpdatedOn = DateTime.UtcNow;
         session.UpdatedBy = User.GetUserId().ToString();
-
         _sessions.Update(session);
 
         await _audit.AddAsync(nameof(ClassSessions), session.Id.ToString(), "Updated", cancellationToken: cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        var detail = new SessionDetail(
-            session.Id,
-            session.Name,
-            !session.IsDeleted,
-            session.CreatedBy,
-            session.UpdatedBy,
-            session.CreatedOn,
-            session.UpdatedOn,
-            session.TenantId,
-            session.Tenant?.Name);
+        var createdByName = await ResolveUserNameAsync(session.CreatedBy, cancellationToken);
+        var updatedByName = await ResolveUserNameAsync(session.UpdatedBy, cancellationToken);
+
+        var detail = new SessionDetail(  session.Id,  session.Name,  session.Active,  session.IsDeleted,   createdByName,  updatedByName,  session.CreatedOn,  session.UpdatedOn, session.DeletedOnUtc, session.TenantId, session.Tenant?.Name);
 
         return Ok(ApiResponseFactory.Success(detail, "Session updated."));
     }
@@ -316,8 +317,7 @@ public sealed class SessionsController : ControllerBase
         // Verify delete permissions if the caller is not a super admin
         if (!User.IsSuperAdmin() && !User.HasPermission(Permissions.ClassSessionsDelete))
         {
-            return StatusCode(StatusCodes.Status403Forbidden,
-                ApiResponseFactory.Forbidden("You do not have permission to delete sessions."));
+            return StatusCode(StatusCodes.Status403Forbidden, ApiResponseFactory.Forbidden("You do not have permission to delete sessions."));
         }
 
         // Load the target session entity
@@ -329,7 +329,8 @@ public sealed class SessionsController : ControllerBase
 
         // Soft delete: set IsDeleted flag to true instead of physical removal
         session.IsDeleted = true;
-        session.UpdatedOn = DateTime.UtcNow;
+        session.DeletedOnUtc = DateTime.UtcNow;
+         session.UpdatedOn = DateTime.UtcNow;
 
         // Update the entity state in the repository/context and log the audit event
         _sessions.Update(session);
@@ -345,6 +346,24 @@ public sealed class SessionsController : ControllerBase
 
     #region Private Helper Methods
 
+    #region ResolveUserNameAsync Helper
+
+    /// <summary>
+    /// Resolves user ID string to full name.
+    /// </summary>
+    private async Task<string?> ResolveUserNameAsync(string? userIdStr, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrEmpty(userIdStr) || !Guid.TryParse(userIdStr, out var userId))
+        {
+            return userIdStr;
+        }
+
+        var names = await _users.GetFullNamesAsync(new[] { userId }, cancellationToken);
+        return names.TryGetValue(userId, out var name) ? name : userIdStr;
+    }
+
+    #endregion
+
     #region LoadAsync Helper
 
     /// <summary>
@@ -353,10 +372,7 @@ public sealed class SessionsController : ControllerBase
     /// <param name="id">The unique identifier of the session.</param>
     /// <param name="cancellationToken">Propagates notification that operations should be canceled.</param>
     /// <returns>Returns the matching <see cref="ClassSessions"/> entity if found; otherwise, null.</returns>
-    private Task<ClassSessions?> LoadAsync(Guid id, CancellationToken cancellationToken)
-        => User.IsSuperAdmin()
-            ? _sessions.GetByIdUnscopedAsync(id, cancellationToken)
-            : _sessions.GetByIdAsync(id, cancellationToken);
+    private Task<ClassSessions?> LoadAsync(Guid id, CancellationToken cancellationToken)  => User.IsSuperAdmin() ? _sessions.GetByIdUnscopedAsync(id, cancellationToken) : _sessions.GetByIdAsync(id, cancellationToken);
 
     #endregion
 

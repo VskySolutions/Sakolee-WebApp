@@ -34,42 +34,29 @@ internal sealed class FamilyStatusRepository : IFamilyStatusRepository
     /// <summary>
     /// Retrieves a single family status record by its unique identifier.
     /// </summary>
-    public Task<FamilyStatus?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
-        => _dbContext.FamilyStatuses
-            .FirstOrDefaultAsync(f => f.FamilyStatusId == id, cancellationToken);
+    public Task<FamilyStatus?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default) => _dbContext.FamilyStatuses.FirstOrDefaultAsync(f => f.FamilyStatusId == id, cancellationToken);
 
     /// <summary>
     /// Performs a cross-tenant (Super Admin) read of a single family status, bypassing the ambient tenant filter.
     /// </summary>
-    public Task<FamilyStatus?> GetByIdUnscopedAsync(Guid id, CancellationToken cancellationToken = default)
-        => _dbContext.FamilyStatuses
-            .IgnoreQueryFilters()
-            .FirstOrDefaultAsync(f => f.FamilyStatusId == id && !f.IsDeleted, cancellationToken);
+    public Task<FamilyStatus?> GetByIdUnscopedAsync(Guid id, CancellationToken cancellationToken = default) => _dbContext.FamilyStatuses.IgnoreQueryFilters().FirstOrDefaultAsync(f => f.FamilyStatusId == id && !f.IsDeleted, cancellationToken);
 
     /// <summary>
     /// Retrieves a collection of family status records matching a list of identifiers.
     /// </summary>
-    public async Task<IReadOnlyList<FamilyStatus>> GetByIdsAsync(IEnumerable<Guid> ids, CancellationToken cancellationToken = default)
-        => await _dbContext.FamilyStatuses
-            .Where(f => ids.Contains(f.FamilyStatusId))
-            .ToListAsync(cancellationToken);
+    public async Task<IReadOnlyList<FamilyStatus>> GetByIdsAsync(IEnumerable<Guid> ids, CancellationToken cancellationToken = default)  => await _dbContext.FamilyStatuses.Where(f => ids.Contains(f.FamilyStatusId)).ToListAsync(cancellationToken);
 
     /// <summary>
     /// Checks whether a family status with the specified name already exists (case-insensitive).
     /// </summary>
-    public Task<bool> ExistsAsync(string name, CancellationToken cancellationToken = default)
-        => _dbContext.FamilyStatuses.AnyAsync(f => f.Name.ToLower() == name.ToLower(), cancellationToken);
+    public Task<bool> ExistsAsync(string name, CancellationToken cancellationToken = default)   => _dbContext.FamilyStatuses.AnyAsync(f => f.Name.ToLower() == name.ToLower(), cancellationToken);
 
     #endregion
 
     #region Sorting Configuration
 
     // Defines allowable sort mappings for family status queries.
-    private static readonly SortMap<FamilyStatus> Sorts = new SortMap<FamilyStatus>("updatedOn")
-        .Add("name", f => f.Name)
-        .Add("isActive", f => !f.IsDeleted, f => f.UpdatedOn)
-        .Add("createdOn", f => f.CreatedOn)
-        .Add("updatedOn", f => f.UpdatedOn);
+    private static readonly SortMap<FamilyStatus> Sorts = new SortMap<FamilyStatus>("updatedOn").Add("name", f => f.Name).Add("Active", f => !f.IsDeleted, f => f.UpdatedOn).Add("createdOn", f => f.CreatedOn).Add("updatedOn", f => f.UpdatedOn);
 
     #endregion
 
@@ -78,16 +65,22 @@ internal sealed class FamilyStatusRepository : IFamilyStatusRepository
     /// <summary>
     /// Retrieves a paginated, filtered, and sorted list of family status records.
     /// </summary>
-    public async Task<(IReadOnlyList<FamilyStatus> Items, int Total)> ListAsync(
-        string? search, Guid? tenantId, bool? isActive, SortRequest sort, int page, int limit,
-        CancellationToken cancellationToken = default)
+    public async Task<(IReadOnlyList<FamilyStatus> Items, int Total)> ListAsync(string? search, Guid? tenantId, bool? Active, bool? showDeleted, SortRequest sort, int page, int limit,CancellationToken cancellationToken = default)
     {
         // Cross-tenant (Super Admin) reads pass an explicit tenant id and bypass the ambient filter;
         // everyone else gets the ambient-filtered set, pinned to their active tenant.
-        var query = tenantId is { } tid
-            ? _dbContext.FamilyStatuses.IgnoreQueryFilters().Where(f => f.TenantId == tid && !f.IsDeleted)
-            : _dbContext.FamilyStatuses.AsQueryable().Include(f => f.Tenant);
+        //var query = tenantId is { } tid ? _dbContext.FamilyStatuses.IgnoreQueryFilters().Where(f => f.TenantId == tid )  : _dbContext.FamilyStatuses.AsQueryable().Include(f => f.Tenant);
 
+
+
+        var query = tenantId is { } tid
+          ? _dbContext.FamilyStatuses.IgnoreQueryFilters().Where(s => s.TenantId == tid)
+          : _dbContext.FamilyStatuses.AsQueryable();
+
+        if (showDeleted != true)
+        {
+            query = query.Where(s => !s.IsDeleted);
+        }
         // Apply search keyword filter if provided
         if (!string.IsNullOrWhiteSpace(search))
         {
@@ -96,29 +89,19 @@ internal sealed class FamilyStatusRepository : IFamilyStatusRepository
         }
 
         // Apply active status filter if provided
-        if (isActive is { } active)
+        // Apply active status filter matching the database Active property if provided
+        if (Active is { } active)
         {
-            query = query.Where(f => !f.IsDeleted == active);
+            query = query.Where(f => f.Active == active);
         }
 
         // Calculate total count and apply sorting/pagination
         var total = await query.CountAsync(cancellationToken);
-        var items = await Sorts.Apply(query, sort.SortBy, sort.Descending)
-            .Skip((page - 1) * limit)
-            .Take(limit)
-            .ToListAsync(cancellationToken);
+        var items = await Sorts.Apply(query, sort.SortBy, sort.Descending).Skip((page - 1) * limit).Take(limit).ToListAsync(cancellationToken);
 
-        var userIds = items
-            .SelectMany(f => new[] { f.CreatedBy, f.UpdatedBy })
-            .Where(id => !string.IsNullOrEmpty(id) && Guid.TryParse(id, out _))
-            .Distinct()
-            .Select(id => Guid.Parse(id!))
-            .ToList();
+        var userIds = items.SelectMany(f => new[] { f.CreatedBy, f.UpdatedBy }).Where(id => !string.IsNullOrEmpty(id) && Guid.TryParse(id, out _)).Distinct().Select(id => Guid.Parse(id!)).ToList();
 
-        
-        var usersDict = await _dbContext.Users
-            .Where(u => userIds.Contains(u.Id))
-            .ToDictionaryAsync(u => u.Id, u => u.DisplayName, cancellationToken);
+        var usersDict = await _dbContext.Users.Where(u => userIds.Contains(u.Id)).ToDictionaryAsync(u => u.Id, u => u.DisplayName, cancellationToken);
 
         return (items, total);
     }
@@ -128,18 +111,13 @@ internal sealed class FamilyStatusRepository : IFamilyStatusRepository
     /// <summary>
     /// Retrieves a selectable list of active family statuses for dropdown bindings.
     /// </summary>
-    public async Task<IReadOnlyList<FamilyStatus>> ListSelectableAsync(
-        Guid? tenantId = null, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<FamilyStatus>> ListSelectableAsync(Guid? tenantId = null, CancellationToken cancellationToken = default)
     {
         // Naming a tenant means reading OUTSIDE the ambient one, so the filters come off — and with them
         // the soft-delete predicate they carry, which is why `IsDeleted` is then stated in full.
-        var query = tenantId is { } scope
-            ? _dbContext.FamilyStatuses.IgnoreQueryFilters().Where(f => !f.IsDeleted && f.TenantId == scope)
-            : _dbContext.FamilyStatuses.AsQueryable();
-
-        return await query
-            .OrderBy(f => f.Name)
-            .ToListAsync(cancellationToken);
+        var query = tenantId is { } scope   ? _dbContext.FamilyStatuses.IgnoreQueryFilters().Where(f => !f.IsDeleted && f.TenantId == scope)    : _dbContext.FamilyStatuses.AsQueryable();
+        
+        return await query.OrderBy(f => f.Name).ToListAsync(cancellationToken);
     }
 
     #endregion
@@ -164,20 +142,17 @@ internal sealed class FamilyStatusRepository : IFamilyStatusRepository
     /// <summary>
     /// Adds a new family status entity to the persistence context.
     /// </summary>
-    public async Task AddAsync(FamilyStatus familyStatus, CancellationToken cancellationToken = default)
-        => await _dbContext.FamilyStatuses.AddAsync(familyStatus, cancellationToken);
+    public async Task AddAsync(FamilyStatus familyStatus, CancellationToken cancellationToken = default)    => await _dbContext.FamilyStatuses.AddAsync(familyStatus, cancellationToken);
 
     /// <summary>
     /// Marks an existing family status entity as modified.
     /// </summary>
-    public void Update(FamilyStatus familyStatus)
-        => _dbContext.FamilyStatuses.Update(familyStatus);
+    public void Update(FamilyStatus familyStatus)   => _dbContext.FamilyStatuses.Update(familyStatus);
 
     /// <summary>
     /// Marks an existing family status entity for removal.
     /// </summary>
-    public void Remove(FamilyStatus familyStatus)
-        => _dbContext.FamilyStatuses.Remove(familyStatus);
+    public void Remove(FamilyStatus familyStatus) => _dbContext.FamilyStatuses.Remove(familyStatus);
 
     #endregion
 }

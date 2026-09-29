@@ -797,6 +797,12 @@ const settingsSection = {
           permissions: [Permissions.LocationsRead]
         },
         {
+          label: "Class Rooms",
+          icon: "o_class",
+          to: "/class-rooms",
+          permissions: [Permissions.ClassRoomsRead]
+       },
+        {
           label: "Class Categories",
           icon: "o_category",
           to: "/class-categories",

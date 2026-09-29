@@ -74,8 +74,7 @@ public sealed class FamilyStatusesController : ControllerBase
 
         // Check if a family status with the exact same name already exists in the system
         var trimmedName = request.Name.Trim();
-
-        if (await _familyStatuses.ExistsAsync(trimmedName, null, cancellationToken))
+            if (await _familyStatuses.ExistsAsync(trimmedName, null, cancellationToken))
         {
             return BadRequest(ApiResponseFactory.Error(
                 ApiErrorCodes.ValidationFailed, "Validation failed.", "A family status with this name already exists."));
@@ -97,6 +96,7 @@ public sealed class FamilyStatusesController : ControllerBase
             FamilyStatusId = Guid.NewGuid(),
             TenantId = tenantId,
             Name = request.Name.Trim(),
+            Active = request.Active ?? true,
             IsDeleted = false,
             CreatedOn = DateTime.UtcNow,
             CreatedBy = User.GetUserId().ToString()
@@ -108,17 +108,23 @@ public sealed class FamilyStatusesController : ControllerBase
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         // Map the created entity to a detailed response DTO
-        var detail = new FamilyStatusDetail(
-            familyStatus.FamilyStatusId,
-            familyStatus.Name,
-            !familyStatus.IsDeleted,
-            familyStatus.CreatedBy,
-            familyStatus.UpdatedBy,
-            familyStatus.CreatedOn,
-            familyStatus.UpdatedOn);
+        //var detail = new FamilyStatusDetail( familyStatus.FamilyStatusId,  familyStatus.Name, familyStatus.Active, !familyStatus.IsDeleted, familyStatus.CreatedBy, familyStatus.UpdatedBy, familyStatus.CreatedOn, familyStatus.UpdatedOn,  familyStatus.DeletedOnUtc, familyStatus.TenantId, familyStatus.Tenant?.Name
+        //    );
 
-        return StatusCode(StatusCodes.Status201Created,
-            ApiResponseFactory.Success(detail, "Family status created."));
+        var detail = new FamilyStatusDetail(
+    familyStatus.FamilyStatusId,
+    familyStatus.Name,
+    familyStatus.Active,
+    familyStatus.CreatedBy,
+    familyStatus.UpdatedBy,
+    familyStatus.CreatedOn,
+    familyStatus.UpdatedOn,
+    familyStatus.DeletedOnUtc,
+    familyStatus.TenantId,
+    familyStatus.Tenant?.Name
+);
+
+        return StatusCode(StatusCodes.Status201Created,  ApiResponseFactory.Success(detail, "Family status created."));
     }
 
     #endregion
@@ -131,15 +137,7 @@ public sealed class FamilyStatusesController : ControllerBase
     /// </summary>
     [HttpGet]
     [RequireAnyPermission(Permissions.FamilyStatusesRead, Permissions.FamiliesRead)]
-    public async Task<IActionResult> List(
-        [FromQuery] int page = 1,
-        [FromQuery] int limit = 20,
-        [FromQuery] string? search = null,
-        [FromQuery] Guid? tenantId = null,
-        [FromQuery] bool? isActive = null,
-        [FromQuery] string? sortBy = null,
-        [FromQuery] bool descending = true,
-        CancellationToken cancellationToken = default)
+    public async Task<IActionResult> List(  [FromQuery] int page = 1,   [FromQuery] int limit = 20, [FromQuery] string? search = null,  [FromQuery] Guid? tenantId = null, [FromQuery] bool? active = null, [FromQuery] bool? showDeleted = null, [FromQuery] string? sortBy = null,  [FromQuery] bool descending = true, CancellationToken cancellationToken = default)
     {
         // Ensure valid pagination boundary values
         page = Math.Max(1, page);
@@ -149,26 +147,34 @@ public sealed class FamilyStatusesController : ControllerBase
         Guid? scopeTenant = User.IsSuperAdmin() && tenantId is { } tid ? tid : null;
 
         // Fetch filtered, sorted, and paginated records from the repository
-        var (items, total) = await _familyStatuses.ListAsync(
-            search, scopeTenant, isActive, new SortRequest(sortBy, descending), page, limit,
-            cancellationToken: cancellationToken);
+        var (items, total) = await _familyStatuses.ListAsync(   search, scopeTenant, active, showDeleted,new SortRequest(sortBy, descending), page, limit,    cancellationToken: cancellationToken);
 
+        var userIds = items.SelectMany(f => new[] { f.CreatedBy, f.UpdatedBy }).Where(id => !string.IsNullOrEmpty(id) && Guid.TryParse(id, out _)).Select(id => Guid.Parse(id!)).Distinct().ToList();
 
+        var userNamesDict = await _users.GetFullNamesAsync(userIds, cancellationToken);
 
         // Project database model items into summary DTOs including Tenant information for client consumption
+        //var summaries = items.Select(f => new FamilyStatusSummary( 
+        //f.FamilyStatusId, f.Name, !f.IsDeleted, 
+        //f.Active,
+        //!string.IsNullOrEmpty(f.CreatedBy) && Guid.TryParse(f.CreatedBy, out var cId) && userNamesDict.TryGetValue(cId, out var cName) ? cName : f.CreatedBy, 
+        //!string.IsNullOrEmpty(f.UpdatedBy) && Guid.TryParse(f.UpdatedBy, out var uId) && userNamesDict.TryGetValue(uId, out var uName) ? uName : f.UpdatedBy, 
+        //f.CreatedOn, f.UpdatedOn, f.DeletedOnUtc, f.TenantId, f.Tenant != null ? f.Tenant.Name : string.Empty));
+
+
         var summaries = items.Select(f => new FamilyStatusSummary(
-            f.FamilyStatusId,
-            f.Name,
-            !f.IsDeleted,
-            f.CreatedBy,
-            f.UpdatedBy,
-
-            f.CreatedOn,
-            f.UpdatedOn,
-            f.TenantId,                  // Added TenantId
-            f.Tenant != null ? f.Tenant.Name : null
-        ));
-
+    f.FamilyStatusId,
+    f.Name,
+    f.Active,                  
+    !f.IsDeleted,              
+    !string.IsNullOrEmpty(f.CreatedBy) && Guid.TryParse(f.CreatedBy, out var cId) && userNamesDict.TryGetValue(cId, out var cName) ? cName : f.CreatedBy,
+    !string.IsNullOrEmpty(f.UpdatedBy) && Guid.TryParse(f.UpdatedBy, out var uId) && userNamesDict.TryGetValue(uId, out var uName) ? uName : f.UpdatedBy,
+    f.CreatedOn,
+    f.UpdatedOn,
+    f.DeletedOnUtc,
+    f.TenantId,
+    f.Tenant != null ? f.Tenant.Name : string.Empty
+));
         return Ok(ApiResponseFactory.Paginated(summaries, "Family statuses retrieved.", page, limit, total));
     }
 
@@ -190,15 +196,36 @@ public sealed class FamilyStatusesController : ControllerBase
             return NotFound(ApiResponseFactory.NotFound("Family status not found."));
         }
 
-        // Map entity details to response DTO
+        //// Map entity details to response DTO
+        var createdByName = await ResolveUserNameAsync(familyStatus.CreatedBy, cancellationToken);
+        var updatedByName = await ResolveUserNameAsync(familyStatus.UpdatedBy, cancellationToken);
+
+        //var detail = new FamilyStatusDetail(
+        //    familyStatus.FamilyStatusId,
+        //    familyStatus.Name,
+        //    familyStatus.Active,
+        //    !familyStatus.IsDeleted,
+        //    createdByName,
+        //    updatedByName,
+        //    familyStatus.CreatedOn,
+        //    familyStatus.UpdatedOn,
+        //    familyStatus.DeletedOnUtc,
+        //    familyStatus.TenantId,
+        //    familyStatus.Tenant?.Name
+        //    );
+
         var detail = new FamilyStatusDetail(
-            familyStatus.FamilyStatusId,
-            familyStatus.Name,
-            !familyStatus.IsDeleted,
-            familyStatus.CreatedBy,
-            familyStatus.UpdatedBy,
-            familyStatus.CreatedOn,
-            familyStatus.UpdatedOn);
+       familyStatus.FamilyStatusId,
+       familyStatus.Name,
+       familyStatus.Active,
+       createdByName,
+       updatedByName,
+       familyStatus.CreatedOn,
+       familyStatus.UpdatedOn,
+       familyStatus.DeletedOnUtc,
+       familyStatus.TenantId,
+       familyStatus.Tenant?.Name
+   );
 
         return Ok(ApiResponseFactory.Success(detail, "Family status retrieved."));
     }
@@ -221,6 +248,12 @@ public sealed class FamilyStatusesController : ControllerBase
             return NotFound(ApiResponseFactory.NotFound("Family status not found."));
         }
 
+        if (request.Active.HasValue)
+        {
+            
+            familyStatus.Active = request.Active.Value;
+        }
+
         if (!string.IsNullOrWhiteSpace(request.Name))
         {
             var trimmedName = request.Name.Trim();
@@ -234,9 +267,14 @@ public sealed class FamilyStatusesController : ControllerBase
             familyStatus.Name = trimmedName;
         }
 
-        if (request.IsActive.HasValue)
+        familyStatus.IsDeleted = request.IsDeleted;
+        if (familyStatus.IsDeleted)
         {
-            familyStatus.IsDeleted = !request.IsActive.Value;
+            familyStatus.DeletedOnUtc ??= DateTime.UtcNow;
+        }
+        else
+        {
+            familyStatus.DeletedOnUtc = null;
         }
 
         familyStatus.UpdatedOn = DateTime.UtcNow;
@@ -247,14 +285,34 @@ public sealed class FamilyStatusesController : ControllerBase
         await _audit.AddAsync(nameof(FamilyStatus), familyStatus.FamilyStatusId.ToString(), "Updated", cancellationToken: cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
+        var createdByName = await ResolveUserNameAsync(familyStatus.CreatedBy, cancellationToken);
+        var updatedByName = await ResolveUserNameAsync(familyStatus.UpdatedBy, cancellationToken);
+
+        //var detail = new FamilyStatusDetail(
+        //    familyStatus.FamilyStatusId,
+        //    familyStatus.Name,
+        //    familyStatus.Active,
+        //    !familyStatus.IsDeleted,
+        //    createdByName,
+        //    updatedByName,
+        //    familyStatus.CreatedOn,
+        //    familyStatus.UpdatedOn,
+        //    familyStatus.DeletedOnUtc,
+        //    familyStatus.TenantId,
+        //    familyStatus.Tenant?.Name);
+
         var detail = new FamilyStatusDetail(
-            familyStatus.FamilyStatusId,
-            familyStatus.Name,
-            !familyStatus.IsDeleted,
-            familyStatus.CreatedBy,
-            familyStatus.UpdatedBy,
-            familyStatus.CreatedOn,
-            familyStatus.UpdatedOn);
+     familyStatus.FamilyStatusId,
+     familyStatus.Name,
+     familyStatus.Active,
+     createdByName,
+     updatedByName,
+     familyStatus.CreatedOn,
+     familyStatus.UpdatedOn,
+     familyStatus.DeletedOnUtc,
+     familyStatus.TenantId,
+     familyStatus.Tenant?.Name
+ );
 
         return Ok(ApiResponseFactory.Success(detail, "Family status updated."));
     }
@@ -288,6 +346,7 @@ public sealed class FamilyStatusesController : ControllerBase
 
         // Soft delete: set IsDeleted flag to true (1) instead of physical removal
         familyStatus.IsDeleted = true;
+        familyStatus.DeletedOnUtc = DateTime.UtcNow;
 
         // Optionally update audit fields if available (e.g., UpdatedOn / UpdatedBy)
         familyStatus.UpdatedOn = DateTime.UtcNow;
@@ -311,12 +370,20 @@ public sealed class FamilyStatusesController : ControllerBase
     /// <summary>
     /// Loads a family status entity based on super admin privileges or standard tenant context filters.
     /// </summary>
-    private Task<FamilyStatus?> LoadAsync(Guid id, CancellationToken cancellationToken)
-        => User.IsSuperAdmin()
-            ? _familyStatuses.GetByIdUnscopedAsync(id, cancellationToken)
-            : _familyStatuses.GetByIdAsync(id, cancellationToken);
+    private Task<FamilyStatus?> LoadAsync(Guid id, CancellationToken cancellationToken) => User.IsSuperAdmin()  ? _familyStatuses.GetByIdUnscopedAsync(id, cancellationToken)   : _familyStatuses.GetByIdAsync(id, cancellationToken);
 
     #endregion
+
+    private async Task<string?> ResolveUserNameAsync(string? userIdStr, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrEmpty(userIdStr) || !Guid.TryParse(userIdStr, out var userId))
+        {
+            return userIdStr;
+        }
+
+        var names = await _users.GetFullNamesAsync(new[] { userId }, cancellationToken);
+        return names.TryGetValue(userId, out var name) ? name : userIdStr;
+    }
 
     #endregion
 }

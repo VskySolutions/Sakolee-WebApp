@@ -9,6 +9,7 @@
         /// The unique name of the family status.
         /// </summary>
         public string Name { get; set; } = string.Empty;
+        public bool? Active { get; set; } = true;
         public Guid TenantId { get; set; }
     }
 
@@ -25,7 +26,13 @@
         /// <summary>
         /// Flag indicating whether the family status is active.
         /// </summary>
-        public bool? IsActive { get; set; }
+        public bool? Active { get; set; }
+        //public bool Active { get; set; } = true;
+
+        /// <summary>
+        /// Flag indicating whether the family status is soft deleted.
+        /// </summary>
+        public bool IsDeleted { get; set; }
     }
 
     /// <summary>
@@ -34,14 +41,14 @@
     public sealed record FamilyStatusSummary(
         Guid Id,
         string Name,
-        bool IsActive,
+        bool? Active,
+        bool? ISDeleted,
         string? CreatedBy,
         string? UpdatedBy,
-
-
         DateTime CreatedOn,
         DateTime? UpdatedOn,
-        Guid TenantId,                  // Added TenantId
+        DateTime? DeletedOnUtc,
+        Guid TenantId,                  
         string Tenant
         
     );
@@ -52,7 +59,7 @@
     public sealed record FamilyStatusSelectItem(
         Guid Id,
         string Name,
-        bool IsActive
+        bool? Active
     );
 
     /// <summary>
@@ -61,10 +68,14 @@
     public sealed record FamilyStatusDetail(
         Guid Id,
         string Name,
-        bool IsActive,
+        bool? Active,
+       // bool? ISDeleted,
         string? CreatedBy,
         string? UpdatedBy,
         DateTime CreatedOn,
-        DateTime? UpdatedOn
+        DateTime? UpdatedOn,
+        DateTime? DeletedOnUtc,
+        Guid TenantId,
+        string? TenantName
     );
 }

@@ -1,151 +1,231 @@
 <template>
-  <q-page padding>
-    <!-- Page Header: Renders navigation breadcrumbs and route actions -->
-    <app-detail-header
-      :items="[
-        { label: 'Home', icon: 'o_home', to: '/' },
-        { label: 'Sessions', to: { name: 'sessions' } },
-        { label: 'View Session' }
-      ]"
-      :back-to="{ name: 'sessions' }"
-    />
+  <!-- Center Popup Dialog matching the requested layout changes -->
+  <q-dialog v-model="isOpen" persistent>
+    <q-card class="column q-pa-lg relative-position" style="width: 820px; max-width: 95vw; border-radius: 16px;">
+      
+      <!-- Fixed Close Button with proper Cross Symbol using HTML entity -->
+      <q-btn
+        flat
+        round
+        dense
+        size="lg"
+        class="absolute-top-right text-grey-7"
+        style="z-index: 10; margin: 16px; font-weight: bold;"
+        v-close-popup
+        @click="closeView"
+      >
+        &times;
+      </q-btn>
 
-    <!-- Loading Spinner Overlay: Displayed during asynchronous data retrieval -->
-    <div v-if="loading" class="row flex-center q-pa-xl">
-      <q-spinner color="primary" size="40px" />
-    </div>
-
-    <!-- Main Card Container: Wraps the entity details view interface -->
-    <q-card v-else flat bordered class="q-pa-md">
-      <q-form class="q-gutter-md">
-        
-        <!-- Session Name Field (View-only) -->
-        <app-text-field
-          v-model="form.sessionName"
-          label="Session Name"
-          readonly
-          disable
-          class="q-mb-md"
-        />
-
-        <!-- Tenant Name Field (View-only with fallback handling) -->
-        <app-text-field
-          v-model="form.tenantName"
-          label="Tenant Name"
-          readonly
-          disable
-          class="q-mb-md"
-        />
-
-
-        <!-- Created Date Field (View-only) -->
-        <app-text-field
-          v-model="form.createdOn"
-          label="Created Date"
-          readonly
-          disable
-          class="q-mb-md"
-        />
-
-        <!-- Form Action Buttons: Back/Close navigation trigger -->
-        <div class="row q-gutter-sm justify-end">
-          <q-btn unelevated color="primary" label="Back" :to="{ name: 'sessions' }" />
+      <!-- Modal Header Section with increased bottom gap -->
+      <div class="row items-center q-mb-xl q-pr-lg">
+        <div class="row items-center q-gutter-md">
+          <q-avatar color="primary" text-color="white" size="48px" font-size="18px">
+            {{ getInitials(viewSession.sessionName) }}
+          </q-avatar>
+          <div>
+            <div class="text-h6 text-weight-bold text-dark q-ma-none">
+              {{ viewSession.sessionName || "Session Details" }}
+            </div>
+            <div class="text-caption text-grey-7">
+              Class Session Information & Audit Logs
+            </div>
+          </div>
         </div>
-      </q-form>
+      </div>
+
+      <!-- Loading State Spinner -->
+      <div v-if="viewLoading" class="row flex-center q-pa-xl col">
+        <q-spinner color="primary" size="40px" />
+      </div>
+
+      <!-- Content Section -->
+      <div v-else class="col scroll q-gutter-y-md">
+        
+        <!-- Top Metric Cards Row (Side-by-Side with Uniform Height) -->
+        <div class="row q-col-gutter-md">
+          <!-- Status Card -->
+          <div class="col-12 col-sm-6">
+            <q-card flat bordered class="q-pa-md rounded-borders bg-grey-1 column justify-between" style="min-height: 78px;">
+              <div class="text-caption text-grey-7 text-weight-bold uppercase q-mb-xs" style="font-size: 11px; letter-spacing: 0.5px;">Status</div>
+              <div>
+                <q-badge :color="viewSession.isActive ? 'positive' : 'grey'" dense>
+                  {{ viewSession.isActive ? "Active" : "Inactive" }}
+                </q-badge>
+              </div>
+            </q-card>
+          </div>
+
+          <!-- Session Name Card -->
+          <div class="col-12 col-sm-6">
+            <q-card flat bordered class="q-pa-md rounded-borders bg-grey-1 column justify-between" style="min-height: 78px;">
+              <div class="text-caption text-grey-7 text-weight-bold uppercase q-mb-xs" style="font-size: 11px; letter-spacing: 0.5px;">Session Name</div>
+              <div class="text-body2 text-weight-bold text-dark ellipsis">
+                {{ viewSession.sessionName || "—" }}
+              </div>
+            </q-card>
+          </div>
+        </div>
+
+        <!-- Detailed Information Card with 2-Column Grid -->
+        <q-card flat bordered class="q-pa-md rounded-borders">
+          <div class="text-subtitle2 text-primary text-weight-bold q-mb-md row items-center q-gutter-xs">
+            <q-icon name="o_info" size="20px" />
+            <span>Audit & Timestamp Information</span>
+          </div>
+
+          <div class="row q-col-gutter-lg">
+            <!-- Created By -->
+            <div class="col-12 col-sm-6">
+              <div class="text-caption text-grey-7 text-weight-medium" style="font-size: 11px;">Created By</div>
+              <div class="text-body1 text-dark text-weight-medium q-mt-xs">
+                {{ viewSession.createdBy || "—" }}
+              </div>
+            </div>
+
+            <!-- Created On -->
+            <div class="col-12 col-sm-6">
+              <div class="text-caption text-grey-7 text-weight-medium" style="font-size: 11px;">Created On</div>
+              <div class="text-body1 text-dark text-weight-medium q-mt-xs">
+                {{ formatDate(viewSession.createdOnUtc) }}
+              </div>
+            </div>
+
+            <!-- Updated By -->
+            <div class="col-12 col-sm-6 q-mt-md">
+              <div class="text-caption text-grey-7 text-weight-medium" style="font-size: 11px;">Updated By</div>
+              <div class="text-body1 text-dark text-weight-medium q-mt-xs">
+                {{ viewSession.updatedBy || "—" }}
+              </div>
+            </div>
+
+            <!-- Updated On -->
+            <div class="col-12 col-sm-6 q-mt-md">
+              <div class="text-caption text-grey-7 text-weight-medium" style="font-size: 11px;">Updated On</div>
+              <div class="text-body1 text-dark text-weight-medium q-mt-xs">
+                {{ formatDate(viewSession.updatedOnUtc) }}
+              </div>
+            </div>
+          </div>
+        </q-card>
+
+      </div>
+
+      <!-- Footer Action Area -->
+      <div class="row justify-end q-mt-lg">
+        <q-btn label="Close" color="primary" unelevated class="q-px-lg" v-close-popup @click="closeView" />
+      </div>
+
     </q-card>
-  </q-page>
+  </q-dialog>
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from "vue";
-import { useRoute } from "vue-router";
+// Import necessary Vue reactivity and Lifecycle modules
+import { ref, reactive, computed, watch } from "vue";
 import { classSessionApi, getApiErrorMessage } from "services/api";
 import { useNotify } from "composables/useNotify";
-import { useTenantOptions } from "composables/useTenantOptions";
 
-import AppDetailHeader from "components/common/AppDetailHeader.vue";
-import AppTextField from "components/common/AppTextField.vue";
-
-// Composables & Instance Initializations
-const route = useRoute();
-const notify = useNotify();
-const { tenantOptions, loadTenants } = useTenantOptions();
-
-// Component State & Parameter References
-const sessionId = route.params.id;
-const loading = ref(false);
-
-// Form Data Model Binding Structure for View Details
-const form = reactive({ 
-  sessionName: "", 
-  tenantName: "",
-  danceStyle: "",
-  timing: "",
-  createdOn: ""
+// Define component properties for binding visibility and record lookup identifier
+const props = defineProps({
+  modelValue: { type: Boolean, default: false },
+  recordId: { type: [String, Number, null], default: null }
 });
 
-// Global Error Handler
-const onError = (err) => {
-  notify.error(getApiErrorMessage(err));
+// Define component emits to handle state synchronization with parent view
+const emit = defineEmits(["update:modelValue"]);
+
+// Initialize notification helper and loading state variables
+const notify = useNotify();
+const viewLoading = ref(false);
+
+// Reactive state object holding individual session record properties
+const viewSession = reactive({
+  id: null,
+  sessionName: "",
+  isActive: true,
+  createdBy: "",
+  createdOnUtc: null,
+  updatedBy: "",
+  updatedOnUtc: null
+});
+
+// Computed property to seamlessly manage dialog visibility bindings via v-model
+const isOpen = computed({
+  get: () => props.modelValue,
+  set: (val) => emit("update:modelValue", val)
+});
+
+// Helper utility function to extract initials for the header avatar icon
+const getInitials = (name) => {
+  if (!name) return "CS";
+  const parts = name.trim().split(" ");
+  if (parts.length >= 2) {
+    return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+  }
+  return name.substring(0, 2).toUpperCase();
 };
 
-// Lifecycle Hooks & Data Fetching
-onMounted(async () => {
-  if (!sessionId) {
-    notify.error("Invalid session identifier provided in route.");
-    return;
-  }
+// Utility function to format raw date timestamps into readable strings
+const formatDate = (value) => {
+  if (!value) return "—";
+  const date = new Date(value);
+  return isNaN(date.getTime()) ? String(value) : date.toLocaleString();
+};
 
-  loading.value = true;
+// Function to reset the view session reactive state back to default values
+const resetViewSession = () => {
+  viewSession.id = null;
+  viewSession.sessionName = "";
+  viewSession.isActive = true;
+  viewSession.createdBy = "";
+  viewSession.createdOnUtc = null;
+  viewSession.updatedBy = "";
+  viewSession.updatedOnUtc = null;
+};
+
+// Watcher to trigger record data fetching when the modal opens with a valid record identifier
+watch(
+  () => props.modelValue,
+  async (val) => {
+    if (val && props.recordId) {
+      await fetchRecordDetails(props.recordId);
+    } else if (!val) {
+      resetViewSession();
+    }
+  }
+);
+
+// Asynchronous function to retrieve detailed class session record data from the API endpoint
+const fetchRecordDetails = async (id) => {
+  resetViewSession();
+  viewLoading.value = true;
 
   try {
-    // Try loading tenants safely without breaking the main flow if it fails
-    try {
-      if (loadTenants) await loadTenants();
-    } catch (tenantErr) {
-      console.warn("Could not load tenant options:", tenantErr);
-    }
-
-    // Fetch existing record details to display
-    const response = await classSessionApi.get(sessionId);
-    console.log("API Response for Session Details:", response); // Debugging ke liye
-
-    // Extract item payload safely based on standard API wrappers
+    const response = await classSessionApi.get(id);
     const item = response?.data?.data || response?.data || response;
-    
-    if (item) {
-      form.sessionName = item.sessionName || item.SessionName || item.name || "";
-      
-      // Resolve tenant name with multiple fallbacks
-      let resolvedTenant = item.tenantName || item.tenant_name || item.tenant?.name;
-      if (!resolvedTenant && tenantOptions?.value) {
-        const tenantId = item.tenantId || item.tenantid || item.TenantId;
-        if (tenantId) {
-          const found = tenantOptions.value.find((t) => t.value === tenantId || t.id === tenantId);
-          resolvedTenant = found ? found.label : tenantId;
-        }
-      }
-      form.tenantName = resolvedTenant || "-";
 
-      form.danceStyle = item.danceStyle || item.DanceStyle || item.style || "";
-      form.timing = item.timing || item.Timing || item.time || "";
-      
-      // Format creation date string if available
-      const rawDate = item.createdOn || item.CreatedOn || item.createdAt || item.CreatedAt;
-      if (rawDate) {
-        const date = new Date(rawDate);
-        form.createdOn = isNaN(date.getTime()) ? String(rawDate) : date.toLocaleString();
-      } else {
-        form.createdOn = "-";
-      }
-    } else {
-      notify.error("Session record details could not be found.");
+    // Populate reactive properties with safely extracted response data mapping
+    if (item) {
+      viewSession.id = id;
+      viewSession.sessionName = item.sessionName || item.SessionName || item.name || item.Name || "";
+      viewSession.isActive = item.isActive !== undefined ? item.isActive : (item.IsActive !== undefined ? item.IsActive : true);
+      viewSession.createdBy = item.createdBy || item.CreatedBy || "";
+      viewSession.createdOnUtc = item.createdOnUtc || item.CreatedOnUtc || item.created_on_utc || item.createdOn || item.CreatedOn || item.created_on || null;
+      viewSession.updatedBy = item.updatedBy || item.UpdatedBy || item.updated_by || "";
+      viewSession.updatedOnUtc = item.updatedOnUtc || item.UpdatedOnUtc || item.updated_on_utc || item.updatedOn || item.UpdatedOn || item.updated_on || null;
     }
   } catch (err) {
-    console.error("Error fetching session details:", err);
-    onError(err);
+    isOpen.value = false;
+    notify.error(getApiErrorMessage(err));
   } finally {
-    loading.value = false;
+    viewLoading.value = false;
   }
-});
+};
+
+// Handler function to cleanly close the dialog popup and clear data state
+const closeView = () => {
+  isOpen.value = false;
+  resetViewSession();
+};
 </script>

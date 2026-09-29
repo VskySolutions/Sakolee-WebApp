@@ -56,6 +56,12 @@ export const Permissions = Object.freeze({
   FamilyRelationsWrite : "familyRelations.write",
   FamilyRelationsDelete : "familyRelations.delete",
 
+  //Class Rooms Permissions
+  ClassRoomsRead : "classRooms.read",
+ClassRoomsWrite :"classRooms.write",
+ClassRoomsDelete : "classRooms.delete",
+
+
   UsersRead: "users.read",
   UsersWrite: "users.write",
   UsersResetPassword: "users.reset_password",

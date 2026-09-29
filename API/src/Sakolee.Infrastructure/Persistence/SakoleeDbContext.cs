@@ -42,6 +42,7 @@ public class SakoleeDbContext : DbContext, IDataProtectionKeyContext
 
     public DbSet<ClassSessions> ClassSessions { get; set; }
     public DbSet<BillingMethod> BillingMethod { get; set; }
+    public DbSet<ClassRooms> ClassRooms { get; set; }
 
     public DbSet<FamilyRelation> FamilyRelations { get; set; }
     public DbSet<User> Users => Set<User>();
@@ -121,6 +122,8 @@ public class SakoleeDbContext : DbContext, IDataProtectionKeyContext
     public DbSet<ModifiedLogFieldConfig> ModifiedLogFieldConfigs => Set<ModifiedLogFieldConfig>();
     public DbSet<BillingCycle> BillingCycles => Set<BillingCycle>();
     public DbSet<TShirtSize> TShirtSizes => Set<TShirtSize>();
+
+
     /// <summary>Data Protection key ring storage (Multi-Tenancy ADR-002).</summary>
     public DbSet<DataProtectionKey> DataProtectionKeys => Set<DataProtectionKey>();
 
@@ -139,6 +142,8 @@ public class SakoleeDbContext : DbContext, IDataProtectionKeyContext
         modelBuilder.Entity<Person>().HasQueryFilter(e => (!_tenantContext.IsResolved || e.TenantId == _tenantContext.TenantId) && !e.Deleted);
 
         modelBuilder.Entity<ClassSessions>().HasQueryFilter(e => (!_tenantContext.IsResolved || e.TenantId == _tenantContext.TenantId) && !e.IsDeleted);
+
+
 
 
         // User groups + memberships are tenant-scoped so a tenant only ever sees its own groups.
@@ -195,10 +200,12 @@ public class SakoleeDbContext : DbContext, IDataProtectionKeyContext
         //modelBuilder.Entity<Location>().HasQueryFilter(e => !_tenantContext.IsResolved || e.TenantId == _tenantContext.TenantId);
         modelBuilder.Entity<Location>().HasQueryFilter(e => (!_tenantContext.IsResolved || e.TenantId == _tenantContext.TenantId) && !e.Deleted);
 
-        // Apply tenant-based filtering and soft-delete condition for BankMethod entity
+        // Apply tenant-based filtering and soft-delete condition for BillingMethod entity
         modelBuilder.Entity<BillingMethod>().HasQueryFilter(e => (!_tenantContext.IsResolved || e.TenantId == _tenantContext.TenantId) && !e.Deleted);
 
         modelBuilder.Entity<FamilyRelation>().HasQueryFilter(e => (!_tenantContext.IsResolved || e.TenantId == _tenantContext.TenantId) && !e.Deleted);
+
+        modelBuilder.Entity<ClassRooms>().HasQueryFilter(e => (!_tenantContext.IsResolved || e.TenantId == _tenantContext.TenantId) && !e.Deleted);
 
         modelBuilder.Entity<TenantRole>().HasQueryFilter(e => !e.Deleted);
         modelBuilder.Entity<Address>().HasQueryFilter(e => !e.Deleted);
@@ -379,6 +386,11 @@ public class SakoleeDbContext : DbContext, IDataProtectionKeyContext
                 case FamilyRelation familyRelation when familyRelation.TenantId == Guid.Empty:
                     familyRelation.TenantId = _tenantContext.TenantId;
                     break;
+
+                case ClassRooms classRoom when classRoom.TenantId is null || classRoom.TenantId == Guid.Empty:
+                    classRoom.TenantId = _tenantContext.TenantId;
+                    break;
+
                 case TShirtSize tShirtSize when tShirtSize.TenantId == Guid.Empty:
                     tShirtSize.TenantId = _tenantContext.TenantId;
                     break;

@@ -25,7 +25,7 @@ public interface IClassSessionRepository
     /// structured filters (owning tenant, active state).
     /// </summary>
     Task<(IReadOnlyList<ClassSessions> Items, int Total)> ListAsync(
-        string? search, Guid? tenantId, bool? isActive, SortRequest sort, int page, int limit,
+        string? search, Guid? tenantId, bool? isActive, bool? showDeleted, SortRequest sort, int page, int limit,
         CancellationToken cancellationToken = default);
 
     /// <summary>Lightweight selection list for dropdowns.</summary>

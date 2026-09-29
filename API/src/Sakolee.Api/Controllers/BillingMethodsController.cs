@@ -60,6 +60,7 @@ public sealed class BillingMethodsController : ControllerBase
         [FromQuery] int limit = 20,
         [FromQuery] string? search = null,
         [FromQuery] bool? active = null,
+         [FromQuery] bool? showDeleted = null,
         [FromQuery] string? sortBy = null,
         [FromQuery] bool descending = true,
         CancellationToken cancellationToken = default)
@@ -77,7 +78,7 @@ public sealed class BillingMethodsController : ControllerBase
 
         // Fetch paginated, filtered, and sorted records from repository
         var (items, total) = await _billingMethod.ListAsync(
-            search, tenantId, active, new SortRequest(sortBy, descending), page, limit,
+            search, tenantId, active, showDeleted, new SortRequest(sortBy, descending), page, limit,
             cancellationToken: cancellationToken);
 
         var nameOf = await AuditNamesAsync(items, cancellationToken);

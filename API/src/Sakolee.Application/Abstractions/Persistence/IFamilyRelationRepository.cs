@@ -23,6 +23,7 @@ public interface IFamilyRelationRepository
          string? search,
          Guid? tenantId,
          bool? active,
+         bool? showDeleted,
          SortRequest sort,
          int page,
          int limit,

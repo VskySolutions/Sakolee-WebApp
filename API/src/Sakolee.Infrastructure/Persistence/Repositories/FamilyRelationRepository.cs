@@ -26,19 +26,32 @@ internal sealed class FamilyRelationRepository : IFamilyRelationRepository
          string? search,
          Guid? tenantId,
          bool? active,
+         bool? showDeleted,
          SortRequest sort,
          int page,
          int limit,
          CancellationToken cancellationToken = default)
     {
-        var query = _dbContext.FamilyRelations.AsQueryable();
-
+       // var query = _dbContext.FamilyRelations.AsQueryable();
+       
+        var query = tenantId is { } tid
+          ? _dbContext.FamilyRelations.IgnoreQueryFilters().Where(s => s.TenantId == tid)
+          : _dbContext.FamilyRelations.IgnoreQueryFilters().AsQueryable();
+        if (showDeleted != true)
+        {
+            query = query.Where(s => !s.Deleted);
+        }
         // Tenant Filter
         if (tenantId.HasValue)
         {
             query = query.Where(f => f.TenantId == tenantId.Value);
         }
 
+        if (showDeleted != true)
+        {
+            
+            query = query.Where(f => !f.Deleted);
+        }
         //  Search Filter
         if (!string.IsNullOrWhiteSpace(search))
         {

@@ -11,16 +11,12 @@
         public string Name { get; set; } = string.Empty;
 
         /// <summary>
-        /// The dance style associated with the session.
+        /// Flag indicating whether the session is active upon creation.
         /// </summary>
-        public string? DanceStyle { get; set; }
+        public bool? IsActive { get; set; } = true; // Enabled to handle active/inactive status during creation
 
-        /// <summary>
-        /// The schedule or timing of the session.
-        /// </summary>
-        public string? Timing { get; set; }
-
-        //public Guid TenantId { get; set; }
+        public bool IsDeleted { get; set; } = false;
+       
     }
 
     /// <summary>
@@ -34,19 +30,11 @@
         public string? Name { get; set; }
 
         /// <summary>
-        /// The updated dance style of the session.
-        /// </summary>
-        public string? DanceStyle { get; set; }
-
-        /// <summary>
-        /// The updated timing of the session.
-        /// </summary>
-        public string? Timing { get; set; }
-
-        /// <summary>
         /// Flag indicating whether the session is active.
         /// </summary>
         public bool? IsActive { get; set; }
+
+        public bool IsDeleted { get; set; } = false;
     }
 
     /// <summary>
@@ -60,8 +48,8 @@
         string? UpdatedBy,
         DateTime CreatedOn,
         DateTime? UpdatedOn,
-        Guid TenantId,                    // Added TenantId
-        string Tenant                     // Added Tenant Name
+        Guid TenantId,                    
+        string Tenant                     
     );
 
     /// <summary>
@@ -81,10 +69,13 @@
         Guid Id,
         string Name,
         bool IsActive,
+        bool IsDeleted,
+        
         string? CreatedBy,
         string? UpdatedBy,
         DateTime CreatedOn,
         DateTime? UpdatedOn,
+        DateTime? DeletedOnUtc,
         Guid TenantId,
         string? TenantName
     );

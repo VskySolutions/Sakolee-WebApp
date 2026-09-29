@@ -193,7 +193,6 @@ internal sealed class DeletedRecordsRepository : IDeletedRecordsRepository
         protected override Expression VisitParameter(ParameterExpression node) => node == _from ? _to : base.VisitParameter(node);
     }
 
-    // ---- Operations ----
 
     // What the deleted-records panel may be ordered by. Deleted By is an id the controller resolves to a
     // name afterwards, so the panel does not offer it as a sort.

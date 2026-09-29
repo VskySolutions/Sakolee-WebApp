@@ -1,4 +1,5 @@
 <template>
+<<<<<<< Updated upstream
   <!--
     ============================================================
     Sessions Index Page Component
@@ -6,22 +7,23 @@
     Manages session listings, filtering, server-side data grid operations,
     and side-drawers for viewing, creating, and editing sessions.
   -->
+=======
+>>>>>>> Stashed changes
   <q-page padding>
-    <!-- Page Header Component: Manages breadcrumb navigation, live search inputs, and entity creation triggers -->
     <app-list-header
       :breadcrumbs="[
         { label: 'Home', to: '/' },
         { label: 'Sessions' }
       ]"
-      title="Sessions"
-      description="Manage your all sessions here."
+      title="Class-Sessions"
+      description="Manage your all class sessions here."
       :search="search"
       show-search
-      search-placeholder="Search sessions"
+      search-placeholder="Search Class-Sessions"
       show-filters
       :filter-count="filterChips.length"
       show-add
-      add-label="Create Session"
+      add-label="Create Class-Session"
       show-back
       @update:search="search = $event"
       @filters="filterOpen = true"
@@ -29,7 +31,6 @@
       @back="$router.back()"
     />
 
-    <!-- Filter Drawer Component: Advanced filtering and deleted records controls -->
     <app-filter-drawer
       v-model="filterOpen"
       :chips="filterChips"
@@ -50,7 +51,6 @@
       />
     </app-filter-drawer>
 
-    <!-- Core Data Table Grid Component: Handles server-side pagination, sorting, row selection, and dataset display -->
     <app-data-table
       page-key="sessions"
       :row-key="(row) => row.sessionId || row.SessionId || row.id || row.Id"
@@ -63,16 +63,35 @@
       @request="onRequest"
       @refresh="load"
     >
-      <!-- Status Column Slot: Renders Active/Inactive badge indicators -->
-      <template #body-cell-active="cell">
-        <q-td :props="cell">
-          <q-badge :color="cell.value ? 'positive' : 'grey'">
-            {{ cell.value ? "Active" : "Inactive" }}
+      <!-- Session Name Column with Deleted Indicator -->
+      <template #body-cell-sessionName="cell">
+        <q-td :props="cell" :class="{ 'text-strike text-grey': cell.row.deleted || cell.row.Deleted || cell.row.isDeleted || cell.row.IsDeleted }">
+          {{ cell.row.sessionName || cell.row.SessionName || cell.row.name || cell.row.Name }}
+          <q-badge v-if="cell.row.deleted || cell.row.Deleted || cell.row.isDeleted || cell.row.IsDeleted" color="negative" class="q-ml-sm" dense>
+            Deleted
           </q-badge>
         </q-td>
       </template>
 
-      <!-- Row Actions Slot: Renders individual record operations including view details, editing, and deletion -->
+      <!-- Interactive Status Toggle Column Slot -->
+      <template #body-cell-active="cell">
+        <q-td :props="cell">
+          <div class="row items-center q-gutter-x-sm">
+            <q-toggle
+              :model-value="cell.row.isActive ?? cell.row.IsActive ?? cell.row.active ?? cell.row.Active ?? true"
+              @update:model-value="(val) => updateStatus(cell.row, val)"
+              dense
+              color="positive"
+              :disable="cell.row.deleted || cell.row.Deleted || cell.row.isDeleted || cell.row.IsDeleted"
+            />
+            <span :class="(cell.row.isActive ?? cell.row.IsActive ?? cell.row.active ?? cell.row.Active ?? true) ? 'text-positive' : 'text-grey'">
+              {{ (cell.row.isActive ?? cell.row.IsActive ?? cell.row.active ?? cell.row.Active ?? true) ? "Active" : "Inactive" }}
+            </span>
+          </div>
+        </q-td>
+      </template>
+
+      <!-- Row Actions Slot with Disabled check for deleted records -->
       <template #body-cell-actions="cell">
         <q-td :props="cell">
           <q-btn
@@ -92,6 +111,7 @@
             color="primary"
             icon="o_edit"
             @click="openEdit(cell.row)"
+            :disabled="cell.row.deleted || cell.row.Deleted || cell.row.isDeleted || cell.row.IsDeleted"
           >
             <q-tooltip>Edit</q-tooltip>
           </q-btn>
@@ -103,6 +123,7 @@
             color="negative"
             icon="o_delete"
             @click="removeSession(cell.row)"
+            v-if="!(cell.row.deleted || cell.row.Deleted || cell.row.isDeleted || cell.row.IsDeleted)"
           >
             <q-tooltip>Delete</q-tooltip>
           </q-btn>
@@ -110,133 +131,31 @@
       </template>
     </app-data-table>
 
-    <!-- =========================================================
-         Create / Edit Session Form Drawer
-         ========================================================= -->
-    <app-form-drawer
+    <!-- Create / Edit Drawer Component -->
+    <session-form
       v-model="formOpen"
-      :title="editingId ? 'Edit Session' : 'Create Session'"
-      :saving="saving"
-      :save-label="editingId ? 'Save' : 'Create'"
-      @submit="submitForm"
-      @cancel="resetForm"
-    >
-      <q-form ref="formRef" greedy>
-        <!-- Primary Entity Property: Session Name -->
-        <app-text-field
-          v-model="form.sessionName"
-          label="Session Name"
-          required
-          class="q-mb-md"
-          :rules="[
-            (v) => !!v?.trim() || 'Session name is required',
-            (v) =>
-              !v ||
-              v.trim().length <= 100 ||
-              'Session name cannot exceed 100 characters'
-          ]"
-        />
+      :editing-id="editingId"
+      :initial-data="selectedRow"
+      @saved="handleSaved"
+    />
 
-        <!-- Status Toggle -->
-        <q-toggle
-          v-model="form.active"
-          label="Active"
-        />
-      </q-form>
-    </app-form-drawer>
-
-    <!-- =========================================================
-         View Session Details Drawer
-         ========================================================= -->
-    <app-form-drawer
+    <!-- View Details Drawer Component -->
+    <session-view
       v-model="viewOpen"
-      title="View Session"
-      :saving="viewLoading"
-      :save-label="''"
-      :hide-save="true"
-      @cancel="closeView"
-    >
-      <!-- Loading Spinner Overlay during asynchronous fetch operations -->
-      <div v-if="viewLoading" class="row flex-center q-pa-xl">
-        <q-spinner color="primary" size="40px" />
-      </div>
-
-      <div v-else class="q-gutter-md">
-        <!-- Field: Session Name -->
-        <div>
-          <div class="text-86 fs-12 fw-500">
-            Session Name
-          </div>
-          <div class="text-2e fs-4">
-            {{ viewSession.sessionName || '—' }}
-          </div>
-        </div>
-
-        <!-- Field: Status -->
-        <div>
-          <div class="text-86 fs-12 fw-500">
-            Status
-          </div>
-          <q-badge :color="viewSession.active ? 'positive' : 'grey'">
-            {{ viewSession.active ? "Active" : "Inactive" }}
-          </q-badge>
-        </div>
-
-        <!-- Field: Created By -->
-        <div>
-          <div class="text-86 fs-12 fw-500">
-            Created By
-          </div>
-          <div class="text-2e fs-14">
-            {{ viewSession.createdBy || "—" }}
-          </div>
-        </div>
-
-        <!-- Field: Created On -->
-        <div>
-          <div class="text-86 fs-12 fw-500">
-            Created On
-          </div>
-          <div class="text-2e fs-14">
-            {{ formatDate(viewSession.createdOnUtc) }}
-          </div>
-        </div>
-
-        <!-- Field: Updated By -->
-        <div>
-          <div class="text-86 fs-12 fw-500">
-            Updated By
-          </div>
-          <div class="text-2e fs-14">
-            {{ viewSession.updatedBy || "—" }}
-          </div>
-        </div>
-
-        <!-- Field: Updated On -->
-        <div>
-          <div class="text-86 fs-12 fw-500">
-            Updated On
-          </div>
-          <div class="text-2e fs-14">
-            {{ formatDate(viewSession.updatedOnUtc) }}
-          </div>
-        </div>
-      </div>
-    </app-form-drawer>
+      :record-id="viewRecordId"
+    />
   </q-page>
 </template>
 
 <script setup>
+<<<<<<< Updated upstream
 import { ref, reactive, watch, onMounted } from "vue";
+=======
+import { ref, watch, onMounted } from "vue";
+>>>>>>> Stashed changes
 import { debounce } from "quasar";
 
-import {
-  classSessionApi,
-  getApiErrorMessage,
-  getApiErrorCode,
-  ApiErrorCodes
-} from "services/api";
-
+import { classSessionApi, getApiErrorMessage } from "services/api";
 import { useNotify } from "composables/useNotify";
 import { useConfirm } from "composables/useConfirm";
 import { useListTable } from "composables/useListTable";
@@ -244,33 +163,26 @@ import { useColumnFilters } from "composables/useColumnFilters";
 import { useDeletedRecords } from "composables/useDeletedRecords";
 
 import AppDataTable from "components/common/AppDataTable.vue";
-import AppFormDrawer from "components/common/AppFormDrawer.vue";
 import AppListHeader from "components/common/AppListHeader.vue";
 import AppFilterDrawer from "components/common/AppFilterDrawer.vue";
 import AppColumnFilters from "components/common/AppColumnFilters.vue";
-import AppTextField from "components/common/AppTextField.vue";
 
+import SessionForm from "src/modules/session/components/create_edit_session.vue";
+import SessionView from "src/modules/session/components/view_session.vue";
+
+// State variables for managing the list of sessions
 const { showDeleted, canManageDeleted } = useDeletedRecords();
 const notify = useNotify();
 const { confirm } = useConfirm();
 
-/**
- * Standard date formatter matching global display expectations.
- * @param {String|Date} value - Raw date string or timestamp.
- */
+// Function to format date values for display
 const formatDate = (value) => {
-  if (!value) {
-    return "—";
-  }
+  if (!value) return "—";
   const date = new Date(value);
   return isNaN(date.getTime()) ? String(value) : date.toLocaleString();
 };
 
-/*
- * ------------------------------------------------------------
- * Table columns definition (filterable: false set on audit columns)
- * ------------------------------------------------------------
- */
+// Define the columns for the sessions data table
 const columns = [
   {
     name: "sessionName",
@@ -278,19 +190,8 @@ const columns = [
     field: (r) => r.sessionName || r.SessionName || r.name || r.Name,
     align: "left",
     sortable: true,
-    default: true
-  },
-  {
-    name: "active",
-    label: "Status",
-    field: (r) => r.active ?? r.Active ?? r.is_active ?? true,
-    align: "left",
-    sortable: true,
     default: true,
-    filterOptions: [
-      { label: "Active", value: true },
-      { label: "Inactive", value: false }
-    ]
+    filterable: true
   },
   {
     name: "createdBy",
@@ -298,8 +199,8 @@ const columns = [
     field: (r) => r.createdBy || r.CreatedBy || r.created_by || "—",
     align: "left",
     sortable: true,
-    default: true,
-    filterable: false // Excluded from column filters
+    default: false,
+    filterable: false
   },
   {
     name: "createdOnUtc",
@@ -307,9 +208,9 @@ const columns = [
     field: (r) => r.createdOnUtc || r.CreatedOnUtc || r.created_on_utc || r.createdOn || r.CreatedOn || r.created_on || null,
     align: "left",
     sortable: true,
-    default: true,
-    filterable: false, // Excluded from column filters
-    format: (val) => formatDate(val)
+    default: false,
+    format: (val) => formatDate(val),
+    filterable: false
   },
   {
     name: "updatedBy",
@@ -318,7 +219,7 @@ const columns = [
     align: "left",
     sortable: true,
     default: false,
-    filterable: false // Excluded from column filters
+    filterable: false
   },
   {
     name: "updatedOnUtc",
@@ -327,22 +228,31 @@ const columns = [
     align: "left",
     sortable: true,
     default: false,
-    filterable: false, // Excluded from column filters
-    format: (val) => formatDate(val)
+    format: (val) => formatDate(val),
+    filterable: false
+  },
+ {
+    name: "active",
+    label: "Status",
+    field: (r) => r.isActive ?? r.IsActive ?? r.active ?? r.Active ?? true,
+    align: "center",
+    sortable: true,
+    default: true,
+    filterable: false
   },
   {
     name: "actions",
     label: "Actions",
     field: "actions",
-    align: "left"
+    align: "left",
+    filterable: false
   }
 ];
 
-/*
- * ------------------------------------------------------------
- * List Table Data Management Composable
- * ------------------------------------------------------------
- */
+// Reactive state for managing the filter drawer visibility
+const filterOpen = ref(false);
+
+// Reactive state for managing the search input
 const {
   rows,
   loading,
@@ -352,25 +262,48 @@ const {
   onRequest
 } = useListTable({
   pageKey: "sessions",
+  pagination: {
+    sortBy: "createdOnUtc",
+    descending: true,
+    page: 1,
+    rowsPerPage: 20
+  },
 
-  fetcher: ({ sortBy, descending }) =>
-    classSessionApi.list({
+  // Fetcher function to retrieve session data from the API
+  fetcher: ({ page, limit, sortBy, descending }) => {
+    let mappedSortBy = sortBy;
+    if (sortBy === "sessionName") mappedSortBy = "Name";
+    else if (sortBy === "createdBy") mappedSortBy = "CreatedBy";
+    else if (sortBy === "createdOnUtc") mappedSortBy = "CreatedOn";
+    else if (sortBy === "updatedBy") mappedSortBy = "UpdatedBy";
+    else if (sortBy === "updatedOnUtc") mappedSortBy = "UpdatedOn";
+
+    // Construct query parameters for the API request
+    const queryParams = {
+      page,
+      limit,
       search: search.value || undefined,
-      sortBy,
-      descending
-    }).then((response) => {
+      sortBy: mappedSortBy || "CreatedOn",
+      descending: descending ?? true,
+      showDeleted: showDeleted.value,
+      includeDeleted: showDeleted.value
+    };
+
+    // Fetch the session list from the API and return the data and total count
+    return classSessionApi.list(queryParams).then((response) => {
       const items = response?.data?.items || response?.items || response?.data || [];
+      const total = response?.data?.total || response?.total || items.length;
       return {
         data: items,
-        total: items.length
+        total: total
       };
-    }),
+    });
+  },
 
   onError: (err) => notify.error(getApiErrorMessage(err))
 });
 
-const filterOpen = ref(false);
-
+// Use the useColumnFilters composable to manage column-based filtering for the sessions data table
 const {
   filters,
   filterableColumns,
@@ -382,165 +315,98 @@ const {
   server: false
 });
 
+// Debounced reload function to reset pagination and reload data when search input changes
 const reload = debounce(() => {
   pagination.value.page = 1;
   load();
 }, 300);
 
 watch(search, reload);
+watch(showDeleted, () => {
+  pagination.value.page = 1;
+  load();
+});
 
 onMounted(() => {
   load();
 });
 
-/*
- * ------------------------------------------------------------
- * View Session Drawer State & Handler Methods
- * ------------------------------------------------------------
- */
-const viewOpen = ref(false);
-const viewLoading = ref(false);
-
-const viewSession = reactive({
-  id: null,
-  sessionName: "",
-  active: true,
-  createdBy: "",
-  createdOnUtc: null,
-  updatedBy: "",
-  updatedOnUtc: null
-});
-
-const resetViewSession = () => {
-  viewSession.id = null;
-  viewSession.sessionName = "";
-  viewSession.active = true;
-  viewSession.createdBy = "";
-  viewSession.createdOnUtc = null;
-  viewSession.updatedBy = "";
-  viewSession.updatedOnUtc = null;
-};
-
-const openView = async (row) => {
-  const id = row.sessionId || row.SessionId || row.id || row.Id;
-  if (!id) {
-    notify.error("Invalid record identifier for viewing.");
-    return;
-  }
-
-  resetViewSession();
-  viewOpen.value = true;
-  viewLoading.value = true;
-
-  try {
-    const response = await classSessionApi.get(id);
-    const item = response?.data?.data || response?.data || response;
-
-    if (item) {
-      viewSession.id = id;
-      viewSession.sessionName = item.sessionName || item.SessionName || item.name || item.Name || "";
-      viewSession.active = item.active ?? item.Active ?? item.is_active ?? true;
-      viewSession.createdBy = item.createdBy || item.CreatedBy || item.created_by || "";
-      viewSession.createdOnUtc = item.createdOnUtc || item.CreatedOnUtc || item.created_on_utc || item.createdOn || item.CreatedOn || item.created_on || null;
-      viewSession.updatedBy = item.updatedBy || item.UpdatedBy || item.updated_by || "";
-      viewSession.updatedOnUtc = item.updatedOnUtc || item.UpdatedOnUtc || item.updated_on_utc || item.updatedOn || item.UpdatedOn || item.updated_on || null;
-    }
-  } catch (err) {
-    viewOpen.value = false;
-    notify.error(getApiErrorMessage(err));
-  } finally {
-    viewLoading.value = false;
-  }
-};
-
-const closeView = () => {
-  viewOpen.value = false;
-  resetViewSession();
-};
-
-/*
- * ------------------------------------------------------------
- * Create / Edit Form Drawer State & Persistence Handlers
- * ------------------------------------------------------------
- */
+// Create / Edit Drawer states
 const formOpen = ref(false);
-const saving = ref(false);
 const editingId = ref(null);
-const formRef = ref(null);
+const selectedRow = ref(null);
 
-const form = reactive({
-  sessionName: "",
-  active: true
-});
-
-const resetForm = () => {
-  editingId.value = null;
-  form.sessionName = "";
-  form.active = true;
-};
-
+// Function to open the create session drawer
 const openCreate = () => {
-  resetForm();
+  editingId.value = null;
+  selectedRow.value = null;
   formOpen.value = true;
 };
 
+// Function to open the edit session drawer with the selected row's data
 const openEdit = (row) => {
   const id = row.sessionId || row.SessionId || row.id || row.Id;
   if (!id) {
     notify.error("Invalid record identifier for editing.");
     return;
   }
-
   editingId.value = id;
-  form.sessionName = row.sessionName || row.SessionName || row.name || row.Name || "";
-  form.active = row.active ?? row.Active ?? row.is_active ?? true;
-
+  selectedRow.value = row;
   formOpen.value = true;
 };
 
-const submitForm = async ({ clearDraft } = {}) => {
-  if (!(await formRef.value?.validate())) {
-    return;
-  }
+// Function to update the active status inline via toggle
+const updateStatus = async (row, newStatus) => {
+  const id = row.sessionId || row.SessionId || row.id || row.Id;
+  if (!id) return;
 
-  saving.value = true;
+  const originalStatus = row.isActive ?? row.IsActive ?? row.active ?? row.Active ?? true;
+  
+  if (row.active !== undefined) row.active = newStatus;
+  if (row.Active !== undefined) row.Active = newStatus;
+  if (row.isActive !== undefined) row.isActive = newStatus;
+  if (row.IsActive !== undefined) row.IsActive = newStatus;
 
   try {
     const payload = {
-      name: form.sessionName.trim(),
-      sessionName: form.sessionName.trim(),
-      active: form.active
+      name: row.sessionName || row.SessionName || row.name || row.Name,
+      isActive: newStatus,
+      active: newStatus,
+      isDeleted: row.isDeleted || row.IsDeleted || false
     };
-
-    if (editingId.value) {
-      await classSessionApi.update(editingId.value, payload);
-      notify.success("Session updated successfully.");
-    } else {
-      await classSessionApi.create(payload);
-      notify.success("Session created successfully.");
-    }
-
-    clearDraft?.();
-    formOpen.value = false;
-    resetForm();
-
+    await classSessionApi.update(id, payload);
+    notify.success("Status updated successfully.");
     await load();
   } catch (err) {
-    if (getApiErrorCode(err) === ApiErrorCodes.DuplicateIdentifier) {
-      notify.error("A session with this name already exists.");
-    } else {
-      notify.error(getApiErrorMessage(err));
-    }
-  } finally {
-    saving.value = false;
+    if (row.active !== undefined) row.active = originalStatus;
+    if (row.Active !== undefined) row.Active = originalStatus;
+    if (row.isActive !== undefined) row.isActive = originalStatus;
+    if (row.IsActive !== undefined) row.IsActive = originalStatus;
+    notify.error(getApiErrorMessage(err));
   }
 };
+// Function to handle the saved event from the create/edit drawer and reload the sessions list
+const handleSaved = async () => {
+  pagination.value.page = 1;
+  await load();
+};
 
-/*
- * ------------------------------------------------------------
- * Deletion Handling Workflow
- * ------------------------------------------------------------
- */
+// View Drawer states
+const viewOpen = ref(false);
+const viewRecordId = ref(null);
+
+// Function to open the view session drawer with the selected row's data
+const openView = (row) => {
+  const id = row.sessionId || row.SessionId || row.id || row.Id;
+  if (!id) {
+    notify.error("Invalid record identifier for viewing.");
+    return;
+  }
+  viewRecordId.value = id;
+  viewOpen.value = true;
+};
+
+// Function to remove a session with confirmation and reload the sessions list
 const removeSession = async (row) => {
   const id = row.sessionId || row.SessionId || row.id || row.Id;
   if (!id) return;
@@ -553,9 +419,7 @@ const removeSession = async (row) => {
     type: "danger"
   });
 
-  if (!ok) {
-    return;
-  }
+  if (!ok) return;
 
   try {
     await classSessionApi.delete(id);

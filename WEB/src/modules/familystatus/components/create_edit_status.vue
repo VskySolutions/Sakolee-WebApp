@@ -1,147 +1,149 @@
 <template>
-  <!-- 
-    ============================================================
-    Create & Edit Family Status Drawer Component
-    ============================================================
-  -->
   <app-form-drawer
     v-model="isOpen"
-    :title="isEditMode ? 'Edit Family Status' : 'Create Family Status'"
+    :title="isEditing ? 'Edit Family Status' : 'Create Family Status'"
     :saving="saving"
-    :save-label="isEditMode ? 'Save' : 'Create'"
+    :save-label="isEditing ? 'Save' : 'Create'"
     @submit="submitForm"
     @cancel="resetForm"
   >
     <q-form ref="formRef" greedy>
-      <!-- Family Status Name Input Field with Validation Rules -->
       <app-text-field
-        v-model="form.name"
-        label="Status Name"
+        v-model="form.familyStatusName"
+        label="Family Status Name"
         required
         class="q-mb-md"
+        :error="formErrors.familyStatusName.hasError"
+        :error-message="formErrors.familyStatusName.message"
+        @update:model-value="formErrors.familyStatusName.hasError = false"
         :rules="[
-          (v) => !!v?.trim() || 'Status name is required',
-          (v) => !v || v.trim().length <= 100 || 'Name cannot exceed 100 characters'
+          (v) => !!v?.trim() || 'Family status name is required',
+          (v) =>
+            !v ||
+            v.trim().length <= 100 ||
+            'Family status name cannot exceed 100 characters'
         ]"
+      />
+
+      <q-toggle
+        v-model="form.active"
+        label="Active"
       />
     </q-form>
   </app-form-drawer>
 </template>
 
 <script setup>
-import { ref, reactive, computed, watch } from "vue";
-import { 
-  familyStatusApi, 
-  getApiErrorMessage, 
-  getApiErrorCode, 
-  ApiErrorCodes 
-} from "services/api";
+// Import necessary modules and components
+import { ref, reactive, watch, computed } from "vue";
+import { familyStatusApi, getApiErrorMessage, getApiErrorCode, ApiErrorCodes } from "services/api";
 import { useNotify } from "composables/useNotify";
 
 import AppFormDrawer from "components/common/AppFormDrawer.vue";
 import AppTextField from "components/common/AppTextField.vue";
 
+// Define props for the component
 const props = defineProps({
-  modelValue: {
-    type: Boolean,
-    required: true
-  },
-  editingId: {
-    type: [String, Number],
-    default: null
-  }
+  modelValue: { type: Boolean, default: false },
+  editingId: { type: [Object, String, Number], default: null },
+  initialData: { type: Object, default: null }
 });
 
+// Define emits for the component
 const emit = defineEmits(["update:modelValue", "saved"]);
 
 const notify = useNotify();
 const saving = ref(false);
 const formRef = ref(null);
+const isOpen = ref(props.modelValue);
 
-/*
- * Determine if the component is operating in edit mode based on editingId.
- */
-const isEditMode = computed(() => !!props.editingId);
+// Computed property to determine if the form is in editing mode
+const isEditing = computed(() => !!props.editingId);
 
-/*
- * Reactive form state for family status name.
- */
+// Define reactive state for the form and form errors
 const form = reactive({
-  name: ""
+  familyStatusName: "",
+  active: true
 });
 
-/*
- * Two-way model binding wrapper for drawer visibility control.
- */
-const isOpen = computed({
-  get: () => props.modelValue,
-  set: (val) => emit("update:modelValue", val)
+// Define reactive state for form errors
+const formErrors = reactive({
+  familyStatusName: {
+    hasError: false,
+    message: ""
+  }
 });
 
-/*
- * Watch drawer visibility and load existing record data if editing.
- */
-watch(
-  () => props.modelValue,
-  async (val) => {
-    if (val && props.editingId) {
-      saving.value = true;
-      try {
-        const statusRecord = await familyStatusApi.get(props.editingId);
-        form.name = statusRecord?.name || "";
-      } catch (err) {
-        notify.error(getApiErrorMessage(err));
-        isOpen.value = false;
-      } finally {
-        saving.value = false;
-      }
-    } else if (!val) {
-      resetForm();
+// Watch for changes in the modelValue prop to open or close the form drawer
+watch(() => props.modelValue, (val) => {
+  isOpen.value = val;
+  if (val) {
+    if (props.editingId && props.initialData) {
+      form.familyStatusName = props.initialData.familyStatusName || props.initialData.FamilyStatusName || props.initialData.name || props.initialData.Name || "";
+      form.active = props.initialData.active ?? props.initialData.Active ?? props.initialData.is_active ?? true;
+    } else {
+      resetFormValues();
     }
   }
-);
+});
 
-/*
- * Reset form fields and clear validation states.
- */
-const resetForm = () => {
-  form.name = "";
-  formRef.value?.resetValidation?.();
+watch(isOpen, (val) => {
+  emit("update:modelValue", val);
+});
+
+// Function to reset form values to their default state
+const resetFormValues = () => {
+  form.familyStatusName = "";
+  form.active = true;
+  formErrors.familyStatusName.hasError = false;
+  formErrors.familyStatusName.message = "";
 };
 
-/*
- * Handle form submission for both creation and updates with duplicate checks.
- */
+// Function to reset the form and close the drawer
+const resetForm = () => {
+  resetFormValues();
+  isOpen.value = false;
+};
+
+// Function to handle form submission for creating or updating a family status
 const submitForm = async ({ clearDraft } = {}) => {
+  formErrors.familyStatusName.hasError = false;
+  formErrors.familyStatusName.message = "";
+
+  // Validate the form before proceeding
   if (!(await formRef.value?.validate())) {
     return;
   }
 
+  // Set the saving state to true while the API request is in progress
   saving.value = true;
 
   try {
+    // Prepare the payload for the API request
     const payload = {
-      name: form.name.trim()
+      name: form.familyStatusName.trim(),
+      familyStatusName: form.familyStatusName.trim(),
+      active: form.active
     };
 
-    let isNew = false;
-    if (isEditMode.value) {
+    // Determine whether to create a new record or update an existing one based on the editingId prop
+    if (props.editingId) {
       await familyStatusApi.update(props.editingId, payload);
       notify.success("Family status updated successfully.");
     } else {
       await familyStatusApi.create(payload);
       notify.success("Family status created successfully.");
-      isNew = true;
     }
 
+    // Clear the draft, close the form drawer, reset form values, and emit the saved event
     clearDraft?.();
     isOpen.value = false;
-    resetForm();
-    emit("saved", isNew);
+    resetFormValues();
+    emit("saved");
   } catch (err) {
-    // Handle duplicate name duplication validation error response from API
-    if (getApiErrorCode(err) === ApiErrorCodes.DuplicateIdentifier) {
-      notify.error("A family status with this name already exists.");
+    if (getApiErrorCode(err) === ApiErrorCodes.DuplicateIdentifier || getApiErrorMessage(err)?.toLowerCase().includes('already exists')) {
+      formErrors.familyStatusName.hasError = true;
+      formErrors.familyStatusName.message = "A family status with this name already exists.";
     } else {
       notify.error(getApiErrorMessage(err));
     }

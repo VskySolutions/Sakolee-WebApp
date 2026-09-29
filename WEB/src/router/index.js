@@ -36,10 +36,12 @@ import familystatusRoutes from "modules/familystatus/routes";
 import locationRoutes from "modules/location/routes";
 import classCategoryRoutes from "modules/class-category/routes";
 import sessionRoutes from "modules/session/routes";
-import bankmethodRoutes from "modules/bankmethod/routes";
+//import bankmethodRoutes from "modules/bankmethod/routes";
 import familyrelationRoutes from "modules/family-relations/routes";
 import billingCycleRoutes from "modules/billing-cycle/routes";
 import tShirtSizeRoutes from "modules/t-shirt-size/routes";
+import classRoomRoutes from "modules/class-room/routes";
+import billingMethodRoutes from "modules/billing-method/routes";
 
 routes.push(...accountRoutes);
 routes.push(...authRoutes);
@@ -61,9 +63,11 @@ routes.push(...familystatusRoutes);
 routes.push(...locationRoutes);
 routes.push(...classCategoryRoutes);
 routes.push(...sessionRoutes);
-routes.push(...bankmethodRoutes);
+//routes.push(...bankmethodRoutes);
 routes.push(...familyrelationRoutes);routes.push(...billingCycleRoutes);
 routes.push(...tShirtSizeRoutes);
+routes.push(...classRoomRoutes);
+routes.push(...billingMethodRoutes);
 
 // Route meta `permissions` requires any one of the listed permission keys; the deepest matched
 // record's list wins.
