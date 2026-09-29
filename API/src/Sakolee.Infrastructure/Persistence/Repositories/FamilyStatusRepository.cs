@@ -108,18 +108,6 @@ internal sealed class FamilyStatusRepository : IFamilyStatusRepository
             .Take(limit)
             .ToListAsync(cancellationToken);
 
-        var userIds = items
-            .SelectMany(f => new[] { f.CreatedBy, f.UpdatedBy })
-            .Where(id => !string.IsNullOrEmpty(id) && Guid.TryParse(id, out _))
-            .Distinct()
-            .Select(id => Guid.Parse(id!))
-            .ToList();
-
-        
-        var usersDict = await _dbContext.Users
-            .Where(u => userIds.Contains(u.Id))
-            .ToDictionaryAsync(u => u.Id, u => u.DisplayName, cancellationToken);
-
         return (items, total);
     }
 

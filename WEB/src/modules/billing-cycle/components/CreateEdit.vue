@@ -130,11 +130,11 @@ const submit = async ({ clearDraft } = {}) => {
     emit("saved");
   } catch (error) {
     if (error?.response?.status === 409) {
-      nameError.value ="A billing cycle with this name already exists.";
+      nameError.value = "A billing cycle with this name already exists.";
       return;
     }
     // Get a user-friendly error message from the API.
-    const message = getApiErrorMessage(error,"Unable to save billing cycle.");
+    const message = getApiErrorMessage(error, "Unable to save billing cycle.");
     notify.error(message);
   } finally {
     saving.value = false;

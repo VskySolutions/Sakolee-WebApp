@@ -7,7 +7,7 @@ export default [
         path: "",
         name: "users",
         component: () => import("modules/user/pages/index.vue"),
-        meta: { requiresAuth: true, permissions: ["users.read"], title: "Users" }
+        meta: { requiresAuth: true, permissions: ["users.read"], title: "Staff" }
       },
       {
         path: ":id",

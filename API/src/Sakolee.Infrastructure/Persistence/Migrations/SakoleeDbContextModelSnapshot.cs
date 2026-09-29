@@ -23,310 +23,310 @@ namespace Sakolee.Infrastructure.Persistence.Migrations
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
             modelBuilder.Entity("Microsoft.AspNetCore.DataProtection.EntityFrameworkCore.DataProtectionKey", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
+            {
+                b.Property<int>("Id")
+                    .ValueGeneratedOnAdd()
+                    .HasColumnType("int");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+                SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<string>("FriendlyName")
-                        .HasColumnType("nvarchar(max)");
+                b.Property<string>("FriendlyName")
+                    .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("Xml")
-                        .HasColumnType("nvarchar(max)");
+                b.Property<string>("Xml")
+                    .HasColumnType("nvarchar(max)");
 
-                    b.HasKey("Id");
+                b.HasKey("Id");
 
-                    b.ToTable("DataProtectionKeys");
-                });
+                b.ToTable("DataProtectionKeys");
+            });
 
             modelBuilder.Entity("Sakolee.Domain.Entities.ActivityEvent", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+            {
+                b.Property<Guid>("Id")
+                    .ValueGeneratedOnAdd()
+                    .HasColumnType("uniqueidentifier");
 
-                    b.Property<Guid?>("ActorId")
-                        .HasColumnType("uniqueidentifier");
+                b.Property<Guid?>("ActorId")
+                    .HasColumnType("uniqueidentifier");
 
-                    b.Property<Guid?>("CreatedById")
-                        .HasColumnType("uniqueidentifier");
+                b.Property<Guid?>("CreatedById")
+                    .HasColumnType("uniqueidentifier");
 
-                    b.Property<DateTime>("CreatedOnUtc")
-                        .HasColumnType("datetime2");
+                b.Property<DateTime>("CreatedOnUtc")
+                    .HasColumnType("datetime2");
 
-                    b.Property<bool>("Deleted")
-                        .HasColumnType("bit");
+                b.Property<bool>("Deleted")
+                    .HasColumnType("bit");
 
-                    b.Property<DateTime?>("DeletedOnUtc")
-                        .HasColumnType("datetime2");
+                b.Property<DateTime?>("DeletedOnUtc")
+                    .HasColumnType("datetime2");
 
-                    b.Property<Guid>("EntityId")
-                        .HasColumnType("uniqueidentifier");
+                b.Property<Guid>("EntityId")
+                    .HasColumnType("uniqueidentifier");
 
-                    b.Property<int>("EntityType")
-                        .HasColumnType("int");
+                b.Property<int>("EntityType")
+                    .HasColumnType("int");
 
-                    b.Property<string>("EventType")
-                        .IsRequired()
-                        .HasMaxLength(60)
-                        .HasColumnType("nvarchar(60)");
+                b.Property<string>("EventType")
+                    .IsRequired()
+                    .HasMaxLength(60)
+                    .HasColumnType("nvarchar(60)");
 
-                    b.Property<string>("NewValue")
-                        .HasColumnType("nvarchar(max)");
+                b.Property<string>("NewValue")
+                    .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("OldValue")
-                        .HasColumnType("nvarchar(max)");
+                b.Property<string>("OldValue")
+                    .HasColumnType("nvarchar(max)");
 
-                    b.Property<Guid>("TenantId")
-                        .HasColumnType("uniqueidentifier");
+                b.Property<Guid>("TenantId")
+                    .HasColumnType("uniqueidentifier");
 
-                    b.Property<Guid?>("UpdatedById")
-                        .HasColumnType("uniqueidentifier");
+                b.Property<Guid?>("UpdatedById")
+                    .HasColumnType("uniqueidentifier");
 
-                    b.Property<DateTime>("UpdatedOnUtc")
-                        .HasColumnType("datetime2");
+                b.Property<DateTime>("UpdatedOnUtc")
+                    .HasColumnType("datetime2");
 
-                    b.HasKey("Id");
+                b.HasKey("Id");
 
-                    b.HasIndex("TenantId");
+                b.HasIndex("TenantId");
 
-                    b.HasIndex("EntityType", "EntityId", "CreatedOnUtc")
-                        .IsDescending(false, false, true);
+                b.HasIndex("EntityType", "EntityId", "CreatedOnUtc")
+                    .IsDescending(false, false, true);
 
-                    b.ToTable("ActivityEvents", (string)null);
-                });
+                b.ToTable("ActivityEvents", (string)null);
+            });
 
             modelBuilder.Entity("Sakolee.Domain.Entities.Address", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+            {
+                b.Property<Guid>("Id")
+                    .ValueGeneratedOnAdd()
+                    .HasColumnType("uniqueidentifier");
 
-                    b.Property<string>("AddressLine1")
-                        .HasMaxLength(256)
-                        .HasColumnType("nvarchar(256)");
+                b.Property<string>("AddressLine1")
+                    .HasMaxLength(256)
+                    .HasColumnType("nvarchar(256)");
 
-                    b.Property<string>("AddressLine2")
-                        .HasMaxLength(256)
-                        .HasColumnType("nvarchar(256)");
+                b.Property<string>("AddressLine2")
+                    .HasMaxLength(256)
+                    .HasColumnType("nvarchar(256)");
 
-                    b.Property<string>("AddressType")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
+                b.Property<string>("AddressType")
+                    .IsRequired()
+                    .HasMaxLength(20)
+                    .HasColumnType("nvarchar(20)");
 
-                    b.Property<string>("BuildingName")
-                        .HasMaxLength(128)
-                        .HasColumnType("nvarchar(128)");
+                b.Property<string>("BuildingName")
+                    .HasMaxLength(128)
+                    .HasColumnType("nvarchar(128)");
 
-                    b.Property<string>("CityName")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
+                b.Property<string>("CityName")
+                    .HasMaxLength(100)
+                    .HasColumnType("nvarchar(100)");
 
-                    b.Property<string>("CountryCode")
-                        .HasMaxLength(3)
-                        .HasColumnType("nvarchar(3)");
+                b.Property<string>("CountryCode")
+                    .HasMaxLength(3)
+                    .HasColumnType("nvarchar(3)");
 
-                    b.Property<string>("CountryName")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
+                b.Property<string>("CountryName")
+                    .HasMaxLength(100)
+                    .HasColumnType("nvarchar(100)");
 
-                    b.Property<Guid?>("CreatedById")
-                        .HasColumnType("uniqueidentifier");
+                b.Property<Guid?>("CreatedById")
+                    .HasColumnType("uniqueidentifier");
 
-                    b.Property<DateTime>("CreatedOnUtc")
-                        .HasColumnType("datetime2");
+                b.Property<DateTime>("CreatedOnUtc")
+                    .HasColumnType("datetime2");
 
-                    b.Property<bool>("Deleted")
-                        .HasColumnType("bit");
+                b.Property<bool>("Deleted")
+                    .HasColumnType("bit");
 
-                    b.Property<DateTime?>("DeletedOnUtc")
-                        .HasColumnType("datetime2");
+                b.Property<DateTime?>("DeletedOnUtc")
+                    .HasColumnType("datetime2");
 
-                    b.Property<string>("Email")
-                        .HasMaxLength(256)
-                        .HasColumnType("nvarchar(256)");
+                b.Property<string>("Email")
+                    .HasMaxLength(256)
+                    .HasColumnType("nvarchar(256)");
 
-                    b.Property<string>("FirstName")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
+                b.Property<string>("FirstName")
+                    .HasMaxLength(100)
+                    .HasColumnType("nvarchar(100)");
 
-                    b.Property<string>("FloorNumber")
-                        .HasMaxLength(32)
-                        .HasColumnType("nvarchar(32)");
+                b.Property<string>("FloorNumber")
+                    .HasMaxLength(32)
+                    .HasColumnType("nvarchar(32)");
 
-                    b.Property<string>("Landmark")
-                        .HasMaxLength(128)
-                        .HasColumnType("nvarchar(128)");
+                b.Property<string>("Landmark")
+                    .HasMaxLength(128)
+                    .HasColumnType("nvarchar(128)");
 
-                    b.Property<string>("LastName")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
+                b.Property<string>("LastName")
+                    .HasMaxLength(100)
+                    .HasColumnType("nvarchar(100)");
 
-                    b.Property<string>("PhoneNumber")
-                        .HasMaxLength(32)
-                        .HasColumnType("nvarchar(32)");
+                b.Property<string>("PhoneNumber")
+                    .HasMaxLength(32)
+                    .HasColumnType("nvarchar(32)");
 
-                    b.Property<string>("PostalCode")
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
+                b.Property<string>("PostalCode")
+                    .HasMaxLength(20)
+                    .HasColumnType("nvarchar(20)");
 
-                    b.Property<string>("StateCode")
-                        .HasMaxLength(10)
-                        .HasColumnType("nvarchar(10)");
+                b.Property<string>("StateCode")
+                    .HasMaxLength(10)
+                    .HasColumnType("nvarchar(10)");
 
-                    b.Property<string>("StateName")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
+                b.Property<string>("StateName")
+                    .HasMaxLength(100)
+                    .HasColumnType("nvarchar(100)");
 
-                    b.Property<string>("Suffix")
-                        .HasMaxLength(16)
-                        .HasColumnType("nvarchar(16)");
+                b.Property<string>("Suffix")
+                    .HasMaxLength(16)
+                    .HasColumnType("nvarchar(16)");
 
-                    b.Property<string>("UnitNumber")
-                        .HasMaxLength(32)
-                        .HasColumnType("nvarchar(32)");
+                b.Property<string>("UnitNumber")
+                    .HasMaxLength(32)
+                    .HasColumnType("nvarchar(32)");
 
-                    b.Property<Guid?>("UpdatedById")
-                        .HasColumnType("uniqueidentifier");
+                b.Property<Guid?>("UpdatedById")
+                    .HasColumnType("uniqueidentifier");
 
-                    b.Property<DateTime>("UpdatedOnUtc")
-                        .HasColumnType("datetime2");
+                b.Property<DateTime>("UpdatedOnUtc")
+                    .HasColumnType("datetime2");
 
-                    b.HasKey("Id");
+                b.HasKey("Id");
 
-                    b.ToTable("Addresses", (string)null);
-                });
+                b.ToTable("Addresses", (string)null);
+            });
 
             modelBuilder.Entity("Sakolee.Domain.Entities.Attachment", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+            {
+                b.Property<Guid>("Id")
+                    .ValueGeneratedOnAdd()
+                    .HasColumnType("uniqueidentifier");
 
-                    b.Property<Guid?>("CreatedById")
-                        .HasColumnType("uniqueidentifier");
+                b.Property<Guid?>("CreatedById")
+                    .HasColumnType("uniqueidentifier");
 
-                    b.Property<DateTime>("CreatedOnUtc")
-                        .HasColumnType("datetime2");
+                b.Property<DateTime>("CreatedOnUtc")
+                    .HasColumnType("datetime2");
 
-                    b.Property<bool>("Deleted")
-                        .HasColumnType("bit");
+                b.Property<bool>("Deleted")
+                    .HasColumnType("bit");
 
-                    b.Property<DateTime?>("DeletedOnUtc")
-                        .HasColumnType("datetime2");
+                b.Property<DateTime?>("DeletedOnUtc")
+                    .HasColumnType("datetime2");
 
-                    b.Property<Guid>("EntityId")
-                        .HasColumnType("uniqueidentifier");
+                b.Property<Guid>("EntityId")
+                    .HasColumnType("uniqueidentifier");
 
-                    b.Property<int>("EntityType")
-                        .HasColumnType("int");
+                b.Property<int>("EntityType")
+                    .HasColumnType("int");
 
-                    b.Property<string>("FileExtension")
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
+                b.Property<string>("FileExtension")
+                    .HasMaxLength(20)
+                    .HasColumnType("nvarchar(20)");
 
-                    b.Property<string>("FileName")
-                        .IsRequired()
-                        .HasMaxLength(260)
-                        .HasColumnType("nvarchar(260)");
+                b.Property<string>("FileName")
+                    .IsRequired()
+                    .HasMaxLength(260)
+                    .HasColumnType("nvarchar(260)");
 
-                    b.Property<long>("FileSize")
-                        .HasColumnType("bigint");
+                b.Property<long>("FileSize")
+                    .HasColumnType("bigint");
 
-                    b.Property<string>("MimeType")
-                        .HasMaxLength(150)
-                        .HasColumnType("nvarchar(150)");
+                b.Property<string>("MimeType")
+                    .HasMaxLength(150)
+                    .HasColumnType("nvarchar(150)");
 
-                    b.Property<string>("StoredPath")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
+                b.Property<string>("StoredPath")
+                    .IsRequired()
+                    .HasMaxLength(500)
+                    .HasColumnType("nvarchar(500)");
 
-                    b.Property<Guid>("TenantId")
-                        .HasColumnType("uniqueidentifier");
+                b.Property<Guid>("TenantId")
+                    .HasColumnType("uniqueidentifier");
 
-                    b.Property<Guid?>("UpdatedById")
-                        .HasColumnType("uniqueidentifier");
+                b.Property<Guid?>("UpdatedById")
+                    .HasColumnType("uniqueidentifier");
 
-                    b.Property<DateTime>("UpdatedOnUtc")
-                        .HasColumnType("datetime2");
+                b.Property<DateTime>("UpdatedOnUtc")
+                    .HasColumnType("datetime2");
 
-                    b.HasKey("Id");
+                b.HasKey("Id");
 
-                    b.HasIndex("TenantId");
+                b.HasIndex("TenantId");
 
-                    b.HasIndex("EntityType", "EntityId");
+                b.HasIndex("EntityType", "EntityId");
 
-                    b.ToTable("Attachments", (string)null);
-                });
+                b.ToTable("Attachments", (string)null);
+            });
 
             modelBuilder.Entity("Sakolee.Domain.Entities.AuditTrailEntry", b =>
-                {
-                    b.Property<long>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint");
+            {
+                b.Property<long>("Id")
+                    .ValueGeneratedOnAdd()
+                    .HasColumnType("bigint");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+                SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
 
-                    b.Property<string>("Action")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
+                b.Property<string>("Action")
+                    .IsRequired()
+                    .HasMaxLength(100)
+                    .HasColumnType("nvarchar(100)");
 
-                    b.Property<Guid?>("CreatedById")
-                        .HasColumnType("uniqueidentifier");
+                b.Property<Guid?>("CreatedById")
+                    .HasColumnType("uniqueidentifier");
 
-                    b.Property<DateTime>("CreatedDate")
-                        .HasColumnType("datetime2");
+                b.Property<DateTime>("CreatedDate")
+                    .HasColumnType("datetime2");
 
-                    b.Property<DateTime>("CreatedOnUtc")
-                        .HasColumnType("datetime2");
+                b.Property<DateTime>("CreatedOnUtc")
+                    .HasColumnType("datetime2");
 
-                    b.Property<bool>("Deleted")
-                        .HasColumnType("bit");
+                b.Property<bool>("Deleted")
+                    .HasColumnType("bit");
 
-                    b.Property<DateTime?>("DeletedOnUtc")
-                        .HasColumnType("datetime2");
+                b.Property<DateTime?>("DeletedOnUtc")
+                    .HasColumnType("datetime2");
 
-                    b.Property<string>("Details")
-                        .HasColumnType("nvarchar(max)");
+                b.Property<string>("Details")
+                    .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("EntityId")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
+                b.Property<string>("EntityId")
+                    .IsRequired()
+                    .HasMaxLength(200)
+                    .HasColumnType("nvarchar(200)");
 
-                    b.Property<string>("EntityName")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
+                b.Property<string>("EntityName")
+                    .IsRequired()
+                    .HasMaxLength(200)
+                    .HasColumnType("nvarchar(200)");
 
-                    b.Property<string>("PerformedBy")
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
+                b.Property<string>("PerformedBy")
+                    .HasMaxLength(200)
+                    .HasColumnType("nvarchar(200)");
 
-                    b.Property<Guid>("TenantId")
-                        .HasColumnType("uniqueidentifier");
+                b.Property<Guid>("TenantId")
+                    .HasColumnType("uniqueidentifier");
 
-                    b.Property<Guid?>("UpdatedById")
-                        .HasColumnType("uniqueidentifier");
+                b.Property<Guid?>("UpdatedById")
+                    .HasColumnType("uniqueidentifier");
 
-                    b.Property<DateTime>("UpdatedOnUtc")
-                        .HasColumnType("datetime2");
+                b.Property<DateTime>("UpdatedOnUtc")
+                    .HasColumnType("datetime2");
 
-                    b.HasKey("Id");
+                b.HasKey("Id");
 
-                    b.HasIndex("CreatedDate");
+                b.HasIndex("CreatedDate");
 
-                    b.HasIndex("TenantId");
+                b.HasIndex("TenantId");
 
-                    b.HasIndex("EntityName", "EntityId");
+                b.HasIndex("EntityName", "EntityId");
 
-                    b.ToTable("AuditTrail", (string)null);
-                });
+                b.ToTable("AuditTrail", (string)null);
+            });
 
             modelBuilder.Entity("Sakolee.Domain.Entities.BillingCycle", b =>
             {
@@ -365,17 +365,6 @@ namespace Sakolee.Infrastructure.Persistence.Migrations
                     .HasColumnType("nvarchar(450)");
 
                 b.Property<DateTime?>("UpdatedOnUtc")
-                        .HasColumnType("datetime2");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("TenantId", "Name")
-                        .IsUnique()
-                        .HasFilter("[Deleted] = 0");
-
-                    b.ToTable("BillingCycle", (string)null);
-                });
-
                     .HasColumnType("datetime2");
 
                 b.HasKey("Id");

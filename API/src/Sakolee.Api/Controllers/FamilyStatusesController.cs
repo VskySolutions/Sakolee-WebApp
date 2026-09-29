@@ -108,14 +108,7 @@ public sealed class FamilyStatusesController : ControllerBase
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         // Map the created entity to a detailed response DTO
-        var detail = new FamilyStatusDetail(
-            familyStatus.FamilyStatusId,
-            familyStatus.Name,
-            !familyStatus.IsDeleted,
-            familyStatus.CreatedBy,
-            familyStatus.UpdatedBy,
-            familyStatus.CreatedOn,
-            familyStatus.UpdatedOn);
+        var detail = await ToDetailAsync(familyStatus, cancellationToken);
 
         return StatusCode(StatusCodes.Status201Created,
             ApiResponseFactory.Success(detail, "Family status created."));
@@ -155,13 +148,16 @@ public sealed class FamilyStatusesController : ControllerBase
 
 
 
+        // Resolve the audit user IDs into display names for the Created By / Updated By columns
+        var nameOf = await AuditNamesAsync(items, cancellationToken);
+
         // Project database model items into summary DTOs including Tenant information for client consumption
         var summaries = items.Select(f => new FamilyStatusSummary(
             f.FamilyStatusId,
             f.Name,
             !f.IsDeleted,
-            f.CreatedBy,
-            f.UpdatedBy,
+            nameOf(f.CreatedBy),
+            nameOf(f.UpdatedBy),
 
             f.CreatedOn,
             f.UpdatedOn,
@@ -191,14 +187,7 @@ public sealed class FamilyStatusesController : ControllerBase
         }
 
         // Map entity details to response DTO
-        var detail = new FamilyStatusDetail(
-            familyStatus.FamilyStatusId,
-            familyStatus.Name,
-            !familyStatus.IsDeleted,
-            familyStatus.CreatedBy,
-            familyStatus.UpdatedBy,
-            familyStatus.CreatedOn,
-            familyStatus.UpdatedOn);
+        var detail = await ToDetailAsync(familyStatus, cancellationToken);
 
         return Ok(ApiResponseFactory.Success(detail, "Family status retrieved."));
     }
@@ -247,14 +236,7 @@ public sealed class FamilyStatusesController : ControllerBase
         await _audit.AddAsync(nameof(FamilyStatus), familyStatus.FamilyStatusId.ToString(), "Updated", cancellationToken: cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        var detail = new FamilyStatusDetail(
-            familyStatus.FamilyStatusId,
-            familyStatus.Name,
-            !familyStatus.IsDeleted,
-            familyStatus.CreatedBy,
-            familyStatus.UpdatedBy,
-            familyStatus.CreatedOn,
-            familyStatus.UpdatedOn);
+        var detail = await ToDetailAsync(familyStatus, cancellationToken);
 
         return Ok(ApiResponseFactory.Success(detail, "Family status updated."));
     }
@@ -315,6 +297,45 @@ public sealed class FamilyStatusesController : ControllerBase
         => User.IsSuperAdmin()
             ? _familyStatuses.GetByIdUnscopedAsync(id, cancellationToken)
             : _familyStatuses.GetByIdAsync(id, cancellationToken);
+
+    #endregion
+
+    #region Audit Name Helpers
+
+    /// <summary>
+    /// Resolves the user IDs stored in the audit fields into display names.
+    /// Falls back to the stored value when it is not a known user ID.
+    /// </summary>
+    private async Task<Func<string?, string?>> AuditNamesAsync(IEnumerable<FamilyStatus> rows, CancellationToken cancellationToken)
+    {
+        var ids = rows
+            .SelectMany(f => new[] { f.CreatedBy, f.UpdatedBy })
+            .Select(id => Guid.TryParse(id, out var userId) ? userId : (Guid?)null)
+            .Where(id => id.HasValue)
+            .Select(id => id!.Value)
+            .Distinct();
+
+        var names = await _users.GetFullNamesAsync(ids, cancellationToken);
+
+        return value => Guid.TryParse(value, out var userId) && names.TryGetValue(userId, out var name) ? name : value;
+    }
+
+    /// <summary>
+    /// Maps a family status entity to its detail response with audit names resolved.
+    /// </summary>
+    private async Task<FamilyStatusDetail> ToDetailAsync(FamilyStatus familyStatus, CancellationToken cancellationToken)
+    {
+        var nameOf = await AuditNamesAsync(new[] { familyStatus }, cancellationToken);
+
+        return new FamilyStatusDetail(
+            familyStatus.FamilyStatusId,
+            familyStatus.Name,
+            !familyStatus.IsDeleted,
+            nameOf(familyStatus.CreatedBy),
+            nameOf(familyStatus.UpdatedBy),
+            familyStatus.CreatedOn,
+            familyStatus.UpdatedOn);
+    }
 
     #endregion
 

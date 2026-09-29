@@ -12,19 +12,19 @@ export default [
       {
         path: "create",
         name: "class_create",
-        component: () => import("modules/class/pages/create.vue"),
+        component: () => import("modules/class/components/create.vue"),
         meta: { requiresAuth: true, permissions: ["classes.read"], title: "Add Class" }
       },
       {
         path: ":id/edit",
         name: "class_edit",
-        component: () => import("modules/class/pages/edit.vue"),
+        component: () => import("modules/class/components/edit.vue"),
         meta: { requiresAuth: true, permissions: ["classes.read"], title: "Edit Class" }
       },
       {
         path: ":id",
         name: "class_detail",
-        component: () => import("modules/class/pages/detail.vue"),
+        component: () => import("modules/class/components/detail.vue"),
         meta: { requiresAuth: true, permissions: ["classes.read"], title: "View Class" }
       }
     ]
