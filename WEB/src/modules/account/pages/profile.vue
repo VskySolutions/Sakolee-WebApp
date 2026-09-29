@@ -217,7 +217,9 @@ const load = async () => {
     form.emergencyContactRelationship = p.emergencyContactRelationship || "";
     form.emergencyContactNumber = p.emergencyContactNumber || "";
     form.profileMediaId = p.profileMediaId || null;
+    console.log("What is profile medial url?:", p.profileMediaUrl);
     if (p.profileMediaUrl) previewUrl.value = mediaApi.absoluteUrl(p.profileMediaUrl);
+    console.log("Profile Id and Image URL:", form.profileMediaId + " " + previewUrl.value);
     if (p.address) {
       address.countryCode = p.address.countryCode || null;
       address.countryName = p.address.countryName || null;

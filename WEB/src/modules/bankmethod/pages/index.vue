@@ -1,348 +1,574 @@
 <template>
+  <!-- 
+    ============================================================
+    Billing Methods Index Page Component
+    ============================================================
+    Manages billing method listings, filtering, server-side data grid operations,
+    and side-drawers for viewing, creating, and editing billing methods.
+  -->
   <q-page padding>
     <!-- Page Header Component: Manages breadcrumb navigation, live search inputs, and entity creation triggers -->
     <app-list-header
-      :breadcrumbs="[{ label: 'Home', icon: 'o_home', to: '/' }, { label: 'Billing Methods' }]"
+      :breadcrumbs="[
+        { label: 'Home', to: '/' },
+        { label: 'Billing Methods' }
+      ]"
+      title="Billing Methods"
+      description="Manage your all billing methods here."
       :search="search"
       show-search
-      search-placeholder="Search billing method name"
+      search-placeholder="Search billing methods"
+      show-filters
+      :filter-count="filterChips.length"
       show-add
       add-label="Create Billing Method"
       show-back
       @update:search="search = $event"
-      @add="openCreateDrawer"
+      @filters="filterOpen = true"
+      @add="openCreate"
       @back="$router.back()"
     />
+
+    <!-- Filter Drawer Component: Advanced filtering and deleted records controls -->
+    <app-filter-drawer
+      v-model="filterOpen"
+      :chips="filterChips"
+      @remove="removeFilter"
+      @clear="clearFilters"
+    >
+      <app-column-filters
+        v-model="filters"
+        :columns="filterableColumns"
+      />
+
+      <q-toggle
+        v-if="canManageDeleted"
+        v-model="showDeleted"
+        label="Show deleted?"
+        dense
+        class="q-mt-md"
+      />
+    </app-filter-drawer>
 
     <!-- Core Data Table Grid Component: Handles server-side pagination, sorting, row selection, and dataset display -->
     <app-data-table
       page-key="billing-methods"
       :row-key="(row) => row.billingMethodId || row.BillingMethodId || row.id || row.Id"
-      title="All Billing Methods"
-      :rows="rows"
+      title="Billing Methods"
+      :rows="filteredRows"
       :columns="columns"
       :loading="loading"
-      :total-records="totalRecords"
+      :total-records="filteredRows.length"
       :pagination="pagination"
-      selectable
       @request="onRequest"
       @refresh="load"
-      @update:selected="selected = $event"
     >
-      <!-- Bulk Actions Slot: Provides batch deletion functionality for selected table rows -->
-      <template #bulk-actions="{ selected: sel }">
-        <q-btn flat dense no-caps color="negative" label="Delete Selected" @click="bulkDelete(sel)" />
+      <!-- Status Column Slot: Renders Active/Inactive badge indicators -->
+      <template #body-cell-active="cell">
+        <q-td :props="cell">
+          <q-badge :color="cell.value ? 'positive' : 'grey'">
+            {{ cell.value ? "Active" : "Inactive" }}
+          </q-badge>
+        </q-td>
       </template>
 
       <!-- Row Actions Slot: Renders individual record operations including view details, editing, and deletion -->
       <template #body-cell-actions="cell">
-        <q-td :props="cell" class="text-right" style="padding-right: 50px !important;">
-          <!-- View Action: Triggers view drawer modal -->
-          <q-btn flat round dense color="primary" icon="o_visibility" @click="viewRecord(cell.row)">
-            <q-tooltip>View Details</q-tooltip>
+        <q-td :props="cell">
+          <q-btn
+            flat
+            round
+            dense
+            color="primary"
+            icon="o_visibility"
+            @click="openView(cell.row)"
+          >
+            <q-tooltip>View</q-tooltip>
           </q-btn>
-          <!-- Edit Action: Extracts unique identifier and opens the form drawer in update mode -->
-          <q-btn flat round dense color="primary" icon="o_edit" @click="editRecord(cell.row)">
+          <q-btn
+            flat
+            round
+            dense
+            color="primary"
+            icon="o_edit"
+            @click="openEdit(cell.row)"
+          >
             <q-tooltip>Edit</q-tooltip>
           </q-btn>
-          <!-- Delete Action: Triggers individual soft deletion workflow for the selected entity -->
-          <q-btn flat round dense color="negative" icon="o_delete" @click="deleteRecord(cell.row)">
+
+          <q-btn
+            flat
+            round
+            dense
+            color="negative"
+            icon="o_delete"
+            @click="removeBillingMethod(cell.row)"
+          >
             <q-tooltip>Delete</q-tooltip>
           </q-btn>
         </q-td>
       </template>
     </app-data-table>
 
-    <!-- Create / Edit Right-Side Drawer Dialog Component -->
-    <q-dialog v-model="drawerOpen" position="right" maximized persistent>
-      <q-card class="column" style="width: 500px; max-width: 100vw; height: 500px; max-height: 70vh;">
-        <!-- Dialog Header Banner -->
-        <q-card-section class="row items-center q-pb-none bg-primary text-white">
-          <div class="text-h6">{{ editing ? 'Edit Billing Method' : 'Create Billing Method' }}</div>
-          <q-space />
-          <q-btn icon="o_close" flat round dense @click="closeDrawer" />
-        </q-card-section>
+    <!-- =========================================================
+         Create / Edit Billing Method Form Drawer
+         ========================================================= -->
+    <app-form-drawer
+      v-model="formOpen"
+      :title="editingId ? 'Edit Billing Method' : 'Create Billing Method'"
+      :saving="saving"
+      :save-label="editingId ? 'Save' : 'Create'"
+      @submit="submitForm"
+      @cancel="resetForm"
+    >
+      <q-form ref="formRef" greedy>
+        <!-- Primary Entity Property: Billing Method Name -->
+        <app-text-field
+          v-model="form.name"
+          label="Billing Method Name"
+          required
+          class="q-mb-md"
+          :rules="[
+            (v) => !!v?.trim() || 'Billing method name is required',
+            (v) =>
+              !v ||
+              v.trim().length <= 100 ||
+              'Billing method name cannot exceed 100 characters'
+          ]"
+        />
 
-        <!-- Dialog Body Form Content Container -->
-        <q-card-section class="col q-pa-md scroll">
-          <!-- Loading Spinner Overlay during individual record fetch -->
-          <div v-if="formLoading" class="row flex-center q-pa-xl">
-            <q-spinner color="primary" size="40px" />
+        <!-- Status Toggle -->
+        <q-toggle
+          v-model="form.active"
+          label="Active"
+        />
+      </q-form>
+    </app-form-drawer>
+
+    <!-- =========================================================
+         View Billing Method Details Drawer
+         ========================================================= -->
+    <app-form-drawer
+      v-model="viewOpen"
+      title="View Billing Method"
+      :saving="viewLoading"
+      :save-label="''"
+      :hide-save="true"
+      @cancel="closeView"
+    >
+      <!-- Loading Spinner Overlay during asynchronous fetch operations -->
+      <div v-if="viewLoading" class="row flex-center q-pa-xl">
+        <q-spinner color="primary" size="40px" />
+      </div>
+
+      <div v-else class="q-gutter-md">
+        <!-- Field: Billing Method Name -->
+        <div>
+          <div class="text-86 fs-12 fw-500">
+            Billing Method Name
           </div>
+          <div class="text-2e fs-4">
+            {{ viewBillingMethod.name || '—' }}
+          </div>
+        </div>
 
-          <q-form v-else ref="formRef" greedy @submit.prevent="submitForm">
-            <!-- Billing Method Name Input Field -->
-            <app-text-field
-              v-model="form.name"
-              label="Billing Method Name"
-              required
-              :error="!!nameDuplicateError"
-              :error-message="nameDuplicateError"
-              @update:model-value="nameDuplicateError = ''"
-              class="q-mb-md"
-              :rules="[(v) => !!v || 'Billing method name is required']"
-            />
+        <!-- Field: Status -->
+        <div>
+          <div class="text-86 fs-12 fw-500">
+            Status
+          </div>
+          <q-badge :color="viewBillingMethod.active ? 'positive' : 'grey'">
+            {{ viewBillingMethod.active ? "Active" : "Inactive" }}
+          </q-badge>
+        </div>
 
-            <!-- Active Status Toggle Field -->
-            <q-toggle
-              v-model="form.active"
-              label="Active"
-              class="q-mb-md"
-            />
-          </q-form>
-        </q-card-section>
+        <!-- Field: Created By -->
+        <div>
+          <div class="text-86 fs-12 fw-500">
+            Created By
+          </div>
+          <div class="text-2e fs-14">
+            {{ viewBillingMethod.createdBy || "—" }}
+          </div>
+        </div>
 
-        <!-- Dialog Footer Action Triggers -->
-        <q-card-actions align="right" class="q-pa-md bg-grey-2">
-          <q-btn flat label="Cancel" color="grey" @click="closeDrawer" />
-          <q-btn unelevated color="primary" :label="editing ? 'Update' : 'Save'" :loading="saving" @click="submitForm" />
-        </q-card-actions>
-      </q-card>
-    </q-dialog>
+        <!-- Field: Created On -->
+        <div>
+          <div class="text-86 fs-12 fw-500">
+            Created On
+          </div>
+          <div class="text-2e fs-14">
+            {{ formatDate(viewBillingMethod.createdOnUtc) }}
+          </div>
+        </div>
 
-    <!-- View Right-Side Drawer Component Integration -->
-    <billing-method-view-drawer v-model="viewDrawerOpen" :record-id="viewRecordId" />
+        <!-- Field: Updated By -->
+        <div>
+          <div class="text-86 fs-12 fw-500">
+            Updated By
+          </div>
+          <div class="text-2e fs-14">
+            {{ viewBillingMethod.updatedBy || "—" }}
+          </div>
+        </div>
+
+        <!-- Field: Updated On -->
+        <div>
+          <div class="text-86 fs-12 fw-500">
+            Updated On
+          </div>
+          <div class="text-2e fs-14">
+            {{ formatDate(viewBillingMethod.updatedOnUtc) }}
+          </div>
+        </div>
+      </div>
+    </app-form-drawer>
   </q-page>
 </template>
 
 <script setup>
 import { ref, reactive, computed, watch, onMounted } from "vue";
-import { useRouter } from "vue-router";
 import { debounce } from "quasar";
 
-import { billingMethodApi, getApiErrorMessage } from "services/api";
+import {
+  billingMethodApi,
+  getApiErrorMessage,
+  getApiErrorCode,
+  ApiErrorCodes
+} from "services/api";
+
 import { useNotify } from "composables/useNotify";
 import { useConfirm } from "composables/useConfirm";
 import { useListTable } from "composables/useListTable";
+import { useColumnFilters } from "composables/useColumnFilters";
+import { useDeletedRecords } from "composables/useDeletedRecords";
 
 import AppDataTable from "components/common/AppDataTable.vue";
+import AppFormDrawer from "components/common/AppFormDrawer.vue";
 import AppListHeader from "components/common/AppListHeader.vue";
+import AppFilterDrawer from "components/common/AppFilterDrawer.vue";
+import AppColumnFilters from "components/common/AppColumnFilters.vue";
 import AppTextField from "components/common/AppTextField.vue";
-import BillingMethodViewDrawer from "src/modules/bankmethod/components/view_bankmethod.vue";
 
-const router = useRouter();
+const { showDeleted, canManageDeleted } = useDeletedRecords();
 const notify = useNotify();
 const { confirm } = useConfirm();
 
-// Drawer & Form State References
-const drawerOpen = ref(false);
-const editing = ref(false);
-const editingId = ref(null);
-const formLoading = ref(false);
-const saving = ref(false);
-const formRef = ref(null);
-
-// View Drawer State References
-const viewDrawerOpen = ref(false);
-const viewRecordId = ref(null);
-
-const nameDuplicateError = ref("");
-
-// Form Payload Model Definition
-const form = reactive({
-  name: "",
-  active: true
-});
-
-// Data Grid Columns Definition Schema
-const columns = computed(() => [
-  { 
-    name: "id", 
-    label: "ID", 
-    field: (r) => r.billingMethodId || r.BillingMethodId || r.id || r.Id, 
-    align: "left", 
-    sortable: true 
-  },
-  { 
-    name: "name", 
-    label: "Billing Method Name", 
-    field: (r) => r.name || r.Name || r.billingMethodName || r.BillingMethodName, 
-    align: "left", 
-    sortable: true 
-  },
-  { 
-    name: "active", 
-    label: "Status", 
-    field: (r) => r.active !== undefined ? r.active : r.Active, 
-    align: "left", 
-    sortable: true,
-    format: (val) => val ? 'Active' : 'Inactive'
-  },
-  { 
-    name: "createdOn", 
-    label: "Created Date", 
-    field: (r) => r.createdOn || r.CreatedOn || r.createdOnUtc || r.CreatedOnUtc, 
-    align: "left", 
-    sortable: true,
-    format: (val) => {
-      if (!val) return '-';
-      const date = new Date(val);
-      return isNaN(date.getTime()) ? String(val) : date.toLocaleString();
-    }
-  },
-  { 
-    name: "actions", 
-    label: "Actions", 
-    field: "actions", 
-    align: "right", 
-    style: "padding-right: 50px !important;", 
-    headerStyle: "padding-right: 70px !important;" 
+/**
+ * Standard date formatter matching global display expectations.
+ * @param {String|Date} value - Raw date string or timestamp.
+ */
+const formatDate = (value) => {
+  if (!value) {
+    return "—";
   }
-]);
+  const date = new Date(value);
+  return isNaN(date.getTime()) ? String(value) : date.toLocaleString();
+};
 
-// List Table Composable Integration
-const { 
-    rows, 
-    loading, 
-    totalRecords, 
-    selected, 
-    search, 
-    pagination, 
-    load, 
-    onRequest 
+/*
+ * ------------------------------------------------------------
+ * Table columns definition (filterable: false set on non-target columns)
+ * ------------------------------------------------------------
+ */
+const columns = [
+  {
+    name: "name",
+    label: "Billing Method Name",
+    field: (r) => r.name || r.Name || r.billingMethodName || r.BillingMethodName,
+    align: "left",
+    sortable: true,
+    default: true
+  },
+  {
+    name: "active",
+    label: "Status",
+    field: (r) => r.active ?? r.Active ?? r.is_active ?? true,
+    align: "left",
+    sortable: true,
+    default: true,
+    filterOptions: [
+      { label: "Active", value: true },
+      { label: "Inactive", value: false }
+    ]
+  },
+  {
+    name: "createdBy",
+    label: "Created By",
+    field: (r) => r.createdBy || r.CreatedBy || r.created_by || "—",
+    align: "left",
+    sortable: true,
+    default: true,
+    filterable: false // Excluded from column filters
+  },
+  {
+    name: "createdOnUtc",
+    label: "Created On",
+    field: (r) => r.createdOnUtc || r.CreatedOnUtc || r.created_on_utc || r.createdOn || r.CreatedOn || r.created_on || null,
+    align: "left",
+    sortable: true,
+    default: true,
+    filterable: false, // Excluded from column filters
+    format: (val) => formatDate(val)
+  },
+  {
+    name: "updatedBy",
+    label: "Updated By",
+    field: (r) => r.updatedBy || r.UpdatedBy || r.updated_by || "—",
+    align: "left",
+    sortable: true,
+    default: false,
+    filterable: false // Excluded from column filters
+  },
+  {
+    name: "updatedOnUtc",
+    label: "Updated On",
+    field: (r) => r.updatedOnUtc || r.UpdatedOnUtc || r.updated_on_utc || r.updatedOn || r.UpdatedOn || r.updated_on || null,
+    align: "left",
+    sortable: true,
+    default: false,
+    filterable: false, // Excluded from column filters
+    format: (val) => formatDate(val)
+  },
+  {
+    name: "actions",
+    label: "Actions",
+    field: "actions",
+    align: "left"
+  }
+];
+
+/*
+ * ------------------------------------------------------------
+ * List Table Data Management Composable
+ * ------------------------------------------------------------
+ */
+const {
+  rows,
+  loading,
+  search,
+  pagination,
+  load,
+  onRequest
 } = useListTable({
-    pageKey: "billing-methods",
-    fetcher: ({ page, limit, sortBy, descending }) => {
-        return billingMethodApi.list({
-            page,
-            limit,
-            sortBy,
-            descending,
-            search: search.value || undefined
-        }).then((r) => ({ 
-            data: r?.data?.items || r?.items || r?.data || [], 
-            total: r?.data?.totalCount || r?.totalRecords || r?.total || 0 
-        }));
-    },
-    onError: (err) => notify.error(getApiErrorMessage(err))
+  pageKey: "billing-methods",
+
+  fetcher: ({ sortBy, descending }) =>
+    billingMethodApi.list({
+      search: search.value || undefined,
+      sortBy: sortBy || 'createdOnUtc',
+      descending: descending ?? true
+    }).then((response) => {
+      const items = response?.data?.items || response?.items || response?.data || [];
+      return {
+        data: items,
+        total: items.length
+      };
+    }),
+
+  onError: (err) => notify.error(getApiErrorMessage(err))
 });
 
-const reload = debounce(() => { 
-  pagination.value.page = 1; 
-  load(); 
+const filterOpen = ref(false);
+
+const {
+  filters,
+  filterableColumns,
+  filteredRows,
+  filterChips,
+  removeFilter,
+  clearFilters
+} = useColumnFilters(columns, rows, {
+  server: false
+});
+
+const reload = debounce(() => {
+  pagination.value.page = 1;
+  load();
 }, 300);
 
 watch(search, reload);
 
 onMounted(() => {
+  pagination.value.sortBy = 'createdOnUtc';
+  pagination.value.descending = true;
   load();
 });
 
-const openCreateDrawer = () => {
-  editing.value = false;
+/*
+ * ------------------------------------------------------------
+ * View Billing Method Drawer State & Handler Methods
+ * ------------------------------------------------------------
+ */
+const viewOpen = ref(false);
+const viewLoading = ref(false);
+
+const viewBillingMethod = reactive({
+  id: null,
+  name: "",
+  active: true,
+  createdBy: "",
+  createdOnUtc: null,
+  updatedBy: "",
+  updatedOnUtc: null
+});
+
+const resetViewBillingMethod = () => {
+  viewBillingMethod.id = null;
+  viewBillingMethod.name = "";
+  viewBillingMethod.active = true;
+  viewBillingMethod.createdBy = "";
+  viewBillingMethod.createdOnUtc = null;
+  viewBillingMethod.updatedBy = "";
+  viewBillingMethod.updatedOnUtc = null;
+};
+
+const openView = async (row) => {
+  const id = row.billingMethodId || row.BillingMethodId || row.id || row.Id;
+  if (!id) {
+    notify.error("Invalid record identifier for viewing.");
+    return;
+  }
+
+  resetViewBillingMethod();
+  viewOpen.value = true;
+  viewLoading.value = true;
+
+  try {
+    const response = await billingMethodApi.get(id);
+    const item = response?.data?.data || response?.data || response;
+
+    if (item) {
+      viewBillingMethod.id = id;
+      viewBillingMethod.name = item.name || item.Name || item.billingMethodName || item.BillingMethodName || "";
+      viewBillingMethod.active = item.active ?? item.Active ?? item.is_active ?? true;
+      viewBillingMethod.createdBy = item.createdBy || item.CreatedBy || item.created_by || "";
+      viewBillingMethod.createdOnUtc = item.createdOnUtc || item.CreatedOnUtc || item.created_on_utc || item.createdOn || item.CreatedOn || item.created_on || null;
+      viewBillingMethod.updatedBy = item.updatedBy || item.UpdatedBy || item.updated_by || "";
+      viewBillingMethod.updatedOnUtc = item.updatedOnUtc || item.UpdatedOnUtc || item.updated_on_utc || item.updatedOn || item.UpdatedOn || item.updated_on || null;
+    }
+  } catch (err) {
+    viewOpen.value = false;
+    notify.error(getApiErrorMessage(err));
+  } finally {
+    viewLoading.value = false;
+  }
+};
+
+const closeView = () => {
+  viewOpen.value = false;
+  resetViewBillingMethod();
+};
+
+/*
+ * ------------------------------------------------------------
+ * Create / Edit Form Drawer State & Persistence Handlers
+ * ------------------------------------------------------------
+ */
+const formOpen = ref(false);
+const saving = ref(false);
+const editingId = ref(null);
+const formRef = ref(null);
+
+const form = reactive({
+  name: "",
+  active: true
+});
+
+const resetForm = () => {
   editingId.value = null;
   form.name = "";
   form.active = true;
-  drawerOpen.value = true;
 };
 
-const editRecord = async (row) => {
+const openCreate = () => {
+  resetForm();
+  formOpen.value = true;
+};
+
+const openEdit = (row) => {
   const id = row.billingMethodId || row.BillingMethodId || row.id || row.Id;
   if (!id) {
     notify.error("Invalid record identifier for editing.");
     return;
   }
 
-  editing.value = true;
   editingId.value = id;
-  drawerOpen.value = true;
-  formLoading.value = true;
+  form.name = row.name || row.Name || row.billingMethodName || row.BillingMethodName || "";
+  form.active = row.active ?? row.Active ?? row.is_active ?? true;
 
-  try {
-    const response = await billingMethodApi.get(id);
-    const item = response?.data?.data || response?.data || response;
-    if (item) {
-      form.name = item.name || item.Name || "";
-      form.active = item.active !== undefined ? item.active : (item.Active !== undefined ? item.Active : true);
-    }
-  } catch (err) {
-    notify.error(getApiErrorMessage(err));
-  } finally {
-    formLoading.value = false;
+  formOpen.value = true;
+};
+
+const submitForm = async ({ clearDraft } = {}) => {
+  if (!(await formRef.value?.validate())) {
+    return;
   }
-};
-
-const closeDrawer = () => {
-  drawerOpen.value = false;
-};
-
-const submitForm = async () => {
-  const valid = await formRef.value?.validate();
-  if (!valid) return;
 
   saving.value = true;
+
   try {
     const payload = {
-      name: form.name,
+      name: form.name.trim(),
       active: form.active
     };
 
-    if (editing.value && editingId.value) {
-      await billingMethodApi.update(editingId.Value || editingId.value, payload);
+    if (editingId.value) {
+      await billingMethodApi.update(editingId.value, payload);
       notify.success("Billing method updated successfully.");
     } else {
-      await billingMethodApi.create(payload);
+      const response = await billingMethodApi.create(payload);
       notify.success("Billing method created successfully.");
+      
+      const createdItem = response?.data?.data || response?.data || response;
+      if (createdItem && typeof createdItem === 'object') {
+        rows.value.unshift(createdItem);
+      }
     }
 
-    drawerOpen.value = false;
-    load();
+    clearDraft?.();
+    formOpen.value = false;
+    resetForm();
+
+    pagination.value.sortBy = 'createdOnUtc';
+    pagination.value.descending = true;
+    await load();
   } catch (err) {
-    notify.error(getApiErrorMessage(err));
+    if (getApiErrorCode(err) === ApiErrorCodes.DuplicateIdentifier) {
+      notify.error("A billing method with this name already exists.");
+    } else {
+      notify.error(getApiErrorMessage(err));
+    }
   } finally {
     saving.value = false;
   }
 };
 
-/**
- * Triggers the view right-side drawer component for the selected billing method record.
- * @param {Object} row - Target entity row data instance.
+/*
+ * ------------------------------------------------------------
+ * Deletion Handling Workflow
+ * ------------------------------------------------------------
  */
-const viewRecord = (row) => {
-  const id = row.billingMethodId || row.BillingMethodId || row.id || row.Id;
-  if (!id) {
-    notify.error("Invalid record identifier for viewing.");
-    return;
-  }
-  viewRecordId.value = id;
-  viewDrawerOpen.value = true;
-};
-
-const deleteRecord = async (row) => {
+const removeBillingMethod = async (row) => {
   const id = row.billingMethodId || row.BillingMethodId || row.id || row.Id;
   if (!id) return;
 
   const methodLabel = row.name || row.Name || row.billingMethodName || row.BillingMethodName || 'this billing method';
-  const ok = await confirm({ 
-    title: "Delete Billing Method", 
-    message: `Are you sure you want to delete "${methodLabel}"?`, 
-    type: "danger" 
+  const ok = await confirm({
+    title: "Delete billing method",
+    message: `Are you sure you want to delete the billing method "${methodLabel}"?`,
+    confirmLabel: "Delete",
+    type: "danger"
   });
-  if (!ok) return;
+
+  if (!ok) {
+    return;
+  }
 
   try {
     await billingMethodApi.delete(id);
     notify.success("Billing method deleted successfully.");
-    load();
-  } catch (err) {
-    notify.error(getApiErrorMessage(err));
-  }
-};
-
-const bulkDelete = async (sel) => {
-  if (!sel.length) return;
-  const ok = await confirm({ 
-    title: "Delete Selected", 
-    message: `Are you sure you want to delete ${sel.length} billing method(s)?`, 
-    type: "danger" 
-  });
-  if (!ok) return;
-
-  try {
-    await Promise.all(sel.map(r => billingMethodApi.delete(r.billingMethodId || r.BillingMethodId || r.id || r.Id)));
-    notify.success("Selected billing methods deleted successfully.");
-    selected.value = [];
-    load();
+    await load();
   } catch (err) {
     notify.error(getApiErrorMessage(err));
   }

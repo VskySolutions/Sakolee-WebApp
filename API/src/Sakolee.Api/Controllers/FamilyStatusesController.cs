@@ -153,6 +153,8 @@ public sealed class FamilyStatusesController : ControllerBase
             search, scopeTenant, isActive, new SortRequest(sortBy, descending), page, limit,
             cancellationToken: cancellationToken);
 
+
+
         // Project database model items into summary DTOs including Tenant information for client consumption
         var summaries = items.Select(f => new FamilyStatusSummary(
             f.FamilyStatusId,
@@ -160,6 +162,7 @@ public sealed class FamilyStatusesController : ControllerBase
             !f.IsDeleted,
             f.CreatedBy,
             f.UpdatedBy,
+
             f.CreatedOn,
             f.UpdatedOn,
             f.TenantId,                  // Added TenantId

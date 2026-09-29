@@ -58,9 +58,8 @@
     <!-- Create / Edit / View drawer -->
     <app-form-drawer
       v-model="formOpen"
-      :title="viewing ? 'View Family' : editing ? 'Edit Family' : 'Create Family'"
+      :title="editing ? 'Edit Family' : 'Create Family'"
       :saving="saving"
-      :hide-save="viewing"
       @submit="submitForm"
       @cancel="resetForm"
     >
@@ -77,69 +76,69 @@
            field in an unvisited tab would silently pass validation otherwise. -->
       <q-form ref="formRef" greedy>
         <div v-show="activeTab === 'family'" class="row q-col-gutter-md">
-          <app-text-field v-model="form.familyName" label="Family Name" required :disable="viewing" class="col-12 col-sm-6" :rules="[(v) => !!v || 'Family name is required']" />
-          <app-select v-model="form.studioLocationId" label="Studio Location" :options="locationOptions" :disable="viewing" class="col-12 col-sm-6" />
-          <app-select v-model="form.familyStatusId" label="Family Status" :options="familyStatusOptions" :disable="viewing" class="col-12 col-sm-6" />
-          <app-select v-model="form.source" label="How Did You Hear About Us?" :options="sourceOptions" :disable="viewing" class="col-12 col-sm-6" />
-          <app-text-field v-model="form.referralName" label="Referral Name" :disable="viewing" class="col-12 col-sm-6" />
+          <app-text-field v-model="form.familyName" label="Family Name" required class="col-12 col-sm-6" :rules="[(v) => !!v || 'Family name is required']" />
+          <app-select v-model="form.studioLocationId" label="Studio Location" :options="locationOptions" class="col-12 col-sm-6" />
+          <app-select v-model="form.familyStatusId" label="Family Status" :options="familyStatusOptions" class="col-12 col-sm-6" />
+          <app-select v-model="form.source" label="How Did You Hear About Us?" :options="sourceOptions" class="col-12 col-sm-6" />
+          <app-text-field v-model="form.referralName" label="Referral Name" class="col-12 col-sm-6" />
 
-          <div v-if="editing || viewing" class="col-12">
-            <q-toggle v-model="form.active" label="Active" :disable="viewing" />
+          <div v-if="editing" class="col-12">
+            <q-toggle v-model="form.active" label="Active" />
           </div>
         </div>
 
         <div v-show="activeTab === 'contacts'" class="row q-col-gutter-md">
           <div class="col-12 text-subtitle2 text-grey-8">Contact #1 (Primary)</div>
-          <app-text-field v-model="form.firstName" label="First Name" required :disable="viewing" class="col-12 col-sm-6" :rules="[(v) => !!v || 'First name is required']" />
-          <app-text-field v-model="form.lastName" label="Last Name" required :disable="viewing" class="col-12 col-sm-6" :rules="[(v) => !!v || 'Last name is required']" />
-          <app-select v-model="form.relation" label="Relation" :options="relationOptions" :disable="viewing" class="col-12 col-sm-6" />
+          <app-text-field v-model="form.firstName" label="First Name" required class="col-12 col-sm-6" :rules="[(v) => !!v || 'First name is required']" />
+          <app-text-field v-model="form.lastName" label="Last Name" required class="col-12 col-sm-6" :rules="[(v) => !!v || 'Last name is required']" />
+          <app-select v-model="form.relation" label="Relation" :options="relationOptions" class="col-12 col-sm-6" />
           <app-text-field
-            v-model="form.email" label="Email" type="email" required :disable="viewing" class="col-12 col-sm-6"
+            v-model="form.email" label="Email" type="email" required class="col-12 col-sm-6"
             :error="!!primaryEmailError" :error-message="primaryEmailError"
             :rules="[(v) => !!v || 'Email is required']"
             hint="A login account is created for this contact."
           />
-          <app-text-field v-model="form.homePhone" label="Home Phone" :disable="viewing" class="col-12 col-sm-6" />
-          <app-text-field v-model="form.workPhone" label="Work Phone" :disable="viewing" class="col-12 col-sm-6" />
-          <app-text-field v-model="form.cellPhone" label="Cell Phone" :disable="viewing" class="col-12 col-sm-6" />
-          <app-text-field v-model="form.otherPhone" label="Other Phone" :disable="viewing" class="col-12 col-sm-6" />
-          <app-text-field v-model="form.fax" label="Fax" :disable="viewing" class="col-12 col-sm-6" />
-          <div class="col-12 col-sm-6 toggle-row-inline"><q-toggle v-model="form.isBillingContact" color="primary" :disable="viewing" /><span class="q-ml-sm">Billing contact</span></div>
-          <div class="col-12 col-sm-6 toggle-row-inline"><q-toggle v-model="form.isAuthorizedToPickUpStudent" color="primary" :disable="viewing" /><span class="q-ml-sm">Authorized to pick up student</span></div>
+          <app-text-field v-model="form.homePhone" label="Home Phone" class="col-12 col-sm-6" />
+          <app-text-field v-model="form.workPhone" label="Work Phone" class="col-12 col-sm-6" />
+          <app-text-field v-model="form.cellPhone" label="Cell Phone" class="col-12 col-sm-6" />
+          <app-text-field v-model="form.otherPhone" label="Other Phone" class="col-12 col-sm-6" />
+          <app-text-field v-model="form.fax" label="Fax" class="col-12 col-sm-6" />
+          <div class="col-12 col-sm-6 toggle-row-inline"><q-toggle v-model="form.isBillingContact" color="primary" /><span class="q-ml-sm">Billing contact</span></div>
+          <div class="col-12 col-sm-6 toggle-row-inline"><q-toggle v-model="form.isAuthorizedToPickUpStudent" color="primary" /><span class="q-ml-sm">Authorized to pick up student</span></div>
 
           <div class="col-12 row items-center justify-between q-mt-sm">
             <div class="text-subtitle2 text-grey-8">Contact #2 (Secondary / Optional)</div>
-            <q-btn v-if="!hasSecondaryContact && !viewing" flat dense no-caps color="primary" icon="o_add" label="Add second contact" @click="addSecondaryContact" />
-            <q-btn v-else-if="hasSecondaryContact && !viewing && !editing" flat dense no-caps color="negative" icon="o_close" label="Remove" @click="removeSecondaryContact" />
+            <q-btn v-if="!hasSecondaryContact" flat dense no-caps color="primary" icon="o_add" label="Add second contact" @click="addSecondaryContact" />
+            <q-btn v-else-if="hasSecondaryContact && !editing" flat dense no-caps color="negative" icon="o_close" label="Remove" @click="removeSecondaryContact" />
           </div>
           <template v-if="hasSecondaryContact">
-            <app-text-field v-model="form.secondaryContact.firstName" label="First Name" required :disable="viewing" class="col-12 col-sm-6" :rules="[(v) => !!v || 'First name is required']" />
-            <app-text-field v-model="form.secondaryContact.lastName" label="Last Name" required :disable="viewing" class="col-12 col-sm-6" :rules="[(v) => !!v || 'Last name is required']" />
-            <app-select v-model="form.secondaryContact.relation" label="Relation" :options="relationOptions" :disable="viewing" class="col-12 col-sm-6" />
+            <app-text-field v-model="form.secondaryContact.firstName" label="First Name" required class="col-12 col-sm-6" :rules="[(v) => !!v || 'First name is required']" />
+            <app-text-field v-model="form.secondaryContact.lastName" label="Last Name" required class="col-12 col-sm-6" :rules="[(v) => !!v || 'Last name is required']" />
+            <app-select v-model="form.secondaryContact.relation" label="Relation" :options="relationOptions" class="col-12 col-sm-6" />
             <app-text-field
-              v-model="form.secondaryContact.email" label="Email" type="email" required :disable="viewing" class="col-12 col-sm-6"
+              v-model="form.secondaryContact.email" label="Email" type="email" required class="col-12 col-sm-6"
               :error="!!secondaryEmailError" :error-message="secondaryEmailError"
               :rules="[(v) => !!v || 'Email is required']"
               hint="A login account is created for this contact."
             />
-            <app-text-field v-model="form.secondaryContact.phone" label="Cell Phone" :disable="viewing" class="col-12 col-sm-6" />
-            <div class="col-12 col-sm-6 toggle-row-inline"><q-toggle v-model="form.secondaryContact.isBillingContact" color="primary" :disable="viewing" /><span class="q-ml-sm">Billing contact</span></div>
-            <div class="col-12 col-sm-6 toggle-row-inline"><q-toggle v-model="form.secondaryContact.isAuthorizedToPickUpStudent" color="primary" :disable="viewing" /><span class="q-ml-sm">Authorized to pick up student</span></div>
+            <app-text-field v-model="form.secondaryContact.phone" label="Cell Phone" class="col-12 col-sm-6" />
+            <div class="col-12 col-sm-6 toggle-row-inline"><q-toggle v-model="form.secondaryContact.isBillingContact" color="primary" /><span class="q-ml-sm">Billing contact</span></div>
+            <div class="col-12 col-sm-6 toggle-row-inline"><q-toggle v-model="form.secondaryContact.isAuthorizedToPickUpStudent" color="primary" /><span class="q-ml-sm">Authorized to pick up student</span></div>
           </template>
         </div>
 
         <div v-show="activeTab === 'address'" class="row q-col-gutter-md">
           <div class="col-12 text-subtitle2 text-grey-8">Household Address</div>
-          <app-text-field v-model="form.address1" label="Street Address" :disable="viewing" class="col-12" />
-          <app-text-field v-model="form.address2" label="Street Address 2" :disable="viewing" class="col-12" />
-          <app-text-field v-model="form.city" label="City" :disable="viewing" class="col-12 col-sm-4" />
-          <app-text-field v-model="form.state" label="State" :disable="viewing" class="col-12 col-sm-4" />
-          <app-text-field v-model.number="form.zipCode" label="ZIP Code" type="number" :disable="viewing" class="col-12 col-sm-4" />
+          <app-text-field v-model="form.address1" label="Street Address" class="col-12" />
+          <app-text-field v-model="form.address2" label="Street Address 2" class="col-12" />
+          <app-text-field v-model="form.city" label="City" class="col-12 col-sm-4" />
+          <app-text-field v-model="form.state" label="State" class="col-12 col-sm-4" />
+          <app-text-field v-model.number="form.zipCode" label="ZIP Code" type="number" class="col-12 col-sm-4" />
 
           <div class="col-12 text-subtitle2 text-grey-8 q-mt-sm">Emergency Contact &amp; Health Insurance</div>
-          <app-text-field v-model="form.emergencyContactPerson" label="Emergency Contact Person" :disable="viewing" class="col-12 col-sm-6" />
-          <app-text-field v-model="form.emergencyPhone" label="Emergency Phone" :disable="viewing" class="col-12 col-sm-6" />
-          <app-text-field v-model="form.healthInsuranceCarrier" label="Health Insurance Carrier / Policy #" :disable="viewing" class="col-12" />
+          <app-text-field v-model="form.emergencyContactPerson" label="Emergency Contact Person" class="col-12 col-sm-6" />
+          <app-text-field v-model="form.emergencyPhone" label="Emergency Phone" class="col-12 col-sm-6" />
+          <app-text-field v-model="form.healthInsuranceCarrier" label="Health Insurance Carrier / Policy #" class="col-12" />
         </div>
 
         <div v-show="activeTab === 'students'" class="row q-col-gutter-md">
@@ -166,7 +165,7 @@
           <!-- Add one or more new students under this family — mirrors Quick Registration's Step 4,
                reusing the same blankStudent()/studentApi.createBulk() so both entry points behave the
                same way. Not shown in read-only View mode. -->
-          <template v-if="!viewing">
+          <template v-if="editing">
             <div class="col-12 row items-center justify-between q-mt-sm">
               <div class="text-subtitle2 text-grey-8">Add Student(s)</div>
               <q-btn flat dense no-caps color="primary" icon="o_add" label="Add Student" @click="addNewStudent" />
@@ -230,6 +229,323 @@
         </q-card-actions>
       </q-card>
     </q-dialog>
+
+    <app-form-drawer
+      v-model="viewFormOpen"
+      title="View Family"
+      hide-save
+      @cancel="resetViewForm"
+    >
+      <div class="row q-col-gutter-lg">
+
+        <!-- Family Information -->
+        <div class="col-12 text-subtitle2 text-grey-8 q-mt-sm">
+          Family Information
+        </div>
+
+        <div class="col-12 col-sm-6">
+          <div class="text-86 fs-12 fw-500">Family Name</div>
+          <div class="text-2e fs-14">
+            {{ form.familyName || "—" }}
+          </div>
+        </div>
+
+        <div class="col-12 col-sm-6">
+          <div class="text-86 fs-12 fw-500">Studio Location</div>
+          <div class="text-2e fs-14">
+            {{ form.studioLocationName || "—" }}
+          </div>
+        </div>
+
+        <div class="col-12 col-sm-6">
+          <div class="text-86 fs-12 fw-500">Family Status</div>
+          <div class="text-2e fs-14">
+            {{
+              familyStatusOptions.find(
+                (x) => x.value === form.familyStatusId
+              )?.label || "—"
+            }}
+          </div>
+        </div>
+
+        <div class="col-12 col-sm-6">
+          <div class="text-86 fs-12 fw-500">How Did You Hear About Us?</div>
+          <div class="text-2e fs-14">
+            {{ form.source || "—" }}
+          </div>
+        </div>
+
+        <div class="col-12 col-sm-6">
+          <div class="text-86 fs-12 fw-500">Referral Name</div>
+          <div class="text-2e fs-14">
+            {{ form.referralName || "—" }}
+          </div>
+        </div>
+
+        <div class="col-12 col-sm-6">
+          <div class="text-86 fs-12 fw-500 q-mb-xs">Status</div>
+
+          <q-badge :color="form.active ? 'positive' : 'grey'">
+            {{ form.active ? "Active" : "Inactive" }}
+          </q-badge>
+        </div>
+
+        <!-- Primary Contact -->
+        <div class="col-12 text-subtitle2 text-grey-8 q-mt-sm">
+          Primary Contact
+        </div>
+
+        <div class="col-12 col-sm-6">
+          <div class="text-86 fs-12 fw-500">First Name</div>
+          <div class="text-2e fs-14">
+            {{ form.firstName || "—" }}
+          </div>
+        </div>
+
+        <div class="col-12 col-sm-6">
+          <div class="text-86 fs-12 fw-500">Last Name</div>
+          <div class="text-2e fs-14">
+            {{ form.lastName || "—" }}
+          </div>
+        </div>
+
+        <div class="col-12 col-sm-6">
+          <div class="text-86 fs-12 fw-500">Relation</div>
+          <div class="text-2e fs-14">
+            {{ form.relation || "—" }}
+          </div>
+        </div>
+
+        <div class="col-12 col-sm-6">
+          <div class="text-86 fs-12 fw-500">Email</div>
+          <div class="text-2e fs-14">
+            {{ form.email || "—" }}
+          </div>
+        </div>
+
+        <div class="col-12 col-sm-6">
+          <div class="text-86 fs-12 fw-500">Home Phone</div>
+          <div class="text-2e fs-14">
+            {{ form.homePhone || "—" }}
+          </div>
+        </div>
+
+        <div class="col-12 col-sm-6">
+          <div class="text-86 fs-12 fw-500">Work Phone</div>
+          <div class="text-2e fs-14">
+            {{ form.workPhone || "—" }}
+          </div>
+        </div>
+
+        <div class="col-12 col-sm-6">
+          <div class="text-86 fs-12 fw-500">Cell Phone</div>
+          <div class="text-2e fs-14">
+            {{ form.cellPhone || "—" }}
+          </div>
+        </div>
+
+        <div class="col-12 col-sm-6">
+          <div class="text-86 fs-12 fw-500">Other Phone</div>
+          <div class="text-2e fs-14">
+            {{ form.otherPhone || "—" }}
+          </div>
+        </div>
+
+        <div class="col-12 col-sm-6">
+          <div class="text-86 fs-12 fw-500">Fax</div>
+          <div class="text-2e fs-14">
+            {{ form.fax || "—" }}
+          </div>
+        </div>
+
+        <div class="col-12 col-sm-6">
+          <div class="text-86 fs-12 fw-500">Billing Contact</div>
+          <div class="text-2e fs-14">
+            {{ form.isBillingContact ? "Yes" : "No" }}
+          </div>
+        </div>
+
+        <div class="col-12 col-sm-6">
+          <div class="text-86 fs-12 fw-500">
+            Authorized to Pick Up Student
+          </div>
+          <div class="text-2e fs-14">
+            {{ form.isAuthorizedToPickUpStudent ? "Yes" : "No" }}
+          </div>
+        </div>
+
+        <!-- Secondary Contact -->
+        <template v-if="form.secondaryContact">
+          <div class="col-12 text-subtitle2 text-grey-8 q-mt-sm">
+            Secondary Contact
+          </div>
+
+          <div class="col-12 col-sm-6">
+            <div class="text-86 fs-12 fw-500">First Name</div>
+            <div class="text-2e fs-14">
+              {{ form.secondaryContact.firstName || "—" }}
+            </div>
+          </div>
+
+          <div class="col-12 col-sm-6">
+            <div class="text-86 fs-12 fw-500">Last Name</div>
+            <div class="text-2e fs-14">
+              {{ form.secondaryContact.lastName || "—" }}
+            </div>
+          </div>
+
+          <div class="col-12 col-sm-6">
+            <div class="text-86 fs-12 fw-500">Relation</div>
+            <div class="text-2e fs-14">
+              {{ form.secondaryContact.relation || "—" }}
+            </div>
+          </div>
+
+          <div class="col-12 col-sm-6">
+            <div class="text-86 fs-12 fw-500">Email</div>
+            <div class="text-2e fs-14">
+              {{ form.secondaryContact.email || "—" }}
+            </div>
+          </div>
+
+          <div class="col-12 col-sm-6">
+            <div class="text-86 fs-12 fw-500">Cell Phone</div>
+            <div class="text-2e fs-14">
+              {{ form.secondaryContact.phone || "—" }}
+            </div>
+          </div>
+
+          <div class="col-12 col-sm-6">
+            <div class="text-86 fs-12 fw-500">Billing Contact</div>
+            <div class="text-2e fs-14">
+              {{ form.secondaryContact.isBillingContact ? "Yes" : "No" }}
+            </div>
+          </div>
+
+          <div class="col-12 col-sm-6">
+            <div class="text-86 fs-12 fw-500">
+              Authorized to Pick Up Student
+            </div>
+            <div class="text-2e fs-14">
+              {{
+                form.secondaryContact.isAuthorizedToPickUpStudent
+                  ? "Yes"
+                  : "No"
+              }}
+            </div>
+          </div>
+        </template>
+
+        <!-- Household Address -->
+        <div class="col-12 text-subtitle2 text-grey-8 q-mt-sm">
+          Household Address
+        </div>
+
+        <div class="col-12">
+          <div class="text-86 fs-12 fw-500">Street Address</div>
+          <div class="text-2e fs-14">
+            {{ form.address1 || "—" }}
+          </div>
+        </div>
+
+        <div class="col-12">
+          <div class="text-86 fs-12 fw-500">Street Address 2</div>
+          <div class="text-2e fs-14">
+            {{ form.address2 || "—" }}
+          </div>
+        </div>
+
+        <div class="col-12 col-sm-4">
+          <div class="text-86 fs-12 fw-500">City</div>
+          <div class="text-2e fs-14">
+            {{ form.city || "—" }}
+          </div>
+        </div>
+
+        <div class="col-12 col-sm-4">
+          <div class="text-86 fs-12 fw-500">State</div>
+          <div class="text-2e fs-14">
+            {{ form.state || "—" }}
+          </div>
+        </div>
+
+        <div class="col-12 col-sm-4">
+          <div class="text-86 fs-12 fw-500">ZIP Code</div>
+          <div class="text-2e fs-14">
+            {{ form.zipCode || "—" }}
+          </div>
+        </div>
+
+        <!-- Emergency / Insurance -->
+        <div class="col-12 text-subtitle2 text-grey-8 q-mt-sm">
+          Emergency Contact & Health Insurance
+        </div>
+
+        <div class="col-12 col-sm-6">
+          <div class="text-86 fs-12 fw-500">
+            Emergency Contact Person
+          </div>
+          <div class="text-2e fs-14">
+            {{ form.emergencyContactPerson || "—" }}
+          </div>
+        </div>
+
+        <div class="col-12 col-sm-6">
+          <div class="text-86 fs-12 fw-500">Emergency Phone</div>
+          <div class="text-2e fs-14">
+            {{ form.emergencyPhone || "—" }}
+          </div>
+        </div>
+
+        <div class="col-12">
+          <div class="text-86 fs-12 fw-500">
+            Health Insurance Carrier / Policy #
+          </div>
+          <div class="text-2e fs-14">
+            {{ form.healthInsuranceCarrier || "—" }}
+          </div>
+        </div>
+
+        <!-- Students -->
+        <div class="col-12 text-subtitle2 text-grey-8 q-mt-sm">
+          Enrolled Students
+        </div>
+
+        <div v-if="students.length" class="col-12">
+          <q-list bordered separator>
+            <q-item
+              v-for="student in students"
+              :key="student.studentId"
+            >
+              <q-item-section>
+                <q-item-label>
+                  {{
+                    student.firstName || student.lastName
+                      ? `${student.firstName || ""} ${student.lastName || ""}`.trim()
+                      : student.studentNumber || "Student"
+                  }}
+                </q-item-label>
+
+                <q-item-label caption>
+                  {{ student.studentNumber || "—" }}
+                </q-item-label>
+              </q-item-section>
+
+              <q-item-section side>
+                <q-badge :color="student.active ? 'positive' : 'grey'">
+                  {{ student.active ? "Active" : "Inactive" }}
+                </q-badge>
+              </q-item-section>
+            </q-item>
+          </q-list>
+        </div>
+
+        <div v-else class="col-12 text-grey-6 text-caption">
+          No students enrolled yet.
+        </div>
+
+      </div>
+    </app-form-drawer>
   </q-page>
 </template>
 
@@ -339,7 +655,8 @@ const clearFilters = () => { filters.familyStatusId = null; };
 // ---- Create / Edit / View ----
 const formOpen = ref(false);
 const editing = ref(false);
-const viewing = ref(false);
+// const viewing = ref(false);
+const viewFormOpen = ref(false);
 const saving = ref(false);
 const primaryEmailError = ref("");
 const secondaryEmailError = ref("");
@@ -415,7 +732,14 @@ const resetForm = () => {
   primaryEmailError.value = "";
   secondaryEmailError.value = "";
   editing.value = false;
-  viewing.value = false;
+  editingFamilyId.value = null;
+  students.value = [];
+  activeTab.value = "family";
+};
+
+const resetViewForm = () => {
+  viewFormOpen.value = false;
+  Object.assign(form, blankForm());
   editingFamilyId.value = null;
   students.value = [];
   activeTab.value = "family";
@@ -423,6 +747,7 @@ const resetForm = () => {
 
 const openCreate = () => {
   resetForm();
+  editing.value = false;
   formOpen.value = true;
 };
 
@@ -478,14 +803,14 @@ const openEdit = async (row) => {
 };
 
 const openView = async (row) => {
-  resetForm();
-  viewing.value = true;
+  resetViewForm();
   editingFamilyId.value = row.familyId;
-  formOpen.value = true;
+  viewFormOpen.value = true;
   try {
     const detail = await familyApi.get(row.familyId);
     populateFrom(detail);
   } catch (err) {
+    viewFormOpen.value = false;
     notify.error(getApiErrorMessage(err));
   }
 };

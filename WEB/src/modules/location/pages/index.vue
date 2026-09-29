@@ -110,11 +110,12 @@
     /> -->
 
     <!-- Create / Edit -->
-    <app-form-drawer
+    <app-form-dialog
       v-model="formOpen"
       :title="editingId ? 'Edit Location' : 'Create Location'"
       :saving="saving"
       :save-label="editingId ? 'Save' : 'Create'"
+      size="sm"
       @submit="submitForm"
       @cancel="resetForm"
     >
@@ -123,7 +124,6 @@
           v-model="form.name"
           label="Name"
           required
-          class="q-mb-md"
           :rules="[
             (v) => !!v?.trim() || 'Location name is required',
             (v) =>
@@ -138,84 +138,61 @@
           label="Active"
         />
       </q-form>
-    </app-form-drawer>
+    </app-form-dialog>
     <!-- =========================================================
          View Location
          ========================================================= -->
-    <app-form-drawer
+    <app-form-dialog
       v-model="viewOpen"
       title="View Location"
-      :saving="viewLoading"
-      :save-label="''"
-      :hide-save="true"
+      size="sm"
+      hide-save
       @cancel="closeView"
     >
-      <div class="q-gutter-md">
-
-        <div>
-          <div class="text-86 fs-12 fw-500">
-            Name
-          </div>
-
-          <div class="text-2e fs-4">
-            {{ viewLocation.name }}
+      <div class="row q-col-gutter-lg">
+        <div class="col-12 col-sm-6">
+          <div class="text-86 fs-12 fw-500">Name</div>
+          <div class="text-2e fs-14">
+            {{ viewLocation.name || "—" }}
           </div>
         </div>
 
-        <div>
-          <div class="text-86 fs-12 fw-500">
-            Status
-          </div>
-
-          <q-badge
-            :color="viewLocation.active ? 'positive' : 'grey'"
-          >
+        <div class="col-12 col-sm-6">
+          <div class="text-86 fs-12 fw-500">Status</div>
+          <q-badge :class="viewLocation.active ? 'active-badge' : 'inactive-badge'">
             {{ viewLocation.active ? "Active" : "Inactive" }}
           </q-badge>
         </div>
-
-        <div>
-          <div class="text-86 fs-12 fw-500">
-            Created By
-          </div>
-
+        <div class="col-12 col-sm-6">
+          <div class="text-86 fs-12 fw-500">Created By</div>
           <div class="text-2e fs-14">
             {{ viewLocation.createdBy || "—" }}
           </div>
         </div>
 
-        <div>
-          <div class="text-86 fs-12 fw-500">
-            Created On
-          </div>
-
+        <div class="col-12 col-sm-6">
+          <div class="text-86 fs-12 fw-500">Created On</div>
           <div class="text-2e fs-14">
             {{ formatDate(viewLocation.createdOnUtc) }}
           </div>
         </div>
 
-        <div>
-          <div class="text-86 fs-12 fw-500">
-            Updated By
-          </div>
-
+        <div class="col-12 col-sm-6">
+          <div class="text-86 fs-12 fw-500">Updated By</div>
           <div class="text-2e fs-14">
             {{ viewLocation.updatedBy || "—" }}
           </div>
         </div>
 
-        <div>
-          <div class="text-86 fs-12 fw-500">
-            Updated On
-          </div>
-
+        <div class="col-12 col-sm-6">
+          <div class="text-86 fs-12 fw-500">Updated On</div>
           <div class="text-2e fs-14">
             {{ formatDate(viewLocation.updatedOnUtc) }}
           </div>
         </div>
 
       </div>
-    </app-form-drawer>
+    </app-form-dialog>
   </q-page>
 </template>
 
@@ -239,11 +216,12 @@ import { useDeletedRecords } from "composables/useDeletedRecords";
 import { useAuditColumns } from "composables/useAuditColumns";
 
 import AppDataTable from "components/common/AppDataTable.vue";
-import AppFormDrawer from "components/common/AppFormDrawer.vue";
+// import AppFormDrawer from "components/common/AppFormDrawer.vue";
 import AppListHeader from "components/common/AppListHeader.vue";
 import AppFilterDrawer from "components/common/AppFilterDrawer.vue";
 import AppColumnFilters from "components/common/AppColumnFilters.vue";
 import AppTextField from "components/common/AppTextField.vue";
+import AppFormDialog from "components/common/AppFormDialog.vue";
 
 const auditColumns = useAuditColumns();
 const { showDeleted, canManageDeleted } = useDeletedRecords();

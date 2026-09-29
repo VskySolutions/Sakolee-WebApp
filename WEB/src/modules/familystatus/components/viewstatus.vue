@@ -1,62 +1,108 @@
 <template>
-  <!-- Side-Drawer Dialog Component: View Family Status Details Modal -->
-  <q-dialog v-model="isOpen" position="right">
-    <q-card class="column shadow-24 rounded-borders" style="width: 420px; max-width: 90vw; height: auto; max-height: 85vh;">
-      
-      <!-- Dialog Header Banner -->
-      <q-card-section class="row items-center justify-between bg-primary text-white q-px-md q-py-sm">
-        <div class="text-h6 text-weight-bold row items-center q-gutter-sm">
-          <q-icon name="o_visibility" size="22px" />
-          <div>Family Status Details</div>
+  <!-- 
+    ============================================================
+    View Family Status Drawer Component
+    ============================================================
+    Renders a read-only side drawer displaying comprehensive details 
+    and audit metadata for a specific family status record.
+  -->
+  <app-form-drawer
+    v-model="isOpen"
+    title="View Family Status"
+    :saving="loading"
+    :save-label="''"
+    :hide-save="true"
+    @cancel="closeView"
+  >
+    <!-- Loading Spinner Overlay during asynchronous fetch operations -->
+    <div v-if="loading" class="row flex-center q-pa-xl">
+      <q-spinner color="primary" size="40px" />
+    </div>
+
+    <!-- Main Content Container Displaying Record Attributes -->
+    <div v-else class="q-gutter-md">
+      <!-- Field: Status Name -->
+      <div>
+        <div class="text-86 fs-12 fw-500">
+          Status Name
         </div>
-        <q-btn icon="o_close" flat round dense v-close-popup />
-      </q-card-section>
-
-      <!-- Dialog Scrollable Body Content -->
-      <q-card-section class="col q-pa-md q-gutter-md scroll">
-        <!-- Loading Spinner Overlay during fetch operations -->
-        <div v-if="loading" class="row flex-center q-pa-xl">
-          <q-spinner color="primary" size="40px" />
+        <div class="text-2e fs-4">
+          {{ form.name || '—' }}
         </div>
+      </div>
 
-        <template v-else>
-          <!-- Field: Tenant Name ->
-          <div class="row items-center">
-            <div class="col-5 text-weight-bold text-grey-7">Tenant Name:</div>
-            <div class="col-7 text-dark">{{ form.tenantName || '-' }}</div>
-          </div-->
-          <q-separator />
+      <!-- Field: Tenant Name -->
+      <div>
+        <div class="text-86 fs-12 fw-500">
+          Tenant Name
+        </div>
+        <div class="text-2e fs-14">
+          {{ form.tenantName || '—' }}
+        </div>
+      </div>
 
-          <!-- Field: Status Name -->
-          <div class="row items-center">
-            <div class="col-5 text-weight-bold text-grey-7">Status Name:</div>
-            <div class="col-7 text-dark">{{ form.name || '-' }}</div>
-          </div>
-          <q-separator />
+      <!-- Field: Status (Active/Inactive) -->
+      <div>
+        <div class="text-86 fs-12 fw-500">
+          Status
+        </div>
+        <q-badge :color="form.active ? 'positive' : 'grey'">
+          {{ form.active ? "Active" : "Inactive" }}
+        </q-badge>
+      </div>
 
-          <!-- Field: Created Date -->
-          <div class="row items-center">
-            <div class="col-5 text-weight-bold text-grey-7">Created On:</div>
-            <div class="col-7 text-dark">{{ form.createdOnUtc || '-' }}</div>
-          </div>
-        </template>
-      </q-card-section>
+      <!-- Field: Created By -->
+      <div>
+        <div class="text-86 fs-12 fw-500">
+          Created By
+        </div>
+        <div class="text-2e fs-14">
+          {{ form.createdBy || '—' }}
+        </div>
+      </div>
 
-      <!-- Dialog Footer Action Triggers -->
-      <q-card-actions align="right" class="q-pa-sm bg-grey-1">
-        <q-btn flat label="Close" color="primary" v-close-popup />
-      </q-card-actions>
-    </q-card>
-  </q-dialog>
+      <!-- Field: Created On -->
+      <div>
+        <div class="text-86 fs-12 fw-500">
+          Created On
+        </div>
+        <div class="text-2e fs-14">
+          {{ form.createdOnUtc || '—' }}
+        </div>
+      </div>
+
+      <!-- Field: Updated By -->
+      <div>
+        <div class="text-86 fs-12 fw-500">
+          Updated By
+        </div>
+        <div class="text-2e fs-14">
+          {{ form.updatedBy || '—' }}
+        </div>
+      </div>
+
+      <!-- Field: Updated On -->
+      <div>
+        <div class="text-86 fs-12 fw-500">
+          Updated On
+        </div>
+        <div class="text-2e fs-14">
+          {{ form.updatedOnUtc || '—' }}
+        </div>
+      </div>
+    </div>
+  </app-form-drawer>
 </template>
 
 <script setup>
-import { ref, reactive, watch } from "vue";
+import { ref, reactive, computed, watch, onMounted } from "vue";
 import { familyStatusApi, getApiErrorMessage } from "services/api";
 import { useNotify } from "composables/useNotify";
 import { useTenantOptions } from "composables/useTenantOptions";
 
-// Props definition to manage modal visibility and target record ID
+import AppFormDrawer from "components/common/AppFormDrawer.vue";
+
+// Component property definitions for model binding and record identification
 const props = defineProps({
   modelValue: {
     type: Boolean,
@@ -69,51 +115,92 @@ const props = defineProps({
 });
 
 const emit = defineEmits(["update:modelValue"]);
+
 const notify = useNotify();
 const { tenantOptions, loadTenants } = useTenantOptions();
 
-// Local drawer visibility synchronization with parent component
-const isOpen = ref(props.modelValue);
-watch(() => props.modelValue, async (val) => {
-  isOpen.value = val;
-  if (val && props.recordId) {
-    fetchRecordDetails(props.recordId);
-  }
-});
-
-watch(isOpen, (val) => {
-  emit("update:modelValue", val);
-});
-
-// Component state references
+// Component loading and reactive form state declarations
 const loading = ref(false);
 const form = reactive({
   tenantName: "",
   name: "",
-  createdOnUtc: ""
+  active: true,
+  createdBy: "",
+  createdOnUtc: "",
+  updatedBy: "",
+  updatedOnUtc: ""
 });
 
+/*
+ * Load tenant options on mount for fallback label mapping.
+ */
+onMounted(async () => {
+  try {
+    if (loadTenants) await loadTenants();
+  } catch (err) {
+    console.warn("Could not load tenant options:", err);
+  }
+});
+
+/*
+ * Computed property establishing two-way binding for drawer visibility control.
+ */
+const isOpen = computed({
+  get: () => props.modelValue,
+  set: (val) => emit("update:modelValue", val)
+});
+
+/*
+ * Watcher monitoring drawer visibility state changes to trigger record data fetching or cleanup.
+ */
+watch(
+  () => props.modelValue,
+  async (val) => {
+    if (val && props.recordId) {
+      await fetchRecordDetails(props.recordId);
+    } else if (!val) {
+      resetForm();
+    }
+  }
+);
+
+/*
+ * Resets all reactive form fields to their default empty states.
+ */
+const resetForm = () => {
+  form.tenantName = "";
+  form.name = "";
+  form.active = true;
+  form.createdBy = "";
+  form.createdOnUtc = "";
+  form.updatedBy = "";
+  form.updatedOnUtc = "";
+};
+
+/*
+ * Safely closes the view drawer and clears associated form data.
+ */
+const closeView = () => {
+  isOpen.value = false;
+  resetForm();
+};
+
 /**
- * Fetches specific family status record details from the API endpoint for viewing.
- * @param {String|Number} id - Target entity identifier.
+ * Asynchronously fetches specific family status record details from the API endpoint.
+ * Handles fallback resolution for tenants, creators, updaters, and timestamps.
+ * @param {String|Number} id - Target entity unique identifier.
  */
 const fetchRecordDetails = async (id) => {
   loading.value = true;
   
   try {
-    // Attempt loading tenant options safely prior to mapping
-    try {
-      if (loadTenants) await loadTenants();
-    } catch (tenantErr) {
-      console.warn("Could not load tenant options:", tenantErr);
-    }
-
     const response = await familyStatusApi.get(id);
     const item = response?.data?.data || response?.data || response;
 
     if (item) {
-      // Map status name with multi-property fallbacks
-      form.name = item.name || item.Name || item.familyStatusName || item.FamilyStatusName || "-";
+      // Map status name and active state with fallbacks
+      form.name = item.name || item.Name || item.familyStatusName || item.FamilyStatusName || "—";
+      form.active = item.active ?? item.Active ?? true;
       
       // Resolve tenant name with robust fallback mapping matching list/detail view behavior
       let resolvedTenant = item.tenantName || item.tenant_name || item.tenant?.name;
@@ -124,21 +211,35 @@ const fetchRecordDetails = async (id) => {
           resolvedTenant = found ? found.label : tenantId;
         }
       }
-      form.tenantName = resolvedTenant || "-";
+      form.tenantName = resolvedTenant || "—";
+
+      // Map audit metadata fields: Created By & Updated By
+      form.createdBy = item.createdBy || item.CreatedBy || "—";
+      form.updatedBy = item.updatedBy || item.UpdatedBy || "—";
 
       // Format creation date string with multiple fallbacks
-      const rawDate = item.createdOnUtc || item.CreatedOnUtc || item.createdOn || item.CreatedOn || item.createdAt || item.CreatedAt;
-      if (rawDate) {
-        const date = new Date(rawDate);
-        form.createdOnUtc = isNaN(date.getTime()) ? String(rawDate) : date.toLocaleString();
+      const rawCreatedDate = item.createdOnUtc || item.CreatedOnUtc || item.createdOn || item.CreatedOn || item.createdAt || item.CreatedAt;
+      if (rawCreatedDate) {
+        const date = new Date(rawCreatedDate);
+        form.createdOnUtc = isNaN(date.getTime()) ? String(rawCreatedDate) : date.toLocaleString();
       } else {
-        form.createdOnUtc = "-";
+        form.createdOnUtc = "—";
+      }
+
+      // Format update date string with multiple fallbacks
+      const rawUpdatedDate = item.updatedOnUtc || item.UpdatedOnUtc || item.updatedOn || item.UpdatedOn || item.updatedAt || item.UpdatedAt;
+      if (rawUpdatedDate) {
+        const date = new Date(rawUpdatedDate);
+        form.updatedOnUtc = isNaN(date.getTime()) ? String(rawUpdatedDate) : date.toLocaleString();
+      } else {
+        form.updatedOnUtc = "—";
       }
     } else {
       notify.error("Family status record details could not be found.");
     }
   } catch (err) {
     notify.error(getApiErrorMessage(err));
+    isOpen.value = false;
   } finally {
     loading.value = false;
   }

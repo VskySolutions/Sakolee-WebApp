@@ -2022,3 +2022,9 @@ svg { fill: none; stroke: currentColor; stroke-width: 1.8px; stroke-linecap: rou
     font-size: 13px;
     color: #5f5d74 !important;
 }
+
+[type='text'], input:where(:not([type])), [type='email'], [type='url'], [type='password'], [type='number'], [type='date'], [type='datetime-local'], [type='month'], [type='search'], [type='tel'], [type='time'], [type='week'], [multiple], textarea, select {
+    -webkit-appearance: none !important;
+    appearance: none !important;
+    background-color: transparent !important;
+}

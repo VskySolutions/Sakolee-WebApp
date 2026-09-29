@@ -39,4 +39,8 @@ public class Tenant : AuditableEntity
     public Guid? PersonId { get; set; }
 
     public Person? Person { get; set; }
+
+    public Guid? TenantLogoMediaId { get; set; }
+
+    public Media? TenantMedia { get; set; }
 }

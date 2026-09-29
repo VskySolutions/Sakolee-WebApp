@@ -1,160 +1,182 @@
 <template>
-  <q-page padding>
-    <!-- Page Header Component: Manages navigation breadcrumbs and back route actions -->
-    <app-detail-header
-      :items="[
-        { label: 'Home', icon: 'o_home', to: '/' },
-        { label: 'Family Relations', to: { name: 'family_relations' } },
-        { label: 'View Family Relation' }
-      ]"
-      :back-to="{ name: 'family_relations' }"
-    />
-
-    <!-- Loading Spinner Overlay: Displayed during asynchronous data retrieval operations -->
-    <div v-if="loading" class="row flex-center q-pa-xl">
-      <q-spinner color="primary" size="40px" />
-    </div>
-
-    <!-- Main Card Container: Wraps the entity details view interface -->
-    <q-card v-else flat bordered class="q-pa-md">
-      <q-form class="q-gutter-md">
-        
-        <!-- Family Relation Name Field (View-Only) -->
-        <app-text-field
-          v-model="form.name"
-          label="Family Relation Name"
-          readonly
-          disable
-          class="q-mb-md"
-        />
-
-        <!-- Active Status Field (View-Only with text formatting) -->
-        <app-text-field
-          v-model="form.active"
-          label="Active Status"
-          readonly
-          disable
-          class="q-mb-md"
-        />
-
-        <!-- Tenant Name Field (View-Only with fallback handling) -->
-        <app-text-field
-          v-model="form.tenantName"
-          label="Tenant Name"
-          readonly
-          disable
-          class="q-mb-md"
-        />
-
-        <!-- Created Date Field (View-Only) -->
-        <app-text-field
-          v-model="form.createdOn"
-          label="Created Date"
-          readonly
-          disable
-          class="q-mb-md"
-        />
-
-        <!-- Form Action Buttons: Back navigation trigger -->
-        <div class="row q-gutter-sm justify-end">
-          <q-btn unelevated color="primary" label="Back" @click="$router.push({ name: 'family_relations' })" />
+  <!-- 
+    ============================================================
+    View Family Relation Drawer Component
+    ============================================================
+  -->
+  <app-form-drawer
+    v-model="isOpen"
+    title="View Family Relation"
+    :saving="viewLoading"
+    :save-label="''"
+    :hide-save="true"
+    @cancel="closeView"
+  >
+    <div class="q-gutter-md">
+      <!-- Relation Name Field Display -->
+      <div>
+        <div class="text-86 fs-12 fw-500">
+          Relation Name
         </div>
-      </q-form>
-    </q-card>
-  </q-page>
+        <div class="text-2e fs-4">
+          {{ viewRelation.name }}
+        </div>
+      </div>
+
+      <!-- Status Badge Display -->
+      <div>
+        <div class="text-86 fs-12 fw-500">
+          Status
+        </div>
+        <q-badge :color="viewRelation.active ? 'positive' : 'grey'">
+          {{ viewRelation.active ? "Active" : "Inactive" }}
+        </q-badge>
+      </div>
+
+      <!-- Audit Metadata: Created By -->
+      <div>
+        <div class="text-86 fs-12 fw-500">
+          Created By
+        </div>
+        <div class="text-2e fs-14">
+          {{ viewRelation.createdBy || "—" }}
+        </div>
+      </div>
+
+      <!-- Audit Metadata: Created On -->
+      <div>
+        <div class="text-86 fs-12 fw-500">
+          Created On
+        </div>
+        <div class="text-2e fs-14">
+          {{ formatDate(viewRelation.createdOnUtc) }}
+        </div>
+      </div>
+
+      <!-- Audit Metadata: Updated By -->
+      <div>
+        <div class="text-86 fs-12 fw-500">
+          Updated By
+        </div>
+        <div class="text-2e fs-14">
+          {{ viewRelation.updatedBy || "—" }}
+        </div>
+      </div>
+
+      <!-- Audit Metadata: Updated On -->
+      <div>
+        <div class="text-86 fs-12 fw-500">
+          Updated On
+        </div>
+        <div class="text-2e fs-14">
+          {{ formatDate(viewRelation.updatedOnUtc) }}
+        </div>
+      </div>
+    </div>
+  </app-form-drawer>
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from "vue";
-import { useRoute, useRouter } from "vue-router";
+import { ref, reactive, computed, watch } from "vue";
 import { familyRelationApi, getApiErrorMessage } from "services/api";
 import { useNotify } from "composables/useNotify";
-import { useTenantOptions } from "composables/useTenantOptions";
 
-import AppDetailHeader from "components/common/AppDetailHeader.vue";
-import AppTextField from "components/common/AppTextField.vue";
+import AppFormDrawer from "components/common/AppFormDrawer.vue";
 
-// Composables & Route Initializations
-const route = useRoute();
-const router = useRouter();
-const notify = useNotify();
-const { tenantOptions, loadTenants } = useTenantOptions();
-
-// Component State & Parameter References
-const relationId = route.params.id;
-const loading = ref(false);
-
-// Form Data Model Binding Structure for View Details
-const form = reactive({ 
-  name: "", 
-  active: "",
-  tenantName: "",
-  createdOn: ""
+const props = defineProps({
+  modelValue: {
+    type: Boolean,
+    required: true
+  },
+  relationId: {
+    type: [String, Number],
+    default: null
+  }
 });
 
-/**
- * Handles global error notificationing.
- * @param {Object} err - Error object returned from API call.
+const emit = defineEmits(["update:modelValue"]);
+
+const notify = useNotify();
+const viewLoading = ref(false);
+
+/*
+ * Reactive state to store detailed family relation attributes for viewing.
  */
-const onError = (err) => {
-  notify.error(getApiErrorMessage(err));
+const viewRelation = reactive({
+  id: null,
+  name: "",
+  active: true,
+  createdBy: "",
+  createdOnUtc: null,
+  updatedBy: "",
+  updatedOnUtc: null
+});
+
+/*
+ * Two-way model binding wrapper for drawer open/close status.
+ */
+const isOpen = computed({
+  get: () => props.modelValue,
+  set: (val) => emit("update:modelValue", val)
+});
+
+/*
+ * Watch drawer state changes and fetch detailed information on open.
+ */
+watch(
+  () => props.modelValue,
+  async (val) => {
+    if (val && props.relationId) {
+      viewLoading.value = true;
+      try {
+        const relation = await familyRelationApi.get(props.relationId);
+        viewRelation.id = relation?.id;
+        viewRelation.name = relation?.name || "";
+        viewRelation.active = relation?.active ?? true;
+        viewRelation.createdBy = relation?.createdBy || "";
+        viewRelation.createdOnUtc = relation?.createdOnUtc || null;
+        viewRelation.updatedBy = relation?.updatedBy || "";
+        viewRelation.updatedOnUtc = relation?.updatedOnUtc || null;
+      } catch (err) {
+        isOpen.value = false;
+        notify.error(getApiErrorMessage(err));
+      } finally {
+        viewLoading.value = false;
+      }
+    } else if (!val) {
+      resetViewRelation();
+    }
+  }
+);
+
+/*
+ * Reset view relation reactive state values.
+ */
+const resetViewRelation = () => {
+  viewRelation.id = null;
+  viewRelation.name = "";
+  viewRelation.active = true;
+  viewRelation.createdBy = "";
+  viewRelation.createdOnUtc = null;
+  viewRelation.updatedBy = "";
+  viewRelation.updatedOnUtc = null;
 };
 
-// Lifecycle Hook: Fetches record details and tenant information on component mount
-onMounted(async () => {
-  if (!relationId) {
-    notify.error("Invalid family relation identifier provided in route.");
-    return;
+/*
+ * Close the view drawer safely.
+ */
+const closeView = () => {
+  isOpen.value = false;
+  resetViewRelation();
+};
+
+/*
+ * Format date values to a localized readable format.
+ */
+const formatDate = (value) => {
+  if (!value) {
+    return "—";
   }
-
-  loading.value = true;
-
-  try {
-    // Attempt loading tenant options safely
-    try {
-      if (loadTenants) await loadTenants();
-    } catch (tenantErr) {
-      console.warn("Could not load tenant options:", tenantErr);
-    }
-
-    // Fetch existing record details from API endpoint
-    const response = await familyRelationApi.get(relationId);
-    const item = response?.data?.data || response?.data || response;
-    
-    if (item) {
-      form.name = item.name || item.Name || item.familyRelationName || item.FamilyRelationName || "";
-      
-      // Format active status boolean to descriptive string
-      const isActive = item.active !== undefined ? item.active : item.Active;
-      form.active = isActive ? 'Yes' : 'No';
-      
-      // Resolve tenant name with multiple fallbacks
-      let resolvedTenant = item.tenantName || item.tenant_name || item.tenant?.name;
-      if (!resolvedTenant && tenantOptions?.value) {
-        const tenantId = item.tenantId || item.tenantid || item.TenantId;
-        if (tenantId) {
-          const found = tenantOptions.value.find((t) => t.value === tenantId || t.id === tenantId);
-          resolvedTenant = found ? found.label : tenantId;
-        }
-      }
-      form.tenantName = resolvedTenant || "-";
-      
-      // Format creation date string if available
-      const rawDate = item.createdOnUtc || item.CreatedOnUtc || item.createdOn || item.CreatedOn || item.createdAt || item.CreatedAt;
-      if (rawDate) {
-        const date = new Date(rawDate);
-        form.createdOn = isNaN(date.getTime()) ? String(rawDate) : date.toLocaleString();
-      } else {
-        form.createdOn = "-";
-      }
-    } else {
-      notify.error("Family relation record details could not be found.");
-    }
-  } catch (err) {
-    console.error("Error fetching family relation details:", err);
-    onError(err);
-  } finally {
-    loading.value = false;
-  }
-});
+  return new Date(value).toLocaleString();
+};
 </script>
