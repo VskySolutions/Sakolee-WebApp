@@ -437,7 +437,7 @@ body {
     border: 1px solid white;
   }
   .q-field--focused {
-    --q-primary: #4648d4 !important;
+    --q-primary: #a4a5d1 !important;
   }
   .q-field--focused .q-field__control {
     // box-shadow: 0 0 0 3px #FFE9D4;
@@ -524,6 +524,10 @@ body {
 .text-86{ color: #767586 !important; }
 .text-54{ color: #464554 !important; }
 
+.close-btn{ border: 1px solid #c7c4d7 !important; font-size: 12px !important; line-height: 16px !important; padding: 10px 24px !important; }
+.save-btn{ background-color: #4648d4 !important; font-size: 12px !important; line-height: 16px !important; padding: 10px 24px !important; }
+.active-badge{ color: #4648d4 !important; text-transform: uppercase !important; font-weight: 700 !important; font-size: 10px !important; padding: 5px 8px !important; background-color: #eef2ff !important;  }
+.inactive-badge{ color: #4b5563 !important; text-transform: uppercase !important; font-weight: 700 !important; font-size: 10px !important; padding: 5px 8px !important; background-color: #f3f4f6 !important; }
 .bg-ff{ background-color: #faf8ff !important; }
 
 .grey-border{ border: 1px solid #c7c4d7b3; }
@@ -544,6 +548,8 @@ body {
   padding: 0.75rem !important;
 }
 .px-16{ padding-left: 16; padding-right: 16px; }
+.px-10{ padding: 0 10px !important; }
+.px-20{ padding: 0 20px !important; }
 .sakolee-desktop-menu-class{
   .q-icon{
     width: 24px !important;

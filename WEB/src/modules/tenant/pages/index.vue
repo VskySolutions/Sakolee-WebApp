@@ -1,7 +1,9 @@
 <template>
   <q-page padding>
     <app-list-header
-      :breadcrumbs="[{ label: 'Home', icon: 'o_home', to: '/' }, { label: 'Tenants' }]"
+      :breadcrumbs="[{ label: 'Home', to: '/' }, { label: 'Tenants' }]"
+      title="All Tenants"
+      description="Manage all tenants."
       :search="search"
       show-search
       search-placeholder="Search name or identifier"
@@ -88,10 +90,12 @@
     />
 
     <!-- Create / Edit drawer -->
-    <app-form-drawer
+    <app-form-dialog
       v-model="formOpen"
       :title="editing ? 'Edit Tenant' : 'Create Tenant'"
       :saving="saving"
+      :save-label="editing ? 'Save' : 'Create'"
+      size="md"
       @submit="submitForm"
       @cancel="resetForm"
     >
@@ -157,8 +161,32 @@
             <app-phone-input v-model="form.phoneNumber" v-model:country="form.countryCode" label="Phone Number" />
           </q-card-section>
         </q-card>
+
+        <!-- Tenant Logo -->
+        <q-card flat bordered class="profile-card q-mt-md">
+          <q-card-section class="text-subtitle1 text-weight-medium">
+            Tenant Logo
+          </q-card-section>
+
+          <div class="text-caption text-grey-7 q-px-md q-pb-sm">
+            Upload the logo for this tenant.
+          </div>
+
+          <q-separator />
+
+          <q-card-section>
+            <app-image-upload
+              ref="imageUpload"
+              v-model="previewUrl"
+              :loading="uploading"
+              file-name="tenantlogo.png"
+              @crop="onCropUpload"
+              @remove="onImageRemove"
+            />
+          </q-card-section>
+        </q-card>
       </q-form>
-    </app-form-drawer>
+    </app-form-dialog>
 
     <temp-password-dialog v-model="tempPwOpen" :password="tempPassword" />
   </q-page>
@@ -167,7 +195,7 @@
 <script setup>
 import { ref, reactive, computed, watch } from "vue";
 import { debounce } from "quasar";
-import { tenantApi, getApiErrorMessage, getApiErrorCode, ApiErrorCodes, EntityType } from "services/api";
+import { tenantApi, mediaApi, getApiErrorMessage, getApiErrorCode, ApiErrorCodes, EntityType } from "services/api";
 import { useNotify } from "composables/useNotify";
 import { useConfirm } from "composables/useConfirm";
 import { useListTable } from "composables/useListTable";
@@ -178,7 +206,7 @@ import { nameRules } from "utils/personName";
 
 import AppDataTable from "components/common/AppDataTable.vue";
 import DeletedRecordsPanel from "components/universal/DeletedRecordsPanel.vue";
-import AppFormDrawer from "components/common/AppFormDrawer.vue";
+// import AppFormDrawer from "components/common/AppFormDrawer.vue";
 import AppFilterDrawer from "components/common/AppFilterDrawer.vue";
 import AppListHeader from "components/common/AppListHeader.vue";
 import AppSelect from "components/common/AppSelect.vue";
@@ -186,6 +214,8 @@ import AppTextField from "components/common/AppTextField.vue";
 import AppPhoneInput from "components/common/AppPhoneInput.vue";
 import AppAddressFields from "components/common/AppAddressFields.vue";
 import TempPasswordDialog from "components/temp_password_dialog.vue";
+import AppImageUpload from "components/common/AppImageUpload.vue";
+import AppFormDialog from "components/common/AppFormDialog.vue";
 
 const { showDeleted, canManageDeleted } = useDeletedRecords();
 const notify = useNotify();
@@ -248,6 +278,12 @@ const clearFilters = () => {
 const formOpen = ref(false);
 const editing = ref(false);
 const saving = ref(false);
+
+const imageUpload = ref(null);
+const previewUrl = ref(null);
+const uploading = ref(false);
+const pendingLogoFile = ref(null);
+
 const identifierError = ref("");
 const emailError = ref("");
 const formRef = ref(null);
@@ -282,7 +318,8 @@ const form = reactive({
   phoneNumber: "",
   countryCode: null,
   // Only asked on create — the tenant's own address.
-  address: blankAddress()
+  address: blankAddress(),
+  tenantLogoMediaId: null
 });
 
 // The whole list goes to AppSelect, which narrows it as you type: it filters in a computed rather than
@@ -300,6 +337,10 @@ const resetForm = () => {
   form.phoneNumber = "";
   form.countryCode = null;
   form.address = blankAddress();
+  form.tenantLogoMediaId = null;
+  previewUrl.value = "";
+  pendingLogoFile.value = null;
+  uploading.value = false;
   identifierError.value = "";
   emailError.value = "";
   editing.value = false;
@@ -322,37 +363,161 @@ const openEdit = async (row) => {
   form.identifier = row.identifier;
   form.timeZoneId = row.timeZoneId || "UTC";
   formOpen.value = true;
-  // The list row carries no address — read the full tenant for it.
   try {
     const detail = await tenantApi.get(row.tenantId);
     form.address = mapAddress(detail?.address);
+    form.tenantLogoMediaId = detail?.tenantLogoMediaId || null;
+    console.log("Tenant Details:", detail);
+    if (detail?.tenantLogoMediaId) {
+      const blob = await mediaApi.content(detail.tenantLogoMediaId);
+      if (blob) {
+        revokePreviewUrl();
+        previewUrl.value = URL.createObjectURL(blob);
+      } else {
+        revokePreviewUrl();
+        previewUrl.value = null;
+      }
+    } else {
+      revokePreviewUrl();
+      previewUrl.value = null;
+    }
   } catch (err) {
     notify.error(getApiErrorMessage(err));
   }
 };
 
+const onCropUpload = (file) => {
+  pendingLogoFile.value = file;
+  // Show the selected image immediately.
+  previewUrl.value = URL.createObjectURL(file);
+  imageUpload.value?.closeCrop();
+};
+
+const onImageRemove = () => {
+  pendingLogoFile.value = null;
+  form.tenantLogoMediaId = null;
+  previewUrl.value = null;
+};
+
 // The Address panel's fields are all optional; an all-blank card should not create an empty Address row.
 const hasAddressValue = (address) => Object.values(address).some((v) => !!v);
 
-const submitForm = async ({ clearDraft } = {}) => {
+// const submitForm = async ({ clearDraft } = {}) => {
+//   identifierError.value = "";
+//   emailError.value = "";
+//   const valid = await formRef.value?.validate();
+//   if (!valid) return;
+
+//   saving.value = true;
+//   try {
+//     if (editing.value) {
+//       await tenantApi.update(form.tenantId, {
+//         name: form.name,
+//         timeZoneId: form.timeZoneId,
+//         tenantLogoMediaId: form.tenantLogoMediaId,
+//         removeTenantLogoMedia: !form.tenantLogoMediaId,
+//         address: hasAddressValue(form.address) ? form.address : undefined
+//       });
+//       notify.success("Tenant updated.");
+//       clearDraft?.();
+//       formOpen.value = false;
+//       resetForm();
+//     } else {
+//       const result = await tenantApi.create({
+//         name: form.name,
+//         identifier: form.identifier,
+//         timeZoneId: form.timeZoneId,
+//         firstName: form.firstName,
+//         lastName: form.lastName,
+//         email: form.userEmail,
+//         phoneNumber: form.phoneNumber || undefined,
+//         countryCode: form.countryCode || undefined,
+//         tenantLogoMediaId: form.tenantLogoMediaId,
+//         address: hasAddressValue(form.address) ? form.address : undefined
+//       });
+//       clearDraft?.();
+//       formOpen.value = false;
+//       resetForm();
+//       notify.success("Tenant created.");
+//       // The Administrator's one-time temporary password — shown once, same as Create User.
+//       tempPassword.value = result?.temporaryPassword || "";
+//       tempPwOpen.value = true;
+//     }
+//     load();
+//     refreshTenants();
+//   } catch (err) {
+//     const code = getApiErrorCode(err);
+//     if (code === ApiErrorCodes.DuplicateIdentifier) {
+//       identifierError.value = "This identifier is already in use.";
+//     } else if (code === ApiErrorCodes.DuplicateEmail) {
+//       emailError.value = "This email is already in use.";
+//     } else {
+//       notify.error(getApiErrorMessage(err));
+//     }
+//   } finally {
+//     saving.value = false;
+//   }
+// };
+
+// ---- Status / Archive ----
+
+const submitForm = async () => {
   identifierError.value = "";
   emailError.value = "";
+
   const valid = await formRef.value?.validate();
   if (!valid) return;
 
   saving.value = true;
+
   try {
     if (editing.value) {
+      // ==================================================
+      // UPDATE TENANT
+      // ==================================================
+
+      let tenantLogoMediaId = form.tenantLogoMediaId;
+
+      // Upload only when Submit is clicked.
+      if (pendingLogoFile.value) {
+        uploading.value = true;
+
+        try {
+          // Image category is present in backend file MediaCategory.cs file eg - Profile, Attachment, Logo, Contract, Certificate, Document, Other.
+          const media = await mediaApi.upload(pendingLogoFile.value, "Logo",
+            {
+              type: "Tenant",
+              id: form.tenantId
+            }
+          );
+
+          tenantLogoMediaId = media.id;
+        } finally {
+          uploading.value = false;
+        }
+      }
+
       await tenantApi.update(form.tenantId, {
         name: form.name,
         timeZoneId: form.timeZoneId,
-        address: hasAddressValue(form.address) ? form.address : undefined
+        tenantLogoMediaId,
+        removeTenantLogoMedia: !tenantLogoMediaId,
+        address: hasAddressValue(form.address)
+          ? form.address
+          : undefined
       });
+
       notify.success("Tenant updated.");
-      clearDraft?.();
+
       formOpen.value = false;
       resetForm();
     } else {
+      // ==================================================
+      // CREATE TENANT
+      // ==================================================
+
+      // First create the Tenant because we need TenantId
+      // before the Media record can be created.
       const result = await tenantApi.create({
         name: form.name,
         identifier: form.identifier,
@@ -362,20 +527,65 @@ const submitForm = async ({ clearDraft } = {}) => {
         email: form.userEmail,
         phoneNumber: form.phoneNumber || undefined,
         countryCode: form.countryCode || undefined,
-        address: hasAddressValue(form.address) ? form.address : undefined
+        address: hasAddressValue(form.address)
+          ? form.address
+          : undefined
       });
-      clearDraft?.();
+
+      const tenantId = result?.tenantId;
+
+      if (!tenantId) {
+        throw new Error("Tenant was created but Tenant ID was not returned.");
+      }
+
+      // Upload logo only after Tenant has been created.
+      if (pendingLogoFile.value) {
+        uploading.value = true;
+
+        try {
+          const media = await mediaApi.upload(
+            pendingLogoFile.value,
+            "Logo",
+            {
+              type: "Tenant",
+              id: tenantId
+            }
+          );
+
+          // Store Media ID against the newly created Tenant.
+          await tenantApi.update(tenantId, {
+            name: form.name,
+            timeZoneId: form.timeZoneId,
+            tenantLogoMediaId: media.id,
+            removeTenantLogoMedia: false,
+            address: hasAddressValue(form.address)
+              ? form.address
+              : undefined
+          });
+        } finally {
+          uploading.value = false;
+        }
+      }
+
+      // Existing Create Tenant success flow.
+      tempPassword.value = result?.temporaryPassword || "";
+
       formOpen.value = false;
       resetForm();
+
       notify.success("Tenant created.");
-      // The Administrator's one-time temporary password — shown once, same as Create User.
-      tempPassword.value = result?.temporaryPassword || "";
-      tempPwOpen.value = true;
+
+      if (tempPassword.value) {
+        tempPwOpen.value = true;
+      }
     }
+
+    // Refresh tenant list and tenant switcher.
     load();
     refreshTenants();
   } catch (err) {
     const code = getApiErrorCode(err);
+
     if (code === ApiErrorCodes.DuplicateIdentifier) {
       identifierError.value = "This identifier is already in use.";
     } else if (code === ApiErrorCodes.DuplicateEmail) {
@@ -385,10 +595,9 @@ const submitForm = async ({ clearDraft } = {}) => {
     }
   } finally {
     saving.value = false;
+    uploading.value = false;
   }
 };
-
-// ---- Status / Archive ----
 const setStatus = async (row, isActive) => {
   const ok = await confirm({
     title: isActive ? "Activate tenant" : "Deactivate tenant",
@@ -473,4 +682,10 @@ const userEmailRules = [
   (v) => !!v || "Email is required",
   (v) => /.+@.+\..+/.test(v) || "Enter a valid email"
 ];
+
+const revokePreviewUrl = () => {
+  if (previewUrl.value?.startsWith("blob:")) {
+    URL.revokeObjectURL(previewUrl.value);
+  }
+};
 </script>

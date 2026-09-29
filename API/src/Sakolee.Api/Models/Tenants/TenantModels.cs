@@ -20,6 +20,8 @@ public sealed class CreateTenantRequest
     public string Email { get; set; } = string.Empty;
     public string? PhoneNumber { get; set; }
     public string? CountryCode { get; set; }
+
+    public Guid? TenantLogoMediaId { get; set; }
 }
 
 public sealed class UpdateTenantRequest
@@ -29,6 +31,13 @@ public sealed class UpdateTenantRequest
 
     // ---- Tenant's own address (optional; upserted onto Tenant.AddressId) ----
     public AddressInput? Address { get; set; }
+
+    /// <summary>Profile image reference (a <c>Media</c> id).</summary>
+    public Guid? TenantLogoMediaId { get; set; }
+
+    /// <summary>When true, clears the profile image (takes precedence over <see cref="ProfileMediaId"/>).</summary>
+    public bool RemoveTenantLogoMedia { get; set; }
+
 }
 
 public sealed class UpdateTenantStatusRequest
@@ -68,6 +77,8 @@ public sealed record TenantSummary(
 /// <summary>One tenant, as its detail page reads it.</summary>
 public sealed record TenantDetail(
     Guid TenantId,
+    Guid? TenantLogoMediaId,
+    string? TenantLogoMediaUrl,
     string Name,
     string Identifier,
     string Status,

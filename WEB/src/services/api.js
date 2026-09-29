@@ -121,11 +121,11 @@ export const billingCycleApi = {
 
 // T-Shirt Size API mapping.
 export const tShirtSizeApi = {
-  list: (params) =>api.get("/api/admin/t-shirt-sizes", { params }).then(envelope),
-  get: (id) =>api.get(`/api/admin/t-shirt-sizes/${id}`).then(unwrap),
-  create: (payload) =>api.post("/api/admin/t-shirt-sizes", payload).then(unwrap),
-  update: (id, payload) =>api.put(`/api/admin/t-shirt-sizes/${id}`, payload).then(unwrap),
-  remove: (id) =>api.delete(`/api/admin/t-shirt-sizes/${id}`).then(envelope)
+  list: (params) => api.get("/api/admin/t-shirt-sizes", { params }).then(envelope),
+  get: (id) => api.get(`/api/admin/t-shirt-sizes/${id}`).then(unwrap),
+  create: (payload) => api.post("/api/admin/t-shirt-sizes", payload).then(unwrap),
+  update: (id, payload) => api.put(`/api/admin/t-shirt-sizes/${id}`, payload).then(unwrap),
+  remove: (id) => api.delete(`/api/admin/t-shirt-sizes/${id}`).then(envelope)
 };
 
 // Family Status API mapping
@@ -541,10 +541,9 @@ export const billingMethodApi = {
 
   delete: (id) => api.delete(`/api/admin/billing-methods/${id}`).then(envelope)
 
-  //delete: (id) => api.delete(`/api/admin/billing-methods/${id}`).then(envelope)
-  
-};
+  // delete: (id) => api.delete(`/api/admin/billing-methods/${id}`).then(envelope)
 
+};
 
 export const familyRelationApi = {
   list: (params) => api.get("/api/admin/family-relations", { params }).then(envelope),

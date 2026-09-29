@@ -172,6 +172,7 @@ public sealed class PersonsController : ControllerBase
 
     [HttpGet("{id:guid}")]
     [RequirePermission(Permissions.PersonsRead)]
+    [RequireAnyPermission(Permissions.TenantsRead)]
     public async Task<IActionResult> GetById(Guid id, CancellationToken cancellationToken)
     {
         var person = await LoadAsync(id, cancellationToken);
