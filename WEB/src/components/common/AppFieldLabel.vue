@@ -49,7 +49,7 @@ const { text, isRequired } = useFieldLabel(toRef(props, "label"), toRef(props, "
 .app-field-label__star {
   margin-left: 3px;
   color: #e53935;
-  font-size: 18px;
+  font-size: 10px;
   font-weight: 700;
   line-height: 0;
   vertical-align: baseline;

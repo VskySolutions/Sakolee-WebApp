@@ -42,5 +42,10 @@ internal sealed class TenantConfiguration : IEntityTypeConfiguration<Tenant>
             .WithMany()
             .HasForeignKey(t => t.PersonId)
             .OnDelete(DeleteBehavior.Restrict);
+
+       builder.HasOne(t => t.TenantMedia)
+            .WithMany()
+            .HasForeignKey(t => t.TenantLogoMediaId)
+            .OnDelete(DeleteBehavior.NoAction);
     }
 }

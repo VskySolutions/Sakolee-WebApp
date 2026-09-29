@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Mvc;
 using Sakolee.Api.Models;
 using Sakolee.Api.Models.Profile;
 using Sakolee.Api.Models.Tenants;
@@ -12,7 +13,7 @@ using Sakolee.Domain.Entities;
 using Sakolee.Domain.Enums;
 using Sakolee.Shared.Contracts;
 using Sakolee.Shared.Security;
-using Microsoft.AspNetCore.Mvc;
+using System;
 
 namespace Sakolee.Api.Controllers;
 
@@ -124,6 +125,7 @@ public sealed class TenantsController : ControllerBase
             TimeZoneId = string.IsNullOrWhiteSpace(request.TimeZoneId) ? "UTC" : request.TimeZoneId,
             Status = TenantStatus.Active,
             CreatedDate = DateTime.UtcNow,
+            TenantLogoMediaId = request.TenantLogoMediaId
         };
 
         var adminUserId = Guid.NewGuid();
@@ -277,17 +279,19 @@ public sealed class TenantsController : ControllerBase
     /// <summary>Gets a single tenant's detail, including its provenance (who created/last updated it).</summary>
     [HttpGet("{id:guid}")]
     [RequirePermission(Permissions.TenantsWrite)]
+    [RequireAnyPermission(Permissions.TenantsRead)]
     [ProducesResponseType<ApiResponse<TenantDetail>>(StatusCodes.Status200OK)]
     public async Task<IActionResult> GetById(Guid id, CancellationToken cancellationToken)
     {
         var tenant = await _tenants.GetByIdAsync(id, cancellationToken);
+        var logoPublicUrl = tenant.TenantMedia?.PublicUrl;
         if (tenant is null)
         {
             return NotFound(ApiResponseFactory.Error(ApiErrorCodes.TenantNotFound, "Tenant not found.", id.ToString()));
         }
 
         var detail = new TenantDetail(
-            tenant.Id, tenant.Name, tenant.Identifier, tenant.Status.ToString(), tenant.TimeZoneId,
+            tenant.Id, tenant.TenantLogoMediaId, logoPublicUrl, tenant.Name, tenant.Identifier, tenant.Status.ToString(), tenant.TimeZoneId,
             tenant.Address is null ? null : PersonProfileMapper.MapAddress(tenant.Address),
             await RecordAudit.ForAsync(_users, tenant, cancellationToken));
 
@@ -309,6 +313,14 @@ public sealed class TenantsController : ControllerBase
         }
 
         tenant.Name = request.Name; // identifier is immutable
+        if (request.RemoveTenantLogoMedia)
+        {
+            tenant.TenantLogoMediaId = null;
+        }
+        else if (request.TenantLogoMediaId.HasValue)
+        {
+            tenant.TenantLogoMediaId = request.TenantLogoMediaId;
+        }
         if (!string.IsNullOrWhiteSpace(request.TimeZoneId))
         {
             tenant.TimeZoneId = request.TimeZoneId;

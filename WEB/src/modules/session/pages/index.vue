@@ -1,5 +1,5 @@
 <template>
-  <!-- 
+  <!--
     ============================================================
     Sessions Index Page Component
     ============================================================
@@ -227,7 +227,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, watch, onMounted } from "vue";
+import { ref, reactive, watch, onMounted } from "vue";
 import { debounce } from "quasar";
 
 import {
@@ -545,7 +545,7 @@ const removeSession = async (row) => {
   const id = row.sessionId || row.SessionId || row.id || row.Id;
   if (!id) return;
 
-  const sessionLabel = row.sessionName || row.SessionName || row.name || row.Name || 'this session';
+  const sessionLabel = row.sessionName || row.SessionName || row.name || row.Name || "this session";
   const ok = await confirm({
     title: "Delete session",
     message: `Are you sure you want to delete the session "${sessionLabel}"?`,
