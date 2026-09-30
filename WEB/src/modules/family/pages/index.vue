@@ -31,9 +31,18 @@
       :loading="loading"
       :total-records="totalRecords"
       :pagination="pagination"
+      selectable
       @request="onRequest"
       @refresh="load"
+      @update:selected="selected = $event"
     >
+      <template #bulk-actions="{ selected: sel }">
+        <q-btn
+          v-if="canWrite" flat dense no-caps color="primary" icon="o_forward_to_inbox"
+          label="Send Credentials" :loading="sendingCredentials" @click="sendCredentials(sel)"
+        />
+      </template>
+
       <template #body-cell-active="cell">
         <q-td :props="cell">
           <q-badge :color="cell.value ? 'positive' : 'grey'">{{ cell.value ? "Active" : "Inactive" }}</q-badge>
@@ -47,6 +56,9 @@
           </q-btn>
           <q-btn v-if="canWrite" flat round dense color="primary" icon="o_edit" @click="openEdit(cell.row)">
             <q-tooltip>Edit</q-tooltip>
+          </q-btn>
+          <q-btn v-if="canWrite" flat round dense color="primary" icon="o_forward_to_inbox" @click="sendCredentials([cell.row])">
+            <q-tooltip>Send Credentials to Parents</q-tooltip>
           </q-btn>
           <q-btn v-if="canDelete" flat round dense color="negative" icon="o_delete" @click="remove(cell.row)">
             <q-tooltip>Delete</q-tooltip>
@@ -70,11 +82,41 @@
       :family-id="viewFamilyId"
       :family-status-options="familyStatusOptions"
     />
+
+    <!-- Send Credentials: parents whose email could NOT be sent, with their temporary passwords so they
+         can be shared manually. Successfully emailed passwords are not shown. -->
+    <q-dialog v-model="credentialsFailedOpen" persistent>
+      <q-card style="min-width: 420px;">
+        <q-card-section class="row items-center q-gutter-sm">
+          <q-icon name="o_key" color="warning" size="sm" />
+          <div class="text-h6">Credentials not emailed</div>
+        </q-card-section>
+        <q-card-section>
+          <div class="text-body2 text-grey-7 q-mb-sm">
+            These emails could not be sent. The passwords will not be shown again — share them securely.
+          </div>
+          <div v-for="f in credentialsFailed" :key="f.email" class="q-mb-sm">
+            <div class="text-caption text-grey-7">{{ f.familyName }} · {{ f.name }} — {{ f.email }}</div>
+            <q-input :model-value="f.password" readonly outlined dense>
+              <template #append>
+                <q-btn flat round dense icon="o_content_copy" @click="copyPassword(f.password)">
+                  <q-tooltip>Copy</q-tooltip>
+                </q-btn>
+              </template>
+            </q-input>
+          </div>
+        </q-card-section>
+        <q-card-actions align="right">
+          <q-btn v-close-popup flat no-caps color="primary" label="Done" />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
   </q-page>
 </template>
 
 <script setup>
 import { ref, reactive, computed, watch, onMounted } from "vue";
+import { useRouter } from "vue-router";
 import { debounce } from "quasar";
 import { familyApi, familyStatusApi, getApiErrorMessage } from "services/api";
 import { useNotify } from "composables/useNotify";
@@ -90,6 +132,7 @@ import AppSelect from "components/common/AppSelect.vue";
 import FamilyFormDrawer from "modules/family/components/FamilyFormDrawer.vue";
 import FamilyViewDrawer from "modules/family/components/FamilyViewDrawer.vue";
 
+const router = useRouter();
 const notify = useNotify();
 const { confirm } = useConfirm();
 const auditColumns = useAuditColumns();
@@ -126,7 +169,7 @@ onMounted(async () => {
 });
 
 const filters = reactive({ familyStatusId: null });
-const { rows, loading, totalRecords, search, filterOpen, pagination, load, onRequest } = useListTable({
+const { rows, loading, totalRecords, selected, search, filterOpen, pagination, load, onRequest } = useListTable({
   pageKey: "families",
   fetcher: ({ page, limit, sortBy, descending }) =>
     familyApi.list({
@@ -165,7 +208,8 @@ const openForm = (mode, familyId = null) => {
   formFamilyId.value = familyId;
   formOpen.value = true;
 };
-const openCreate = () => openForm("create");
+// Creating a family goes through the full Quick Registration wizard (family + contacts + students).
+const openCreate = () => router.push({ name: "family_quick_registration" });
 const openEdit = (row) => openForm("edit", row.familyId);
 
 // ---- Read-only View (FamilyViewDrawer) ----
@@ -174,6 +218,67 @@ const viewFamilyId = ref(null);
 const openView = (row) => {
   viewFamilyId.value = row.familyId;
   viewOpen.value = true;
+};
+
+// ---- Send Credentials (parents only — the API never includes students) ----
+const sendingCredentials = ref(false);
+const credentialsFailedOpen = ref(false);
+const credentialsFailed = ref([]);
+
+const copyPassword = async (password) => {
+  try {
+    await navigator.clipboard.writeText(password);
+    notify.success("Copied to clipboard.");
+  } catch {
+    notify.warning("Copy failed — please select and copy manually.");
+  }
+};
+
+// Used by both the row button (one family) and the bulk action (selected families).
+const sendCredentials = async (families) => {
+  if (!families.length) return;
+  const ok = await confirm({
+    title: "Send credentials",
+    message: `Email the parents of ${families.length === 1 ? `"${families[0].familyName}"` : `${families.length} families`} ` +
+      "their login credentials (username and temporary password)? Anyone who has already set their own " +
+      "password gets a new temporary password and their sessions end.",
+    confirmLabel: "Send",
+    type: "primary"
+  });
+  if (!ok) return;
+
+  sendingCredentials.value = true;
+  let sent = 0;
+  const failed = [];   // email didn't go out — password shown for manual sharing
+  const errors = [];   // API call failed for the whole family (no parent login, permission, ...)
+  try {
+    // One family at a time: each call sends over SMTP synchronously.
+    for (const family of families) {
+      try {
+        const result = await familyApi.sendCredentials(family.familyId);
+        for (const c of result?.contacts || []) {
+          if (c.emailSent) {
+            sent++;
+          } else {
+            failed.push({ familyName: family.familyName, name: c.name, email: c.email, password: c.temporaryPassword });
+          }
+        }
+      } catch (err) {
+        errors.push(`${family.familyName}: ${getApiErrorMessage(err)}`);
+      }
+    }
+  } finally {
+    sendingCredentials.value = false;
+  }
+
+  if (sent) notify.success(`Credentials emailed to ${sent} parent(s).`);
+  if (errors.length) notify.error(`Could not send credentials — ${errors.join("; ")}`);
+  if (failed.length) {
+    notify.warning(`${failed.length} email(s) could not be sent (check the tenant's SMTP account).`);
+    credentialsFailed.value = failed;
+    credentialsFailedOpen.value = true;
+  }
+  selected.value = [];
 };
 
 const remove = async (row) => {

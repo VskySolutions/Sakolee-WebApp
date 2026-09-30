@@ -128,6 +128,11 @@ public sealed class UpdateStudentRequest
 /// A student as returned after create/update. <see cref="TemporaryPassword"/> is populated only on
 /// create (the one time it is ever shown in plaintext — mirrors <c>CreateUserResponse</c>).
 /// </summary>
+/// <summary>Response from emailing a student their login credentials. <see cref="TemporaryPassword"/> is
+/// returned so it can be shown once when <see cref="EmailSent"/> is false.</summary>
+public sealed record SendStudentCredentialsResponse(
+    Guid StudentId, Guid UserId, string Email, string TemporaryPassword, bool EmailSent, bool PasswordWasReset);
+
 public sealed record StudentResponse(
     Guid StudentId, Guid? PersonId, Guid? UserId, string? FirstName, string? LastName, bool Active,
     string? TemporaryPassword);

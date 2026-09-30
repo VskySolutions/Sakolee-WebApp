@@ -162,7 +162,11 @@ export const familyApi = {
   get: (id) => api.get(`/api/admin/families/${id}`).then(unwrap),
   create: (payload) => api.post("/api/admin/families", payload).then(unwrap),
   update: (id, payload) => api.put(`/api/admin/families/${id}`, payload).then(unwrap),
-  remove: (id) => api.delete(`/api/admin/families/${id}`).then(envelope)
+  remove: (id) => api.delete(`/api/admin/families/${id}`).then(envelope),
+  // Emails every parent contact with a login (never students) their username + temporary password.
+  // Response: { familyId, contacts: [{ name, email, isPrimaryContact, temporaryPassword, emailSent,
+  // passwordWasReset }] } — same one-time-reveal contract as userApi.sendCredentials.
+  sendCredentials: (id) => api.post(`/api/admin/families/${id}/send-credentials`).then(unwrap)
 };
 
 export const studentApi = {
@@ -176,7 +180,10 @@ export const studentApi = {
   // Which of `emails` already belong to a login account → { inUse: [...] }.
   emailsInUse: (emails) => api.post("/api/admin/students/emails-in-use", { emails }).then(unwrap),
   update: (id, payload) => api.put(`/api/admin/students/${id}`, payload).then(unwrap),
-  remove: (id) => api.delete(`/api/admin/students/${id}`).then(envelope)
+  remove: (id) => api.delete(`/api/admin/students/${id}`).then(envelope),
+  // Emails the student their username (login email) + temporary password. Response: { email,
+  // temporaryPassword, emailSent, passwordWasReset } — same one-time-reveal contract as userApi.sendCredentials.
+  sendCredentials: (id) => api.post(`/api/admin/students/${id}/send-credentials`).then(unwrap)
 };
 
 export const userApi = {
@@ -192,6 +199,10 @@ export const userApi = {
   setStatus: (id, isActive) => api.put(`/api/admin/users/${id}/status`, { isActive }).then(unwrap),
   // Admin password reset (REQ-ADM-013) — returns a new temporary password.
   resetPassword: (id) => api.post(`/api/admin/users/${id}/reset-password`).then(unwrap),
+  // Emails the user their username (login email) + temporary password. Re-sends the existing temporary
+  // password when one is on file, else mints a new one. Response: { temporaryPassword, emailSent,
+  // passwordWasReset } — same one-time-reveal contract as resetPassword.
+  sendCredentials: (id) => api.post(`/api/admin/users/${id}/send-credentials`).then(unwrap),
   // payload: { tenantId, roleIds[] } — reconciles the full set of roles the user holds in the tenant
   // (adds/removes to match; an empty set removes tenant access). WO-123 multi-role.
   assignTenantRole: (id, payload) =>

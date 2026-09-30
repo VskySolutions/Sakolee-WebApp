@@ -149,6 +149,15 @@ public sealed record FamilyDetail(
     string? UpdatedBy,
     DateTime? UpdatedOnUtc);
 
+/// <summary>One parent contact's outcome from <c>FamiliesController.SendCredentials</c>.
+/// <see cref="TemporaryPassword"/> is returned so it can be shown once when <see cref="EmailSent"/> is false.</summary>
+public sealed record FamilyContactCredentialsResult(
+    Guid UserId, string? Name, string Email, bool IsPrimaryContact,
+    string TemporaryPassword, bool EmailSent, bool PasswordWasReset);
+
+/// <summary>Response from sending a family's parent contacts their login credentials.</summary>
+public sealed record SendFamilyCredentialsResponse(Guid FamilyId, IReadOnlyList<FamilyContactCredentialsResult> Contacts);
+
 /// <summary>A family row for the list page.</summary>
 public sealed record FamilySummary(
     Guid FamilyId,

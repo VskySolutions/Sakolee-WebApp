@@ -49,6 +49,7 @@ public sealed class StudentsController : ControllerBase
     private readonly IActorAccessor _actorAccessor;
     private readonly IUnitOfWork _unitOfWork;
     private readonly IAuditTrailService _audit;
+    private readonly ICredentialEncryptionService _credentialEncryption;
 
     public StudentsController(
         IStudentRepository students,
@@ -61,7 +62,8 @@ public sealed class StudentsController : ControllerBase
         ITenantContext tenantContext,
         IActorAccessor actorAccessor,
         IUnitOfWork unitOfWork,
-        IAuditTrailService audit)
+        IAuditTrailService audit,
+        ICredentialEncryptionService credentialEncryption)
     {
         _students = students;
         _families = families;
@@ -74,6 +76,7 @@ public sealed class StudentsController : ControllerBase
         _actorAccessor = actorAccessor;
         _unitOfWork = unitOfWork;
         _audit = audit;
+        _credentialEncryption = credentialEncryption;
     }
 
     /// <summary>What the Students list may be ordered by. Name/email are not: they live on the linked
@@ -315,6 +318,9 @@ public sealed class StudentsController : ControllerBase
             MustChangePassword = true,
             TokenVersion = 1,
             CreatedDate = now,
+            // Kept (encrypted) only until the student signs in and sets their own password, so "Send
+            // Credentials" can resend it without minting a new one (same as UsersController.Create).
+            EncryptedTemporaryPassword = _credentialEncryption.Encrypt(temporaryPassword),
         };
         await _users.AddAsync(user, cancellationToken);
         await _users.AddAssignmentAsync(new UserTenantRole
@@ -510,6 +516,40 @@ public sealed class StudentsController : ControllerBase
         return Ok(ApiResponseFactory.Success(
             new StudentResponse(student.Id, student.PersonId, person?.UserId, person?.FirstName, person?.LastName, student.Active, null),
             "Student updated."));
+    }
+
+    /// <summary>
+    /// Emails the student their own login credentials (username = login email, plus temporary password) —
+    /// the student counterpart of the Staff list's "Send Credentials". Resend-or-mint rules live in
+    /// <see cref="IUserCredentialsService"/>.
+    /// </summary>
+    [HttpPost("{id:guid}/send-credentials")]
+    [RequirePermission(Permissions.StudentsWrite)]
+    [ProducesResponseType<ApiResponse<SendStudentCredentialsResponse>>(StatusCodes.Status200OK)]
+    public async Task<IActionResult> SendCredentials(
+        Guid id, [FromServices] IUserCredentialsService credentials, CancellationToken cancellationToken)
+    {
+        var student = await LoadOwnedAsync(id, cancellationToken);
+        if (student is null)
+        {
+            return NotFound(ApiResponseFactory.NotFound("Student not found."));
+        }
+
+        var person = student.PersonId is { } personId ? await _persons.GetByIdAsync(personId, cancellationToken) : null;
+        var user = person?.UserId is { } userId ? await _users.GetByIdAsync(userId, cancellationToken) : null;
+        if (user is null)
+        {
+            return BadRequest(ApiResponseFactory.Error(
+                ApiErrorCodes.ValidationFailed, "Validation failed.", "This student has no login account."));
+        }
+
+        // Send through the active tenant's SMTP account, else the tenant the student's login belongs to.
+        var tenantId = _tenantContext.IsResolved ? _tenantContext.TenantId : user.TenantRoles.FirstOrDefault()?.TenantId;
+        var result = await credentials.SendAsync(user, tenantId, cancellationToken);
+
+        return Ok(ApiResponseFactory.Success(
+            new SendStudentCredentialsResponse(student.Id, user.Id, user.Email, result.TemporaryPassword, result.EmailSent, result.PasswordWasReset),
+            "Credentials sent."));
     }
 
     [HttpDelete("{id:guid}")]

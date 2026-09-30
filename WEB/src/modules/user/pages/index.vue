@@ -42,6 +42,10 @@
       <template #bulk-actions="{ selected: sel }">
         <q-btn v-if="has(Permissions.UsersWrite)" flat dense no-caps color="positive" label="Activate" @click="bulkSetStatus(sel, true)" />
         <q-btn v-if="has(Permissions.UsersWrite)" flat dense no-caps color="negative" label="Deactivate" @click="bulkSetStatus(sel, false)" />
+        <q-btn
+          v-if="has(Permissions.UsersResetPassword)" flat dense no-caps color="primary" icon="o_forward_to_inbox"
+          label="Send Credentials" :loading="bulkSending" @click="bulkSendCredentials(sel)"
+        />
       </template>
 
       <template #body-cell-isActive="cell">
@@ -89,6 +93,12 @@
           >
             <q-tooltip>Reset Password</q-tooltip>
           </q-btn>
+          <q-btn
+            v-if="has(Permissions.UsersResetPassword)" type="a"
+            flat round dense color="primary" icon="o_forward_to_inbox" @click="sendCredentials(cell.row)"
+          >
+            <q-tooltip>Send Credentials</q-tooltip>
+          </q-btn>
         </q-td>
       </template>
     </app-data-table>
@@ -101,6 +111,35 @@
     <user-create-drawer v-model="formOpen" :person-id="presetPersonId" :default-role="STAFF_ROLE" @created="load" />
 
     <temp-password-dialog v-model="tempPwOpen" :password="tempPassword" />
+
+    <!-- Bulk Send Credentials: the staff whose email could NOT be sent, with their temporary passwords
+         so they can be shared manually. Successfully emailed passwords are not shown. -->
+    <q-dialog v-model="bulkFailedOpen" persistent>
+      <q-card style="min-width: 420px;">
+        <q-card-section class="row items-center q-gutter-sm">
+          <q-icon name="o_key" color="warning" size="sm" />
+          <div class="text-h6">Credentials not emailed</div>
+        </q-card-section>
+        <q-card-section>
+          <div class="text-body2 text-grey-7 q-mb-sm">
+            These emails could not be sent. The passwords will not be shown again — share them securely.
+          </div>
+          <div v-for="f in bulkFailed" :key="f.email" class="q-mb-sm">
+            <div class="text-caption text-grey-7">{{ f.name }} — {{ f.email }}</div>
+            <q-input :model-value="f.password" readonly outlined dense>
+              <template #append>
+                <q-btn flat round dense icon="o_content_copy" @click="copyPassword(f.password)">
+                  <q-tooltip>Copy</q-tooltip>
+                </q-btn>
+              </template>
+            </q-input>
+          </div>
+        </q-card-section>
+        <q-card-actions align="right">
+          <q-btn v-close-popup flat no-caps color="primary" label="Done" />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
   </q-page>
 </template>
 
@@ -268,6 +307,88 @@ const resetPassword = async (row) => {
   } catch (err) {
     notify.error(getApiErrorMessage(err));
   }
+};
+
+// Same flow as the Tenants list's "Send Credentials", for one staff user.
+const sendCredentials = async (row) => {
+  const ok = await confirm({
+    title: "Send credentials",
+    message: `Email ${row.fullName} their login credentials (username and temporary password)?`,
+    confirmLabel: "Send",
+    type: "primary"
+  });
+  if (!ok) return;
+  try {
+    const result = await userApi.sendCredentials(row.userId);
+    // emailSent is the real SMTP outcome (the API sends synchronously for this action).
+    const resetText = result?.passwordWasReset ? " A new temporary password was generated (none was on file to resend)." : "";
+    if (result?.emailSent) {
+      notify.success(`Credentials emailed to ${row.email}.${resetText}`);
+    } else {
+      notify.warning(`The email could not be sent (check the tenant's SMTP account) — share the credentials below manually.${resetText}`);
+    }
+    tempPassword.value = result?.temporaryPassword || "";
+    tempPwOpen.value = true;
+  } catch (err) {
+    notify.error(getApiErrorMessage(err));
+  }
+};
+
+// ---- Bulk Send Credentials ----
+const bulkSending = ref(false);
+const bulkFailedOpen = ref(false);
+const bulkFailed = ref([]);
+
+const copyPassword = async (password) => {
+  try {
+    await navigator.clipboard.writeText(password);
+    notify.success("Copied to clipboard.");
+  } catch {
+    notify.warning("Copy failed — please select and copy manually.");
+  }
+};
+
+const bulkSendCredentials = async (sel) => {
+  if (!sel.length) return;
+  const ok = await confirm({
+    title: "Send credentials",
+    message: `Email ${sel.length} staff member(s) their login credentials (username and temporary password)? ` +
+      "Anyone who has already set their own password gets a new temporary password and their sessions end.",
+    confirmLabel: "Send",
+    type: "primary"
+  });
+  if (!ok) return;
+
+  bulkSending.value = true;
+  let sent = 0;
+  const failed = [];   // API succeeded but the email didn't go out — password shown for manual sharing
+  const errors = [];   // API call itself failed (permission, not found, ...)
+  try {
+    // One at a time: each call sends over SMTP synchronously, so this avoids hammering the mail server.
+    for (const row of sel) {
+      try {
+        const result = await userApi.sendCredentials(row.userId);
+        if (result?.emailSent) {
+          sent++;
+        } else {
+          failed.push({ name: row.fullName, email: row.email, password: result?.temporaryPassword || "" });
+        }
+      } catch (err) {
+        errors.push(`${row.fullName}: ${getApiErrorMessage(err)}`);
+      }
+    }
+  } finally {
+    bulkSending.value = false;
+  }
+
+  if (sent) notify.success(`Credentials emailed to ${sent} staff member(s).`);
+  if (errors.length) notify.error(`Could not send credentials — ${errors.join("; ")}`);
+  if (failed.length) {
+    notify.warning(`${failed.length} email(s) could not be sent (check the tenant's SMTP account).`);
+    bulkFailed.value = failed;
+    bulkFailedOpen.value = true;
+  }
+  selected.value = [];
 };
 
 </script>

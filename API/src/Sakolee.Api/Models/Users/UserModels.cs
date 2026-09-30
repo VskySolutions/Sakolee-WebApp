@@ -140,6 +140,14 @@ public sealed record CreateUserResponse(Guid UserId, string TemporaryPassword, b
 
 public sealed record ResetPasswordResponse(Guid UserId, string TemporaryPassword, bool EmailSent);
 
+/// <summary>
+/// Response from emailing a user their login credentials: the temporary password (same one-time-reveal
+/// contract as <see cref="ResetPasswordResponse"/>), whether an email send will be attempted, and whether a
+/// brand new password had to be minted (nothing was saved to resend — an older account, or one whose user
+/// already signed in and set their own).
+/// </summary>
+public sealed record SendUserCredentialsResponse(Guid UserId, string TemporaryPassword, bool EmailSent, bool PasswordWasReset);
+
 public sealed record UserSummary(
     Guid UserId,
     string Email,
