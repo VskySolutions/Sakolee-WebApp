@@ -2,7 +2,7 @@
   <!-- Read-only View Family dialog (same app-form-dialog pattern as the Studio Locations view) -->
   <app-form-dialog
     v-model="isOpen"
-    :title="form.familyName ? `View ${form.familyName}` : 'View Family'"
+    :title="form.className ? `View ${form.className}` : 'View Family'"
     size="xl"
     hide-footer
     @cancel="resetView"
