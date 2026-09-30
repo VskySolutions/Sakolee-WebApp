@@ -1,5 +1,5 @@
 <template>
-    <!-- Drawer used for creating and editing a Billing Cycle -->
+  <!-- Drawer used for creating and editing a Billing Cycle -->
   <app-form-drawer
     v-model="formOpen"
     :title="editing ? 'Edit Billing Cycle' : 'Create Billing Cycle'"
@@ -7,7 +7,7 @@
     @submit="submit"
     @cancel="reset"
   >
-  <!-- Form container with validation -->
+    <!-- Form container with validation -->
     <q-form ref="formRef" greedy>
       <!-- Billing Cycle name field -->
       <app-text-field
