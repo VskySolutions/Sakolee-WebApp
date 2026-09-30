@@ -374,6 +374,45 @@ public sealed class FamilyStatusesController : ControllerBase
 
     #endregion
 
+    #region Audit Name Helpers
+
+    /// <summary>
+    /// Resolves the user IDs stored in the audit fields into display names.
+    /// Falls back to the stored value when it is not a known user ID.
+    /// </summary>
+    private async Task<Func<string?, string?>> AuditNamesAsync(IEnumerable<FamilyStatus> rows, CancellationToken cancellationToken)
+    {
+        var ids = rows
+            .SelectMany(f => new[] { f.CreatedBy, f.UpdatedBy })
+            .Select(id => Guid.TryParse(id, out var userId) ? userId : (Guid?)null)
+            .Where(id => id.HasValue)
+            .Select(id => id!.Value)
+            .Distinct();
+
+        var names = await _users.GetFullNamesAsync(ids, cancellationToken);
+
+        return value => Guid.TryParse(value, out var userId) && names.TryGetValue(userId, out var name) ? name : value;
+    }
+
+    /// <summary>
+    /// Maps a family status entity to its detail response with audit names resolved.
+    /// </summary>
+    private async Task<FamilyStatusDetail> ToDetailAsync(FamilyStatus familyStatus, CancellationToken cancellationToken)
+    {
+        var nameOf = await AuditNamesAsync(new[] { familyStatus }, cancellationToken);
+
+        return new FamilyStatusDetail(
+            familyStatus.FamilyStatusId,
+            familyStatus.Name,
+            !familyStatus.IsDeleted,
+            nameOf(familyStatus.CreatedBy),
+            nameOf(familyStatus.UpdatedBy),
+            familyStatus.CreatedOn,
+            familyStatus.UpdatedOn);
+    }
+
+    #endregion
+
     private async Task<string?> ResolveUserNameAsync(string? userIdStr, CancellationToken cancellationToken)
     {
         if (string.IsNullOrEmpty(userIdStr) || !Guid.TryParse(userIdStr, out var userId))

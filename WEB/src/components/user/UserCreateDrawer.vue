@@ -1,7 +1,7 @@
 <template>
   <div>
     <!-- Create user (creates its own Person master record from the name/email below) -->
-    <app-form-drawer v-model="open" title="Create User" :saving="saving" @submit="submitForm" @cancel="resetForm">
+    <app-form-drawer v-model="open" title="Create Staff" :saving="saving" @submit="submitForm" @cancel="resetForm">
       <q-form ref="formRef" greedy>
         <!-- There is no existing Person to promote — one is created inline from these fields. -->
         <div class="row q-col-gutter-md q-mb-md">
@@ -20,24 +20,15 @@
           :error="!!emailError" :error-message="emailError"
           :rules="[(v) => !!v || 'Email is required', (v) => /.+@.+\..+/.test(v) || 'Enter a valid email']"
         />
-        <!-- Not asked when the caller is already looking at one tenant: the account goes into the tenant
-             whose page this drawer was opened from, and a second answer to that could only disagree. A
-             person may be assigned to more than one tenant (TenantPersonMapping), so this is a
-             multiselect — the FIRST selected tenant is where the login's roles are created. -->
+        <!-- Hidden when the caller fixes the role (the Staff page always creates "Staff" accounts). -->
         <app-select
-          v-if="showTenantPicker" v-model="form.tenantIds" :options="tenantOptions" label="Tenant *"
-          multiple :loading="loadingTenants" class="q-mb-md" :clearable="false"
-          hint="The first tenant selected is where roles/login access are granted; every tenant selected is recorded against the person."
-          @update:model-value="onTenantChange"
-        />
-        <app-select
-          v-model="form.roleIds" :options="roleOptions" label="Roles *" multiple class="q-mb-md"
+          v-if="!defaultRole" v-model="form.roleIds" :options="roleOptions" label="Roles *" multiple class="q-mb-md"
           :loading="loadingRoles" hint="Grouped by category. Assign one or more roles."
           info="The roles assignable in the first selected tenant, grouped System / Operational / Custom. Super Admin is only listed for a Super Admin."
         />
 
         <!-- Department + groups, the same placements the user's detail page manages. -->
-        <template v-if="inActiveTenant">
+        <template v-if="showDepartmentAndGroups && inActiveTenant">
           <app-select
             v-model="form.department" :options="departmentOptions" :loading="loadingDepartments"
             label="Department" class="q-mb-md"
@@ -55,6 +46,7 @@
           />
         </template>
 
+        <!-- Send invitation toggle hidden for now.
         <q-toggle
           v-model="form.sendInvitation" color="primary"
           label="Send invitation email with the temporary password"
@@ -62,6 +54,7 @@
         <div class="text-caption text-grey-7 q-mb-md">
           Emails the user their login link and temporary password via the tenant's active SMTP account.
         </div>
+        -->
       </q-form>
     </app-form-drawer>
 
@@ -76,6 +69,7 @@ import { ref, reactive, computed, watch } from "vue";
 import { userApi, userGroupApi, getApiErrorMessage, getApiErrorCode, ApiErrorCodes } from "services/api";
 import { usePermissions, Permissions } from "composables/usePermissions";
 import { useTenantOptions } from "composables/useTenantOptions";
+import { useTenantScope } from "composables/useTenantScope";
 import { useRoleOptions } from "composables/useRoleOptions";
 import { useNotify } from "composables/useNotify";
 import { useConfirm } from "composables/useConfirm";
@@ -87,9 +81,11 @@ import AppTextField from "components/common/AppTextField.vue";
 import TempPasswordDialog from "components/temp_password_dialog.vue";
 
 const props = defineProps({
-  // The tenant the account is created in. Null means "ask" — the tenant multiselect for a platform
-  // admin, the caller's own tenant for everybody else.
-  tenantId: { type: String, default: null }
+  // The tenant the account is created in. Null means the caller's active (selected) tenant.
+  tenantId: { type: String, default: null },
+  // A role name to assign instead of asking: the Roles picker is hidden and this role, looked up by name
+  // in the target tenant, is the account's only role.
+  defaultRole: { type: String, default: null }
 });
 const emit = defineEmits(["created"]);
 
@@ -98,9 +94,13 @@ const open = defineModel({ type: Boolean, default: false });
 const notify = useNotify();
 const { confirm } = useConfirm();
 const { has } = usePermissions();
-// Only platform/super admins (tenants.write) choose a target tenant; others create within their own.
-const { canChooseTenant, activeTenantId, tenantOptions, loadingTenants, loadTenants } = useTenantOptions();
+// No tenant picker: the account always goes into the given tenant, else the one selected in the header
+// (Super-Admin scope, falling back to the caller's active tenant).
+const { activeTenantId } = useTenantOptions();
+const { selectedTenantId } = useTenantScope();
 const canManageGroups = computed(() => has(Permissions.UsersGroupManagement));
+// Department and Groups fields are hidden for now; flip to true to bring them back.
+const showDepartmentAndGroups = false;
 
 const saving = ref(false);
 const emailError = ref("");
@@ -110,7 +110,6 @@ const form = reactive({
   lastName: "",
   email: "",
   roleIds: [],
-  tenantIds: [],
   sendInvitation: false,
   // Tenant-scoped placements, applied through their own endpoints once the account exists.
   department: null,
@@ -120,18 +119,13 @@ const form = reactive({
 // Grouped, category-labelled multi-role options (SuperAdmin excluded for non-Super-Admin callers).
 const { roleOptions, loading: loadingRoles, loadForTenant } = useRoleOptions();
 
-// The tenants the user is being created in: fixed by the caller, else chosen by platform admins (may be
-// several), else the caller's own. The FIRST is the primary/target tenant — where Roles are populated
-// from and the login's UserTenantRole is created — the same primary/full-set split Person creation uses
-// for its own Tenant multiselect (TenantPersonMapping).
-const targetTenantIds = computed(() =>
-  props.tenantId
-    ? [props.tenantId]
-    : canChooseTenant.value
-      ? form.tenantIds
-      : (activeTenantId.value ? [activeTenantId.value] : []));
+// The tenant the user is being created in: fixed by the caller, else the header-selected tenant. Roles
+// are populated from it and the login's UserTenantRole is created in it.
+const targetTenantIds = computed(() => {
+  const tenantId = props.tenantId || selectedTenantId.value;
+  return tenantId ? [tenantId] : [];
+});
 const primaryTenantId = computed(() => targetTenantIds.value[0] || null);
-const showTenantPicker = computed(() => canChooseTenant.value && !props.tenantId);
 
 // ---- Department & groups (as on the user's detail page) ----
 // Both live in the caller's ACTIVE tenant: the pickers are loaded from it and the endpoints require the
@@ -216,17 +210,11 @@ const loadRoles = async () => {
   }
 };
 
-const onTenantChange = (tenantIds) => {
-  form.tenantIds = tenantIds;
-  loadRoles();
-};
-
 const resetForm = () => {
   form.firstName = "";
   form.lastName = "";
   form.email = "";
   form.roleIds = [];
-  form.tenantIds = [];
   form.sendInvitation = false;
   form.department = null;
   form.isDepartmentHead = false;
@@ -240,7 +228,7 @@ watch(open, async (isOpen) => {
   if (!isOpen) return;
   resetForm();
   await Promise.all([
-    showTenantPicker.value ? loadTenants() : loadRoles(),
+    loadRoles(),
     // Both pickers come from the caller's active tenant, so they are pointless without one (a Super Admin
     // who has not switched in) — that is also exactly when the section stays hidden.
     activeTenantId.value ? loadDepartments() : Promise.resolve(),
@@ -254,13 +242,23 @@ const tempPassword = ref("");
 const submitForm = async ({ clearDraft } = {}) => {
   emailError.value = "";
   if (!(await formRef.value?.validate())) return;
-  if (!form.roleIds.length) {
+  let roleIds = form.roleIds;
+  if (props.defaultRole) {
+    const wanted = props.defaultRole.toLowerCase();
+    const match = roleOptions.value.find((o) => !o.header && o.label?.toLowerCase() === wanted);
+    if (!match) {
+      notify.error(`No "${props.defaultRole}" role exists in this tenant. Create it under Access Management → Roles first.`);
+      return;
+    }
+    roleIds = [match.value];
+  }
+  if (!roleIds.length) {
     notify.error("Select at least one role.");
     return;
   }
   const tenantIds = targetTenantIds.value;
   if (!tenantIds.length) {
-    notify.error("Select a tenant.");
+    notify.error("Select a tenant first (use the tenant switcher), then create the staff member.");
     return;
   }
   // A department has one head, so taking it demotes the incumbent — name them before anything is created.
@@ -279,7 +277,7 @@ const submitForm = async ({ clearDraft } = {}) => {
       firstName: form.firstName,
       lastName: form.lastName,
       email: form.email,
-      roleIds: form.roleIds,
+      roleIds,
       tenantIds,
       sendInvitation: form.sendInvitation
     };

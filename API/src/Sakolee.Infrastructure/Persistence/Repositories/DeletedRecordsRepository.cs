@@ -166,15 +166,20 @@ internal sealed class DeletedRecordsRepository : IDeletedRecordsRepository
         // inventing an owner.
         var tenantValue = Expression.Coalesce(tenantBody, Expression.Constant(Guid.Empty));
 
-        var ctor = typeof(DeletedRecordRow).GetConstructors()[0];
+        // Member initialisation, not a constructor call: the list is sorted after this projection, and EF
+        // cannot see through constructor arguments to translate an ORDER BY on the row's members.
+        var row = typeof(DeletedRecordRow);
         return Expression.Lambda<Func<T, DeletedRecordRow>>(
-            Expression.New(
-                ctor,
-                Expression.Call(typeof(EF), nameof(EF.Property), new[] { typeof(Guid) }, parameter, Expression.Constant("Id")),
-                identity.Body,
-                tenantValue,
-                Expression.Property(parameter, nameof(AuditableEntity.UpdatedById)),
-                Expression.Property(parameter, nameof(AuditableEntity.DeletedOnUtc))),
+            Expression.MemberInit(
+                Expression.New(row),
+                Expression.Bind(row.GetProperty(nameof(DeletedRecordRow.EntityId))!,
+                    Expression.Call(typeof(EF), nameof(EF.Property), new[] { typeof(Guid) }, parameter, Expression.Constant("Id"))),
+                Expression.Bind(row.GetProperty(nameof(DeletedRecordRow.Identity))!, identity.Body),
+                Expression.Bind(row.GetProperty(nameof(DeletedRecordRow.TenantId))!, tenantValue),
+                Expression.Bind(row.GetProperty(nameof(DeletedRecordRow.DeletedById))!,
+                    Expression.Property(parameter, nameof(AuditableEntity.UpdatedById))),
+                Expression.Bind(row.GetProperty(nameof(DeletedRecordRow.DeletedOnUtc))!,
+                    Expression.Property(parameter, nameof(AuditableEntity.DeletedOnUtc)))),
             parameter);
     }
 

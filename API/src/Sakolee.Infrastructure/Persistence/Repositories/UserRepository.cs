@@ -107,7 +107,7 @@ internal sealed class UserRepository : IUserRepository
         var query = _dbContext.Users
             .IgnoreQueryFilters()
             .Where(u => !u.Deleted)
-            .Include(u => u.TenantRoles.Where(r => !r.Deleted)).ThenInclude(r => r.RoleEntity)
+            .Include(u => u.TenantRoles.Where(r => !r.Deleted && (tenantId == null || r.TenantId == tenantId))).ThenInclude(r => r.RoleEntity)
             .Include(u => u.GroupMemberships.Where(m => !m.Deleted && (tenantId == null || m.TenantId == tenantId))).ThenInclude(m => m.UserGroup)
             .Include(u => u.Person)
             .AsQueryable();
@@ -152,7 +152,9 @@ internal sealed class UserRepository : IUserRepository
         if (!string.IsNullOrWhiteSpace(role))
         {
             var t = role.Trim();
-            query = query.Where(u => u.TenantRoles.Any(r => !r.Deleted && r.RoleEntity != null && r.RoleEntity.Name.Contains(t)));
+            // Scoped to the list tenant: a role held in another tenant does not qualify here.
+            query = query.Where(u => u.TenantRoles.Any(r =>
+                !r.Deleted && (tenantId == null || r.TenantId == tenantId) && r.RoleEntity != null && r.RoleEntity.Name.Contains(t)));
         }
 
         var total = await query.CountAsync(cancellationToken);

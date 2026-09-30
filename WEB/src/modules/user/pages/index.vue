@@ -1,16 +1,16 @@
 <template>
   <q-page padding>
     <app-list-header
-      :breadcrumbs="[{ label: 'Home', to: '/' }, { label: 'Users' }]"
-      title="Users"
-      description="Manage all users."
+      :breadcrumbs="[{ label: 'Home', to: '/' }, { label: 'Staff' }]"
+      title="Staff"
+      description="Manage active and inactive staff members, instructors, assignments, schedules, qualifications and staff information."
       :search="search"
       show-search
       search-placeholder="Search name or email"
       show-filters
       :filter-count="filterChips.length"
       :show-add="canCreate"
-      add-label="Create User"
+      add-label="Create Staff"
       show-back
       @update:search="search = $event"
       @filters="filterOpen = true"
@@ -28,7 +28,7 @@
     <app-data-table
       page-key="users"
       row-key="userId"
-      title="All Users"
+      title="All Staff"
       :rows="rows"
       :columns="columns"
       :loading="loading"
@@ -98,7 +98,7 @@
     />
 
     <!-- Create user (promote an existing Person to a login account). -->
-    <user-create-drawer v-model="formOpen" :person-id="presetPersonId" @created="load" />
+    <user-create-drawer v-model="formOpen" :person-id="presetPersonId" :default-role="STAFF_ROLE" @created="load" />
 
     <temp-password-dialog v-model="tempPwOpen" :password="tempPassword" />
   </q-page>
@@ -116,6 +116,7 @@ import { useListTable } from "composables/useListTable";
 import { useColumnFilters } from "composables/useColumnFilters";
 import { useDeletedRecords } from "composables/useDeletedRecords";
 import { useAuditColumns } from "composables/useAuditColumns";
+import { useTenantScope } from "composables/useTenantScope";
 
 import AppDataTable from "components/common/AppDataTable.vue";
 import DeletedRecordsPanel from "components/universal/DeletedRecordsPanel.vue";
@@ -142,7 +143,7 @@ const columns = computed(() => [
   { name: "fullName", label: "Name", field: "fullName", align: "left", sortable: true, default: true },
   { name: "email", label: "Email", field: "email", align: "left", sortable: true, default: true },
   { name: "phoneNumber", label: "Phone", field: "phoneNumber", align: "left", sortable: true },
-  { name: "roles", label: "Role", field: (r) => (r.roles || []).join(", "), align: "left", sortable: false, default: true },
+  { name: "roles", label: "Role", field: (r) => (r.roles || []).join(", "), align: "left", sortable: false, default: true, filterable: false },
   { name: "groups", label: "Groups", field: (r) => (r.groups || []).map((g) => g.name).join(", "), align: "left", sortable: false, default: true },
   // Department placement in the active tenant.
   { name: "department", label: "Department", field: "department", align: "left", default: true, filterable: false },
@@ -151,10 +152,16 @@ const columns = computed(() => [
   { name: "actions", label: "Actions", field: "actions", align: "left" }
 ]);
 
+const STAFF_ROLE = "Staff";
+// The list only ever shows the tenant selected in the header (Super-Admin scope, else the active tenant).
+const { selectedTenantId } = useTenantScope();
+
 const { rows, loading, totalRecords, selected, search, filterOpen, pagination, load, onRequest } = useListTable({
   pageKey: "users",
-  fetcher: ({ page, limit, sortBy, descending }) =>
-    userApi.list({
+  fetcher: ({ page, limit, sortBy, descending }) => {
+    // No tenant selected (e.g. a Super Admin who has not switched in): nothing to show.
+    if (!selectedTenantId.value) return Promise.resolve({ data: [], total: 0 });
+    return userApi.list({
       page,
       limit,
       sortBy,
@@ -164,9 +171,12 @@ const { rows, loading, totalRecords, selected, search, filterOpen, pagination, l
       name: filters.fullName || undefined,
       email: filters.email || undefined,
       phone: filters.phoneNumber || undefined,
-      role: filters.roles || undefined,
+      // The Staff list only shows users holding the "Staff" role.
+      role: STAFF_ROLE,
+      tenantId: selectedTenantId.value,
       group: filters.groups || undefined
-    }).then((r) => ({ data: r?.data, total: r?.meta?.totalRecords })),
+    }).then((r) => ({ data: r?.data, total: r?.meta?.totalRecords }));
+  },
   onError: (err) => notify.error(getApiErrorMessage(err))
 });
 

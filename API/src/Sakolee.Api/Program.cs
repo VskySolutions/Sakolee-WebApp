@@ -90,11 +90,14 @@ using (var scope = app.Services.CreateScope())
 
 // OpenAPI spec (/openapi/v1.json) and the Scalar UI (/scalar/v1) are exposed only in
 // Development and Staging.
-if (app.Environment.IsDevelopment() || app.Environment.IsStaging())
-{
-    app.MapOpenApi();
-    app.MapScalarApiReference(options => options.WithTitle("Sakolee API"));
-}
+//if (app.Environment.IsDevelopment() || app.Environment.IsStaging())
+//{
+//    app.MapOpenApi();
+//    app.MapScalarApiReference(options => options.WithTitle("Sakolee API"));
+//}
+app.MapOpenApi();
+app.MapScalarApiReference(options => options.WithTitle("Sakolee API"));
+
 
 // Correlation ID is established first so every downstream log entry — and the 500 error body — carries it.
 app.UseMiddleware<CorrelationIdMiddleware>();
