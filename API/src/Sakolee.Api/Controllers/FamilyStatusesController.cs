@@ -90,11 +90,14 @@ public sealed class FamilyStatusesController : ControllerBase
                 ApiErrorCodes.ValidationFailed, "Validation failed.", "Tenant ID is required."));
         }
 
-        // Initialize a new FamilyStatus entity instance with generated identifiers and metadata
+        // Initialize a new FamilyStatus entity; CreatedById/CreatedOnUtc are stamped by the DbContext
+        // (AuditableEntity).
         var familyStatus = new FamilyStatus
         {
             FamilyStatusId = Guid.NewGuid(),
             TenantId = tenantId,
+            Name = trimmedName,
+            Active = request.Active,
             Name = request.Name.Trim(),
             Active = request.Active ?? true,
             IsDeleted = false,
@@ -277,9 +280,7 @@ public sealed class FamilyStatusesController : ControllerBase
             familyStatus.DeletedOnUtc = null;
         }
 
-        familyStatus.UpdatedOn = DateTime.UtcNow;
-        familyStatus.UpdatedBy = User.GetUserId().ToString();
-
+        // UpdatedById/UpdatedOnUtc are stamped by the DbContext (AuditableEntity).
         _familyStatuses.Update(familyStatus);
 
         await _audit.AddAsync(nameof(FamilyStatus), familyStatus.FamilyStatusId.ToString(), "Updated", cancellationToken: cancellationToken);
@@ -324,7 +325,7 @@ public sealed class FamilyStatusesController : ControllerBase
     #region Delete Endpoint
 
     /// <summary>
-    /// Soft deletes a family status record by updating its IsDeleted flag.
+    /// Soft deletes a family status record (the DbContext turns the remove into Deleted = true).
     /// </summary>
     [HttpDelete("{id:guid}")]
     [RequirePermission(Permissions.FamilyStatusesDelete)]

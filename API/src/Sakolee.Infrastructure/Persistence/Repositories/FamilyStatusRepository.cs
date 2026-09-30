@@ -93,6 +93,7 @@ internal sealed class FamilyStatusRepository : IFamilyStatusRepository
         if (Active is { } active)
         {
             query = query.Where(f => f.Active == active);
+            query = query.Where(f => f.Active == active);
         }
 
         // Calculate total count and apply sorting/pagination

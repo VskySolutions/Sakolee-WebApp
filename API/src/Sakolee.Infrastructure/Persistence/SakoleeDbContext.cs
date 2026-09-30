@@ -146,7 +146,7 @@ public class SakoleeDbContext : DbContext, IDataProtectionKeyContext
         // sees another tenant's people. Self-profile reads bypass this filter via GetByUserIdAsync.
         modelBuilder.Entity<Person>().HasQueryFilter(e => (!_tenantContext.IsResolved || e.TenantId == _tenantContext.TenantId) && !e.Deleted);
 
-        modelBuilder.Entity<ClassSessions>().HasQueryFilter(e => (!_tenantContext.IsResolved || e.TenantId == _tenantContext.TenantId) && !e.IsDeleted);
+        modelBuilder.Entity<ClassSessions>().HasQueryFilter(e => (!_tenantContext.IsResolved || e.TenantId == _tenantContext.TenantId) && !e.Deleted);
 
        
         //modelBuilder.Entity<ClassRooms>(entity =>
@@ -163,7 +163,7 @@ public class SakoleeDbContext : DbContext, IDataProtectionKeyContext
         // SMTP accounts are tenant-scoped; a tenant only ever sees its own mail accounts.
         modelBuilder.Entity<SmtpAccount>().HasQueryFilter(e => (!_tenantContext.IsResolved || e.TenantId == _tenantContext.TenantId) && !e.Deleted);
         // Family statuses are tenant-scoped; switching the active/viewed tenant must change what this list returns.
-        modelBuilder.Entity<FamilyStatus>().HasQueryFilter(e => (!_tenantContext.IsResolved || e.TenantId == _tenantContext.TenantId) && !e.IsDeleted);
+        modelBuilder.Entity<FamilyStatus>().HasQueryFilter(e => (!_tenantContext.IsResolved || e.TenantId == _tenantContext.TenantId) && !e.Deleted);
         // Families are tenant-scoped the same way (direct TenantId, not resolved through a contact).
         modelBuilder.Entity<Family>().HasQueryFilter(e => (!_tenantContext.IsResolved || e.TenantId == _tenantContext.TenantId) && !e.Deleted);
 
@@ -390,7 +390,7 @@ public class SakoleeDbContext : DbContext, IDataProtectionKeyContext
                     location.TenantId = _tenantContext.TenantId;
                     break;
 
-                case ClassSessions classsessions when classsessions.TenantId != null || classsessions.TenantId == Guid.Empty:
+                case ClassSessions classsessions when classsessions.TenantId == Guid.Empty:
                     classsessions.TenantId = _tenantContext.TenantId;
                     break;
 
@@ -398,6 +398,9 @@ public class SakoleeDbContext : DbContext, IDataProtectionKeyContext
                     bankMethod.TenantId = _tenantContext.TenantId;
                     break;
 
+                case FamilyStatus familyStatus when familyStatus.TenantId == Guid.Empty:
+                    familyStatus.TenantId = _tenantContext.TenantId;
+                    break;
                 case FamilyRelation familyRelation when familyRelation.TenantId == Guid.Empty:
                     familyRelation.TenantId = _tenantContext.TenantId;
                     break;

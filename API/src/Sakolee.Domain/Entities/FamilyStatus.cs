@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 namespace Sakolee.Domain.Entities
 {
     public class FamilyStatus
@@ -14,7 +14,5 @@ namespace Sakolee.Domain.Entities
         public DateTime? DeletedOnUtc { get; set; }
         public bool? Active { get; set; } = true;
 
-        public virtual Tenant? Tenant { get; set; }
-
-    }
+    public virtual Tenant? Tenant { get; set; }
 }

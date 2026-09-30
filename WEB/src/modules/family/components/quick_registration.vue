@@ -239,7 +239,7 @@
         <q-btn v-if="currentStep > 1" outline no-caps color="grey-8" icon="o_arrow_back" label="Back" @click="prevStep" />
         <div v-else />
         <div class="row q-gutter-sm">
-          <q-btn flat no-caps color="grey-8" label="Cancel" :to="{ name: 'dashboard' }" />
+          <q-btn flat no-caps color="grey-8" label="Cancel" :to="{ name: 'families' }" />
           <q-btn
             unelevated no-caps color="primary" :loading="saving"
             :label="currentStep === STEPS.length ? 'Register Family' : 'Continue'"

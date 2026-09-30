@@ -1,4 +1,4 @@
-﻿namespace Sakolee.Api.Models.FamilyStatus
+namespace Sakolee.Api.Models.FamilyStatus
 {
     /// <summary>
     /// Create payload for a standalone FamilyStatus master record.
@@ -11,6 +11,11 @@
         public string Name { get; set; } = string.Empty;
         public bool? Active { get; set; } = true;
         public Guid TenantId { get; set; }
+
+        /// <summary>
+        /// Whether the family status is active (offered in the Family form's status dropdown).
+        /// </summary>
+        public bool Active { get; set; } = true;
     }
 
     /// <summary>

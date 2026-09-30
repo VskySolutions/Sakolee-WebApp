@@ -43,7 +43,7 @@
     public sealed record SessionSummary(
         Guid Id,
         string Name,
-        bool IsActive,
+        bool Active,
         string? CreatedBy,
         string? UpdatedBy,
         DateTime CreatedOn,
@@ -59,7 +59,7 @@
         Guid Id,
         string Name,
         string? DanceStyle,
-        bool IsActive
+        bool Active
     );
 
     /// <summary>

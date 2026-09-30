@@ -94,7 +94,8 @@ public sealed class SessionsController : ControllerBase
                 ApiErrorCodes.ValidationFailed, "Validation failed.", "Active tenant ID could not be determined."));
         }
 
-        // Initialize a new ClassSessions entity instance with the active tenant ID
+        // Initialize a new ClassSessions entity; CreatedById/CreatedOnUtc are stamped by the DbContext
+        // (AuditableEntity).
         var session = new ClassSessions
         {
             Id = Guid.NewGuid(),
@@ -305,7 +306,7 @@ public sealed class SessionsController : ControllerBase
     #region Delete Endpoint
 
     /// <summary>
-    /// Soft deletes a class session record by updating its IsDeleted flag.
+    /// Soft deletes a class session record (the DbContext turns the remove into Deleted = true).
     /// </summary>
     /// <param name="id">The unique identifier of the session to delete.</param>
     /// <param name="cancellationToken">Propagates notification that operations should be canceled.</param>

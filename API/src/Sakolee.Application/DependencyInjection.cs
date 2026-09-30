@@ -14,6 +14,9 @@ public static class DependencyInjection
         // Permission Groups: effective-permission cache computation.
         services.AddScoped<Abstractions.Security.IPermissionGroupEffectivePermissionService, Security.PermissionGroupEffectivePermissionService>();
 
+        // "Send Credentials" (Staff, Family contacts): resend-or-mint temporary password + invitation email.
+        services.AddScoped<Abstractions.Security.IUserCredentialsService, Security.UserCredentialsService>();
+
         // SMTP Email Accounts: account management business logic.
         services.AddScoped<Abstractions.Email.ISmtpAccountService, Email.SmtpAccountService>();
 

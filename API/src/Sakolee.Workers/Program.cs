@@ -20,6 +20,9 @@ builder.Services.AddSerilog((_, loggerConfiguration) =>
 // Clean Architecture composition root.
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
+// Application services (e.g. OptionCodeResolver) depend on IMemoryCache — the API registers it in its
+// own Program.cs, so the worker has to as well or the host fails DI validation at startup.
+builder.Services.AddMemoryCache();
 
 // Hangfire server: consumes jobs from the shared SQL Server queue (schema auto-provisioned).
 // AddHangfireServer registers an IHostedService that drains in-flight jobs on the host's

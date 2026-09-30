@@ -30,9 +30,18 @@
       :loading="loading"
       :total-records="totalRecords"
       :pagination="pagination"
+      selectable
       @request="onRequest"
       @refresh="load"
+      @update:selected="selected = $event"
     >
+      <template #bulk-actions="{ selected: sel }">
+        <q-btn
+          v-if="canWrite" flat dense no-caps color="primary" icon="o_forward_to_inbox"
+          label="Send Credentials" :loading="sendingCredentials" @click="sendCredentials(sel)"
+        />
+      </template>
+
       <template #body-cell-active="cell">
         <q-td :props="cell">
           <q-badge :color="cell.value ? 'positive' : 'grey'">{{ cell.value ? "Active" : "Inactive" }}</q-badge>
@@ -45,6 +54,9 @@
             <q-tooltip>View</q-tooltip>
           </q-btn>
           <!-- Edit is retired here too — see the header note above. -->
+          <q-btn v-if="canWrite" type="a" flat round dense color="primary" icon="o_forward_to_inbox" @click="sendCredentials([cell.row])">
+            <q-tooltip>Send Credentials</q-tooltip>
+          </q-btn>
           <q-btn v-if="canDelete" type="a" flat round dense color="negative" icon="o_delete" @click="remove(cell.row)">
             <q-tooltip>Delete</q-tooltip>
           </q-btn>
@@ -227,6 +239,35 @@
         </div>
       </div>
     </app-form-drawer>
+
+    <!-- Send Credentials: students whose email could NOT be sent, with their temporary passwords so they
+         can be shared manually. Successfully emailed passwords are not shown. -->
+    <q-dialog v-model="credentialsFailedOpen" persistent>
+      <q-card style="min-width: 420px;">
+        <q-card-section class="row items-center q-gutter-sm">
+          <q-icon name="o_key" color="warning" size="sm" />
+          <div class="text-h6">Credentials not emailed</div>
+        </q-card-section>
+        <q-card-section>
+          <div class="text-body2 text-grey-7 q-mb-sm">
+            These emails could not be sent. The passwords will not be shown again — share them securely.
+          </div>
+          <div v-for="f in credentialsFailed" :key="f.email" class="q-mb-sm">
+            <div class="text-caption text-grey-7">{{ f.name }} — {{ f.email }}</div>
+            <q-input :model-value="f.password" readonly outlined dense>
+              <template #append>
+                <q-btn flat round dense icon="o_content_copy" @click="copyPassword(f.password)">
+                  <q-tooltip>Copy</q-tooltip>
+                </q-btn>
+              </template>
+            </q-input>
+          </div>
+        </q-card-section>
+        <q-card-actions align="right">
+          <q-btn v-close-popup flat no-caps color="primary" label="Done" />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
   </q-page>
 </template>
 
@@ -253,6 +294,7 @@ const auditColumns = useAuditColumns();
 const { formatDate } = useDateFormat();
 const { has } = usePermissions();
 const canDelete = computed(() => has(Permissions.StudentsDelete));
+const canWrite = computed(() => has(Permissions.StudentsWrite));
 
 // firstName/lastName/email are joined in from the linked Person and are not sortable server-side
 // (StudentsController's SortMap can't reach outside the Student row — see its remarks).
@@ -270,7 +312,7 @@ const columns = [
 ];
 
 const filters = reactive({ active: null });
-const { rows, loading, totalRecords, search, filterOpen, pagination, load, onRequest } = useListTable({
+const { rows, loading, totalRecords, selected, search, filterOpen, pagination, load, onRequest } = useListTable({
   pageKey: "students",
   fetcher: ({ page, limit, sortBy, descending }) =>
     studentApi.list({
@@ -376,6 +418,67 @@ const openView = (row) => {
     active: row.active
   });
   formOpen.value = true;
+};
+
+// ---- Send Credentials ----
+const sendingCredentials = ref(false);
+const credentialsFailedOpen = ref(false);
+const credentialsFailed = ref([]);
+
+const studentName = (s) => `${s.firstName || ""} ${s.lastName || ""}`.trim() || s.email || "Student";
+
+const copyPassword = async (password) => {
+  try {
+    await navigator.clipboard.writeText(password);
+    notify.success("Copied to clipboard.");
+  } catch {
+    notify.warning("Copy failed — please select and copy manually.");
+  }
+};
+
+// Used by both the row button (one student) and the bulk action (selected students).
+const sendCredentials = async (students) => {
+  if (!students.length) return;
+  const ok = await confirm({
+    title: "Send credentials",
+    message: `Email ${students.length === 1 ? studentName(students[0]) : `${students.length} students`} ` +
+      "their login credentials (username and temporary password)? Anyone who has already set their own " +
+      "password gets a new temporary password and their sessions end.",
+    confirmLabel: "Send",
+    type: "primary"
+  });
+  if (!ok) return;
+
+  sendingCredentials.value = true;
+  let sent = 0;
+  const failed = [];   // email didn't go out — password shown for manual sharing
+  const errors = [];   // API call itself failed (no login account, permission, ...)
+  try {
+    // One at a time: each call sends over SMTP synchronously.
+    for (const student of students) {
+      try {
+        const result = await studentApi.sendCredentials(student.studentId);
+        if (result?.emailSent) {
+          sent++;
+        } else {
+          failed.push({ name: studentName(student), email: result?.email || student.email, password: result?.temporaryPassword || "" });
+        }
+      } catch (err) {
+        errors.push(`${studentName(student)}: ${getApiErrorMessage(err)}`);
+      }
+    }
+  } finally {
+    sendingCredentials.value = false;
+  }
+
+  if (sent) notify.success(`Credentials emailed to ${sent} student(s).`);
+  if (errors.length) notify.error(`Could not send credentials — ${errors.join("; ")}`);
+  if (failed.length) {
+    notify.warning(`${failed.length} email(s) could not be sent (check the tenant's SMTP account).`);
+    credentialsFailed.value = failed;
+    credentialsFailedOpen.value = true;
+  }
+  selected.value = [];
 };
 
 const remove = async (row) => {

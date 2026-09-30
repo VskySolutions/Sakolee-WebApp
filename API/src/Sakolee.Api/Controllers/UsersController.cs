@@ -556,6 +556,38 @@ public sealed class UsersController : ControllerBase
             new ResetPasswordResponse(user.Id, temporaryPassword, emailSent), "Password reset."));
     }
 
+    /// <summary>
+    /// Emails a user their login credentials (username = login email, plus temporary password) using the
+    /// "User Invitation" template — the per-user counterpart of <c>TenantsController.SendCredentials</c>.
+    /// Resend-or-mint rules live in <see cref="IUserCredentialsService"/>.
+    /// </summary>
+    [HttpPost("/api/admin/users/{id:guid}/send-credentials")]
+    [RequirePermission(Permissions.UsersResetPassword)]
+    [ProducesResponseType<ApiResponse<SendUserCredentialsResponse>>(StatusCodes.Status200OK)]
+    public async Task<IActionResult> SendCredentials(
+        Guid id, [FromServices] IUserCredentialsService credentials, CancellationToken cancellationToken)
+    {
+        var user = await _users.GetByIdAsync(id, cancellationToken);
+        if (user is null || !CanCallerSee(user))
+        {
+            return NotFound(ApiResponseFactory.NotFound("User not found."));
+        }
+
+        // Same guard as ResetPassword: this may mint a new password.
+        var targetIsSuperAdmin = user.TenantRoles.Any(r => r.Role == UserRole.SuperAdmin);
+        if (!User.IsSuperAdmin() && targetIsSuperAdmin)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden,
+                ApiResponseFactory.Forbidden("Tenant Admins cannot send a Super Admin's credentials."));
+        }
+
+        var result = await credentials.SendAsync(user, TenantForUserEmail(user), cancellationToken);
+
+        return Ok(ApiResponseFactory.Success(
+            new SendUserCredentialsResponse(user.Id, result.TemporaryPassword, result.EmailSent, result.PasswordWasReset),
+            "Credentials sent."));
+    }
+
     [HttpPost("/api/admin/users/{id:guid}/tenant-assignments")]
     [RequirePermission(Permissions.RolesAssign)]
     public async Task<IActionResult> AssignTenantRole(Guid id, [FromBody] AssignTenantRoleRequest request, CancellationToken cancellationToken)
