@@ -725,13 +725,20 @@ const sections = [
   //   ]
   // },
   {
+    key: "staff",
+    label: "Staff",
+    icon: "o_assignment_ind",
+    items: [
+      { label: "Staff", icon: "o_group", to: "/users", permissions: [Permissions.UsersRead] }
+    ]
+  },
+  {
     key: "access-management",
     label: "Access Management",
     icon: "o_lock",
     items: [
       // { label: "Permission Groups", icon: "o_workspaces", to: "/permission-groups", permissions: [Permissions.GroupsManage] },
-      { label: "Roles", icon: "o_admin_panel_settings", to: "/roles", permissions: [Permissions.RolesWrite] },
-      { label: "Users", icon: "o_group", to: "/users", permissions: [Permissions.UsersRead] }
+      { label: "Roles", icon: "o_admin_panel_settings", to: "/roles", permissions: [Permissions.RolesWrite] }
       // { label: "User Groups", icon: "o_groups", to: "/user-groups", permissions: [Permissions.UsersGroupManagement] }
     ]
   },

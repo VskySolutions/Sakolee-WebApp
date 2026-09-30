@@ -111,16 +111,7 @@ public sealed class SessionsController : ControllerBase
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         // Map the created entity to a detailed response DTO matching constructor parameter sequence
-        var detail = new SessionDetail(
-            session.Id,
-            session.Name,
-            !session.IsDeleted,
-            session.CreatedBy,
-            session.UpdatedBy,
-            session.CreatedOn,
-            session.UpdatedOn,
-            session.TenantId,
-            session.Tenant?.Name);
+        var detail = await ToDetailAsync(session, cancellationToken);
 
         return StatusCode(StatusCodes.Status201Created,
             ApiResponseFactory.Success(detail, "Session created."));
@@ -169,13 +160,16 @@ public sealed class SessionsController : ControllerBase
                 search, scopeTenant, isActive, new SortRequest(sortBy, descending), page, limit,
                 cancellationToken: cancellationToken);
 
+            // Resolve the audit user IDs into display names for the Created By / Updated By columns
+            var nameOf = await AuditNamesAsync(items, cancellationToken);
+
             // Project database model items into summary DTOs including Tenant information matching exact constructor signature
             var summaries = items.Select(s => new SessionSummary(
                 s.Id,
                 s.Name,
                 !s.IsDeleted,
-                s.CreatedBy,
-                s.UpdatedBy,
+                nameOf(s.CreatedBy),
+                nameOf(s.UpdatedBy),
                 s.CreatedOn,
                 s.UpdatedOn,
                 s.TenantId,
@@ -218,16 +212,7 @@ public sealed class SessionsController : ControllerBase
         }
 
         // Map entity details to response DTO
-        var detail = new SessionDetail(
-            session.Id,
-            session.Name,
-            !session.IsDeleted,
-            session.CreatedBy,
-            session.UpdatedBy,
-            session.CreatedOn,
-            session.UpdatedOn,
-            session.TenantId,
-            session.Tenant?.Name);
+        var detail = await ToDetailAsync(session, cancellationToken);
 
         return Ok(ApiResponseFactory.Success(detail, "Session retrieved."));
     }
@@ -285,16 +270,7 @@ public sealed class SessionsController : ControllerBase
         await _audit.AddAsync(nameof(ClassSessions), session.Id.ToString(), "Updated", cancellationToken: cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        var detail = new SessionDetail(
-            session.Id,
-            session.Name,
-            !session.IsDeleted,
-            session.CreatedBy,
-            session.UpdatedBy,
-            session.CreatedOn,
-            session.UpdatedOn,
-            session.TenantId,
-            session.Tenant?.Name);
+        var detail = await ToDetailAsync(session, cancellationToken);
 
         return Ok(ApiResponseFactory.Success(detail, "Session updated."));
     }
@@ -357,6 +333,47 @@ public sealed class SessionsController : ControllerBase
         => User.IsSuperAdmin()
             ? _sessions.GetByIdUnscopedAsync(id, cancellationToken)
             : _sessions.GetByIdAsync(id, cancellationToken);
+
+    #endregion
+
+    #region Audit Name Helpers
+
+    /// <summary>
+    /// Resolves the user IDs stored in the audit fields into display names.
+    /// Falls back to the stored value when it is not a known user ID.
+    /// </summary>
+    private async Task<Func<string?, string?>> AuditNamesAsync(IEnumerable<ClassSessions> rows, CancellationToken cancellationToken)
+    {
+        var ids = rows
+            .SelectMany(s => new[] { s.CreatedBy, s.UpdatedBy })
+            .Select(id => Guid.TryParse(id, out var userId) ? userId : (Guid?)null)
+            .Where(id => id.HasValue)
+            .Select(id => id!.Value)
+            .Distinct();
+
+        var names = await _users.GetFullNamesAsync(ids, cancellationToken);
+
+        return value => Guid.TryParse(value, out var userId) && names.TryGetValue(userId, out var name) ? name : value;
+    }
+
+    /// <summary>
+    /// Maps a class session entity to its detail response with audit names resolved.
+    /// </summary>
+    private async Task<SessionDetail> ToDetailAsync(ClassSessions session, CancellationToken cancellationToken)
+    {
+        var nameOf = await AuditNamesAsync(new[] { session }, cancellationToken);
+
+        return new SessionDetail(
+            session.Id,
+            session.Name,
+            !session.IsDeleted,
+            nameOf(session.CreatedBy),
+            nameOf(session.UpdatedBy),
+            session.CreatedOn,
+            session.UpdatedOn,
+            session.TenantId,
+            session.Tenant?.Name);
+    }
 
     #endregion
 

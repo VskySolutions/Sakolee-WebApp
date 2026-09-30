@@ -3,13 +3,28 @@ using Sakolee.Application.Common;
 
 namespace Sakolee.Application.Abstractions.Persistence;
 
-/// <summary>One soft-deleted record surfaced in the Deleted Records Management list.</summary>
-/// <param name="EntityId">The deleted record's id.</param>
-/// <param name="Identity">A human-readable identifier (e.g. request number, group name) used for display and the hard-delete confirmation token.</param>
-/// <param name="TenantId">Owning tenant.</param>
-/// <param name="DeletedById">The user who deleted it (resolved to a name by the controller).</param>
-/// <param name="DeletedOnUtc">When it was soft-deleted.</param>
-public sealed record DeletedRecordRow(Guid EntityId, string Identity, Guid TenantId, Guid? DeletedById, DateTime? DeletedOnUtc);
+/// <summary>
+/// One soft-deleted record surfaced in the Deleted Records Management list. Settable properties rather
+/// than a positional constructor: the list is sorted after projecting, and EF can only translate an
+/// ORDER BY on a member of a projection built by member initialisation.
+/// </summary>
+public sealed record DeletedRecordRow
+{
+    /// <summary>The deleted record's id.</summary>
+    public Guid EntityId { get; init; }
+
+    /// <summary>A human-readable identifier (e.g. request number, group name) used for display and the hard-delete confirmation token.</summary>
+    public string Identity { get; init; } = string.Empty;
+
+    /// <summary>Owning tenant.</summary>
+    public Guid TenantId { get; init; }
+
+    /// <summary>The user who deleted it (resolved to a name by the controller).</summary>
+    public Guid? DeletedById { get; init; }
+
+    /// <summary>When it was soft-deleted.</summary>
+    public DateTime? DeletedOnUtc { get; init; }
+}
 
 /// <summary>
 /// Generic access to soft-deleted records across the entity types that support Deleted Records

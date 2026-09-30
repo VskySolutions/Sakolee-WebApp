@@ -3,7 +3,7 @@
     <app-detail-header
       :items="[
         { label: 'Home', icon: 'o_home', to: '/' },
-        { label: 'Users', to: { name: 'users' } },
+        { label: 'Staff', to: { name: 'users' } },
         { label: user?.displayName || 'User' }
       ]"
       :back-to="{ name: 'users' }"
@@ -130,7 +130,7 @@
           </q-card>
 
           <!-- Department. Per-tenant, and a department has one head. -->
-          <q-card flat bordered class="user-card q-mb-md">
+          <q-card v-if="showDepartmentAndGroups" flat bordered class="user-card q-mb-md">
             <q-card-section class="row items-center q-gutter-sm">
               <q-icon name="o_apartment" color="primary" size="sm" />
               <div class="text-subtitle1 text-weight-medium">Department</div>
@@ -230,7 +230,7 @@
           </q-card>
 
           <!-- Groups -->
-          <q-card flat bordered class="user-card q-mb-md">
+          <q-card v-if="showDepartmentAndGroups" flat bordered class="user-card q-mb-md">
             <q-card-section class="row items-center q-gutter-sm">
               <q-icon name="o_groups" color="primary" size="sm" />
               <div class="text-subtitle1 text-weight-medium">Groups</div>
@@ -355,6 +355,8 @@ const canEdit = computed(() => has(Permissions.UsersWrite));
 const canManageAssignments = computed(() => has(Permissions.RolesAssign));
 const canResetPassword = computed(() => has(Permissions.UsersResetPassword));
 const canManageGroups = computed(() => has(Permissions.UsersGroupManagement));
+// Department and Groups sections are hidden for now; flip to true to bring them back.
+const showDepartmentAndGroups = false;
 // The Person record behind the account is a separate page with its own permission; the link to it is
 // only offered to somebody who could actually open it.
 const canReadPersons = computed(() => has(Permissions.PersonsRead));

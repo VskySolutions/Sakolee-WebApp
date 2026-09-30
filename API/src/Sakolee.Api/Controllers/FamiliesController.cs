@@ -331,7 +331,9 @@ public sealed class FamiliesController : ControllerBase
         // rejected secondary-contact email never leaves the family partially updated.
         if (request.SecondaryContact is { } secondaryCheck)
         {
-            var existingSecondary = family.Contacts.FirstOrDefault(c => !c.Deleted);
+            // Contacts holds the primary contact's row too — without the IsPrimaryContact filter this can
+            // pick the primary, and the secondary's own unchanged email then reads as "already in use".
+            var existingSecondary = family.Contacts.FirstOrDefault(c => !c.Deleted && !c.IsPrimaryContact);
             var secondaryEmail = secondaryCheck.Email.Trim();
             var primaryEmailForCompare = request.Email?.Trim() ?? family.Email;
             if (string.Equals(secondaryEmail, primaryEmailForCompare, StringComparison.OrdinalIgnoreCase))

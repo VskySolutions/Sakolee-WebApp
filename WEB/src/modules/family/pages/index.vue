@@ -56,7 +56,7 @@
     </app-data-table>
 
     <!-- Create / Edit / View drawer -->
-    <app-form-drawer
+    <family-form-drawer
       v-model="formOpen"
       :title="editing ? 'Edit Family' : 'Create Family'"
       :saving="saving"
@@ -552,22 +552,18 @@
 <script setup>
 import { ref, reactive, computed, watch, onMounted } from "vue";
 import { debounce } from "quasar";
-import { familyApi, locationApi, familyStatusApi, studentApi, getApiErrorMessage } from "services/api";
+import { familyApi, familyStatusApi, getApiErrorMessage } from "services/api";
 import { useNotify } from "composables/useNotify";
 import { useConfirm } from "composables/useConfirm";
 import { useListTable } from "composables/useListTable";
 import { useAuditColumns } from "composables/useAuditColumns";
 import { usePermissions, Permissions } from "composables/usePermissions";
-import { RELATION_OPTIONS, HEARD_ABOUT_OPTIONS, GENDER_OPTIONS, TSHIRT_SIZE_OPTIONS, blankStudent } from "composables/quickRegistrationForm";
 
 import AppDataTable from "components/common/AppDataTable.vue";
-import AppFormDrawer from "components/common/AppFormDrawer.vue";
 import AppFilterDrawer from "components/common/AppFilterDrawer.vue";
 import AppListHeader from "components/common/AppListHeader.vue";
 import AppSelect from "components/common/AppSelect.vue";
-import AppTextField from "components/common/AppTextField.vue";
-import AppDateField from "components/common/AppDateField.vue";
-import StudentEditDialog from "modules/family/components/StudentEditDialog.vue";
+import FamilyFormDrawer from "modules/family/components/FamilyFormDrawer.vue";
 
 const notify = useNotify();
 const { confirm } = useConfirm();
@@ -590,32 +586,14 @@ const columns = [
 ];
 
 // ---- Reference option lists ----
-const locations = ref([]);
 const familyStatuses = ref([]);
-// Same list as the Class form's Location. A family whose saved location has since been deactivated
-// still shows it by name (from the family record) rather than as a raw id.
-const locationOptions = computed(() => {
-  const options = locations.value.map((l) => ({ label: l.name, value: l.id }));
-  if (form.studioLocationId && form.studioLocationName && !options.some((o) => o.value === form.studioLocationId)) {
-    options.unshift({ label: form.studioLocationName, value: form.studioLocationId });
-  }
-  return options;
-});
 // FamilyStatusSummary's id field is just "id" (Guid Id), not "familyStatusId" — mirrors the
 // familystatus module's own pages, which fall back through the same mismatch.
 const familyStatusOptions = computed(() => familyStatuses.value.map((s) => ({ label: s.name, value: s.id })));
-const relationOptions = RELATION_OPTIONS;
-const sourceOptions = HEARD_ABOUT_OPTIONS;
-const genderOptions = GENDER_OPTIONS;
-const tshirtSizeOptions = TSHIRT_SIZE_OPTIONS;
 
 onMounted(async () => {
   try {
-    const [locRes, statusRes] = await Promise.all([
-      locationApi.list({ limit: 100, active: true }),
-      familyStatusApi.list({ limit: 100 })
-    ]);
-    locations.value = locRes?.data || [];
+    const statusRes = await familyStatusApi.list({ limit: 100 });
     familyStatuses.value = statusRes?.data || [];
   } catch (err) {
     notify.error(getApiErrorMessage(err));
@@ -652,7 +630,7 @@ const filterChips = computed(() => {
 const removeFilter = (key) => { if (key === "familyStatusId") filters.familyStatusId = null; };
 const clearFilters = () => { filters.familyStatusId = null; };
 
-// ---- Create / Edit / View ----
+// ---- Create / Edit / View (form lives in FamilyFormDrawer) ----
 const formOpen = ref(false);
 const editing = ref(false);
 // const viewing = ref(false);
@@ -983,11 +961,3 @@ const remove = async (row) => {
   }
 };
 </script>
-
-<style scoped>
-.toggle-row-inline {
-  display: flex;
-  align-items: center;
-  min-height: 40px;
-}
-</style>

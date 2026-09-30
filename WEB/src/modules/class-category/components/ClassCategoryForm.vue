@@ -1,5 +1,5 @@
 <template>
-   <!-- Drawer used for creating or editing a Class Category -->
+  <!-- Drawer used for creating or editing a Class Category -->
   <app-form-drawer
     v-model="formOpen"
     :title="editing ? 'Edit Class Category' : 'Create Class Category'"
@@ -7,7 +7,7 @@
     @submit="submit"
     @cancel="reset"
   >
-  <!-- Form container with validation -->
+    <!-- Form container with validation -->
     <q-form ref="formRef" greedy>
       <!-- Class Category name field -->
       <app-text-field
@@ -53,7 +53,7 @@ const props = defineProps({
   category: { type: Object, default: null }
 });
 // Events emitted to the parent component.
-const emit = defineEmits([ "update:modelValue", "saved" ]);
+const emit = defineEmits(["update:modelValue", "saved"]);
 // Notification helper used to show success and error messages.
 const notify = useNotify();
 const formOpen = ref(props.modelValue);
@@ -112,7 +112,7 @@ const reset = () => {
 // Validate and save the Class Category.
 const submit = async ({ clearDraft } = {}) => {
   nameError.value = "";
-   // Validate all form fields before submitting.
+  // Validate all form fields before submitting.
   const valid = await formRef.value?.validate();
   if (!valid) {
     return;
@@ -123,7 +123,7 @@ const submit = async ({ clearDraft } = {}) => {
       name: form.name.trim(), categoryType: form.categoryType
     };
     if (props.editing && props.category?.classCategoryId) {
-      await classCategoryApi.update( props.category.classCategoryId, payload );
+      await classCategoryApi.update(props.category.classCategoryId, payload);
       notify.success("Class category updated.");
     } else {
       await classCategoryApi.create(payload);
@@ -133,9 +133,9 @@ const submit = async ({ clearDraft } = {}) => {
     formOpen.value = false;
     reset();
     emit("saved");
- } catch (error) {
+  } catch (error) {
     if (error?.response?.status === 409) {
-      nameError.value ="A class category with this name already exists.";
+      nameError.value = "A class category with this name already exists.";
       return;
     }
     const message = getApiErrorMessage(error, "Unable to save class category.");
