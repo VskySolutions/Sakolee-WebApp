@@ -9,13 +9,13 @@ namespace Sakolee.Api.Models.FamilyStatus
         /// The unique name of the family status.
         /// </summary>
         public string Name { get; set; } = string.Empty;
-        public bool? Active { get; set; } = true;
-        public Guid TenantId { get; set; }
 
         /// <summary>
         /// Whether the family status is active (offered in the Family form's status dropdown).
         /// </summary>
-        public bool Active { get; set; } = true;
+        public bool? Active { get; set; } = true;
+
+        public Guid TenantId { get; set; }
     }
 
     /// <summary>
@@ -32,10 +32,9 @@ namespace Sakolee.Api.Models.FamilyStatus
         /// Flag indicating whether the family status is active.
         /// </summary>
         public bool? Active { get; set; }
-        //public bool Active { get; set; } = true;
 
         /// <summary>
-        /// Flag indicating whether the family status is soft deleted.
+        /// Flag indicating whether the family status is soft deleted (false restores a deleted record).
         /// </summary>
         public bool IsDeleted { get; set; }
     }
@@ -46,16 +45,15 @@ namespace Sakolee.Api.Models.FamilyStatus
     public sealed record FamilyStatusSummary(
         Guid Id,
         string Name,
-        bool? Active,
-        bool? ISDeleted,
+        bool Active,
+        bool IsDeleted,
         string? CreatedBy,
         string? UpdatedBy,
         DateTime CreatedOn,
         DateTime? UpdatedOn,
         DateTime? DeletedOnUtc,
-        Guid TenantId,                  
+        Guid TenantId,
         string Tenant
-        
     );
 
     /// <summary>
@@ -64,7 +62,7 @@ namespace Sakolee.Api.Models.FamilyStatus
     public sealed record FamilyStatusSelectItem(
         Guid Id,
         string Name,
-        bool? Active
+        bool Active
     );
 
     /// <summary>
@@ -73,8 +71,7 @@ namespace Sakolee.Api.Models.FamilyStatus
     public sealed record FamilyStatusDetail(
         Guid Id,
         string Name,
-        bool? Active,
-       // bool? ISDeleted,
+        bool Active,
         string? CreatedBy,
         string? UpdatedBy,
         DateTime CreatedOn,

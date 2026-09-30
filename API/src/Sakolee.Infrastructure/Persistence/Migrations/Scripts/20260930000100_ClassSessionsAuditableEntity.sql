@@ -30,7 +30,7 @@ BEGIN
             [UpdatedOnUtc] = COALESCE([UpdatedOn], [CreatedOn]),
             [UpdatedById]  = TRY_CONVERT(uniqueidentifier, [UpdatedBy]),
             [Deleted]      = [IsDeleted],
-            [DeletedOnUtc] = CASE WHEN [IsDeleted] = 1 THEN COALESCE([UpdatedOn], [CreatedOn]) END;');
+            [DeletedOnUtc] = CASE WHEN [IsDeleted] = 1 THEN COALESCE([DeletedOnUtc], [UpdatedOn], [CreatedOn]) END;');
 END;
 GO
 

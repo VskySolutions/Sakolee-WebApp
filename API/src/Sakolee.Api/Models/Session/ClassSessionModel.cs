@@ -48,8 +48,10 @@
         string? UpdatedBy,
         DateTime CreatedOn,
         DateTime? UpdatedOn,
-        Guid TenantId,                    
-        string Tenant                     
+        Guid TenantId,
+        string Tenant,
+        // Soft-deleted rows only appear with showDeleted; the Sessions page strikes them through.
+        bool IsDeleted = false
     );
 
     /// <summary>

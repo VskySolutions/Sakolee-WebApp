@@ -34,7 +34,16 @@ BEGIN
             [UpdatedOnUtc] = COALESCE([UpdatedOn], [CreatedOn]),
             [UpdatedById]  = TRY_CONVERT(uniqueidentifier, [UpdatedBy]),
             [Deleted]      = [IsDeleted],
-            [DeletedOnUtc] = CASE WHEN [IsDeleted] = 1 THEN COALESCE([UpdatedOn], [CreatedOn]) END;');
+            [DeletedOnUtc] = CASE WHEN [IsDeleted] = 1 THEN COALESCE([DeletedOnUtc], [UpdatedOn], [CreatedOn]) END;');
+END;
+GO
+
+-- A database that added Active by hand as a nullable column (the entity briefly had `bool? Active`):
+-- treat NULL as active, then make it NOT NULL to match FamilyStatus.Active.
+IF EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('FamilyStatuses') AND name = 'Active' AND is_nullable = 1)
+BEGIN
+    EXEC(N'UPDATE [FamilyStatuses] SET [Active] = 1 WHERE [Active] IS NULL;');
+    ALTER TABLE [FamilyStatuses] ALTER COLUMN [Active] bit NOT NULL;
 END;
 GO
 

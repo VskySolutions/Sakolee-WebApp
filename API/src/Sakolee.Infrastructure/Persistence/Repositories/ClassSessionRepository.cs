@@ -71,7 +71,14 @@ internal sealed class ClassSessionRepository : IClassSessionRepository
     #region Sorting Configuration
 
     // Defines allowable sort mappings for class session queries.
-    private static readonly SortMap<ClassSessions> Sorts = new SortMap<ClassSessions>("updatedOn").Add("name", s => s.Name).Add("active", s => s.Active).Add("createdOn", s => s.CreatedOn).Add("updatedOn", s => s.UpdatedOn);
+    // "createdOn"/"updatedOn" are kept as aliases for callers still sending the pre-AuditableEntity names.
+    private static readonly SortMap<ClassSessions> Sorts = new SortMap<ClassSessions>("updatedOnUtc")
+        .Add("name", s => s.Name)
+        .Add("active", s => s.Active, s => s.UpdatedOnUtc)
+        .Add("createdOnUtc", s => s.CreatedOnUtc)
+        .Add("updatedOnUtc", s => s.UpdatedOnUtc)
+        .Add("createdOn", s => s.CreatedOnUtc)
+        .Add("updatedOn", s => s.UpdatedOnUtc);
 
     #endregion
 
@@ -82,16 +89,16 @@ internal sealed class ClassSessionRepository : IClassSessionRepository
     /// </summary>
     public async Task<(IReadOnlyList<ClassSessions> Items, int Total)> ListAsync( string? search, Guid? tenantId, bool? isActive, bool? showDeleted, SortRequest sort, int page, int limit, CancellationToken cancellationToken = default)
     {
-        //var query = tenantId is { } tid ? _dbContext.ClassSessions.IgnoreQueryFilters().Where(s => s.TenantId == tid && !s.IsDeleted)   : _dbContext.ClassSessions.Where(s => !s.IsDeleted).AsQueryable();     //AsQueryable();
-
+        // An explicit tenant means reading outside the ambient filter (which also hides soft-deleted rows),
+        // so the tenant is pinned by hand and soft-deleted rows are only kept when showDeleted is set.
+        // The controller passes the active tenant whenever showDeleted is requested.
         var query = tenantId is { } tid
-   ? _dbContext.ClassSessions.IgnoreQueryFilters().Where(s => s.TenantId == tid)
-   : _dbContext.ClassSessions.AsQueryable();
+            ? _dbContext.ClassSessions.IgnoreQueryFilters().Where(s => s.TenantId == tid)
+            : _dbContext.ClassSessions.AsQueryable();
 
-        
         if (showDeleted != true)
         {
-            query = query.Where(s => !s.IsDeleted);
+            query = query.Where(s => !s.Deleted);
         }
 
         if (!string.IsNullOrWhiteSpace(search))
@@ -117,7 +124,7 @@ internal sealed class ClassSessionRepository : IClassSessionRepository
     public async Task<IReadOnlyList<ClassSessions>> ListSelectableAsync(
         Guid? tenantId = null, CancellationToken cancellationToken = default)
     {
-        var query = tenantId is { } scope   ? _dbContext.ClassSessions.IgnoreQueryFilters().Where(s => s.Active && !s.IsDeleted && s.TenantId == scope) : _dbContext.ClassSessions.Where(s => s.Active && !s.IsDeleted);
+        var query = tenantId is { } scope   ? _dbContext.ClassSessions.IgnoreQueryFilters().Where(s => s.Active && !s.Deleted && s.TenantId == scope) : _dbContext.ClassSessions.Where(s => s.Active);
 
         return await query.OrderBy(s => s.Name).ToListAsync(cancellationToken);
     }
@@ -137,17 +144,11 @@ internal sealed class ClassSessionRepository : IClassSessionRepository
     public void Update(ClassSessions session)  => _dbContext.ClassSessions.Update(session);
 
     /// <summary>
-    /// Marks an existing class session entity for removal.
+    /// Soft-deletes the session: the DbContext (AuditableEntity) turns the remove into
+    /// Deleted = true + DeletedOnUtc + Updated* stamps.
     /// </summary>
-    //public void Remove(ClassSessions session)
-    //    => _dbContext.ClassSessions.Remove(session);
-
     public void Remove(ClassSessions session)
-    {
-        session.IsDeleted = true;
-        session.DeletedOnUtc = DateTime.UtcNow;
-        _dbContext.ClassSessions.Update(session);
-    }
+        => _dbContext.ClassSessions.Remove(session);
 
     #endregion
 }

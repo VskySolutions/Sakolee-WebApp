@@ -39,7 +39,7 @@ internal sealed class FamilyStatusRepository : IFamilyStatusRepository
     /// <summary>
     /// Performs a cross-tenant (Super Admin) read of a single family status, bypassing the ambient tenant filter.
     /// </summary>
-    public Task<FamilyStatus?> GetByIdUnscopedAsync(Guid id, CancellationToken cancellationToken = default) => _dbContext.FamilyStatuses.IgnoreQueryFilters().FirstOrDefaultAsync(f => f.FamilyStatusId == id && !f.IsDeleted, cancellationToken);
+    public Task<FamilyStatus?> GetByIdUnscopedAsync(Guid id, CancellationToken cancellationToken = default) => _dbContext.FamilyStatuses.IgnoreQueryFilters().FirstOrDefaultAsync(f => f.FamilyStatusId == id && !f.Deleted, cancellationToken);
 
     /// <summary>
     /// Retrieves a collection of family status records matching a list of identifiers.
@@ -56,7 +56,14 @@ internal sealed class FamilyStatusRepository : IFamilyStatusRepository
     #region Sorting Configuration
 
     // Defines allowable sort mappings for family status queries.
-    private static readonly SortMap<FamilyStatus> Sorts = new SortMap<FamilyStatus>("updatedOn").Add("name", f => f.Name).Add("Active", f => !f.IsDeleted, f => f.UpdatedOn).Add("createdOn", f => f.CreatedOn).Add("updatedOn", f => f.UpdatedOn);
+    // "createdOn"/"updatedOn" are kept as aliases for callers still sending the pre-AuditableEntity names.
+    private static readonly SortMap<FamilyStatus> Sorts = new SortMap<FamilyStatus>("updatedOnUtc")
+        .Add("name", f => f.Name)
+        .Add("active", f => f.Active, f => f.UpdatedOnUtc)
+        .Add("createdOnUtc", f => f.CreatedOnUtc)
+        .Add("updatedOnUtc", f => f.UpdatedOnUtc)
+        .Add("createdOn", f => f.CreatedOnUtc)
+        .Add("updatedOn", f => f.UpdatedOnUtc);
 
     #endregion
 
@@ -67,19 +74,16 @@ internal sealed class FamilyStatusRepository : IFamilyStatusRepository
     /// </summary>
     public async Task<(IReadOnlyList<FamilyStatus> Items, int Total)> ListAsync(string? search, Guid? tenantId, bool? Active, bool? showDeleted, SortRequest sort, int page, int limit,CancellationToken cancellationToken = default)
     {
-        // Cross-tenant (Super Admin) reads pass an explicit tenant id and bypass the ambient filter;
-        // everyone else gets the ambient-filtered set, pinned to their active tenant.
-        //var query = tenantId is { } tid ? _dbContext.FamilyStatuses.IgnoreQueryFilters().Where(f => f.TenantId == tid )  : _dbContext.FamilyStatuses.AsQueryable().Include(f => f.Tenant);
-
-
-
+        // An explicit tenant means reading outside the ambient filter (which also hides soft-deleted rows),
+        // so the tenant is pinned by hand and soft-deleted rows are only kept when showDeleted is set.
+        // The controller passes the active tenant whenever showDeleted is requested.
         var query = tenantId is { } tid
-          ? _dbContext.FamilyStatuses.IgnoreQueryFilters().Where(s => s.TenantId == tid)
-          : _dbContext.FamilyStatuses.AsQueryable();
+          ? _dbContext.FamilyStatuses.IgnoreQueryFilters().Include(f => f.Tenant).Where(s => s.TenantId == tid)
+          : _dbContext.FamilyStatuses.Include(f => f.Tenant).AsQueryable();
 
         if (showDeleted != true)
         {
-            query = query.Where(s => !s.IsDeleted);
+            query = query.Where(s => !s.Deleted);
         }
         // Apply search keyword filter if provided
         if (!string.IsNullOrWhiteSpace(search))
@@ -88,29 +92,15 @@ internal sealed class FamilyStatusRepository : IFamilyStatusRepository
             query = query.Where(f => f.Name.Contains(term));
         }
 
-        // Apply active status filter if provided
         // Apply active status filter matching the database Active property if provided
         if (Active is { } active)
         {
             query = query.Where(f => f.Active == active);
-            query = query.Where(f => f.Active == active);
         }
 
-        // Calculate total count and apply sorting/pagination
+        // Calculate total count and apply sorting/pagination (audit names are resolved by the controller)
         var total = await query.CountAsync(cancellationToken);
         var items = await Sorts.Apply(query, sort.SortBy, sort.Descending).Skip((page - 1) * limit).Take(limit).ToListAsync(cancellationToken);
-
-        var userIds = items
-            .SelectMany(f => new[] { f.CreatedBy, f.UpdatedBy })
-            .Where(id => !string.IsNullOrEmpty(id) && Guid.TryParse(id, out _))
-            .Distinct()
-            .Select(id => Guid.Parse(id!))
-            .ToList();
-
-        
-        var usersDict = await _dbContext.Users
-            .Where(u => userIds.Contains(u.Id))
-            .ToDictionaryAsync(u => u.Id, u => u.DisplayName, cancellationToken);
 
         return (items, total);
     }
@@ -123,10 +113,10 @@ internal sealed class FamilyStatusRepository : IFamilyStatusRepository
     public async Task<IReadOnlyList<FamilyStatus>> ListSelectableAsync(Guid? tenantId = null, CancellationToken cancellationToken = default)
     {
         // Naming a tenant means reading OUTSIDE the ambient one, so the filters come off — and with them
-        // the soft-delete predicate they carry, which is why `IsDeleted` is then stated in full.
-        var query = tenantId is { } scope   ? _dbContext.FamilyStatuses.IgnoreQueryFilters().Where(f => !f.IsDeleted && f.TenantId == scope)    : _dbContext.FamilyStatuses.AsQueryable();
-        
-        return await query.OrderBy(f => f.Name).ToListAsync(cancellationToken);
+        // the soft-delete predicate they carry, which is why `Deleted` is then stated in full.
+        var query = tenantId is { } scope   ? _dbContext.FamilyStatuses.IgnoreQueryFilters().Where(f => !f.Deleted && f.TenantId == scope)    : _dbContext.FamilyStatuses.AsQueryable();
+
+        return await query.Where(f => f.Active).OrderBy(f => f.Name).ToListAsync(cancellationToken);
     }
 
     #endregion
@@ -159,7 +149,8 @@ internal sealed class FamilyStatusRepository : IFamilyStatusRepository
     public void Update(FamilyStatus familyStatus)   => _dbContext.FamilyStatuses.Update(familyStatus);
 
     /// <summary>
-    /// Marks an existing family status entity for removal.
+    /// Soft-deletes the family status: the DbContext (AuditableEntity) turns the remove into
+    /// Deleted = true + DeletedOnUtc + Updated* stamps.
     /// </summary>
     public void Remove(FamilyStatus familyStatus) => _dbContext.FamilyStatuses.Remove(familyStatus);
 

@@ -80,8 +80,6 @@ public sealed class FamilyStatusesController : ControllerBase
                 ApiErrorCodes.ValidationFailed, "Validation failed.", "A family status with this name already exists."));
         }
 
-
-
         // Retrieve and validate the active tenant identifier from the current user context
         var tenantId = User.GetActiveTenantId() ?? Guid.Empty;
         if (tenantId == Guid.Empty)
@@ -97,12 +95,7 @@ public sealed class FamilyStatusesController : ControllerBase
             FamilyStatusId = Guid.NewGuid(),
             TenantId = tenantId,
             Name = trimmedName,
-            Active = request.Active,
-            Name = request.Name.Trim(),
             Active = request.Active ?? true,
-            IsDeleted = false,
-            CreatedOn = DateTime.UtcNow,
-            CreatedBy = User.GetUserId().ToString()
         };
 
         // Persist the new record to the database via repository and unit of work
@@ -110,24 +103,8 @@ public sealed class FamilyStatusesController : ControllerBase
         await _audit.AddAsync(nameof(FamilyStatus), familyStatus.FamilyStatusId.ToString(), "Created", details: familyStatus.Name, cancellationToken: cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        // Map the created entity to a detailed response DTO
-        //var detail = new FamilyStatusDetail( familyStatus.FamilyStatusId,  familyStatus.Name, familyStatus.Active, !familyStatus.IsDeleted, familyStatus.CreatedBy, familyStatus.UpdatedBy, familyStatus.CreatedOn, familyStatus.UpdatedOn,  familyStatus.DeletedOnUtc, familyStatus.TenantId, familyStatus.Tenant?.Name
-        //    );
-
-        var detail = new FamilyStatusDetail(
-    familyStatus.FamilyStatusId,
-    familyStatus.Name,
-    familyStatus.Active,
-    familyStatus.CreatedBy,
-    familyStatus.UpdatedBy,
-    familyStatus.CreatedOn,
-    familyStatus.UpdatedOn,
-    familyStatus.DeletedOnUtc,
-    familyStatus.TenantId,
-    familyStatus.Tenant?.Name
-);
-
-        return StatusCode(StatusCodes.Status201Created, ApiResponseFactory.Success(detail, "Family status created."));
+        return StatusCode(StatusCodes.Status201Created,
+            ApiResponseFactory.Success(await ToDetailAsync(familyStatus, cancellationToken), "Family status created."));
     }
 
     #endregion
@@ -140,44 +117,50 @@ public sealed class FamilyStatusesController : ControllerBase
     /// </summary>
     [HttpGet]
     [RequireAnyPermission(Permissions.FamilyStatusesRead, Permissions.FamiliesRead)]
-    public async Task<IActionResult> List([FromQuery] int page = 1, [FromQuery] int limit = 20, [FromQuery] string? search = null, [FromQuery] Guid? tenantId = null, [FromQuery] bool? active = null, [FromQuery] bool? showDeleted = null, [FromQuery] string? sortBy = null, [FromQuery] bool descending = true, CancellationToken cancellationToken = default)
+    public async Task<IActionResult> List(
+        [FromQuery] int page = 1,
+        [FromQuery] int limit = 20,
+        [FromQuery] string? search = null,
+        [FromQuery] Guid? tenantId = null,
+        [FromQuery] bool? active = null,
+        [FromQuery] bool? showDeleted = null,
+        [FromQuery] string? sortBy = null,
+        [FromQuery] bool descending = true,
+        CancellationToken cancellationToken = default)
     {
         // Ensure valid pagination boundary values
         page = Math.Max(1, page);
         limit = Math.Clamp(limit, 1, 100);
 
-        // Scope tenant filter for super admin users if explicitly specified in query parameters
+        // Scope tenant filter for super admin users if explicitly specified in query parameters. Showing
+        // soft-deleted rows means reading past the ambient filter, so the tenant is pinned explicitly
+        // (the active one, unless a Super Admin named another).
         Guid? scopeTenant = User.IsSuperAdmin() && tenantId is { } tid ? tid : null;
+        if (showDeleted == true)
+        {
+            scopeTenant ??= User.GetActiveTenantId();
+        }
 
         // Fetch filtered, sorted, and paginated records from the repository
-        var (items, total) = await _familyStatuses.ListAsync(search, scopeTenant, active, showDeleted, new SortRequest(sortBy, descending), page, limit, cancellationToken: cancellationToken);
+        var (items, total) = await _familyStatuses.ListAsync(
+            search, scopeTenant, active, showDeleted, new SortRequest(sortBy, descending), page, limit,
+            cancellationToken: cancellationToken);
 
-        var userIds = items.SelectMany(f => new[] { f.CreatedBy, f.UpdatedBy }).Where(id => !string.IsNullOrEmpty(id) && Guid.TryParse(id, out _)).Select(id => Guid.Parse(id!)).Distinct().ToList();
-
-        var userNamesDict = await _users.GetFullNamesAsync(userIds, cancellationToken);
-
-        // Project database model items into summary DTOs including Tenant information for client consumption
-        //var summaries = items.Select(f => new FamilyStatusSummary( 
-        //f.FamilyStatusId, f.Name, !f.IsDeleted, 
-        //f.Active,
-        //!string.IsNullOrEmpty(f.CreatedBy) && Guid.TryParse(f.CreatedBy, out var cId) && userNamesDict.TryGetValue(cId, out var cName) ? cName : f.CreatedBy, 
-        //!string.IsNullOrEmpty(f.UpdatedBy) && Guid.TryParse(f.UpdatedBy, out var uId) && userNamesDict.TryGetValue(uId, out var uName) ? uName : f.UpdatedBy, 
-        //f.CreatedOn, f.UpdatedOn, f.DeletedOnUtc, f.TenantId, f.Tenant != null ? f.Tenant.Name : string.Empty));
-
-
+        // Resolve the audit user IDs into display names, then project to summary DTOs
+        var nameOf = await AuditNamesAsync(items, cancellationToken);
         var summaries = items.Select(f => new FamilyStatusSummary(
-    f.FamilyStatusId,
-    f.Name,
-    f.Active,
-    !f.IsDeleted,
-    !string.IsNullOrEmpty(f.CreatedBy) && Guid.TryParse(f.CreatedBy, out var cId) && userNamesDict.TryGetValue(cId, out var cName) ? cName : f.CreatedBy,
-    !string.IsNullOrEmpty(f.UpdatedBy) && Guid.TryParse(f.UpdatedBy, out var uId) && userNamesDict.TryGetValue(uId, out var uName) ? uName : f.UpdatedBy,
-    f.CreatedOn,
-    f.UpdatedOn,
-    f.DeletedOnUtc,
-    f.TenantId,
-    f.Tenant != null ? f.Tenant.Name : string.Empty
-));
+            f.FamilyStatusId,
+            f.Name,
+            f.Active,
+            f.Deleted,
+            nameOf(f.CreatedById),
+            nameOf(f.UpdatedById),
+            f.CreatedOnUtc,
+            f.UpdatedOnUtc,
+            f.DeletedOnUtc,
+            f.TenantId,
+            f.Tenant != null ? f.Tenant.Name : string.Empty));
+
         return Ok(ApiResponseFactory.Paginated(summaries, "Family statuses retrieved.", page, limit, total));
     }
 
@@ -199,38 +182,7 @@ public sealed class FamilyStatusesController : ControllerBase
             return NotFound(ApiResponseFactory.NotFound("Family status not found."));
         }
 
-        //// Map entity details to response DTO
-        var createdByName = await ResolveUserNameAsync(familyStatus.CreatedBy, cancellationToken);
-        var updatedByName = await ResolveUserNameAsync(familyStatus.UpdatedBy, cancellationToken);
-
-        //var detail = new FamilyStatusDetail(
-        //    familyStatus.FamilyStatusId,
-        //    familyStatus.Name,
-        //    familyStatus.Active,
-        //    !familyStatus.IsDeleted,
-        //    createdByName,
-        //    updatedByName,
-        //    familyStatus.CreatedOn,
-        //    familyStatus.UpdatedOn,
-        //    familyStatus.DeletedOnUtc,
-        //    familyStatus.TenantId,
-        //    familyStatus.Tenant?.Name
-        //    );
-
-        var detail = new FamilyStatusDetail(
-       familyStatus.FamilyStatusId,
-       familyStatus.Name,
-       familyStatus.Active,
-       createdByName,
-       updatedByName,
-       familyStatus.CreatedOn,
-       familyStatus.UpdatedOn,
-       familyStatus.DeletedOnUtc,
-       familyStatus.TenantId,
-       familyStatus.Tenant?.Name
-   );
-
-        return Ok(ApiResponseFactory.Success(detail, "Family status retrieved."));
+        return Ok(ApiResponseFactory.Success(await ToDetailAsync(familyStatus, cancellationToken), "Family status retrieved."));
     }
 
     #endregion
@@ -242,7 +194,6 @@ public sealed class FamilyStatusesController : ControllerBase
     /// </summary>
     [HttpPut("{id:guid}")]
     [RequirePermission(Permissions.FamilyStatusesWrite)]
-
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateFamilyStatusRequest request, CancellationToken cancellationToken)
     {
         var familyStatus = await LoadAsync(id, cancellationToken);
@@ -253,7 +204,6 @@ public sealed class FamilyStatusesController : ControllerBase
 
         if (request.Active.HasValue)
         {
-
             familyStatus.Active = request.Active.Value;
         }
 
@@ -270,8 +220,9 @@ public sealed class FamilyStatusesController : ControllerBase
             familyStatus.Name = trimmedName;
         }
 
-        familyStatus.IsDeleted = request.IsDeleted;
-        if (familyStatus.IsDeleted)
+        // isDeleted on the payload soft-deletes or restores the row (AuditableEntity.Deleted).
+        familyStatus.Deleted = request.IsDeleted;
+        if (familyStatus.Deleted)
         {
             familyStatus.DeletedOnUtc ??= DateTime.UtcNow;
         }
@@ -286,39 +237,8 @@ public sealed class FamilyStatusesController : ControllerBase
         await _audit.AddAsync(nameof(FamilyStatus), familyStatus.FamilyStatusId.ToString(), "Updated", cancellationToken: cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        var createdByName = await ResolveUserNameAsync(familyStatus.CreatedBy, cancellationToken);
-        var updatedByName = await ResolveUserNameAsync(familyStatus.UpdatedBy, cancellationToken);
-
-        //var detail = new FamilyStatusDetail(
-        //    familyStatus.FamilyStatusId,
-        //    familyStatus.Name,
-        //    familyStatus.Active,
-        //    !familyStatus.IsDeleted,
-        //    createdByName,
-        //    updatedByName,
-        //    familyStatus.CreatedOn,
-        //    familyStatus.UpdatedOn,
-        //    familyStatus.DeletedOnUtc,
-        //    familyStatus.TenantId,
-        //    familyStatus.Tenant?.Name);
-
-        var detail = new FamilyStatusDetail(
-     familyStatus.FamilyStatusId,
-     familyStatus.Name,
-     familyStatus.Active,
-     createdByName,
-     updatedByName,
-     familyStatus.CreatedOn,
-     familyStatus.UpdatedOn,
-     familyStatus.DeletedOnUtc,
-     familyStatus.TenantId,
-     familyStatus.Tenant?.Name
- );
-
-        return Ok(ApiResponseFactory.Success(detail, "Family status updated."));
+        return Ok(ApiResponseFactory.Success(await ToDetailAsync(familyStatus, cancellationToken), "Family status updated."));
     }
-
-
 
     #endregion
 
@@ -345,15 +265,8 @@ public sealed class FamilyStatusesController : ControllerBase
             return NotFound(ApiResponseFactory.NotFound("Family status not found."));
         }
 
-        // Soft delete: set IsDeleted flag to true (1) instead of physical removal
-        familyStatus.IsDeleted = true;
-        familyStatus.DeletedOnUtc = DateTime.UtcNow;
-
-        // Optionally update audit fields if available (e.g., UpdatedOn / UpdatedBy)
-        familyStatus.UpdatedOn = DateTime.UtcNow;
-
-        // Update the entity state in the repository/context and log the audit event
-        _familyStatuses.Update(familyStatus);
+        // Soft delete: the DbContext turns the remove into Deleted/DeletedOnUtc + Updated* stamps.
+        _familyStatuses.Remove(familyStatus);
         await _audit.AddAsync(nameof(FamilyStatus), familyStatus.FamilyStatusId.ToString(), "SoftDeleted", cancellationToken: cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
@@ -371,20 +284,53 @@ public sealed class FamilyStatusesController : ControllerBase
     /// <summary>
     /// Loads a family status entity based on super admin privileges or standard tenant context filters.
     /// </summary>
-    private Task<FamilyStatus?> LoadAsync(Guid id, CancellationToken cancellationToken) => User.IsSuperAdmin() ? _familyStatuses.GetByIdUnscopedAsync(id, cancellationToken) : _familyStatuses.GetByIdAsync(id, cancellationToken);
+    private Task<FamilyStatus?> LoadAsync(Guid id, CancellationToken cancellationToken)
+        => User.IsSuperAdmin()
+            ? _familyStatuses.GetByIdUnscopedAsync(id, cancellationToken)
+            : _familyStatuses.GetByIdAsync(id, cancellationToken);
 
     #endregion
 
-    private async Task<string?> ResolveUserNameAsync(string? userIdStr, CancellationToken cancellationToken)
-    {
-        if (string.IsNullOrEmpty(userIdStr) || !Guid.TryParse(userIdStr, out var userId))
-        {
-            return userIdStr;
-        }
+    #region Audit Name & Mapping Helpers
 
-        var names = await _users.GetFullNamesAsync(new[] { userId }, cancellationToken);
-        return names.TryGetValue(userId, out var name) ? name : userIdStr;
+    /// <summary>
+    /// Resolves the user IDs stored in the audit fields (CreatedById / UpdatedById) into display names.
+    /// </summary>
+    private async Task<Func<Guid?, string?>> AuditNamesAsync(IEnumerable<FamilyStatus> rows, CancellationToken cancellationToken)
+    {
+        var ids = rows
+            .SelectMany(f => new[] { f.CreatedById, f.UpdatedById })
+            .Where(id => id.HasValue)
+            .Select(id => id!.Value)
+            .Distinct();
+
+        var names = await _users.GetFullNamesAsync(ids, cancellationToken);
+
+        return id => id is { } userId && names.TryGetValue(userId, out var name) ? name : null;
     }
+
+    /// <summary>
+    /// Maps a family status entity to its detail response with audit names resolved. The response keeps
+    /// the pre-AuditableEntity field names (createdOn / updatedOn) the Family Status pages read.
+    /// </summary>
+    private async Task<FamilyStatusDetail> ToDetailAsync(FamilyStatus familyStatus, CancellationToken cancellationToken)
+    {
+        var nameOf = await AuditNamesAsync(new[] { familyStatus }, cancellationToken);
+
+        return new FamilyStatusDetail(
+            familyStatus.FamilyStatusId,
+            familyStatus.Name,
+            familyStatus.Active,
+            nameOf(familyStatus.CreatedById),
+            nameOf(familyStatus.UpdatedById),
+            familyStatus.CreatedOnUtc,
+            familyStatus.UpdatedOnUtc,
+            familyStatus.DeletedOnUtc,
+            familyStatus.TenantId,
+            familyStatus.Tenant?.Name);
+    }
+
+    #endregion
 
     #endregion
 }
