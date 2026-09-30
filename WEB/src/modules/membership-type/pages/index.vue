@@ -2,19 +2,16 @@
   <q-page padding>
     <!-- Page Header Component -->
     <app-list-header
-      :breadcrumbs="[
-        { label: 'Home', to: '/' },
-        { label: 'Family Status' }
-      ]"
-      title="Family Status"
-      description="Manage your all family statuses here."
+      :breadcrumbs="[{ label: 'Home', to: '/' }, { label: 'Membership Types' }]"
+      title="Membership Types"
+      description="Manage your all membership types here."
       :search="search"
       show-search
-      search-placeholder="Search family status"
+      search-placeholder="Search membership types"
       show-filters
       :filter-count="filterChips.length"
       show-add
-      add-label="Create Family Status"
+      add-label="Create Membership Type"
       show-back
       @update:search="search = $event"
       @filters="filterOpen = true"
@@ -23,31 +20,16 @@
     />
 
     <!-- Filter Drawer Component -->
-    <app-filter-drawer
-      v-model="filterOpen"
-      :chips="filterChips"
-      @remove="removeFilter"
-      @clear="clearFilters"
-    >
-      <app-column-filters
-        v-model="filters"
-        :columns="filterableColumns"
-      />
-
-      <q-toggle
-        v-if="canManageDeleted"
-        v-model="showDeleted"
-        label="Show deleted?"
-        dense
-        class="q-mt-md"
-      />
+    <app-filter-drawer v-model="filterOpen" :chips="filterChips" @remove="removeFilter" @clear="clearFilters">
+      <app-column-filters v-model="filters" :columns="filterableColumns" />
+      <q-toggle v-if="canManageDeleted" v-model="showDeleted" label="Show deleted?" dense class="q-mt-md" />
     </app-filter-drawer>
 
     <!-- Core Data Table Grid Component -->
     <app-data-table
-      page-key="family-statuses"
-      :row-key="(row) => row.familyStatusId || row.FamilyStatusId || row.id || row.Id"
-      title="Family Status"
+      page-key="membership-types"
+      :row-key="(row) => row.membershipTypeId || row.MembershipTypeId || row.id || row.Id"
+      title="Membership Types"
       :rows="filteredRows"
       :columns="columns"
       :loading="loading"
@@ -56,95 +38,69 @@
       @request="onRequest"
       @refresh="load"
     >
-      <!-- Family Status Name Column with Deleted Indicator -->
-      <template #body-cell-familyStatusName="cell">
+      <!-- Name Cell with Deleted Indicator -->
+      <template #body-cell-name="cell">
         <q-td :props="cell" :class="{ 'text-strike text-grey': cell.row.deleted || cell.row.Deleted }">
-          {{ cell.row.familyStatusName || cell.row.FamilyStatusName || cell.row.name || cell.row.Name }}
+          {{ cell.row.name || cell.row.Name || cell.row.membershipTypeName || cell.row.MembershipTypeName }}
           <q-badge v-if="cell.row.deleted || cell.row.Deleted" color="negative" class="q-ml-sm" dense>
             Deleted
           </q-badge>
         </q-td>
       </template>
 
-      <!-- Interactive Status Toggle Column Slot -->
+      <!-- Interactive Status Toggle Column -->
       <template #body-cell-active="cell">
         <q-td :props="cell">
           <div class="flex flex-center">
             <q-toggle
-              :model-value="cell.row.active ?? cell.row.Active ?? cell.row.isActive ?? cell.row.IsActive ?? true"
+              :model-value="cell.row.active ?? cell.row.Active ?? cell.row.is_active ?? true"
               @update:model-value="(val) => updateStatus(cell.row, val)"
               dense
               color="positive"
               :disable="cell.row.deleted || cell.row.Deleted"
             />
-            <!-- <span :class="(cell.row.active ?? cell.row.Active ?? cell.row.isActive ?? cell.row.IsActive ?? true) ? 'text-positive' : 'text-grey'">
-              {{ (cell.row.active ?? cell.row.Active ?? cell.row.isActive ?? cell.row.IsActive ?? true) ? "Active" : "Inactive" }}
-            </span> -->
           </div>
         </q-td>
       </template>
 
-      <!-- Row Actions Slot -->
+      <!-- Actions Column -->
       <template #body-cell-actions="cell">
         <q-td :props="cell">
-          <q-btn
-            flat
-            round
-            dense
-            color="primary"
-            icon="o_visibility"
-            @click="openView(cell.row)"
-          >
+          <q-btn flat round dense color="primary" icon="o_visibility" @click="openView(cell.row)">
             <q-tooltip>View</q-tooltip>
           </q-btn>
-          <q-btn
-            flat
-            round
-            dense
-            color="primary"
-            icon="o_edit"
-            @click="openEdit(cell.row)"
-            :disabled="cell.row.deleted || cell.row.Deleted"
-          >
+          <q-btn flat round dense color="primary" icon="o_edit" @click="openEdit(cell.row)" :disabled="cell.row.deleted || cell.row.Deleted">
             <q-tooltip>Edit</q-tooltip>
           </q-btn>
-
-          <q-btn
-            flat
-            round
-            dense
-            color="negative"
-            icon="o_delete"
-            @click="removeFamilyStatus(cell.row)"
-            v-if="!(cell.row.deleted || cell.row.Deleted)"
-          >
+          <q-btn flat round dense color="negative" icon="o_delete" @click="removeMembershipType(cell.row)" v-if="!(cell.row.deleted || cell.row.Deleted)">
             <q-tooltip>Delete</q-tooltip>
           </q-btn>
         </q-td>
       </template>
     </app-data-table>
 
-    <!-- Create / Edit Drawer Component -->
-    <family-status-form
-      v-model="formOpen"
+    <!-- Create / Edit Form Component -->
+    <membership-type-form
+      v-model="formDrawerOpen"
       :editing-id="editingId"
       :initial-data="selectedRow"
       @saved="handleSaved"
     />
 
-    <!-- View Details Drawer Component -->
-    <family-status-view
-      v-model="viewOpen"
+    <!-- View Component -->
+    <membership-type-view
+      v-model="viewDrawerOpen"
       :record-id="viewRecordId"
     />
   </q-page>
 </template>
 
 <script setup>
-import { ref, watch, onMounted } from "vue";
+import { ref, computed, watch, onMounted } from "vue";
 import { debounce } from "quasar";
 
-import { familyStatusApi, getApiErrorMessage } from "services/api";
+import { membershipTypeApi, getApiErrorMessage } from "services/api";
+
 import { useNotify } from "composables/useNotify";
 import { useConfirm } from "composables/useConfirm";
 import { useListTable } from "composables/useListTable";
@@ -156,39 +112,35 @@ import AppListHeader from "components/common/AppListHeader.vue";
 import AppFilterDrawer from "components/common/AppFilterDrawer.vue";
 import AppColumnFilters from "components/common/AppColumnFilters.vue";
 
-import FamilyStatusForm from "src/modules/familystatus/components/create_edit_status.vue";
-import FamilyStatusView from "src/modules/familystatus/components/viewstatus.vue";
+import MembershipTypeForm from "src/modules/membership-type/components/create_edit.vue";
+import MembershipTypeView from "src/modules/membership-type/components/view.vue";
 
 const { showDeleted, canManageDeleted } = useDeletedRecords();
 const notify = useNotify();
 const { confirm } = useConfirm();
 
+// const formatDate = (value) => {
+//   if (!value) return "—";
+//   const date = new Date(value);
+//   return isNaN(date.getTime()) ? String(value) : date.toLocaleString();
+// };
+
 const formatDate = (value) => {
   if (!value) return "—";
   const date = new Date(value);
-  return isNaN(date.getTime()) ? String(value) : date.toLocaleString();
+  // Check if date is invalid or the default .NET MinValue (0001-01-01)
+  if (isNaN(date.getTime()) || date.getFullYear() <= 1) return "—";
+  return date.toLocaleString();
 };
 
 const columns = [
   {
-    name: "familyStatusName",
-    label: "Family Status Name",
-    field: (r) => r.familyStatusName || r.FamilyStatusName || r.name || r.Name,
+    name: "name",
+    label: "Membership Type Name",
+    field: (r) => r.name || r.Name || r.membershipTypeName || r.MembershipTypeName,
     align: "left",
     sortable: true,
-    default: true,
-    filterable: true
-  },
- 
-  {
-    name: "createdOnUtc",
-    label: "Created On",
-    field: (r) => r.createdOnUtc || r.CreatedOnUtc || r.created_on_utc || r.createdOn || r.CreatedOn || r.created_on || null,
-    align: "left",
-    sortable: true,
-    default: true,
-    filterable: false,
-    format: (val) => formatDate(val)
+    default: true
   },
   {
     name: "createdBy",
@@ -198,6 +150,16 @@ const columns = [
     sortable: true,
     default: true,
     filterable: false
+  },
+  {
+    name: "createdOnUtc",
+    label: "Created On",
+    field: (r) => r.createdOnUtc || r.CreatedOnUtc || r.created_on_utc || r.createdOn || r.CreatedOn || r.created_on || null,
+    align: "left",
+    sortable: true,
+    default: true,
+    filterable: false,
+    format: (val) => formatDate(val)
   },
   {
     name: "updatedBy",
@@ -218,24 +180,23 @@ const columns = [
     filterable: false,
     format: (val) => formatDate(val)
   },
-   {
+  {
     name: "active",
     label: "Status",
-    field: (r) => r.active ?? r.Active ?? r.isActive ?? r.IsActive ?? true,
+    field: (r) => r.active ?? r.Active ?? r.is_active ?? true,
     align: "center",
     sortable: true,
     default: true,
     filterOptions: [
-      { label: "", value: true },
-      { label: "", value: false }
+      { label: "Active", value: true },
+      { label: "Inactive", value: false }
     ]
   },
   {
     name: "actions",
     label: "Actions",
     field: "actions",
-    align: "left",
-    filterable: false
+    align: "left"
   }
 ];
 
@@ -247,41 +208,27 @@ const {
   load,
   onRequest
 } = useListTable({
-  pageKey: "family-statuses",
-  defaultSortBy: "createdOnUtc",
-  defaultDescending: true,
+  pageKey: "membership-types",
   fetcher: ({ sortBy, descending }) =>
-    familyStatusApi.list({
+    membershipTypeApi.list({
       search: search.value || undefined,
       showDeleted: showDeleted.value,
-      includeDeleted: showDeleted.value,
       sortBy: sortBy || 'createdOnUtc',
       descending: descending ?? true,
       includeInactive: true
     }).then((response) => {
-      let items = response?.data?.items || response?.items || response?.data || [];
-
-      
-      items.sort((a, b) => {
-        const valA = new Date(a.createdOnUtc || a.CreatedOnUtc || a.created_on_utc || a.createdOn || 0).getTime();
-        const valB = new Date(b.createdOnUtc || b.CreatedOnUtc || b.created_on_utc || b.createdOn || 0).getTime();
-        
-        if (valA !== valB) {
-          return valB - valA; 
-        }
-        
-     
-        const idA = a.familyStatusId || a.FamilyStatusId || a.id || a.Id || 0;
-        const idB = b.familyStatusId || b.FamilyStatusId || b.id || b.Id || 0;
-        return idB - idA;
-      });
-
+      const items = response?.data?.items || response?.items || response?.data || [];
       return {
         data: items,
-        total: response?.data?.totalCount || items.length
+        total: items.length
       };
     }),
   onError: (err) => notify.error(getApiErrorMessage(err))
+});
+
+watch(showDeleted, () => {
+  pagination.value.page = 1;
+  load();
 });
 
 const filterOpen = ref(false);
@@ -303,10 +250,6 @@ const reload = debounce(() => {
 }, 300);
 
 watch(search, reload);
-watch(showDeleted, () => {
-  pagination.value.page = 1;
-  load();
-});
 
 onMounted(() => {
   pagination.value.sortBy = 'createdOnUtc';
@@ -314,84 +257,83 @@ onMounted(() => {
   load();
 });
 
-const formOpen = ref(false);
+const formDrawerOpen = ref(false);
 const editingId = ref(null);
 const selectedRow = ref(null);
 
 const openCreate = () => {
   editingId.value = null;
   selectedRow.value = null;
-  formOpen.value = true;
+  formDrawerOpen.value = true;
 };
 
 const openEdit = (row) => {
-  const id = row.familyStatusId || row.FamilyStatusId || row.id || row.Id;
+  const id = row.membershipTypeId || row.MembershipTypeId || row.id || row.Id;
   if (!id) {
     notify.error("Invalid record identifier for editing.");
     return;
   }
   editingId.value = id;
   selectedRow.value = row;
-  formOpen.value = true;
+  formDrawerOpen.value = true;
 };
 
+// Function to update status directly from table toggle and sync with DB
 const updateStatus = async (row, newStatus) => {
-  const id = row.familyStatusId || row.FamilyStatusId || row.id || row.Id;
+  const id = row.membershipTypeId || row.MembershipTypeId || row.id || row.Id;
   if (!id) return;
 
-  const originalStatus = row.active ?? row.Active ?? row.isActive ?? row.IsActive ?? true;
+  const originalStatus = row.active ?? row.Active ?? row.is_active ?? true;
   
   if (row.active !== undefined) row.active = newStatus;
   if (row.Active !== undefined) row.Active = newStatus;
-  if (row.isActive !== undefined) row.isActive = newStatus;
-  if (row.IsActive !== undefined) row.IsActive = newStatus;
+  if (row.is_active !== undefined) row.is_active = newStatus;
 
   try {
     const payload = {
-      familyStatusName: row.familyStatusName || row.FamilyStatusName || row.name || row.Name,
-      active: newStatus,
-      isActive: newStatus
+      name: row.name || row.Name || row.membershipTypeName || row.MembershipTypeName,
+      active: newStatus
     };
-    await familyStatusApi.update(id, payload);
+    await membershipTypeApi.update(id, payload);
     notify.success("Status updated successfully.");
     await load();
   } catch (err) {
+    // Revert on error
     if (row.active !== undefined) row.active = originalStatus;
     if (row.Active !== undefined) row.Active = originalStatus;
-    if (row.isActive !== undefined) row.isActive = originalStatus;
-    if (row.IsActive !== undefined) row.IsActive = originalStatus;
+    if (row.is_active !== undefined) row.is_active = originalStatus;
     notify.error(getApiErrorMessage(err));
   }
 };
 
 const handleSaved = async () => {
   pagination.value.page = 1;
-  pagination.value.sortBy = 'createdOnUtc';
+  pagination.value.sortBy = "createdOnUtc";
   pagination.value.descending = true;
   await load();
 };
 
-const viewOpen = ref(false);
+const viewDrawerOpen = ref(false);
 const viewRecordId = ref(null);
 
 const openView = (row) => {
-  const id = row.familyStatusId || row.FamilyStatusId || row.id || row.Id;
+  const id = row.membershipTypeId || row.MembershipTypeId || row.id || row.Id;
   if (!id) {
     notify.error("Invalid record identifier for viewing.");
     return;
   }
   viewRecordId.value = id;
-  viewOpen.value = true;
+  viewDrawerOpen.value = true;
 };
 
-const removeFamilyStatus = async (row) => {
-  const id = row.familyStatusId || row.FamilyStatusId || row.id || row.Id;
+const removeMembershipType = async (row) => {
+  const id = row.membershipTypeId || row.MembershipTypeId || row.id || row.Id;
   if (!id) return;
 
-  const familyStatusLabel = row.familyStatusName || row.FamilyStatusName || row.name || row.Name || 'this family status';
+  const methodLabel = row.name || row.Name || row.membershipTypeName || row.MembershipTypeName || 'this membership type';
   const ok = await confirm({
-    title: "Delete family status",
-    message: `Are you sure you want to delete the family status "${familyStatusLabel}"?`,
+    title: "Delete membership type",
+    message: `Are you sure you want to delete the membership type "${methodLabel}"?`,
     confirmLabel: "Delete",
     type: "danger"
   });
@@ -399,8 +341,8 @@ const removeFamilyStatus = async (row) => {
   if (!ok) return;
 
   try {
-    await familyStatusApi.delete(id);
-    notify.success("Family status deleted successfully.");
+    await membershipTypeApi.delete(id);
+    notify.success("Membership type deleted successfully.");
     await load();
   } catch (err) {
     notify.error(getApiErrorMessage(err));

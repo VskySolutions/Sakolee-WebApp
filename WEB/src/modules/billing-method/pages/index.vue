@@ -51,7 +51,7 @@
       <!-- Interactive Status Toggle Column -->
       <template #body-cell-active="cell">
         <q-td :props="cell">
-          <div class="row items-center q-gutter-x-sm">
+          <div class="flex flex-center">
             <q-toggle
               :model-value="cell.row.active ?? cell.row.Active ?? cell.row.is_active ?? true"
               @update:model-value="(val) => updateStatus(cell.row, val)"
@@ -59,9 +59,9 @@
               color="positive"
               :disable="cell.row.deleted || cell.row.Deleted"
             />
-            <span :class="(cell.row.active ?? cell.row.Active ?? cell.row.is_active ?? true) ? 'text-positive' : 'text-grey'">
+            <!-- <span :class="(cell.row.active ?? cell.row.Active ?? cell.row.is_active ?? true) ? 'text-positive' : 'text-grey'">
               {{ (cell.row.active ?? cell.row.Active ?? cell.row.is_active ?? true) ? "Active" : "Inactive" }}
-            </span>
+            </span> -->
           </div>
         </q-td>
       </template>
@@ -122,12 +122,22 @@ const { showDeleted, canManageDeleted } = useDeletedRecords();
 const notify = useNotify();
 const { confirm } = useConfirm();
 
+// const formatDate = (value) => {
+//   if (!value) return "—";
+//   const date = new Date(value);
+//   return isNaN(date.getTime()) ? String(value) : date.toLocaleString();
+// };
+
+// Enhanced date formatting to handle invalid dates and .NET MinValue
 const formatDate = (value) => {
   if (!value) return "—";
   const date = new Date(value);
-  return isNaN(date.getTime()) ? String(value) : date.toLocaleString();
+  // Check if date is invalid or the default .NET MinValue (0001-01-01)
+  if (isNaN(date.getTime()) || date.getFullYear() <= 1) return "—";
+  return date.toLocaleString();
 };
 
+// Table Columns Definition
 const columns = [
   {
     name: "name",
@@ -180,7 +190,7 @@ const columns = [
     name: "active",
     label: "Status",
     field: (r) => r.active ?? r.Active ?? r.is_active ?? true,
-    align: "left",
+    align: "center",
     sortable: true,
     default: true,
     filterOptions: [
@@ -196,6 +206,7 @@ const columns = [
   }
 ];
 
+// Reactive state for search and pagination
 const {
   rows,
   loading,
@@ -222,13 +233,16 @@ const {
   onError: (err) => notify.error(getApiErrorMessage(err))
 });
 
+// Watcher to reload data when the "Show Deleted" toggle changes
 watch(showDeleted, () => {
   pagination.value.page = 1;
   load();
 });
 
+// Reactive state for filter drawer
 const filterOpen = ref(false);
 
+// Column Filters Setup
 const {
   filters,
   filterableColumns,
@@ -240,29 +254,35 @@ const {
   server: false
 });
 
+// Debounced reload function to handle search input changes
 const reload = debounce(() => {
   pagination.value.page = 1;
   load();
 }, 300);
 
+//  Watch the search term and trigger reload when it changes
 watch(search, reload);
 
+// Ensure the table is sorted by "Created On" in descending order on initial load
 onMounted(() => {
   pagination.value.sortBy = 'createdOnUtc';
   pagination.value.descending = true;
   load();
 });
 
+// Reactive state for form drawer and selected record
 const formDrawerOpen = ref(false);
 const editingId = ref(null);
 const selectedRow = ref(null);
 
+// Function to open the create form
 const openCreate = () => {
   editingId.value = null;
   selectedRow.value = null;
   formDrawerOpen.value = true;
 };
 
+// Function to open the edit form with selected record
 const openEdit = (row) => {
   const id = row.billingMethodId || row.BillingMethodId || row.id || row.Id;
   if (!id) {
@@ -279,6 +299,7 @@ const updateStatus = async (row, newStatus) => {
   const id = row.billingMethodId || row.BillingMethodId || row.id || row.Id;
   if (!id) return;
 
+  
   const originalStatus = row.active ?? row.Active ?? row.is_active ?? true;
   
   if (row.active !== undefined) row.active = newStatus;
@@ -286,7 +307,9 @@ const updateStatus = async (row, newStatus) => {
   if (row.is_active !== undefined) row.is_active = newStatus;
 
   try {
+    
     const payload = {
+      
       name: row.name || row.Name || row.billingMethodName || row.BillingMethodName,
       active: newStatus
     };
@@ -302,6 +325,7 @@ const updateStatus = async (row, newStatus) => {
   }
 };
 
+
 const handleSaved = async () => {
   pagination.value.page = 1;
   pagination.value.sortBy = "createdOnUtc";
@@ -309,9 +333,11 @@ const handleSaved = async () => {
   await load();
 };
 
+
 const viewDrawerOpen = ref(false);
 const viewRecordId = ref(null);
 
+//Opens the view
 const openView = (row) => {
   const id = row.billingMethodId || row.BillingMethodId || row.id || row.Id;
   if (!id) {
@@ -322,6 +348,7 @@ const openView = (row) => {
   viewDrawerOpen.value = true;
 };
 
+//Remove Method
 const removeBillingMethod = async (row) => {
   const id = row.billingMethodId || row.BillingMethodId || row.id || row.Id;
   if (!id) return;

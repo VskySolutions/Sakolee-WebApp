@@ -58,8 +58,13 @@ export const Permissions = Object.freeze({
 
   //Class Rooms Permissions
   ClassRoomsRead : "classRooms.read",
-ClassRoomsWrite :"classRooms.write",
-ClassRoomsDelete : "classRooms.delete",
+  ClassRoomsWrite :"classRooms.write",
+  ClassRoomsDelete : "classRooms.delete",
+
+   MembershipTypesRead : "membershipTypes.read",
+ MembershipTypesWrite : "membershipTypes.write",
+  MembershipTypesDelete : "membershipTypes.delete",
+
 
 
   UsersRead: "users.read",

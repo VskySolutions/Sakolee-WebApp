@@ -1,4 +1,4 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Sakolee.Application.Abstractions.Persistence;
 using Sakolee.Application.Common;
 using Sakolee.Domain.Entities;
@@ -6,23 +6,23 @@ using Sakolee.Domain.Entities;
 namespace Sakolee.Infrastructure.Persistence.Repositories;
 
 /// <summary>
-/// Repository implementation for managing location data operations using Entity Framework Core.
+/// Repository implementation for managing membership type data operations using Entity Framework Core.
 /// </summary>
-internal sealed class LocationRepository : ILocationRepository
+internal sealed class MembershipTypeRepository : IMembershipTypeRepository
 {
     private readonly SakoleeDbContext _dbContext;
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="LocationRepository"/> class.
+    /// Initializes a new instance of the <see cref="MembershipTypeRepository"/> class.
     /// </summary>
     /// <param name="dbContext">The database context instance.</param>
-    public LocationRepository(SakoleeDbContext dbContext)
+    public MembershipTypeRepository(SakoleeDbContext dbContext)
     {
         _dbContext = dbContext;
     }
 
     /// <inheritdoc />
-    public async Task<(IReadOnlyList<Location> Items, int TotalCount)> ListAsync(
+    public async Task<(IReadOnlyList<MembershipType> Items, int TotalCount)> ListAsync(
          string? search,
          Guid? tenantId,
          bool? active,
@@ -33,8 +33,8 @@ internal sealed class LocationRepository : ILocationRepository
          CancellationToken cancellationToken = default)
     {
         var query = tenantId is { } tid
-          ? _dbContext.Locations.IgnoreQueryFilters().Where(s => s.TenantId == tid)
-          : _dbContext.Locations.IgnoreQueryFilters().AsQueryable();
+          ? _dbContext.MembershipType.IgnoreQueryFilters().Where(s => s.TenantId == tid)
+          : _dbContext.MembershipType.IgnoreQueryFilters().AsQueryable();
 
         if (showDeleted != true)
         {
@@ -81,39 +81,39 @@ internal sealed class LocationRepository : ILocationRepository
     }
 
     /// <inheritdoc />
-    public Task<Location?> GetByIdAsync(
+    public Task<MembershipType?> GetByIdAsync(
         Guid id,
         CancellationToken cancellationToken = default)
-        => _dbContext.Locations
+        => _dbContext.MembershipType
             .FirstOrDefaultAsync(b => b.Id == id, cancellationToken);
 
     /// <inheritdoc />
     public Task<bool> NameExistsAsync(
         string name,
         Guid? tenantId,
-        Guid? excludeLocationId = null,
+        Guid? excludeMembershipTypeId = null,
         CancellationToken cancellationToken = default)
-        => _dbContext.Locations.AnyAsync(
+        => _dbContext.MembershipType.AnyAsync(
             b =>
                 b.Name == name &&
                 b.TenantId == tenantId &&
-                (excludeLocationId == null ||
-                 b.Id != excludeLocationId),
+                (excludeMembershipTypeId == null ||
+                 b.Id != excludeMembershipTypeId),
             cancellationToken);
 
     /// <inheritdoc />
     public Task AddAsync(
-        Location location,
+        MembershipType membershipType,
         CancellationToken cancellationToken = default)
-        => _dbContext.Locations
-            .AddAsync(location, cancellationToken)
+        => _dbContext.MembershipType
+            .AddAsync(membershipType, cancellationToken)
             .AsTask();
 
     /// <inheritdoc />
-    public void Update(Location location)
-        => _dbContext.Locations.Update(location);
+    public void Update(MembershipType membershipType)
+        => _dbContext.MembershipType.Update(membershipType);
 
     /// <inheritdoc />
-    public void Remove(Location location)
-        => _dbContext.Locations.Remove(location);
+    public void Remove(MembershipType membershipType)
+        => _dbContext.MembershipType.Remove(membershipType);
 }

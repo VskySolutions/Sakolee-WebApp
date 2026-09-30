@@ -1,7 +1,7 @@
 <template>
   <app-form-dialog
     v-model="isOpen"
-    title="View Session"
+    title="View Location"
     size="sm"
     hide-save
     @cancel="close"
@@ -13,19 +13,19 @@
 
     <!-- Content Section -->
     <div v-else class="row q-col-gutter-lg">
-      <!-- Session Name -->
+      <!-- Location Name -->
       <div class="col-12 col-sm-6">
-        <div class="text-86 fs-12 fw-500">Session Name</div>
+        <div class="text-86 fs-12 fw-500">Location Name</div>
         <div class="text-2e fs-14">
-          {{ viewSession.sessionName || "—" }}
+          {{ viewLocation.name || "—" }}
         </div>
       </div>
 
       <!-- Status -->
       <div class="col-12 col-sm-6">
         <div class="text-86 fs-12 fw-500">Status</div>
-        <q-badge :class="viewSession.isActive ? 'active-badge' : 'inactive-badge'">
-          {{ viewSession.isActive ? "Active" : "Inactive" }}
+        <q-badge :class="viewLocation.active ? 'active-badge' : 'inactive-badge'">
+          {{ viewLocation.active ? "Active" : "Inactive" }}
         </q-badge>
       </div>
 
@@ -33,7 +33,7 @@
       <div class="col-12 col-sm-6">
         <div class="text-86 fs-12 fw-500">Created By</div>
         <div class="text-2e fs-14">
-          {{ viewSession.createdBy || "—" }}
+          {{ viewLocation.createdBy || "—" }}
         </div>
       </div>
 
@@ -41,7 +41,7 @@
       <div class="col-12 col-sm-6">
         <div class="text-86 fs-12 fw-500">Created On</div>
         <div class="text-2e fs-14">
-          {{ formatDate(viewSession.createdOnUtc) }}
+          {{ formatDate(viewLocation.createdOnUtc) }}
         </div>
       </div>
 
@@ -49,7 +49,7 @@
       <div class="col-12 col-sm-6">
         <div class="text-86 fs-12 fw-500">Updated By</div>
         <div class="text-2e fs-14">
-          {{ viewSession.updatedBy || "—" }}
+          {{ viewLocation.updatedBy || "—" }}
         </div>
       </div>
 
@@ -57,7 +57,7 @@
       <div class="col-12 col-sm-6">
         <div class="text-86 fs-12 fw-500">Updated On</div>
         <div class="text-2e fs-14">
-          {{ formatDate(viewSession.updatedOnUtc) }}
+          {{ formatDate(viewLocation.updatedOnUtc) }}
         </div>
       </div>
     </div>
@@ -66,11 +66,11 @@
 
 <script setup>
 import { ref, reactive, watch } from "vue";
-import { classSessionApi, getApiErrorMessage } from "services/api";
+import { locationApi, getApiErrorMessage } from "services/api";
 import { useNotify } from "composables/useNotify";
 import AppFormDialog from "components/common/AppFormDialog.vue";
 
-// Props and emits
+// Props and Emits
 const props = defineProps({
   modelValue: { type: Boolean, default: false },
   recordId: { type: [Object, String, Number], default: null }
@@ -82,11 +82,11 @@ const notify = useNotify();
 const isOpen = ref(props.modelValue);
 const viewLoading = ref(false);
 
-// Reactive object to hold the session data for viewing
-const viewSession = reactive({
+// Reactive object to hold the location data for viewing
+const viewLocation = reactive({
   id: null,
-  sessionName: "",
-  isActive: true,
+  name: "",
+  active: true,
   createdBy: "",
   createdOnUtc: null,
   updatedBy: "",
@@ -102,13 +102,13 @@ const formatDate = (value) => {
 
 // Function to reset the view state
 const resetView = () => {
-  viewSession.id = null;
-  viewSession.sessionName = "";
-  viewSession.isActive = true;
-  viewSession.createdBy = "";
-  viewSession.createdOnUtc = null;
-  viewSession.updatedBy = "";
-  viewSession.updatedOnUtc = null;
+  viewLocation.id = null;
+  viewLocation.name = "";
+  viewLocation.active = true;
+  viewLocation.createdBy = "";
+  viewLocation.createdOnUtc = null;
+  viewLocation.updatedBy = "";
+  viewLocation.updatedOnUtc = null;
 };
 
 // Watchers to handle prop changes and open/close state
@@ -130,17 +130,17 @@ const fetchRecord = async (id) => {
   resetView();
   viewLoading.value = true;
   try {
-    const response = await classSessionApi.get(id);
+    const response = await locationApi.get(id);
     const item = response?.data?.data || response?.data || response;
 
     if (item) {
-      viewSession.id = id;
-      viewSession.sessionName = item.sessionName || item.SessionName || item.name || item.Name || "";
-      viewSession.isActive = item.isActive ?? item.IsActive ?? item.active ?? item.Active ?? true;
-      viewSession.createdBy = item.createdBy || item.CreatedBy || item.created_by || "";
-      viewSession.createdOnUtc = item.createdOnUtc || item.CreatedOnUtc || item.created_on_utc || item.createdOn || item.CreatedOn || item.created_on || null;
-      viewSession.updatedBy = item.updatedBy || item.UpdatedBy || item.updated_by || "";
-      viewSession.updatedOnUtc = item.updatedOnUtc || item.UpdatedOnUtc || item.updated_on_utc || item.updatedOn || item.UpdatedOn || item.updated_on || null;
+      viewLocation.id = id;
+      viewLocation.name = item.name || item.Name || item.locationName || item.LocationName || "";
+      viewLocation.active = item.active ?? item.Active ?? item.is_active ?? true;
+      viewLocation.createdBy = item.createdBy || item.CreatedBy || item.created_by || "";
+      viewLocation.createdOnUtc = item.createdOnUtc || item.CreatedOnUtc || item.created_on_utc || item.createdOn || item.CreatedOn || item.created_on || null;
+      viewLocation.updatedBy = item.updatedBy || item.UpdatedBy || item.updated_by || "";
+      viewLocation.updatedOnUtc = item.updatedOnUtc || item.UpdatedOnUtc || item.updated_on_utc || item.updatedOn || item.UpdatedOn || item.updated_on || null;
     }
   } catch (err) {
     isOpen.value = false;

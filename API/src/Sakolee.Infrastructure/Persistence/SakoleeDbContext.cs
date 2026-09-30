@@ -38,13 +38,18 @@ public class SakoleeDbContext : DbContext, IDataProtectionKeyContext
     public DbSet<AuditTrailEntry> AuditTrail => Set<AuditTrailEntry>();
 
     public DbSet<Tenant> Tenants => Set<Tenant>();
-    public DbSet<FamilyStatus> FamilyStatuses { get; set; }
 
+
+
+    public DbSet<FamilyStatus> FamilyStatuses { get; set; }
     public DbSet<ClassSessions> ClassSessions { get; set; }
     public DbSet<BillingMethod> BillingMethod { get; set; }
     public DbSet<ClassRooms> ClassRooms { get; set; }
-
     public DbSet<FamilyRelation> FamilyRelations { get; set; }
+    public DbSet<MembershipType> MembershipType { get; set; }
+
+
+
     public DbSet<User> Users => Set<User>();
 
     public DbSet<UserTenantRole> UserTenantRoles => Set<UserTenantRole>();
@@ -211,6 +216,11 @@ public class SakoleeDbContext : DbContext, IDataProtectionKeyContext
         modelBuilder.Entity<FamilyRelation>().HasQueryFilter(e => (!_tenantContext.IsResolved || e.TenantId == _tenantContext.TenantId) && !e.Deleted);
 
         modelBuilder.Entity<ClassRooms>().HasQueryFilter(e => (!_tenantContext.IsResolved || e.TenantId == _tenantContext.TenantId) && !e.Deleted);
+
+        modelBuilder.Entity<MembershipType>().HasQueryFilter(e => (!_tenantContext.IsResolved || e.TenantId == _tenantContext.TenantId) && !e.Deleted);
+        modelBuilder.Entity<Location>().HasQueryFilter(e => (!_tenantContext.IsResolved || e.TenantId == _tenantContext.TenantId) && !e.Deleted);
+
+
 
         modelBuilder.Entity<TenantRole>().HasQueryFilter(e => !e.Deleted);
         modelBuilder.Entity<Address>().HasQueryFilter(e => !e.Deleted);
@@ -398,6 +408,10 @@ public class SakoleeDbContext : DbContext, IDataProtectionKeyContext
 
                 case TShirtSize tShirtSize when tShirtSize.TenantId == Guid.Empty:
                     tShirtSize.TenantId = _tenantContext.TenantId;
+                    break;
+
+                case MembershipType membershipType when membershipType.TenantId is null || membershipType.TenantId == Guid.Empty:
+                    membershipType.TenantId = _tenantContext.TenantId;
                     break;
             }
         }

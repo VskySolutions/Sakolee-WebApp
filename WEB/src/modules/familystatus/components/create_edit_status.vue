@@ -35,6 +35,7 @@
 </template>
 
 <script setup>
+
 import { ref, reactive, watch, computed } from "vue";
 import { familyStatusApi, getApiErrorMessage, getApiErrorCode, ApiErrorCodes } from "services/api";
 import { useNotify } from "composables/useNotify";
@@ -42,6 +43,7 @@ import { useNotify } from "composables/useNotify";
 import AppFormDialog from "components/common/AppFormDialog.vue";
 import AppTextField from "components/common/AppTextField.vue";
 
+//Props And Emits
 const props = defineProps({
   modelValue: { type: Boolean, default: false },
   editingId: { type: [Object, String, Number], default: null },
@@ -85,6 +87,7 @@ watch(isOpen, (val) => {
   emit("update:modelValue", val);
 });
 
+//Reset Form Values
 const resetFormValues = () => {
   form.familyStatusName = "";
   form.active = true;
@@ -97,6 +100,7 @@ const resetForm = () => {
   isOpen.value = false;
 };
 
+//Submit the form
 const submitForm = async ({ clearDraft } = {}) => {
   formErrors.familyStatusName.hasError = false;
   formErrors.familyStatusName.message = "";

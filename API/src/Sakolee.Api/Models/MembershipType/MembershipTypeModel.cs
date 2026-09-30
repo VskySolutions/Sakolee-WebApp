@@ -1,37 +1,37 @@
-﻿namespace Sakolee.Api.Models.Locations;
+﻿namespace Sakolee.Api.Models.MembershipTypes;
 
-#region Create Location Request
-public sealed class CreateLocationRequest
+#region Create Membership Type Request
+public sealed class CreateMembershipTypeRequest
 {
     /// <summary>
-    /// Gets or sets the name of the location.
+    /// Gets or sets the name of the membership type.
     /// </summary>
     public string Name { get; set; } = string.Empty;
 
     /// <summary>
-    /// Gets or sets a value indicating whether the location is active.
+    /// Gets or sets a value indicating whether the membership type is active.
     /// </summary>
     public bool Active { get; set; } = true;
 }
 #endregion
 
-#region Update Location Request
-public sealed class UpdateLocationRequest
+#region Update Membership Type Request
+public sealed class UpdateMembershipTypeRequest
 {
     /// <summary>
-    /// Gets or sets the name of the location.
+    /// Gets or sets the name of the membership type.
     /// </summary>
     public string Name { get; set; } = string.Empty;
 
     /// <summary>
-    /// Gets or sets a value indicating whether the location is active.
+    /// Gets or sets a value indicating whether the membership type is active.
     /// </summary>
     public bool Active { get; set; }
 }
 #endregion
 
-#region Location Response
-public sealed record LocationResponse(
+#region Membership Type Response
+public sealed record MembershipTypeResponse(
     Guid Id,
     Guid? TenantId,
     string Name,
@@ -42,8 +42,8 @@ public sealed record LocationResponse(
     DateTime UpdatedOnUtc);
 #endregion
 
-#region Location Summary
-public sealed record LocationSummary(
+#region Membership Type Summary
+public sealed record MembershipTypeSummary(
     Guid Id,
     Guid? TenantId,
     string Name,

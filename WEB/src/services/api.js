@@ -515,6 +515,21 @@ export const dashboardApi = {
   saveLayout: (payload) => api.put("/api/dashboard/layout", payload).then(unwrap)
 };
 
+// export const locationApi = {
+//   list: (params) => api.get("/api/admin/locations", { params }).then(envelope),
+
+//   get: (id) => api.get(`/api/admin/locations/${id}`).then(unwrap),
+
+//   create: (payload) => api.post("/api/admin/locations", payload).then(unwrap),
+
+//   update: (id, payload) => api.put(`/api/admin/locations/${id}`, payload).then(unwrap),
+
+//   remove: (id) => api.delete(`/api/admin/locations/${id}`).then(envelope)
+// };
+
+/**
+ * API service for managing location operations.
+ */
 export const locationApi = {
   list: (params) => api.get("/api/admin/locations", { params }).then(envelope),
 
@@ -524,7 +539,7 @@ export const locationApi = {
 
   update: (id, payload) => api.put(`/api/admin/locations/${id}`, payload).then(unwrap),
 
-  remove: (id) => api.delete(`/api/admin/locations/${id}`).then(envelope)
+  delete: (id) => api.delete(`/api/admin/locations/${id}`).then(envelope)
 };
 
 /**
@@ -561,4 +576,19 @@ export const classRoomApi = {
   create: (payload) => api.post("/api/admin/class-rooms", payload).then(unwrap),
   update: (id, payload) => api.put(`/api/admin/class-rooms/${id}`, payload).then(unwrap),
   delete: (id) => api.delete(`/api/admin/class-rooms/${id}`).then(unwrap)
+};
+
+/**
+ * API service for managing membership type operations.
+ */
+export const membershipTypeApi = {
+  list: (params) => api.get("/api/admin/membership-types", { params }).then(envelope),
+
+  get: (id) => api.get(`/api/admin/membership-types/${id}`).then(unwrap),
+
+  create: (payload) => api.post("/api/admin/membership-types", payload).then(unwrap),
+
+  update: (id, payload) => api.put(`/api/admin/membership-types/${id}`, payload).then(unwrap),
+
+  delete: (id) => api.delete(`/api/admin/membership-types/${id}`).then(envelope)
 };

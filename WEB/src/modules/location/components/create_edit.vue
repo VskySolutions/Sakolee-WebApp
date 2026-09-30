@@ -1,7 +1,7 @@
 <template>
   <app-form-dialog
     v-model="isOpen"
-    :title="isEditing ? 'Edit Session' : 'Create Session'"
+    :title="isEditing ? 'Edit Location' : 'Create Location'"
     :saving="saving"
     :save-label="isEditing ? 'Save' : 'Create'"
     size="sm"
@@ -9,23 +9,25 @@
     @cancel="resetForm"
   >
     <q-form ref="formRef" greedy>
+      <!-- Location Name Field -->
       <app-text-field
-        v-model="form.sessionName"
-        label="Session Name"
+        v-model="form.name"
+        label="Location Name"
         required
         class="q-mb-md"
-        :error="formErrors.sessionName.hasError"
-        :error-message="formErrors.sessionName.message"
-        @update:model-value="formErrors.sessionName.hasError = false"
+        :error="formErrors.name.hasError"
+        :error-message="formErrors.name.message"
+        @update:model-value="formErrors.name.hasError = false"
         :rules="[
-          (v) => !!v?.trim() || 'Session name is required',
+          (v) => !!v?.trim() || 'Location name is required',
           (v) =>
             !v ||
             v.trim().length <= 100 ||
-            'Session name cannot exceed 100 characters'
+            'Location name cannot exceed 100 characters'
         ]"
       />
 
+      <!-- Status Toggle -->
       <q-toggle
         v-model="form.active"
         label="Active"
@@ -36,12 +38,13 @@
 
 <script setup>
 import { ref, reactive, watch, computed } from "vue";
-import { classSessionApi, getApiErrorMessage, getApiErrorCode, ApiErrorCodes } from "services/api";
+import { locationApi, getApiErrorMessage, getApiErrorCode, ApiErrorCodes } from "services/api";
 import { useNotify } from "composables/useNotify";
 
 import AppFormDialog from "components/common/AppFormDialog.vue";
 import AppTextField from "components/common/AppTextField.vue";
 
+// Props and Emits
 const props = defineProps({
   modelValue: { type: Boolean, default: false },
   editingId: { type: [Object, String, Number], default: null },
@@ -53,55 +56,60 @@ const emit = defineEmits(["update:modelValue", "saved"]);
 const notify = useNotify();
 const saving = ref(false);
 const formRef = ref(null);
+
 const isOpen = ref(props.modelValue);
 
+// Check if we are in editing mode
 const isEditing = computed(() => !!props.editingId);
 
+// Reactive form data
 const form = reactive({
-  sessionName: "",
+  name: "",
   active: true
 });
 
+// Reactive form error states
 const formErrors = reactive({
-  sessionName: {
-    hasError: false,
-    message: ""
-  }
+  name: { hasError: false, message: "" }
 });
 
+// Watcher to handle prop changes and populate form when editing
 watch(() => props.modelValue, (val) => {
   isOpen.value = val;
   if (val) {
     if (props.editingId && props.initialData) {
-      form.sessionName = props.initialData.sessionName || props.initialData.SessionName || props.initialData.name || props.initialData.Name || "";
-      form.active = props.initialData.active ?? props.initialData.Active ?? props.initialData.isActive ?? props.initialData.is_active ?? true;
+      const row = props.initialData;
+      form.name = row.name || row.Name || row.locationName || row.LocationName || "";
+      form.active = row.active ?? row.Active ?? row.is_active ?? true;
     } else {
       resetFormValues();
     }
   }
 });
 
+// Watcher to emit dialog visibility changes back to parent
 watch(isOpen, (val) => {
   emit("update:modelValue", val);
 });
 
-//Resets the form values
+// Function to reset form fields and errors
 const resetFormValues = () => {
-  form.sessionName = "";
+  form.name = "";
   form.active = true;
-  formErrors.sessionName.hasError = false;
-  formErrors.sessionName.message = "";
+  formErrors.name.hasError = false;
+  formErrors.name.message = "";
 };
 
+// Function to cancel and close the dialog
 const resetForm = () => {
   resetFormValues();
   isOpen.value = false;
 };
 
-//Submit form
+// Function to handle form submission (Create / Update)
 const submitForm = async ({ clearDraft } = {}) => {
-  formErrors.sessionName.hasError = false;
-  formErrors.sessionName.message = "";
+  formErrors.name.hasError = false;
+  formErrors.name.message = "";
 
   if (!(await formRef.value?.validate())) {
     return;
@@ -111,18 +119,16 @@ const submitForm = async ({ clearDraft } = {}) => {
 
   try {
     const payload = {
-      name: form.sessionName.trim(),
-      sessionName: form.sessionName.trim(),
-      active: Boolean(form.active),
-      isActive: Boolean(form.active)
+      name: form.name.trim(),
+      active: form.active
     };
 
     if (props.editingId) {
-      await classSessionApi.update(props.editingId, payload);
-      notify.success("Session updated successfully.");
+      await locationApi.update(props.editingId, payload);
+      notify.success("Location updated successfully.");
     } else {
-      await classSessionApi.create(payload);
-      notify.success("Session created successfully.");
+      await locationApi.create(payload);
+      notify.success("Location created successfully.");
     }
 
     clearDraft?.();
@@ -130,9 +136,12 @@ const submitForm = async ({ clearDraft } = {}) => {
     resetFormValues();
     emit("saved");
   } catch (err) {
-    if (getApiErrorCode(err) === ApiErrorCodes.DuplicateIdentifier || getApiErrorMessage(err)?.toLowerCase().includes('already exists')) {
-      formErrors.sessionName.hasError = true;
-      formErrors.sessionName.message = "A session with this name already exists.";
+    const errCode = getApiErrorCode(err);
+    const errMsg = getApiErrorMessage(err)?.toLowerCase() || '';
+
+    if (errCode === ApiErrorCodes.DuplicateIdentifier || errMsg.includes('already exists')) {
+      formErrors.name.hasError = true;
+      formErrors.name.message = "A location with this name already exists.";
     } else {
       notify.error(getApiErrorMessage(err));
     }

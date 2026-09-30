@@ -76,7 +76,9 @@
       <!-- Interactive Status Toggle Column Slot -->
       <template #body-cell-active="cell">
         <q-td :props="cell">
-          <div class="row items-center q-gutter-x-sm">
+          <!-- <div class="row items-center q-gutter-x-sm"></div> -->
+            <div class="flex flex-center">
+             
             <q-toggle
               :model-value="cell.row.active ?? cell.row.Active ?? cell.row.isActive ?? cell.row.IsActive ?? true"
               @update:model-value="(val) => updateStatus(cell.row, val)"
@@ -84,9 +86,9 @@
               color="positive"
               :disable="cell.row.deleted || cell.row.Deleted || cell.row.isDeleted || cell.row.IsDeleted"
             />
-            <span :class="(cell.row.active ?? cell.row.Active ?? cell.row.isActive ?? cell.row.IsActive ?? true) ? 'text-positive' : 'text-grey'">
+            <!-- <span :class="(cell.row.active ?? cell.row.Active ?? cell.row.isActive ?? cell.row.IsActive ?? true) ? 'text-positive' : 'text-grey'">
               {{ (cell.row.active ?? cell.row.Active ?? cell.row.isActive ?? cell.row.IsActive ?? true) ? "Active" : "Inactive" }}
-            </span>
+            </span> -->
           </div>
         </q-td>
       </template>
@@ -225,10 +227,18 @@ const resolveLocationName = (row) => {
   return "—";
 };
 
+// const formatDate = (value) => {
+//   if (!value) return "—";
+//   const date = new Date(value);
+//   return isNaN(date.getTime()) ? String(value) : date.toLocaleString();
+// };
+
 const formatDate = (value) => {
   if (!value) return "—";
   const date = new Date(value);
-  return isNaN(date.getTime()) ? String(value) : date.toLocaleString();
+  // Check if date is invalid or the default .NET MinValue (0001-01-01)
+  if (isNaN(date.getTime()) || date.getFullYear() <= 1) return "—";
+  return date.toLocaleString();
 };
 
 const columns = [
@@ -291,7 +301,7 @@ const columns = [
     name: "active", 
     label: "Status", 
     field: (r) => r.active ?? r.Active ?? r.isActive ?? r.IsActive ?? true, 
-    align: "left", 
+    align: "center", 
     filterable: false, 
     sortable: true, 
     default: true 

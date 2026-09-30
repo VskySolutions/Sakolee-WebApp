@@ -1,7 +1,7 @@
 <template>
   <app-form-dialog
     v-model="isOpen"
-    title="View Session"
+    title="View Membership Type"
     size="sm"
     hide-save
     @cancel="close"
@@ -13,19 +13,19 @@
 
     <!-- Content Section -->
     <div v-else class="row q-col-gutter-lg">
-      <!-- Session Name -->
+      <!-- Membership Type Name -->
       <div class="col-12 col-sm-6">
-        <div class="text-86 fs-12 fw-500">Session Name</div>
+        <div class="text-86 fs-12 fw-500">Membership Type Name</div>
         <div class="text-2e fs-14">
-          {{ viewSession.sessionName || "—" }}
+          {{ viewMembershipType.name || "—" }}
         </div>
       </div>
 
       <!-- Status -->
       <div class="col-12 col-sm-6">
         <div class="text-86 fs-12 fw-500">Status</div>
-        <q-badge :class="viewSession.isActive ? 'active-badge' : 'inactive-badge'">
-          {{ viewSession.isActive ? "Active" : "Inactive" }}
+        <q-badge :class="viewMembershipType.active ? 'active-badge' : 'inactive-badge'">
+          {{ viewMembershipType.active ? "Active" : "Inactive" }}
         </q-badge>
       </div>
 
@@ -33,7 +33,7 @@
       <div class="col-12 col-sm-6">
         <div class="text-86 fs-12 fw-500">Created By</div>
         <div class="text-2e fs-14">
-          {{ viewSession.createdBy || "—" }}
+          {{ viewMembershipType.createdBy || "—" }}
         </div>
       </div>
 
@@ -41,7 +41,7 @@
       <div class="col-12 col-sm-6">
         <div class="text-86 fs-12 fw-500">Created On</div>
         <div class="text-2e fs-14">
-          {{ formatDate(viewSession.createdOnUtc) }}
+          {{ formatDate(viewMembershipType.createdOnUtc) }}
         </div>
       </div>
 
@@ -49,7 +49,7 @@
       <div class="col-12 col-sm-6">
         <div class="text-86 fs-12 fw-500">Updated By</div>
         <div class="text-2e fs-14">
-          {{ viewSession.updatedBy || "—" }}
+          {{ viewMembershipType.updatedBy || "—" }}
         </div>
       </div>
 
@@ -57,7 +57,7 @@
       <div class="col-12 col-sm-6">
         <div class="text-86 fs-12 fw-500">Updated On</div>
         <div class="text-2e fs-14">
-          {{ formatDate(viewSession.updatedOnUtc) }}
+          {{ formatDate(viewMembershipType.updatedOnUtc) }}
         </div>
       </div>
     </div>
@@ -66,11 +66,11 @@
 
 <script setup>
 import { ref, reactive, watch } from "vue";
-import { classSessionApi, getApiErrorMessage } from "services/api";
+import { membershipTypeApi, getApiErrorMessage } from "services/api";
 import { useNotify } from "composables/useNotify";
 import AppFormDialog from "components/common/AppFormDialog.vue";
 
-// Props and emits
+// Props and Emits
 const props = defineProps({
   modelValue: { type: Boolean, default: false },
   recordId: { type: [Object, String, Number], default: null }
@@ -82,11 +82,11 @@ const notify = useNotify();
 const isOpen = ref(props.modelValue);
 const viewLoading = ref(false);
 
-// Reactive object to hold the session data for viewing
-const viewSession = reactive({
+// Reactive object to hold the membership type data for viewing
+const viewMembershipType = reactive({
   id: null,
-  sessionName: "",
-  isActive: true,
+  name: "",
+  active: true,
   createdBy: "",
   createdOnUtc: null,
   updatedBy: "",
@@ -102,13 +102,13 @@ const formatDate = (value) => {
 
 // Function to reset the view state
 const resetView = () => {
-  viewSession.id = null;
-  viewSession.sessionName = "";
-  viewSession.isActive = true;
-  viewSession.createdBy = "";
-  viewSession.createdOnUtc = null;
-  viewSession.updatedBy = "";
-  viewSession.updatedOnUtc = null;
+  viewMembershipType.id = null;
+  viewMembershipType.name = "";
+  viewMembershipType.active = true;
+  viewMembershipType.createdBy = "";
+  viewMembershipType.createdOnUtc = null;
+  viewMembershipType.updatedBy = "";
+  viewMembershipType.updatedOnUtc = null;
 };
 
 // Watchers to handle prop changes and open/close state
@@ -130,17 +130,17 @@ const fetchRecord = async (id) => {
   resetView();
   viewLoading.value = true;
   try {
-    const response = await classSessionApi.get(id);
+    const response = await membershipTypeApi.get(id);
     const item = response?.data?.data || response?.data || response;
 
     if (item) {
-      viewSession.id = id;
-      viewSession.sessionName = item.sessionName || item.SessionName || item.name || item.Name || "";
-      viewSession.isActive = item.isActive ?? item.IsActive ?? item.active ?? item.Active ?? true;
-      viewSession.createdBy = item.createdBy || item.CreatedBy || item.created_by || "";
-      viewSession.createdOnUtc = item.createdOnUtc || item.CreatedOnUtc || item.created_on_utc || item.createdOn || item.CreatedOn || item.created_on || null;
-      viewSession.updatedBy = item.updatedBy || item.UpdatedBy || item.updated_by || "";
-      viewSession.updatedOnUtc = item.updatedOnUtc || item.UpdatedOnUtc || item.updated_on_utc || item.updatedOn || item.UpdatedOn || item.updated_on || null;
+      viewMembershipType.id = id;
+      viewMembershipType.name = item.name || item.Name || item.membershipTypeName || item.MembershipTypeName || "";
+      viewMembershipType.active = item.active ?? item.Active ?? item.is_active ?? true;
+      viewMembershipType.createdBy = item.createdBy || item.CreatedBy || item.created_by || "";
+      viewMembershipType.createdOnUtc = item.createdOnUtc || item.CreatedOnUtc || item.created_on_utc || item.createdOn || item.CreatedOn || item.created_on || null;
+      viewMembershipType.updatedBy = item.updatedBy || item.UpdatedBy || item.updated_by || "";
+      viewMembershipType.updatedOnUtc = item.updatedOnUtc || item.UpdatedOnUtc || item.updated_on_utc || item.updatedOn || item.UpdatedOn || item.updated_on || null;
     }
   } catch (err) {
     isOpen.value = false;

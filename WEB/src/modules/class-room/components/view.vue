@@ -78,11 +78,13 @@ import { classRoomApi, getApiErrorMessage } from "services/api";
 import { useNotify } from "composables/useNotify";
 import AppFormDialog from "components/common/AppFormDialog.vue";
 
+//Props and emit
 const props = defineProps({
   modelValue: { type: Boolean, default: false },
   viewId: { type: [Object, String, Number], default: null },
   locationMap: { type: Object, default: () => ({}) }
 });
+
 
 const emit = defineEmits(["update:modelValue"]);
 
@@ -102,12 +104,14 @@ const viewClassRoom = reactive({
   updatedOnUtc: null
 });
 
+//Formats the Date
 const formatDate = (value) => {
   if (!value) return "—";
   const date = new Date(value);
   return isNaN(date.getTime()) ? String(value) : date.toLocaleString();
 };
 
+//Resets the view
 const resetView = () => {
   viewClassRoom.id = null;
   viewClassRoom.locationId = null;
@@ -119,6 +123,7 @@ const resetView = () => {
   viewClassRoom.updatedBy = "";
   viewClassRoom.updatedOnUtc = null;
 };
+
 
 watch(() => props.modelValue, async (val) => {
   isOpen.value = val;
@@ -158,6 +163,7 @@ const fetchDetails = async (id) => {
     viewLoading.value = false;
   }
 };
+
 
 const resolveLocationName = (row) => {
   if (!row) return "—";

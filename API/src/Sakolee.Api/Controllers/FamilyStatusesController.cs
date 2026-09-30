@@ -74,13 +74,13 @@ public sealed class FamilyStatusesController : ControllerBase
 
         // Check if a family status with the exact same name already exists in the system
         var trimmedName = request.Name.Trim();
-            if (await _familyStatuses.ExistsAsync(trimmedName, null, cancellationToken))
+        if (await _familyStatuses.ExistsAsync(trimmedName, null, cancellationToken))
         {
             return BadRequest(ApiResponseFactory.Error(
                 ApiErrorCodes.ValidationFailed, "Validation failed.", "A family status with this name already exists."));
         }
 
-      
+
 
         // Retrieve and validate the active tenant identifier from the current user context
         var tenantId = User.GetActiveTenantId() ?? Guid.Empty;
@@ -124,7 +124,7 @@ public sealed class FamilyStatusesController : ControllerBase
     familyStatus.Tenant?.Name
 );
 
-        return StatusCode(StatusCodes.Status201Created,  ApiResponseFactory.Success(detail, "Family status created."));
+        return StatusCode(StatusCodes.Status201Created, ApiResponseFactory.Success(detail, "Family status created."));
     }
 
     #endregion
@@ -137,7 +137,7 @@ public sealed class FamilyStatusesController : ControllerBase
     /// </summary>
     [HttpGet]
     [RequireAnyPermission(Permissions.FamilyStatusesRead, Permissions.FamiliesRead)]
-    public async Task<IActionResult> List(  [FromQuery] int page = 1,   [FromQuery] int limit = 20, [FromQuery] string? search = null,  [FromQuery] Guid? tenantId = null, [FromQuery] bool? active = null, [FromQuery] bool? showDeleted = null, [FromQuery] string? sortBy = null,  [FromQuery] bool descending = true, CancellationToken cancellationToken = default)
+    public async Task<IActionResult> List([FromQuery] int page = 1, [FromQuery] int limit = 20, [FromQuery] string? search = null, [FromQuery] Guid? tenantId = null, [FromQuery] bool? active = null, [FromQuery] bool? showDeleted = null, [FromQuery] string? sortBy = null, [FromQuery] bool descending = true, CancellationToken cancellationToken = default)
     {
         // Ensure valid pagination boundary values
         page = Math.Max(1, page);
@@ -147,7 +147,7 @@ public sealed class FamilyStatusesController : ControllerBase
         Guid? scopeTenant = User.IsSuperAdmin() && tenantId is { } tid ? tid : null;
 
         // Fetch filtered, sorted, and paginated records from the repository
-        var (items, total) = await _familyStatuses.ListAsync(   search, scopeTenant, active, showDeleted,new SortRequest(sortBy, descending), page, limit,    cancellationToken: cancellationToken);
+        var (items, total) = await _familyStatuses.ListAsync(search, scopeTenant, active, showDeleted, new SortRequest(sortBy, descending), page, limit, cancellationToken: cancellationToken);
 
         var userIds = items.SelectMany(f => new[] { f.CreatedBy, f.UpdatedBy }).Where(id => !string.IsNullOrEmpty(id) && Guid.TryParse(id, out _)).Select(id => Guid.Parse(id!)).Distinct().ToList();
 
@@ -165,8 +165,8 @@ public sealed class FamilyStatusesController : ControllerBase
         var summaries = items.Select(f => new FamilyStatusSummary(
     f.FamilyStatusId,
     f.Name,
-    f.Active,                  
-    !f.IsDeleted,              
+    f.Active,
+    !f.IsDeleted,
     !string.IsNullOrEmpty(f.CreatedBy) && Guid.TryParse(f.CreatedBy, out var cId) && userNamesDict.TryGetValue(cId, out var cName) ? cName : f.CreatedBy,
     !string.IsNullOrEmpty(f.UpdatedBy) && Guid.TryParse(f.UpdatedBy, out var uId) && userNamesDict.TryGetValue(uId, out var uName) ? uName : f.UpdatedBy,
     f.CreatedOn,
@@ -250,7 +250,7 @@ public sealed class FamilyStatusesController : ControllerBase
 
         if (request.Active.HasValue)
         {
-            
+
             familyStatus.Active = request.Active.Value;
         }
 
@@ -370,46 +370,7 @@ public sealed class FamilyStatusesController : ControllerBase
     /// <summary>
     /// Loads a family status entity based on super admin privileges or standard tenant context filters.
     /// </summary>
-    private Task<FamilyStatus?> LoadAsync(Guid id, CancellationToken cancellationToken) => User.IsSuperAdmin()  ? _familyStatuses.GetByIdUnscopedAsync(id, cancellationToken)   : _familyStatuses.GetByIdAsync(id, cancellationToken);
-
-    #endregion
-
-    #region Audit Name Helpers
-
-    /// <summary>
-    /// Resolves the user IDs stored in the audit fields into display names.
-    /// Falls back to the stored value when it is not a known user ID.
-    /// </summary>
-    private async Task<Func<string?, string?>> AuditNamesAsync(IEnumerable<FamilyStatus> rows, CancellationToken cancellationToken)
-    {
-        var ids = rows
-            .SelectMany(f => new[] { f.CreatedBy, f.UpdatedBy })
-            .Select(id => Guid.TryParse(id, out var userId) ? userId : (Guid?)null)
-            .Where(id => id.HasValue)
-            .Select(id => id!.Value)
-            .Distinct();
-
-        var names = await _users.GetFullNamesAsync(ids, cancellationToken);
-
-        return value => Guid.TryParse(value, out var userId) && names.TryGetValue(userId, out var name) ? name : value;
-    }
-
-    /// <summary>
-    /// Maps a family status entity to its detail response with audit names resolved.
-    /// </summary>
-    private async Task<FamilyStatusDetail> ToDetailAsync(FamilyStatus familyStatus, CancellationToken cancellationToken)
-    {
-        var nameOf = await AuditNamesAsync(new[] { familyStatus }, cancellationToken);
-
-        return new FamilyStatusDetail(
-            familyStatus.FamilyStatusId,
-            familyStatus.Name,
-            !familyStatus.IsDeleted,
-            nameOf(familyStatus.CreatedBy),
-            nameOf(familyStatus.UpdatedBy),
-            familyStatus.CreatedOn,
-            familyStatus.UpdatedOn);
-    }
+    private Task<FamilyStatus?> LoadAsync(Guid id, CancellationToken cancellationToken) => User.IsSuperAdmin() ? _familyStatuses.GetByIdUnscopedAsync(id, cancellationToken) : _familyStatuses.GetByIdAsync(id, cancellationToken);
 
     #endregion
 

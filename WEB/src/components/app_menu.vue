@@ -838,7 +838,13 @@ const settingsSection = {
           icon: "o_supervised_user_circle",
           to: "/family-relations",
           permissions: [Permissions.FamilyRelationsRead]
-        }
+        },
+        {
+  label: "Membership Types",
+  icon: "o_card_membership",
+  to: "/membership-types",
+  permissions: [Permissions.MembershipTypesRead]
+}
       ]
     },
     {

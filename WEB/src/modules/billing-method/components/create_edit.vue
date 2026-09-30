@@ -1,13 +1,15 @@
 <template>
-  <app-form-drawer
+  <app-form-dialog
     v-model="isOpen"
-    :title="editingId ? 'Edit Billing Method' : 'Create Billing Method'"
+    :title="isEditing ? 'Edit Billing Method' : 'Create Billing Method'"
     :saving="saving"
-    :save-label="editingId ? 'Save' : 'Create'"
+    :save-label="isEditing ? 'Save' : 'Create'"
+    size="sm"
     @submit="submitForm"
     @cancel="resetForm"
   >
     <q-form ref="formRef" greedy>
+      <!-- Billing Method Name Field -->
       <app-text-field
         v-model="form.name"
         label="Billing Method Name"
@@ -18,81 +20,93 @@
         @update:model-value="formErrors.name.hasError = false"
         :rules="[
           (v) => !!v?.trim() || 'Billing method name is required',
-          (v) => !v || v.trim().length <= 100 || 'Billing method name cannot exceed 100 characters'
+          (v) =>
+            !v ||
+            v.trim().length <= 100 ||
+            'Billing method name cannot exceed 100 characters'
         ]"
       />
 
-      <q-toggle v-model="form.active" label="Active" />
+      <!-- Status Toggle -->
+      <q-toggle
+        v-model="form.active"
+        label="Active"
+      />
     </q-form>
-  </app-form-drawer>
+  </app-form-dialog>
 </template>
 
 <script setup>
-// Import necessary modules and components
-import { ref, reactive, computed, watch } from "vue";
+import { ref, reactive, watch, computed } from "vue";
 import { billingMethodApi, getApiErrorMessage, getApiErrorCode, ApiErrorCodes } from "services/api";
 import { useNotify } from "composables/useNotify";
-import AppFormDrawer from "components/common/AppFormDrawer.vue";
+
+import AppFormDialog from "components/common/AppFormDialog.vue";
 import AppTextField from "components/common/AppTextField.vue";
 
 // Props and Emits
 const props = defineProps({
   modelValue: { type: Boolean, default: false },
-  editingId: { type: [String, Number], default: null },
+  editingId: { type: [Object, String, Number], default: null },
   initialData: { type: Object, default: null }
 });
 
-// Emit events to parent component
 const emit = defineEmits(["update:modelValue", "saved"]);
 
 const notify = useNotify();
 const saving = ref(false);
 const formRef = ref(null);
 
-// Computed property to determine if the form is in editing mode
-const isOpen = computed({
-  get: () => props.modelValue,
-  set: (val) => emit("update:modelValue", val)
-});
+const isOpen = ref(props.modelValue);
 
-// Reactive object to hold the form data
+// Check if we are in editing mode
+const isEditing = computed(() => !!props.editingId);
+
+// Reactive form data
 const form = reactive({
   name: "",
   active: true
 });
 
-// Reactive object to hold form validation errors
+// Reactive form error states
 const formErrors = reactive({
-  name: {
-    hasError: false,
-    message: ""
+  name: { hasError: false, message: "" }
+});
+
+// Watcher to handle prop changes and populate form when editing
+watch(() => props.modelValue, (val) => {
+  isOpen.value = val;
+  if (val) {
+    if (props.editingId && props.initialData) {
+      const row = props.initialData;
+      form.name = row.name || row.Name || row.billingMethodName || row.BillingMethodName || "";
+      form.active = row.active ?? row.Active ?? row.is_active ?? true;
+    } else {
+      resetFormValues();
+    }
   }
 });
 
-// Function to reset the form fields and validation errors
-const resetForm = () => {
+// Watcher to emit dialog visibility changes back to parent
+watch(isOpen, (val) => {
+  emit("update:modelValue", val);
+});
+
+// Function to reset form fields and errors
+const resetFormValues = () => {
   form.name = "";
   form.active = true;
   formErrors.name.hasError = false;
   formErrors.name.message = "";
 };
 
-// Watchers to handle prop changes and reset form when necessary
-watch(
-  () => props.modelValue,
-  (val) => {
-    if (val) {
-      if (props.editingId && props.initialData) {
-        form.name = props.initialData.name || props.initialData.Name || props.initialData.billingMethodName || props.initialData.BillingMethodName || "";
-        form.active = props.initialData.active ?? props.initialData.Active ?? props.initialData.is_active ?? true;
-      } else {
-        resetForm();
-      }
-    }
-  }
-);
+// Function to cancel and close the dialog
+const resetForm = () => {
+  resetFormValues();
+  isOpen.value = false;
+};
 
-// Function to handle form submission, including validation and API calls for creating or updating billing methods
+// Function to handle form submission (Create / Update)
 const submitForm = async ({ clearDraft } = {}) => {
   formErrors.name.hasError = false;
   formErrors.name.message = "";
@@ -103,15 +117,12 @@ const submitForm = async ({ clearDraft } = {}) => {
 
   saving.value = true;
 
-  
   try {
-    // Prepare the payload for the API request, trimming whitespace from the name field
     const payload = {
       name: form.name.trim(),
       active: form.active
     };
 
-    // Determine whether to create a new billing method or update an existing one based on the presence of editingId
     if (props.editingId) {
       await billingMethodApi.update(props.editingId, payload);
       notify.success("Billing method updated successfully.");
@@ -120,14 +131,15 @@ const submitForm = async ({ clearDraft } = {}) => {
       notify.success("Billing method created successfully.");
     }
 
-    // Drop the draft if the clearDraft function is provided, emit a saved event, and reset the form
     clearDraft?.();
-    emit("saved");
     isOpen.value = false;
-    resetForm();
+    resetFormValues();
+    emit("saved");
   } catch (err) {
-    // Handle specific API error codes, such as duplicate identifiers, and display appropriate error messages
-    if (getApiErrorCode(err) === ApiErrorCodes.DuplicateIdentifier) {
+    const errCode = getApiErrorCode(err);
+    const errMsg = getApiErrorMessage(err)?.toLowerCase() || '';
+
+    if (errCode === ApiErrorCodes.DuplicateIdentifier || errMsg.includes('already exists')) {
       formErrors.name.hasError = true;
       formErrors.name.message = "A billing method with this name already exists.";
     } else {

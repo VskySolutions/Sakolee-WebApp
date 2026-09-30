@@ -42,6 +42,7 @@ import billingCycleRoutes from "modules/billing-cycle/routes";
 import tShirtSizeRoutes from "modules/t-shirt-size/routes";
 import classRoomRoutes from "modules/class-room/routes";
 import billingMethodRoutes from "modules/billing-method/routes";
+import membershipTypeRoutes from "modules/membership-type/routes";
 
 routes.push(...accountRoutes);
 routes.push(...authRoutes);
@@ -68,6 +69,7 @@ routes.push(...familyrelationRoutes);routes.push(...billingCycleRoutes);
 routes.push(...tShirtSizeRoutes);
 routes.push(...classRoomRoutes);
 routes.push(...billingMethodRoutes);
+routes.push(...membershipTypeRoutes);
 
 // Route meta `permissions` requires any one of the listed permission keys; the deepest matched
 // record's list wins.

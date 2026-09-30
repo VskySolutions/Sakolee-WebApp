@@ -1,18 +1,16 @@
 <template>
   <q-page padding>
+    <!-- Page Header Component -->
     <app-list-header
-      :breadcrumbs="[
-        { label: 'Home', to: '/' },
-        { label: 'Studio Locations' }
-      ]"
-      title="Studio Locations"
-      description="Manage your all studio locations here."
+      :breadcrumbs="[{ label: 'Home', to: '/' }, { label: 'Locations' }]"
+      title="Locations"
+      description="Manage your all locations here."
       :search="search"
       show-search
       search-placeholder="Search locations"
       show-filters
       :filter-count="filterChips.length"
-      :show-add="canWrite"
+      show-add
       add-label="Create Location"
       show-back
       @update:search="search = $event"
@@ -21,29 +19,16 @@
       @back="$router.back()"
     />
 
-    <app-filter-drawer
-      v-model="filterOpen"
-      :chips="filterChips"
-      @remove="removeFilter"
-      @clear="clearFilters"
-    >
-      <app-column-filters
-        v-model="filters"
-        :columns="filterableColumns"
-      />
-
-      <q-toggle
-        v-if="canManageDeleted"
-        v-model="showDeleted"
-        label="Show deleted?"
-        dense
-        class="q-mt-md"
-      />
+    <!-- Filter Drawer Component -->
+    <app-filter-drawer v-model="filterOpen" :chips="filterChips" @remove="removeFilter" @clear="clearFilters">
+      <app-column-filters v-model="filters" :columns="filterableColumns" />
+      <q-toggle v-if="canManageDeleted" v-model="showDeleted" label="Show deleted?" dense class="q-mt-md" />
     </app-filter-drawer>
 
+    <!-- Core Data Table Grid Component -->
     <app-data-table
       page-key="locations"
-      row-key="id"
+      :row-key="(row) => row.locationId || row.LocationId || row.id || row.Id"
       title="Locations"
       :rows="filteredRows"
       :columns="columns"
@@ -53,204 +38,147 @@
       @request="onRequest"
       @refresh="load"
     >
-      <!-- Status -->
-      <template #body-cell-active="cell">
-        <q-td :props="cell">
-          <q-badge :color="cell.value ? 'positive' : 'grey'">
-            {{ cell.value ? "Active" : "Inactive" }}
+      <!-- Name Cell with Deleted Indicator -->
+      <template #body-cell-name="cell">
+        <q-td :props="cell" :class="{ 'text-strike text-grey': cell.row.deleted || cell.row.Deleted }">
+          {{ cell.row.name || cell.row.Name || cell.row.locationName || cell.row.LocationName }}
+          <q-badge v-if="cell.row.deleted || cell.row.Deleted" color="negative" class="q-ml-sm" dense>
+            Deleted
           </q-badge>
         </q-td>
       </template>
 
-      <!-- Actions -->
+      <!-- Interactive Status Toggle Column -->
+      <template #body-cell-active="cell">
+        <q-td :props="cell">
+          <div class="flex flex-center">
+            <q-toggle
+              :model-value="cell.row.active ?? cell.row.Active ?? cell.row.is_active ?? true"
+              @update:model-value="(val) => updateStatus(cell.row, val)"
+              dense
+              color="positive"
+              :disable="cell.row.deleted || cell.row.Deleted"
+            />
+          </div>
+        </q-td>
+      </template>
+
+      <!-- Actions Column -->
       <template #body-cell-actions="cell">
         <q-td :props="cell">
-          <q-btn
-            flat
-            round
-            dense
-            color="primary"
-            icon="o_visibility"
-            @click="openView(cell.row)"
-          >
+          <q-btn flat round dense color="primary" icon="o_visibility" @click="openView(cell.row)">
             <q-tooltip>View</q-tooltip>
           </q-btn>
-          <q-btn
-            v-if="canWrite"
-            flat
-            round
-            dense
-            color="primary"
-            icon="o_edit"
-            @click="openEdit(cell.row)"
-          >
+          <q-btn flat round dense color="primary" icon="o_edit" @click="openEdit(cell.row)" :disabled="cell.row.deleted || cell.row.Deleted">
             <q-tooltip>Edit</q-tooltip>
           </q-btn>
-
-          <q-btn
-            v-if="canDelete"
-            flat
-            round
-            dense
-            color="negative"
-            icon="o_delete"
-            @click="removeLocation(cell.row)"
-          >
+          <q-btn flat round dense color="negative" icon="o_delete" @click="removeLocation(cell.row)" v-if="!(cell.row.deleted || cell.row.Deleted)">
             <q-tooltip>Delete</q-tooltip>
           </q-btn>
         </q-td>
       </template>
     </app-data-table>
 
-    <!-- <deleted-records-panel
-      v-if="canManageDeleted"
-      :entity-type="EntityType.Location"
-      :show="showDeleted"
-      @restored="load"
-    /> -->
+    <!-- Create / Edit Form Component -->
+    <location-form
+      v-model="formDrawerOpen"
+      :editing-id="editingId"
+      :initial-data="selectedRow"
+      @saved="handleSaved"
+    />
 
-    <!-- Create / Edit -->
-    <app-form-dialog
-      v-model="formOpen"
-      :title="editingId ? 'Edit Location' : 'Create Location'"
-      :saving="saving"
-      :save-label="editingId ? 'Save' : 'Create'"
-      size="sm"
-      @submit="submitForm"
-      @cancel="resetForm"
-    >
-      <q-form ref="formRef" greedy>
-        <app-text-field
-          v-model="form.name"
-          label="Name"
-          required
-          :rules="[
-            (v) => !!v?.trim() || 'Location name is required',
-            (v) =>
-              !v ||
-              v.trim().length <= 100 ||
-              'Location name cannot exceed 100 characters'
-          ]"
-        />
-
-        <q-toggle
-          v-model="form.active"
-          label="Active"
-        />
-      </q-form>
-    </app-form-dialog>
-    <!-- =========================================================
-         View Location
-         ========================================================= -->
-    <app-form-dialog
-      v-model="viewOpen"
-      title="View Location"
-      size="sm"
-      hide-save
-      @cancel="closeView"
-    >
-      <div class="row q-col-gutter-lg">
-        <div class="col-12 col-sm-6">
-          <div class="text-86 fs-12 fw-500">Name</div>
-          <div class="text-2e fs-14">
-            {{ viewLocation.name || "—" }}
-          </div>
-        </div>
-
-        <div class="col-12 col-sm-6">
-          <div class="text-86 fs-12 fw-500">Status</div>
-          <q-badge :class="viewLocation.active ? 'active-badge' : 'inactive-badge'">
-            {{ viewLocation.active ? "Active" : "Inactive" }}
-          </q-badge>
-        </div>
-        <div class="col-12 col-sm-6">
-          <div class="text-86 fs-12 fw-500">Created By</div>
-          <div class="text-2e fs-14">
-            {{ viewLocation.createdBy || "—" }}
-          </div>
-        </div>
-
-        <div class="col-12 col-sm-6">
-          <div class="text-86 fs-12 fw-500">Created On</div>
-          <div class="text-2e fs-14">
-            {{ formatDate(viewLocation.createdOnUtc) }}
-          </div>
-        </div>
-
-        <div class="col-12 col-sm-6">
-          <div class="text-86 fs-12 fw-500">Updated By</div>
-          <div class="text-2e fs-14">
-            {{ viewLocation.updatedBy || "—" }}
-          </div>
-        </div>
-
-        <div class="col-12 col-sm-6">
-          <div class="text-86 fs-12 fw-500">Updated On</div>
-          <div class="text-2e fs-14">
-            {{ formatDate(viewLocation.updatedOnUtc) }}
-          </div>
-        </div>
-
-      </div>
-    </app-form-dialog>
+    <!-- View Component -->
+    <location-view
+      v-model="viewDrawerOpen"
+      :record-id="viewRecordId"
+    />
   </q-page>
 </template>
 
 <script setup>
-import { ref, reactive, computed, watch } from "vue";
+import { ref, computed, watch, onMounted } from "vue";
 import { debounce } from "quasar";
 
-import {
-  locationApi,
-  getApiErrorMessage,
-  getApiErrorCode,
-  ApiErrorCodes
-} from "services/api";
+import { locationApi, getApiErrorMessage } from "services/api";
 
-import { usePermissions, Permissions } from "composables/usePermissions";
 import { useNotify } from "composables/useNotify";
 import { useConfirm } from "composables/useConfirm";
 import { useListTable } from "composables/useListTable";
 import { useColumnFilters } from "composables/useColumnFilters";
 import { useDeletedRecords } from "composables/useDeletedRecords";
-import { useAuditColumns } from "composables/useAuditColumns";
 
 import AppDataTable from "components/common/AppDataTable.vue";
-// import AppFormDrawer from "components/common/AppFormDrawer.vue";
 import AppListHeader from "components/common/AppListHeader.vue";
 import AppFilterDrawer from "components/common/AppFilterDrawer.vue";
 import AppColumnFilters from "components/common/AppColumnFilters.vue";
-import AppTextField from "components/common/AppTextField.vue";
-import AppFormDialog from "components/common/AppFormDialog.vue";
 
-const auditColumns = useAuditColumns();
+import LocationForm from "src/modules/location/components/create_edit.vue";
+import LocationView from "src/modules/location/components/view.vue";
+
 const { showDeleted, canManageDeleted } = useDeletedRecords();
 const notify = useNotify();
 const { confirm } = useConfirm();
-const { has } = usePermissions();
 
-const canWrite = computed(() => has(Permissions.LocationsWrite));
-const canDelete = computed(() => has(Permissions.LocationsDelete));
+const formatDate = (value) => {
+  if (!value) return "—";
+  const date = new Date(value);
+  if (isNaN(date.getTime()) || date.getFullYear() <= 1) return "—";
+  return date.toLocaleString();
+};
 
-/*
- * ------------------------------------------------------------
- * Table columns
- * ------------------------------------------------------------
- */
+
 const columns = [
   {
     name: "name",
-    label: "Name",
-    field: "name",
+    label: "Location Name",
+    field: (r) => r.name || r.Name || r.locationName || r.LocationName,
     align: "left",
     sortable: true,
     default: true
   },
   {
+    name: "createdBy",
+    label: "Created By",
+    field: (r) => r.createdBy || r.CreatedBy || r.created_by || "—",
+    align: "left",
+    sortable: true,
+    default: true,
+    filterable: false
+  },
+  {
+    name: "createdOnUtc",
+    label: "Created On",
+    field: (r) => r.createdOnUtc || r.CreatedOnUtc || r.created_on_utc || r.createdOn || r.CreatedOn || r.created_on || null,
+    align: "left",
+    sortable: true,
+    default: true,
+    filterable: false,
+    format: (val) => formatDate(val)
+  },
+  {
+    name: "updatedBy",
+    label: "Updated By",
+    field: (r) => r.updatedBy || r.UpdatedBy || r.updated_by || "—",
+    align: "left",
+    sortable: true,
+    default: false,
+    filterable: false
+  },
+  {
+    name: "updatedOnUtc",
+    label: "Updated On",
+    field: (r) => r.updatedOnUtc || r.UpdatedOnUtc || r.updated_on_utc || r.updatedOn || r.UpdatedOn || r.updated_on || null,
+    align: "left",
+    sortable: true,
+    default: false,
+    filterable: false,
+    format: (val) => formatDate(val)
+  },
+  {
     name: "active",
     label: "Status",
-    field: "active",
-    align: "left",
+    field: (r) => r.active ?? r.Active ?? r.is_active ?? true,
+    align: "center",
     sortable: true,
     default: true,
     filterOptions: [
@@ -258,7 +186,6 @@ const columns = [
       { label: "Inactive", value: false }
     ]
   },
-  ...auditColumns(),
   {
     name: "actions",
     label: "Actions",
@@ -267,11 +194,6 @@ const columns = [
   }
 ];
 
-/*
- * ------------------------------------------------------------
- * List
- * ------------------------------------------------------------
- */
 const {
   rows,
   loading,
@@ -281,18 +203,26 @@ const {
   onRequest
 } = useListTable({
   pageKey: "locations",
-
   fetcher: ({ sortBy, descending }) =>
     locationApi.list({
       search: search.value || undefined,
-      sortBy,
-      descending
-    }).then((response) => ({
-      data: response?.data || [],
-      total: (response?.data || []).length
-    })),
-
+      showDeleted: showDeleted.value,
+      sortBy: sortBy || 'createdOnUtc',
+      descending: descending ?? true,
+      includeInactive: true
+    }).then((response) => {
+      const items = response?.data?.items || response?.items || response?.data || [];
+      return {
+        data: items,
+        total: items.length
+      };
+    }),
   onError: (err) => notify.error(getApiErrorMessage(err))
+});
+
+watch(showDeleted, () => {
+  pagination.value.page = 1;
+  load();
 });
 
 const filterOpen = ref(false);
@@ -315,169 +245,98 @@ const reload = debounce(() => {
 
 watch(search, reload);
 
-/*
- * ------------------------------------------------------------
- * View Location
- * ------------------------------------------------------------
- */
-const viewOpen = ref(false);
-const viewLoading = ref(false);
-
-const viewLocation = reactive({
-  id: null,
-  name: "",
-  active: true,
-  createdBy: "",
-  createdOnUtc: null,
-  updatedBy: "",
-  updatedOnUtc: null
+onMounted(() => {
+  pagination.value.sortBy = 'createdOnUtc';
+  pagination.value.descending = true;
+  load();
 });
 
-const resetViewLocation = () => {
-  viewLocation.id = null;
-  viewLocation.name = "";
-  viewLocation.active = true;
-  viewLocation.createdBy = "";
-  viewLocation.createdOnUtc = null;
-  viewLocation.updatedBy = "";
-  viewLocation.updatedOnUtc = null;
-};
-
-const openView = async (row) => {
-  resetViewLocation();
-
-  viewOpen.value = true;
-  viewLoading.value = true;
-
-  try {
-    const location = await locationApi.get(row.id);
-
-    viewLocation.id = location?.id;
-    viewLocation.name = location?.name || "";
-    viewLocation.active = location?.active ?? true;
-    viewLocation.createdBy = location?.createdBy || "";
-    viewLocation.createdOnUtc = location?.createdOnUtc || null;
-    viewLocation.updatedBy = location?.updatedBy || "";
-    viewLocation.updatedOnUtc = location?.updatedOnUtc || null;
-  } catch (err) {
-    viewOpen.value = false;
-    notify.error(getApiErrorMessage(err));
-  } finally {
-    viewLoading.value = false;
-  }
-};
-
-const closeView = () => {
-  viewOpen.value = false;
-  resetViewLocation();
-};
-
-/*
- * Keep this aligned with the application's existing date display
- * if you already have a global date formatter/composable.
- */
-const formatDate = (value) => {
-  if (!value) {
-    return "—";
-  }
-
-  return new Date(value).toLocaleString();
-};
-
-/*
- * ------------------------------------------------------------
- * Create / Edit
- * ------------------------------------------------------------
- */
-const formOpen = ref(false);
-const saving = ref(false);
+const formDrawerOpen = ref(false);
 const editingId = ref(null);
-const formRef = ref(null);
-
-const form = reactive({
-  name: "",
-  active: true
-});
-
-const resetForm = () => {
-  editingId.value = null;
-  form.name = "";
-  form.active = true;
-};
+const selectedRow = ref(null);
 
 const openCreate = () => {
-  resetForm();
-  formOpen.value = true;
+  editingId.value = null;
+  selectedRow.value = null;
+  formDrawerOpen.value = true;
 };
 
 const openEdit = (row) => {
-  editingId.value = row.id;
-  form.name = row.name || "";
-  form.active = row.active ?? true;
-
-  formOpen.value = true;
-};
-
-const submitForm = async ({ clearDraft } = {}) => {
-  if (!(await formRef.value?.validate())) {
+  const id = row.locationId || row.LocationId || row.id || row.Id;
+  if (!id) {
+    notify.error("Invalid record identifier for editing.");
     return;
   }
+  editingId.value = id;
+  selectedRow.value = row;
+  formDrawerOpen.value = true;
+};
 
-  saving.value = true;
+// Function to update status directly from table toggle and sync with DB
+const updateStatus = async (row, newStatus) => {
+  const id = row.locationId || row.LocationId || row.id || row.Id;
+  if (!id) return;
+
+  const originalStatus = row.active ?? row.Active ?? row.is_active ?? true;
+  
+  if (row.active !== undefined) row.active = newStatus;
+  if (row.Active !== undefined) row.Active = newStatus;
+  if (row.is_active !== undefined) row.is_active = newStatus;
 
   try {
     const payload = {
-      name: form.name.trim(),
-      active: form.active
+      name: row.name || row.Name || row.locationName || row.LocationName,
+      active: newStatus
     };
-
-    if (editingId.value) {
-      await locationApi.update(editingId.value, payload);
-      notify.success("Location updated.");
-    } else {
-      await locationApi.create(payload);
-      notify.success("Location created.");
-    }
-
-    clearDraft?.();
-
-    formOpen.value = false;
-    resetForm();
-
+    await locationApi.update(id, payload);
+    notify.success("Status updated successfully.");
     await load();
   } catch (err) {
-    if (getApiErrorCode(err) === ApiErrorCodes.DuplicateIdentifier) {
-      notify.error("A location with this name already exists.");
-    } else {
-      notify.error(getApiErrorMessage(err));
-    }
-  } finally {
-    saving.value = false;
+    // Revert on error
+    if (row.active !== undefined) row.active = originalStatus;
+    if (row.Active !== undefined) row.Active = originalStatus;
+    if (row.is_active !== undefined) row.is_active = originalStatus;
+    notify.error(getApiErrorMessage(err));
   }
 };
 
-/*
- * ------------------------------------------------------------
- * Delete
- * ------------------------------------------------------------
- */
+const handleSaved = async () => {
+  pagination.value.page = 1;
+  pagination.value.sortBy = "createdOnUtc";
+  pagination.value.descending = true;
+  await load();
+};
+
+const viewDrawerOpen = ref(false);
+const viewRecordId = ref(null);
+
+const openView = (row) => {
+  const id = row.locationId || row.LocationId || row.id || row.Id;
+  if (!id) {
+    notify.error("Invalid record identifier for viewing.");
+    return;
+  }
+  viewRecordId.value = id;
+  viewDrawerOpen.value = true;
+};
+
 const removeLocation = async (row) => {
+  const id = row.locationId || row.LocationId || row.id || row.Id;
+  if (!id) return;
+
+  const methodLabel = row.name || row.Name || row.locationName || row.LocationName || 'this location';
   const ok = await confirm({
     title: "Delete location",
-    message: `Delete the "${row.name}" location?`,
+    message: `Are you sure you want to delete the location "${methodLabel}"?`,
     confirmLabel: "Delete",
     type: "danger"
   });
 
-  if (!ok) {
-    return;
-  }
+  if (!ok) return;
 
   try {
-    await locationApi.remove(row.id);
-
-    notify.success("Location deleted.");
-
+    await locationApi.delete(id);
+    notify.success("Location deleted successfully.");
     await load();
   } catch (err) {
     notify.error(getApiErrorMessage(err));

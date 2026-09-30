@@ -176,9 +176,6 @@ public sealed class SessionsController : ControllerBase
                 search, scopeTenant, isActive, showDeleted, new SortRequest(sortBy, descending), page, limit,
                 cancellationToken: cancellationToken);
 
-            // Resolve the audit user IDs into display names for the Created By / Updated By columns
-            var nameOf = await AuditNamesAsync(items, cancellationToken);
-
             // Project database model items into summary DTOs including Tenant information matching exact constructor signature
             var userIds = items.SelectMany(s => new[] { s.CreatedBy, s.UpdatedBy }).Where(id => !string.IsNullOrEmpty(id) && Guid.TryParse(id, out _)).Select(id => Guid.Parse(id!)).Distinct().ToList();
 
@@ -199,14 +196,14 @@ public sealed class SessionsController : ControllerBase
                     updatedByName = uName;
                 }
 
-                return new SessionSummary(  s.Id,   s.Name, s.Active,  createdByName, updatedByName, s.CreatedOn,    s.UpdatedOn,    s.TenantId, s.Tenant != null ? s.Tenant.Name : string.Empty );
+                return new SessionSummary(s.Id, s.Name, s.Active, createdByName, updatedByName, s.CreatedOn, s.UpdatedOn, s.TenantId, s.Tenant != null ? s.Tenant.Name : string.Empty);
             });
 
             return Ok(ApiResponseFactory.Paginated(summaries, "Sessions retrieved.", page, limit, total));
         }
         catch (Exception ex)
         {
-            return StatusCode(StatusCodes.Status500InternalServerError, new { success = false,  message = ex.Message, innerException = ex.InnerException?.Message,  stackTrace = ex.StackTrace  });
+            return StatusCode(StatusCodes.Status500InternalServerError, new { success = false, message = ex.Message, innerException = ex.InnerException?.Message, stackTrace = ex.StackTrace });
         }
     }
 
@@ -235,7 +232,7 @@ public sealed class SessionsController : ControllerBase
         var updatedByName = await ResolveUserNameAsync(session.UpdatedBy, cancellationToken);
 
         // Map entity details to response DTO matching the exact 10 parameters of SessionDetail
-        var detail = new SessionDetail( session.Id, session.Name, session.Active,  session.IsDeleted, createdByName,  updatedByName,  session.CreatedOn,  session.UpdatedOn, session.DeletedOnUtc,  session.TenantId, session.Tenant?.Name
+        var detail = new SessionDetail(session.Id, session.Name, session.Active, session.IsDeleted, createdByName, updatedByName, session.CreatedOn, session.UpdatedOn, session.DeletedOnUtc, session.TenantId, session.Tenant?.Name
         );
 
         return Ok(ApiResponseFactory.Success(detail, "Session retrieved."));
@@ -281,11 +278,11 @@ public sealed class SessionsController : ControllerBase
 
         session.IsDeleted = request.IsDeleted;
         if (session.IsDeleted)
-        {   
+        {
             session.DeletedOnUtc ??= DateTime.UtcNow;
         }
         else
-        {  
+        {
             session.DeletedOnUtc = null;
         }
         session.UpdatedOn = DateTime.UtcNow;
@@ -298,7 +295,7 @@ public sealed class SessionsController : ControllerBase
         var createdByName = await ResolveUserNameAsync(session.CreatedBy, cancellationToken);
         var updatedByName = await ResolveUserNameAsync(session.UpdatedBy, cancellationToken);
 
-        var detail = new SessionDetail(  session.Id,  session.Name,  session.Active,  session.IsDeleted,   createdByName,  updatedByName,  session.CreatedOn,  session.UpdatedOn, session.DeletedOnUtc, session.TenantId, session.Tenant?.Name);
+        var detail = new SessionDetail(session.Id, session.Name, session.Active, session.IsDeleted, createdByName, updatedByName, session.CreatedOn, session.UpdatedOn, session.DeletedOnUtc, session.TenantId, session.Tenant?.Name);
 
         return Ok(ApiResponseFactory.Success(detail, "Session updated."));
     }
@@ -333,7 +330,7 @@ public sealed class SessionsController : ControllerBase
         // Soft delete: set IsDeleted flag to true instead of physical removal
         session.IsDeleted = true;
         session.DeletedOnUtc = DateTime.UtcNow;
-         session.UpdatedOn = DateTime.UtcNow;
+        session.UpdatedOn = DateTime.UtcNow;
 
         // Update the entity state in the repository/context and log the audit event
         _sessions.Update(session);
@@ -375,48 +372,7 @@ public sealed class SessionsController : ControllerBase
     /// <param name="id">The unique identifier of the session.</param>
     /// <param name="cancellationToken">Propagates notification that operations should be canceled.</param>
     /// <returns>Returns the matching <see cref="ClassSessions"/> entity if found; otherwise, null.</returns>
-    private Task<ClassSessions?> LoadAsync(Guid id, CancellationToken cancellationToken)  => User.IsSuperAdmin() ? _sessions.GetByIdUnscopedAsync(id, cancellationToken) : _sessions.GetByIdAsync(id, cancellationToken);
-
-    #endregion
-
-    #region Audit Name Helpers
-
-    /// <summary>
-    /// Resolves the user IDs stored in the audit fields into display names.
-    /// Falls back to the stored value when it is not a known user ID.
-    /// </summary>
-    private async Task<Func<string?, string?>> AuditNamesAsync(IEnumerable<ClassSessions> rows, CancellationToken cancellationToken)
-    {
-        var ids = rows
-            .SelectMany(s => new[] { s.CreatedBy, s.UpdatedBy })
-            .Select(id => Guid.TryParse(id, out var userId) ? userId : (Guid?)null)
-            .Where(id => id.HasValue)
-            .Select(id => id!.Value)
-            .Distinct();
-
-        var names = await _users.GetFullNamesAsync(ids, cancellationToken);
-
-        return value => Guid.TryParse(value, out var userId) && names.TryGetValue(userId, out var name) ? name : value;
-    }
-
-    /// <summary>
-    /// Maps a class session entity to its detail response with audit names resolved.
-    /// </summary>
-    private async Task<SessionDetail> ToDetailAsync(ClassSessions session, CancellationToken cancellationToken)
-    {
-        var nameOf = await AuditNamesAsync(new[] { session }, cancellationToken);
-
-        return new SessionDetail(
-            session.Id,
-            session.Name,
-            !session.IsDeleted,
-            nameOf(session.CreatedBy),
-            nameOf(session.UpdatedBy),
-            session.CreatedOn,
-            session.UpdatedOn,
-            session.TenantId,
-            session.Tenant?.Name);
-    }
+    private Task<ClassSessions?> LoadAsync(Guid id, CancellationToken cancellationToken) => User.IsSuperAdmin() ? _sessions.GetByIdUnscopedAsync(id, cancellationToken) : _sessions.GetByIdAsync(id, cancellationToken);
 
     #endregion
 

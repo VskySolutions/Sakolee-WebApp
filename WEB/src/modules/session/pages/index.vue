@@ -66,7 +66,7 @@
       <!-- Interactive Status Toggle Column Slot -->
       <template #body-cell-active="cell">
         <q-td :props="cell">
-          <div class="row items-center q-gutter-x-sm">
+          <div class="flex flex-center">
             <q-toggle
               :model-value="parseBoolean(cell.row.isActive ?? cell.row.IsActive ?? cell.row.active ?? cell.row.Active)"
               @update:model-value="(val) => updateStatus(cell.row, val)"
@@ -74,9 +74,9 @@
               color="positive"
               :disable="cell.row.deleted || cell.row.Deleted || cell.row.isDeleted || cell.row.IsDeleted"
             />
-            <span :class="parseBoolean(cell.row.isActive ?? cell.row.IsActive ?? cell.row.active ?? cell.row.Active) ? 'text-positive' : 'text-grey'">
+            <!-- <span :class="parseBoolean(cell.row.isActive ?? cell.row.IsActive ?? cell.row.active ?? cell.row.Active) ? 'text-positive' : 'text-grey'">
               {{ parseBoolean(cell.row.isActive ?? cell.row.IsActive ?? cell.row.active ?? cell.row.Active) ? "Active" : "Inactive" }}
-            </span>
+            </span> -->
           </div>
         </q-td>
       </template>
@@ -219,7 +219,7 @@ const columns = [
     name: "active",
     label: "Status",
     field: (r) => parseBoolean(r.isActive ?? r.IsActive ?? r.active ?? r.Active),
-    align: "left",
+    align: "center",
     sortable: true,
     default: true,
     filterOptions: [

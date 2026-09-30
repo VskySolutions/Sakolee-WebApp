@@ -5,6 +5,7 @@ using Sakolee.Api.Security;
 using Sakolee.Application.Abstractions.Auditing;
 using Sakolee.Application.Abstractions.Persistence;
 using Sakolee.Application.Abstractions.Security;
+using Sakolee.Application.Common;
 using Sakolee.Domain.Entities;
 using Sakolee.Shared.Contracts;
 using Sakolee.Shared.Security;
@@ -54,38 +55,37 @@ public sealed class LocationsController : ControllerBase
     [HttpGet]
     [RequireAnyPermission(Permissions.LocationsRead, Permissions.ClassesRead, Permissions.FamiliesRead)]
     [ProducesResponseType<ApiResponse<IReadOnlyList<LocationSummary>>>(StatusCodes.Status200OK)]
-    public async Task<IActionResult> List([FromQuery] string? search = null, [FromQuery] bool? active = null, CancellationToken cancellationToken = default)
+    public async Task<IActionResult> List(
+        [FromQuery] int page = 1,
+        [FromQuery] int limit = 20,
+        [FromQuery] string? search = null,
+        [FromQuery] bool? active = null,
+        [FromQuery] bool? showDeleted = null,
+        [FromQuery] string? sortBy = null,
+        [FromQuery] bool descending = true,
+        CancellationToken cancellationToken = default)
     {
         if (!HasActiveTenant())
         {
             return NoActiveTenant();
         }
 
-        var locations = await _locations.ListAsync(cancellationToken);
+        // Ensure valid pagination boundary values
+        page = Math.Max(1, page);
+        limit = Math.Clamp(limit, 1, 100);
 
-        IEnumerable<Location> result = locations;
+        var tenantId = User.GetActiveTenantId();
 
-        // Search by Location Name
-        if (!string.IsNullOrWhiteSpace(search))
-        {
-            var term = search.Trim();
+        // Fetch paginated, filtered, and sorted records from repository
+        var (items, total) = await _locations.ListAsync(
+            search, tenantId, active, showDeleted, new SortRequest(sortBy, descending), page, limit,
+            cancellationToken: cancellationToken);
 
-            result = result.Where(location => location.Name.Contains(term, StringComparison.OrdinalIgnoreCase));
-        }
+        var nameOf = await AuditNamesAsync(items, cancellationToken);
 
-        // Optional Active filter
-        if (active.HasValue)
-        {
-            result = result.Where(location => location.Active == active.Value);
-        }
+        var summaries = items.Select(location => ToSummary(location, nameOf)).ToList();
 
-        var page = result.ToList();
-
-        var nameOf = await AuditNamesAsync(page, cancellationToken);
-
-        var summaries = page.Select(location => ToSummary(location, nameOf)).ToList();
-
-        return Ok(ApiResponseFactory.Success(summaries, "Locations retrieved."));
+        return Ok(ApiResponseFactory.Paginated(summaries, "Locations retrieved.", page, limit, total));
     }
 
     // ============================================================
@@ -155,19 +155,15 @@ public sealed class LocationsController : ControllerBase
             Id = Guid.NewGuid(),
             Name = name,
             Active = request.Active
-
-            // TenantId intentionally NOT assigned here.
-            // SakoleeDbContext.StampTenant() assigns it
-            // from ITenantContext.TenantId.
         };
 
         await _locations.AddAsync(location, cancellationToken);
 
         await _audit.AddAsync(nameof(Location), location.Id.ToString(), "Created", details: $"name={location.Name}", cancellationToken: cancellationToken);
 
-        await _unitOfWork.SaveChangesAsync( cancellationToken);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        return StatusCode(StatusCodes.Status201Created, ApiResponseFactory.Success(await ToResponseAsync( location, cancellationToken), "Location created."));
+        return StatusCode(StatusCodes.Status201Created, ApiResponseFactory.Success(await ToResponseAsync(location, cancellationToken), "Location created."));
     }
 
     // ============================================================
@@ -198,14 +194,12 @@ public sealed class LocationsController : ControllerBase
 
         if (name.Length == 0)
         {
-            return BadRequest(ApiResponseFactory.Error(ApiErrorCodes.ValidationFailed, "Validation failed.",
-                    "Location name is required."));
+            return BadRequest(ApiResponseFactory.Error(ApiErrorCodes.ValidationFailed, "Validation failed.", "Location name is required."));
         }
 
         if (name.Length > 100)
         {
-            return BadRequest(ApiResponseFactory.Error(ApiErrorCodes.ValidationFailed, "Validation failed.",
-                    "Location name cannot exceed 100 characters."));
+            return BadRequest(ApiResponseFactory.Error(ApiErrorCodes.ValidationFailed, "Validation failed.", "Location name cannot exceed 100 characters."));
         }
 
         if (await _locations.NameExistsAsync(name, location.TenantId, location.Id, cancellationToken))
@@ -224,8 +218,7 @@ public sealed class LocationsController : ControllerBase
 
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        return Ok(ApiResponseFactory.Success(await ToResponseAsync(location, cancellationToken),
-                "Location updated."));
+        return Ok(ApiResponseFactory.Success(await ToResponseAsync(location, cancellationToken), "Location updated."));
     }
 
     // ============================================================
@@ -237,8 +230,7 @@ public sealed class LocationsController : ControllerBase
     /// </summary>
     [HttpDelete("{id:guid}")]
     [RequirePermission(Permissions.LocationsDelete)]
-    [ProducesResponseType<ApiResponse<object>>(
-        StatusCodes.Status200OK)]
+    [ProducesResponseType<ApiResponse<object>>(StatusCodes.Status200OK)]
     public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
     {
         if (!HasActiveTenant())
@@ -261,7 +253,7 @@ public sealed class LocationsController : ControllerBase
 
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        return Ok(ApiResponseFactory.Success(new { id = location.Id },"Location deleted."));
+        return Ok(ApiResponseFactory.Success(new { id = location.Id }, "Location deleted."));
     }
 
     // ============================================================

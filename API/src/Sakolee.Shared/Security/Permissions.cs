@@ -37,6 +37,11 @@ public static class Permissions
     public const string ClassRoomsWrite = "classRooms.write";
     public const string ClassRoomsDelete = "classRooms.delete";
 
+    //MemberShipType
+    public const string MembershipTypesRead = "membershipTypes.read";
+    public const string MembershipTypesWrite = "membershipTypes.write";
+    public const string MembershipTypesDelete = "membershipTypes.delete";
+
     // Families (household records — contacts + students, see Family entity)
     public const string FamiliesRead = "families.read";
     public const string FamiliesWrite = "families.write";
@@ -120,6 +125,7 @@ public static class Permissions
         ClassSessionsRead, ClassSessionsWrite, ClassSessionsDelete,
         ClassRoomsRead,ClassRoomsWrite,ClassRoomsDelete,
         BillingMethodsRead, BillingMethodsWrite, BillingMethodsDelete,
+        MembershipTypesRead, MembershipTypesWrite, MembershipTypesDelete,
 
         StudentsRead, StudentsWrite, StudentsDelete,
         ClassesRead, ClassesWrite, ClassesDelete,
@@ -148,6 +154,8 @@ public static class Permissions
         //Class Session
         // Families are owned entirely within a tenant, so Tenant Admins get full CRUD.
         FamiliesRead, FamiliesWrite, FamiliesDelete,
+
+        MembershipTypesRead,MembershipTypesRead, MembershipTypesWrite,
 
         ClassSessionsRead, ClassSessionsWrite, ClassSessionsDelete,
         ClassRoomsRead,ClassRoomsWrite,ClassRoomsDelete,

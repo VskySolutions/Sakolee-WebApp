@@ -52,7 +52,7 @@
       @request="onRequest"
       @refresh="load"
     >
-      <!-- Status Column with Interactive Toggle -->
+      <!-- Status Column with Interactive Toggle
       <template #body-cell-active="cell">
         <q-td :props="cell">
           <q-toggle
@@ -64,8 +64,25 @@
             <q-tooltip>{{ cell.row.active ? 'Active' : 'Inactive' }}</q-tooltip>
           </q-toggle>
         </q-td>
-      </template>
+      </template> -->
 
+      <!-- Interactive Status Toggle Column -->
+<template #body-cell-active="cell">
+  <q-td :props="cell">
+     <div class="flex flex-center">
+      <q-toggle
+        :model-value="cell.row.active ?? cell.row.Active ?? cell.row.is_active ?? true"
+        @update:model-value="(val) => toggleStatus(cell.row, val)"
+        dense
+        color="positive"
+        :disable="!canWrite || cell.row.deleted || cell.row.Deleted"
+      />
+      <!-- <span :class="(cell.row.active ?? cell.row.Active ?? cell.row.is_active ?? true) ? 'text-positive' : 'text-grey'">
+        {{ (cell.row.active ?? cell.row.Active ?? cell.row.is_active ?? true) ? "Active" : "Inactive" }}
+      </span>-->
+    </div> 
+  </q-td>
+</template>
       <template #body-cell-actions="cell">
         <q-td :props="cell">
           <q-btn
@@ -161,11 +178,55 @@ const columns = [
     sortable: true,
     default: true
   },
+  
+  //...auditColumns(),
+  {
+    name: "createdBy",
+    label: "Created By",
+    field: (row) => row.createdBy || row.CreatedBy || "—",
+    align: "left",
+    sortable: true,
+    default: true
+  },
+  {
+    name: "createdOnUtc",
+    label: "Created On",
+    field: (row) => row.createdOnUtc || row.CreatedOnUtc,
+    format: (val) => val ? new Date(val).toLocaleString() : "—",
+    align: "left",
+    sortable: true,
+    default: true
+  },
+  {
+    name: "updatedBy",
+    label: "Updated By",
+    field: (row) => row.updatedBy || row.UpdatedBy || "—",
+    align: "left",
+    sortable: true,
+    default: true
+  },
+  {
+    name: "updatedOnUtc",
+    label: "Updated On",
+    field: (row) => row.updatedOnUtc || row.UpdatedOnUtc,
+    format: (val) => {
+      if (!val) return "—";
+      const date = new Date(val);
+      // Agar date default value (0001 ya 1900) hai toh "-" show karein
+      if (isNaN(date.getTime()) || date.getFullYear() <= 1900) {
+        return "—";
+      }
+      return date.toLocaleString();
+    },
+    align: "left",
+    sortable: true,
+    default: true
+  },
   {
     name: "active",
     label: "Status",
     field: "active",
-    align: "left",
+    align: "center",
     sortable: true,
     default: true,
     filterOptions: [
@@ -173,7 +234,6 @@ const columns = [
       { label: "Inactive", value: false }
     ]
   },
-  ...auditColumns(),
   {
     name: "actions",
     label: "Actions",
