@@ -1,10 +1,9 @@
 <template>
-  <!-- Create / Edit / View drawer -->
+  <!-- Create / Edit drawer (read-only View lives in FamilyViewDrawer) -->
   <app-form-drawer
     v-model="isOpen"
-    :title="viewing ? 'View Family' : editing ? 'Edit Family' : 'Create Family'"
+    :title="editing ? 'Edit Family' : 'Create Family'"
     :saving="saving"
-    :hide-save="viewing"
     @submit="submitForm"
     @cancel="resetForm"
   >
@@ -21,69 +20,69 @@
          field in an unvisited tab would silently pass validation otherwise. -->
     <q-form ref="formRef" greedy>
       <div v-show="activeTab === 'family'" class="row q-col-gutter-md">
-        <app-text-field v-model="form.familyName" label="Family Name" required :disable="viewing" class="col-12 col-sm-6" :rules="[(v) => !!v || 'Family name is required']" />
-        <app-select v-model="form.studioLocationId" label="Studio Location" :options="locationOptions" :disable="viewing" class="col-12 col-sm-6" />
-        <app-select v-model="form.familyStatusId" label="Family Status" :options="familyStatusOptions" :disable="viewing" class="col-12 col-sm-6" />
-        <app-select v-model="form.source" label="How Did You Hear About Us?" :options="sourceOptions" :disable="viewing" class="col-12 col-sm-6" />
-        <app-text-field v-model="form.referralName" label="Referral Name" :disable="viewing" class="col-12 col-sm-6" />
+        <app-text-field v-model="form.familyName" label="Family Name" required class="col-12 col-sm-6" :rules="[(v) => !!v || 'Family name is required']" />
+        <app-select v-model="form.studioLocationId" label="Studio Location" :options="locationOptions" class="col-12 col-sm-6" />
+        <app-select v-model="form.familyStatusId" label="Family Status" :options="familyStatusOptions" class="col-12 col-sm-6" />
+        <app-select v-model="form.source" label="How Did You Hear About Us?" :options="sourceOptions" class="col-12 col-sm-6" />
+        <app-text-field v-model="form.referralName" label="Referral Name" class="col-12 col-sm-6" />
 
-        <div v-if="editing || viewing" class="col-12">
-          <q-toggle v-model="form.active" label="Active" :disable="viewing" />
+        <div v-if="editing" class="col-12">
+          <q-toggle v-model="form.active" label="Active" />
         </div>
       </div>
 
       <div v-show="activeTab === 'contacts'" class="row q-col-gutter-md">
         <div class="col-12 text-subtitle2 text-grey-8">Contact #1 (Primary)</div>
-        <app-text-field v-model="form.firstName" label="First Name" required :disable="viewing" class="col-12 col-sm-6" :rules="[(v) => !!v || 'First name is required']" />
-        <app-text-field v-model="form.lastName" label="Last Name" required :disable="viewing" class="col-12 col-sm-6" :rules="[(v) => !!v || 'Last name is required']" />
-        <app-select v-model="form.relation" label="Relation" :options="relationOptions" :disable="viewing" class="col-12 col-sm-6" />
+        <app-text-field v-model="form.firstName" label="First Name" required class="col-12 col-sm-6" :rules="[(v) => !!v || 'First name is required']" />
+        <app-text-field v-model="form.lastName" label="Last Name" required class="col-12 col-sm-6" :rules="[(v) => !!v || 'Last name is required']" />
+        <app-select v-model="form.relation" label="Relation" :options="relationOptions" class="col-12 col-sm-6" />
         <app-text-field
-          v-model="form.email" label="Email" type="email" required :disable="viewing" class="col-12 col-sm-6"
+          v-model="form.email" label="Email" type="email" required class="col-12 col-sm-6"
           :error="!!primaryEmailError" :error-message="primaryEmailError"
           :rules="[(v) => !!v || 'Email is required']"
           hint="A login account is created for this contact."
         />
-        <app-text-field v-model="form.homePhone" label="Home Phone" :disable="viewing" class="col-12 col-sm-6" />
-        <app-text-field v-model="form.workPhone" label="Work Phone" :disable="viewing" class="col-12 col-sm-6" />
-        <app-text-field v-model="form.cellPhone" label="Cell Phone" :disable="viewing" class="col-12 col-sm-6" />
-        <app-text-field v-model="form.otherPhone" label="Other Phone" :disable="viewing" class="col-12 col-sm-6" />
-        <app-text-field v-model="form.fax" label="Fax" :disable="viewing" class="col-12 col-sm-6" />
-        <div class="col-12 col-sm-6 toggle-row-inline"><q-toggle v-model="form.isBillingContact" color="primary" :disable="viewing" /><span class="q-ml-sm">Billing contact</span></div>
-        <div class="col-12 col-sm-6 toggle-row-inline"><q-toggle v-model="form.isAuthorizedToPickUpStudent" color="primary" :disable="viewing" /><span class="q-ml-sm">Authorized to pick up student</span></div>
+        <app-text-field v-model="form.homePhone" label="Home Phone" class="col-12 col-sm-6" />
+        <app-text-field v-model="form.workPhone" label="Work Phone" class="col-12 col-sm-6" />
+        <app-text-field v-model="form.cellPhone" label="Cell Phone" class="col-12 col-sm-6" />
+        <app-text-field v-model="form.otherPhone" label="Other Phone" class="col-12 col-sm-6" />
+        <app-text-field v-model="form.fax" label="Fax" class="col-12 col-sm-6" />
+        <div class="col-12 col-sm-6 toggle-row-inline"><q-toggle v-model="form.isBillingContact" color="primary" /><span class="q-ml-sm">Billing contact</span></div>
+        <div class="col-12 col-sm-6 toggle-row-inline"><q-toggle v-model="form.isAuthorizedToPickUpStudent" color="primary" /><span class="q-ml-sm">Authorized to pick up student</span></div>
 
         <div class="col-12 row items-center justify-between q-mt-sm">
           <div class="text-subtitle2 text-grey-8">Contact #2 (Secondary / Optional)</div>
-          <q-btn v-if="!hasSecondaryContact && !viewing" flat dense no-caps color="primary" icon="o_add" label="Add second contact" @click="addSecondaryContact" />
-          <q-btn v-else-if="hasSecondaryContact && !viewing && !editing" flat dense no-caps color="negative" icon="o_close" label="Remove" @click="removeSecondaryContact" />
+          <q-btn v-if="!hasSecondaryContact" flat dense no-caps color="primary" icon="o_add" label="Add second contact" @click="addSecondaryContact" />
+          <q-btn v-else-if="hasSecondaryContact && !editing" flat dense no-caps color="negative" icon="o_close" label="Remove" @click="removeSecondaryContact" />
         </div>
         <template v-if="hasSecondaryContact">
-          <app-text-field v-model="form.secondaryContact.firstName" label="First Name" required :disable="viewing" class="col-12 col-sm-6" :rules="[(v) => !!v || 'First name is required']" />
-          <app-text-field v-model="form.secondaryContact.lastName" label="Last Name" required :disable="viewing" class="col-12 col-sm-6" :rules="[(v) => !!v || 'Last name is required']" />
-          <app-select v-model="form.secondaryContact.relation" label="Relation" :options="relationOptions" :disable="viewing" class="col-12 col-sm-6" />
+          <app-text-field v-model="form.secondaryContact.firstName" label="First Name" required class="col-12 col-sm-6" :rules="[(v) => !!v || 'First name is required']" />
+          <app-text-field v-model="form.secondaryContact.lastName" label="Last Name" required class="col-12 col-sm-6" :rules="[(v) => !!v || 'Last name is required']" />
+          <app-select v-model="form.secondaryContact.relation" label="Relation" :options="relationOptions" class="col-12 col-sm-6" />
           <app-text-field
-            v-model="form.secondaryContact.email" label="Email" type="email" required :disable="viewing" class="col-12 col-sm-6"
+            v-model="form.secondaryContact.email" label="Email" type="email" required class="col-12 col-sm-6"
             :error="!!secondaryEmailError" :error-message="secondaryEmailError"
             :rules="[(v) => !!v || 'Email is required']"
             hint="A login account is created for this contact."
           />
-          <app-text-field v-model="form.secondaryContact.phone" label="Cell Phone" :disable="viewing" class="col-12 col-sm-6" />
-          <div class="col-12 col-sm-6 toggle-row-inline"><q-toggle v-model="form.secondaryContact.isBillingContact" color="primary" :disable="viewing" /><span class="q-ml-sm">Billing contact</span></div>
-          <div class="col-12 col-sm-6 toggle-row-inline"><q-toggle v-model="form.secondaryContact.isAuthorizedToPickUpStudent" color="primary" :disable="viewing" /><span class="q-ml-sm">Authorized to pick up student</span></div>
+          <app-text-field v-model="form.secondaryContact.phone" label="Cell Phone" class="col-12 col-sm-6" />
+          <div class="col-12 col-sm-6 toggle-row-inline"><q-toggle v-model="form.secondaryContact.isBillingContact" color="primary" /><span class="q-ml-sm">Billing contact</span></div>
+          <div class="col-12 col-sm-6 toggle-row-inline"><q-toggle v-model="form.secondaryContact.isAuthorizedToPickUpStudent" color="primary" /><span class="q-ml-sm">Authorized to pick up student</span></div>
         </template>
       </div>
 
       <div v-show="activeTab === 'address'" class="row q-col-gutter-md">
         <div class="col-12 text-subtitle2 text-grey-8">Household Address</div>
-        <app-text-field v-model="form.address1" label="Street Address" :disable="viewing" class="col-12" />
-        <app-text-field v-model="form.address2" label="Street Address 2" :disable="viewing" class="col-12" />
-        <app-text-field v-model="form.city" label="City" :disable="viewing" class="col-12 col-sm-4" />
-        <app-text-field v-model="form.state" label="State" :disable="viewing" class="col-12 col-sm-4" />
-        <app-text-field v-model.number="form.zipCode" label="ZIP Code" type="number" :disable="viewing" class="col-12 col-sm-4" />
+        <app-text-field v-model="form.address1" label="Street Address" class="col-12" />
+        <app-text-field v-model="form.address2" label="Street Address 2" class="col-12" />
+        <app-text-field v-model="form.city" label="City" class="col-12 col-sm-4" />
+        <app-text-field v-model="form.state" label="State" class="col-12 col-sm-4" />
+        <app-text-field v-model.number="form.zipCode" label="ZIP Code" type="number" class="col-12 col-sm-4" />
 
         <div class="col-12 text-subtitle2 text-grey-8 q-mt-sm">Emergency Contact &amp; Health Insurance</div>
-        <app-text-field v-model="form.emergencyContactPerson" label="Emergency Contact Person" :disable="viewing" class="col-12 col-sm-6" />
-        <app-text-field v-model="form.emergencyPhone" label="Emergency Phone" :disable="viewing" class="col-12 col-sm-6" />
-        <app-text-field v-model="form.healthInsuranceCarrier" label="Health Insurance Carrier / Policy #" :disable="viewing" class="col-12" />
+        <app-text-field v-model="form.emergencyContactPerson" label="Emergency Contact Person" class="col-12 col-sm-6" />
+        <app-text-field v-model="form.emergencyPhone" label="Emergency Phone" class="col-12 col-sm-6" />
+        <app-text-field v-model="form.healthInsuranceCarrier" label="Health Insurance Carrier / Policy #" class="col-12" />
       </div>
 
       <div v-show="activeTab === 'students'" class="row q-col-gutter-md">
@@ -109,8 +108,8 @@
 
         <!-- Add one or more new students under this family — mirrors Quick Registration's Step 4,
              reusing the same blankStudent()/studentApi.createBulk() so both entry points behave the
-             same way. Not shown in read-only View mode. -->
-        <template v-if="!viewing">
+             same way. Only offered when editing an existing family. -->
+        <template v-if="editing">
           <div class="col-12 row items-center justify-between q-mt-sm">
             <div class="text-subtitle2 text-grey-8">Add Student(s)</div>
             <q-btn flat dense no-caps color="primary" icon="o_add" label="Add Student" @click="addNewStudent" />
@@ -180,6 +179,7 @@
 import { ref, reactive, computed, watch, onMounted } from "vue";
 import { familyApi, locationApi, studentApi, getApiErrorMessage } from "services/api";
 import { useNotify } from "composables/useNotify";
+import { blankFamilyForm, blankSecondaryContact, familyFormFromDetail } from "composables/familyForm";
 import { RELATION_OPTIONS, HEARD_ABOUT_OPTIONS, GENDER_OPTIONS, TSHIRT_SIZE_OPTIONS, blankStudent } from "composables/quickRegistrationForm";
 
 import AppFormDrawer from "components/common/AppFormDrawer.vue";
@@ -190,7 +190,7 @@ import StudentEditDialog from "modules/family/components/StudentEditDialog.vue";
 
 const props = defineProps({
   modelValue: { type: Boolean, required: true },
-  // "create" | "edit" | "view"
+  // "create" | "edit"
   mode: { type: String, default: "create" },
   familyId: { type: [String, Number], default: null },
   // Owned by the list page (it also drives the Family Status filter there).
@@ -206,7 +206,6 @@ const isOpen = computed({
   set: (val) => emit("update:modelValue", val)
 });
 const editing = computed(() => props.mode === "edit");
-const viewing = computed(() => props.mode === "view");
 
 // ---- Reference option lists ----
 const locations = ref([]);
@@ -260,42 +259,7 @@ const onStudentSaved = async () => {
   }
 };
 
-const blankSecondaryContact = () => ({ firstName: "", lastName: "", email: "", phone: "", relation: "", isBillingContact: false, isAuthorizedToPickUpStudent: false });
-const blankForm = () => ({
-  familyName: "",
-  studioLocationId: null,
-  studioLocationName: "", // display-only, never sent
-  familyStatusId: null,
-  source: "",
-  referralName: "",
-  // Primary contact — inlined on the Family record itself (see FamiliesController remarks).
-  firstName: "",
-  lastName: "",
-  email: "",
-  relation: "",
-  homePhone: "",
-  workPhone: "",
-  cellPhone: "",
-  otherPhone: "",
-  fax: "",
-  isBillingContact: true,
-  isAuthorizedToPickUpStudent: true,
-  secondaryContact: null,
-  address1: "",
-  address2: "",
-  city: "",
-  state: "",
-  zipCode: null,
-  emergencyContactPerson: "",
-  emergencyPhone: "",
-  healthInsuranceCarrier: "",
-  active: true,
-  // New students to enrol under this family on save — see the "Add Student(s)" section. Never
-  // pre-filled from an existing family's own students (those come back read-only via `students`,
-  // populated separately below).
-  newStudents: []
-});
-const form = reactive(blankForm());
+const form = reactive(blankFamilyForm());
 const hasSecondaryContact = computed(() => !!form.secondaryContact);
 const addSecondaryContact = () => { form.secondaryContact = blankSecondaryContact(); };
 const removeSecondaryContact = () => { form.secondaryContact = null; };
@@ -304,7 +268,7 @@ const removeNewStudent = (index) => { form.newStudents.splice(index, 1); };
 const studentDisplayName = (student) => `${student.firstName || ""} ${student.lastName || ""}`.trim();
 
 const resetForm = () => {
-  Object.assign(form, blankForm());
+  Object.assign(form, blankFamilyForm());
   primaryEmailError.value = "";
   secondaryEmailError.value = "";
   students.value = [];
@@ -313,44 +277,11 @@ const resetForm = () => {
 };
 
 const populateFrom = (detail) => {
-  const primary = (detail.contacts || []).find((c) => c.isPrimaryContact) || null;
-  const secondary = (detail.contacts || []).find((c) => !c.isPrimaryContact) || null;
-
-  Object.assign(form, {
-    familyName: detail.familyName || "",
-    studioLocationId: detail.studioLocationId || null,
-    studioLocationName: detail.studioLocationName || "",
-    familyStatusId: detail.familyStatusId || null,
-    source: detail.source || "",
-    referralName: detail.referralName || "",
-    firstName: primary?.firstName || "",
-    lastName: primary?.lastName || "",
-    email: primary?.email || "",
-    relation: primary?.relation || "",
-    homePhone: detail.homePhone || "",
-    workPhone: detail.workPhone || "",
-    cellPhone: primary?.phone || "",
-    otherPhone: detail.otherPhone || "",
-    fax: detail.fax || "",
-    isBillingContact: !!primary?.isBillingContact,
-    isAuthorizedToPickUpStudent: !!primary?.isAuthorizedToPickUpStudent,
-    secondaryContact: secondary
-      ? { firstName: secondary.firstName || "", lastName: secondary.lastName || "", email: secondary.email || "", phone: secondary.phone || "", relation: secondary.relation || "", isBillingContact: !!secondary.isBillingContact, isAuthorizedToPickUpStudent: !!secondary.isAuthorizedToPickUpStudent }
-      : null,
-    address1: detail.address1 || "",
-    address2: detail.address2 || "",
-    city: detail.city || "",
-    state: detail.state || "",
-    zipCode: detail.zipCode ?? null,
-    emergencyContactPerson: detail.emergencyContactPerson || "",
-    emergencyPhone: detail.emergencyPhone || "",
-    healthInsuranceCarrier: detail.healthInsuranceCarrier || "",
-    active: detail.active
-  });
+  Object.assign(form, familyFormFromDetail(detail));
   students.value = detail.students || [];
 };
 
-// Each time the drawer opens, start from a clean form and (for Edit / View) load the family.
+// Each time the drawer opens, start from a clean form and (for Edit) load the family.
 watch(
   () => props.modelValue,
   async (val) => {
