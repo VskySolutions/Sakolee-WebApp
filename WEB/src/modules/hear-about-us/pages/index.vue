@@ -23,22 +23,22 @@
     />
     <!-- Filter drawer for filtering Hear About Us records -->
     <app-filter-drawer
-        v-model="filterOpen"
-        :chips="filterChips"
-        @remove="removeFilter"
-        @clear="clearFilters"
-      >
-        <app-column-filters
-          v-model="filters"
-          :columns="filterableColumns"
-        />
-        <q-toggle
-          v-if="canManageDeleted"
-          v-model="showDeleted"
-          label="Show deleted?"
-          dense
-          class="q-mt-md"
-        />
+      v-model="filterOpen"
+      :chips="filterChips"
+      @remove="removeFilter"
+      @clear="clearFilters"
+    >
+      <app-column-filters
+        v-model="filters"
+        :columns="filterableColumns"
+      />
+      <q-toggle
+        v-if="canManageDeleted"
+        v-model="showDeleted"
+        label="Show deleted?"
+        dense
+        class="q-mt-md"
+      />
     </app-filter-drawer>
     <!-- Table displaying all Hear About Us records -->
     <app-data-table
@@ -53,21 +53,21 @@
       @request="onRequest"
       @refresh="load"
     >
-    <!-- Active Status -->
-    <template #body-cell-active="cell">
-      <q-td :props="cell">
-        <q-toggle
-          :model-value="cell.row.active"
-          :disable="!canWrite"
-          color="positive"
-          @update:model-value="toggleActive(cell.row, $event)"
-        >
-          <q-tooltip>
-            {{ cell.row.active ? "Active" : "Inactive" }}
-          </q-tooltip>
-        </q-toggle>
-      </q-td>
-    </template>
+      <!-- Active Status -->
+      <template #body-cell-active="cell">
+        <q-td :props="cell">
+          <q-toggle
+            :model-value="cell.row.active"
+            :disable="!canWrite"
+            color="positive"
+            @update:model-value="toggleActive(cell.row, $event)"
+          >
+            <q-tooltip>
+              {{ cell.row.active ? "Active" : "Inactive" }}
+            </q-tooltip>
+          </q-toggle>
+        </q-td>
+      </template>
       <!-- Action buttons for viewing, editing, and deleting -->
       <template #body-cell-actions="cell">
         <q-td :props="cell">
@@ -120,36 +120,50 @@
       :hear-about-us="selectedHearAboutUs"
       @saved="load"
     />
-    <!-- Drawer used to display Hear About Us details -->
-    <app-form-drawer
+    <!-- View Hear About Us -->
+    <app-form-dialog
       v-model="viewOpen"
-      title="Hear About Us Details"
-      :saving="viewLoading"
-      :save-label="''"
-      :hide-save="true"
+      title="View Hear About Us"
+      size="sm"
+      hide-save
       @cancel="closeView"
     >
-      <div class="q-gutter-md">
+      <div class="row q-col-gutter-lg">
         <!-- Name -->
-        <div>
+        <div class="col-12 col-sm-6">
           <div class="text-86 fs-12 fw-500">
             Name
           </div>
-          <div class="text-2e fs-4">
+          <div class="text-2e fs-14">
             {{ viewHearAboutUs.name || "—" }}
           </div>
         </div>
+        <!-- Status -->
+        <div class="col-12 col-sm-6">
+          <div class="text-86 fs-12 fw-500">
+            Status
+          </div>
+          <q-badge
+            :class="
+              viewHearAboutUs.active
+                ? 'active-badge'
+                : 'inactive-badge'
+            "
+          >
+            {{ viewHearAboutUs.active ? "Active" : "Inactive" }}
+          </q-badge>
+        </div>
         <!-- Tenant -->
-        <div>
+        <div class="col-12 col-sm-6">
           <div class="text-86 fs-12 fw-500">
             Tenant
           </div>
-          <div class="text-2e fs-4">
+          <div class="text-2e fs-14">
             {{ viewHearAboutUs.tenantName || "—" }}
           </div>
         </div>
         <!-- Created By -->
-        <div>
+        <div class="col-12 col-sm-6">
           <div class="text-86 fs-12 fw-500">
             Created By
           </div>
@@ -158,7 +172,7 @@
           </div>
         </div>
         <!-- Created On -->
-        <div>
+        <div class="col-12 col-sm-6">
           <div class="text-86 fs-12 fw-500">
             Created On
           </div>
@@ -167,7 +181,7 @@
           </div>
         </div>
         <!-- Updated By -->
-        <div>
+        <div class="col-12 col-sm-6">
           <div class="text-86 fs-12 fw-500">
             Updated By
           </div>
@@ -176,7 +190,7 @@
           </div>
         </div>
         <!-- Updated On -->
-        <div>
+        <div class="col-12 col-sm-6">
           <div class="text-86 fs-12 fw-500">
             Updated On
           </div>
@@ -184,33 +198,22 @@
             {{ formatDateTime(viewHearAboutUs.updatedOnUtc) }}
           </div>
         </div>
-        <!-- Status -->
-        <div>
-          <div class="text-86 fs-12 fw-500">
-            Status
-          </div>
-          <q-badge
-            :color="viewHearAboutUs.active ? 'positive' : 'grey'"
-          >
-            {{ viewHearAboutUs.active ? "Active" : "Inactive" }}
-          </q-badge>
-        </div>
       </div>
-    </app-form-drawer>
+    </app-form-dialog>
   </q-page>
 </template>
 
 <script setup>
 import { computed, ref, watch } from "vue";
 import { date, debounce } from "quasar";
-import { hearAboutUsApi ,getApiErrorMessage } from "services/api";
+import { hearAboutUsApi, getApiErrorMessage } from "services/api";
 import { useNotify } from "composables/useNotify";
 import { useConfirm } from "composables/useConfirm";
 import { usePermissions } from "composables/usePermissions";
 import { useListTable } from "composables/useListTable";
 import AppDataTable from "components/common/AppDataTable.vue";
 import AppListHeader from "components/common/AppListHeader.vue";
-import AppFormDrawer from "components/common/AppFormDrawer.vue";
+import AppFormDialog from "components/common/AppFormDialog.vue";
 import CreateEdit from "modules/hear-about-us/components/CreateEdit.vue";
 import { useColumnFilters } from "composables/useColumnFilters";
 import { useDeletedRecords } from "composables/useDeletedRecords";
@@ -324,12 +327,12 @@ const columns = [
 ];
 const filterOpen = ref(false);
 // Configure the reusable list table.
-const {rows, loading, totalRecords, search, pagination, load, onRequest } = useListTable({
+const { rows, loading, totalRecords, search, pagination, load, onRequest } = useListTable({
   pageKey: "hear-about-us",
   // Fetch Hear About Us records from the API
   // with optional search and sorting.
-  fetcher: ({  page, limit, sortBy, descending }) => hearAboutUsApi.list({ page, limit ,search: search.value || undefined, sortBy, descending, name: filters.name || undefined, active: filters.active ?? undefined, showDeleted: showDeleted.value})
-       .then((response) => ({ data: response?.data || [], total: response?.meta?.totalRecords || 0 })),
+  fetcher: ({ page, limit, sortBy, descending }) => hearAboutUsApi.list({ page, limit, search: search.value || undefined, sortBy, descending, name: filters.name || undefined, active: filters.active ?? undefined, showDeleted: showDeleted.value})
+    .then((response) => ({ data: response?.data || [], total: response?.meta?.totalRecords || 0 })),
   // Handle API errors.
   onError: (error) => {
     notify.error(getApiErrorMessage(error, "Unable to load Hear About Us records."));
@@ -409,7 +412,7 @@ const openView = async (row) => {
     };
   } catch (error) {
     viewOpen.value = false;
-    notify.error(getApiErrorMessage(error,"Unable to load Hear About Us record."));
+    notify.error(getApiErrorMessage(error, "Unable to load Hear About Us record."));
   } finally {
     viewLoading.value = false;
   }
@@ -428,13 +431,19 @@ const openCreate = () => {
 // Load the selected record and open the edit form.
 const openEdit = async (row) => {
   try {
-    // Get the latest record from the API.
-    const hearAboutUs =await hearAboutUsApi.get(row.hearAboutUsId);
+    const hearAboutUs = await hearAboutUsApi.get(
+      row.hearAboutUsId
+    );
     selectedHearAboutUs.value = hearAboutUs;
     editing.value = true;
     formOpen.value = true;
   } catch (error) {
-    notify.error(getApiErrorMessage(error,"Unable to load Hear About Us record."));
+    notify.error(
+      getApiErrorMessage(
+        error,
+        "Unable to load Hear About Us record."
+      )
+    );
   }
 };
 const toggleActive = async (row, active) => {
@@ -479,7 +488,7 @@ const deleteHearAboutUs = async (row) => {
     notify.success("Hear About Us deleted.");
     load();
   } catch (error) {
-    notify.error(getApiErrorMessage(error,"Unable to delete Hear About Us record."));
+    notify.error(getApiErrorMessage(error, "Unable to delete Hear About Us record."));
   }
 };
 // Load Hear About Us records when the page opens.

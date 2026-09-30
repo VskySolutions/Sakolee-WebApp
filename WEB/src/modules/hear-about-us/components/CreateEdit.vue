@@ -1,9 +1,11 @@
 <template>
   <!-- Drawer used for creating and editing a Hear About Us record -->
-  <app-form-drawer
+  <app-form-dialog
     v-model="formOpen"
     :title="editing ? 'Edit Hear About Us' : 'Create Hear About Us'"
     :saving="saving"
+    :save-label="editing ? 'Save' : 'Create'"
+    size="sm"
     @submit="submit"
     @cancel="reset"
   >
@@ -27,14 +29,14 @@
         label="Active"
       />
     </q-form>
-  </app-form-drawer>
+  </app-form-dialog>
 </template>
 
 <script setup>
 import { reactive, ref, watch } from "vue";
-import { hearAboutUsApi,getApiErrorMessage } from "services/api";
+import { hearAboutUsApi, getApiErrorMessage } from "services/api";
 import { useNotify } from "composables/useNotify";
-import AppFormDrawer from "components/common/AppFormDrawer.vue";
+import AppFormDialog from "components/common/AppFormDialog.vue";
 import AppTextField from "components/common/AppTextField.vue";
 // Define the properties received from the parent component.
 const props = defineProps({
@@ -45,7 +47,7 @@ const props = defineProps({
   hearAboutUs: { type: Object, default: null }
 });
 // Events sent back to the parent component.
-const emit = defineEmits([ "update:modelValue", "saved" ]);
+const emit = defineEmits(["update:modelValue", "saved"]);
 const notify = useNotify();
 const formOpen = ref(props.modelValue);
 const formRef = ref(null);
@@ -54,9 +56,10 @@ const nameError = ref("");
 // Form data.
 const form = reactive({ name: "", active: true });
 // Watch for changes to the drawer state from the parent.
-watch(() => props.modelValue,(value) => { formOpen.value = value;
-    // Load form data when the drawer is opened.
-    if (value) { loadForm(); }
+watch(() => props.modelValue, (value) => {
+  formOpen.value = value;
+  // Load form data when the drawer is opened.
+  if (value) { loadForm(); }
 });
 // Send drawer state changes back to the parent.
 watch(formOpen, (value) => {
@@ -113,7 +116,7 @@ const submit = async ({ clearDraft } = {}) => {
       return;
     }
     // Get a user-friendly error message from the API.
-    const message = getApiErrorMessage(error,"Unable to save Hear About Us.");
+    const message = getApiErrorMessage(error, "Unable to save Hear About Us.");
     notify.error(message);
   } finally {
     saving.value = false;
