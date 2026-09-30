@@ -44,7 +44,7 @@ internal sealed class ClassSessionRepository : IClassSessionRepository
     public Task<ClassSessions?> GetByIdUnscopedAsync(Guid id, CancellationToken cancellationToken = default)
         => _dbContext.ClassSessions
             .IgnoreQueryFilters()
-            .FirstOrDefaultAsync(s => s.Id == id, cancellationToken);
+            .FirstOrDefaultAsync(s => s.Id == id && !s.Deleted, cancellationToken);
 
     /// <summary>
     /// Retrieves a collection of class session records matching the specified identifiers.
@@ -82,11 +82,11 @@ internal sealed class ClassSessionRepository : IClassSessionRepository
     #region Sorting Configuration
 
     // Defines allowable sort mappings for class session queries.
-    private static readonly SortMap<ClassSessions> Sorts = new SortMap<ClassSessions>("updatedOn")
+    private static readonly SortMap<ClassSessions> Sorts = new SortMap<ClassSessions>("updatedOnUtc")
         .Add("name", s => s.Name)
-        .Add("active", s => s.Active)
-        .Add("createdOn", s => s.CreatedOn)
-        .Add("updatedOn", s => s.UpdatedOn);
+        .Add("active", s => s.Active, s => s.UpdatedOnUtc)
+        .Add("createdOnUtc", s => s.CreatedOnUtc)
+        .Add("updatedOnUtc", s => s.UpdatedOnUtc);
 
     #endregion
 
@@ -100,7 +100,7 @@ internal sealed class ClassSessionRepository : IClassSessionRepository
         CancellationToken cancellationToken = default)
     {
         var query = tenantId is { } tid
-            ? _dbContext.ClassSessions.IgnoreQueryFilters().Where(s => s.TenantId == tid)
+            ? _dbContext.ClassSessions.IgnoreQueryFilters().Where(s => s.TenantId == tid && !s.Deleted)
             : _dbContext.ClassSessions.AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(search))
@@ -130,7 +130,7 @@ internal sealed class ClassSessionRepository : IClassSessionRepository
         Guid? tenantId = null, CancellationToken cancellationToken = default)
     {
         var query = tenantId is { } scope
-            ? _dbContext.ClassSessions.IgnoreQueryFilters().Where(s => s.Active && s.TenantId == scope)
+            ? _dbContext.ClassSessions.IgnoreQueryFilters().Where(s => s.Active && !s.Deleted && s.TenantId == scope)
             : _dbContext.ClassSessions.Where(s => s.Active);
 
         return await query

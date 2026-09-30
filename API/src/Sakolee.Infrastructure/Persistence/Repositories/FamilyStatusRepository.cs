@@ -44,7 +44,7 @@ internal sealed class FamilyStatusRepository : IFamilyStatusRepository
     public Task<FamilyStatus?> GetByIdUnscopedAsync(Guid id, CancellationToken cancellationToken = default)
         => _dbContext.FamilyStatuses
             .IgnoreQueryFilters()
-            .FirstOrDefaultAsync(f => f.FamilyStatusId == id && !f.IsDeleted, cancellationToken);
+            .FirstOrDefaultAsync(f => f.FamilyStatusId == id && !f.Deleted, cancellationToken);
 
     /// <summary>
     /// Retrieves a collection of family status records matching a list of identifiers.
@@ -65,11 +65,11 @@ internal sealed class FamilyStatusRepository : IFamilyStatusRepository
     #region Sorting Configuration
 
     // Defines allowable sort mappings for family status queries.
-    private static readonly SortMap<FamilyStatus> Sorts = new SortMap<FamilyStatus>("updatedOn")
+    private static readonly SortMap<FamilyStatus> Sorts = new SortMap<FamilyStatus>("updatedOnUtc")
         .Add("name", f => f.Name)
-        .Add("isActive", f => !f.IsDeleted, f => f.UpdatedOn)
-        .Add("createdOn", f => f.CreatedOn)
-        .Add("updatedOn", f => f.UpdatedOn);
+        .Add("active", f => f.Active, f => f.UpdatedOnUtc)
+        .Add("createdOnUtc", f => f.CreatedOnUtc)
+        .Add("updatedOnUtc", f => f.UpdatedOnUtc);
 
     #endregion
 
@@ -85,7 +85,7 @@ internal sealed class FamilyStatusRepository : IFamilyStatusRepository
         // Cross-tenant (Super Admin) reads pass an explicit tenant id and bypass the ambient filter;
         // everyone else gets the ambient-filtered set, pinned to their active tenant.
         var query = tenantId is { } tid
-            ? _dbContext.FamilyStatuses.IgnoreQueryFilters().Where(f => f.TenantId == tid && !f.IsDeleted)
+            ? _dbContext.FamilyStatuses.IgnoreQueryFilters().Where(f => f.TenantId == tid && !f.Deleted)
             : _dbContext.FamilyStatuses.AsQueryable().Include(f => f.Tenant);
 
         // Apply search keyword filter if provided
@@ -98,7 +98,7 @@ internal sealed class FamilyStatusRepository : IFamilyStatusRepository
         // Apply active status filter if provided
         if (isActive is { } active)
         {
-            query = query.Where(f => !f.IsDeleted == active);
+            query = query.Where(f => f.Active == active);
         }
 
         // Calculate total count and apply sorting/pagination
@@ -120,12 +120,13 @@ internal sealed class FamilyStatusRepository : IFamilyStatusRepository
         Guid? tenantId = null, CancellationToken cancellationToken = default)
     {
         // Naming a tenant means reading OUTSIDE the ambient one, so the filters come off — and with them
-        // the soft-delete predicate they carry, which is why `IsDeleted` is then stated in full.
+        // the soft-delete predicate they carry, which is why `Deleted` is then stated in full.
         var query = tenantId is { } scope
-            ? _dbContext.FamilyStatuses.IgnoreQueryFilters().Where(f => !f.IsDeleted && f.TenantId == scope)
+            ? _dbContext.FamilyStatuses.IgnoreQueryFilters().Where(f => !f.Deleted && f.TenantId == scope)
             : _dbContext.FamilyStatuses.AsQueryable();
 
         return await query
+            .Where(f => f.Active)
             .OrderBy(f => f.Name)
             .ToListAsync(cancellationToken);
     }

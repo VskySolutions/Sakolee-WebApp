@@ -91,15 +91,14 @@ public sealed class FamilyStatusesController : ControllerBase
                 ApiErrorCodes.ValidationFailed, "Validation failed.", "Tenant ID is required."));
         }
 
-        // Initialize a new FamilyStatus entity instance with generated identifiers and metadata
+        // Initialize a new FamilyStatus entity; CreatedById/CreatedOnUtc are stamped by the DbContext
+        // (AuditableEntity).
         var familyStatus = new FamilyStatus
         {
             FamilyStatusId = Guid.NewGuid(),
             TenantId = tenantId,
-            Name = request.Name.Trim(),
-            IsDeleted = false,
-            CreatedOn = DateTime.UtcNow,
-            CreatedBy = User.GetUserId().ToString()
+            Name = trimmedName,
+            Active = request.Active,
         };
 
         // Persist the new record to the database via repository and unit of work
@@ -155,14 +154,13 @@ public sealed class FamilyStatusesController : ControllerBase
         var summaries = items.Select(f => new FamilyStatusSummary(
             f.FamilyStatusId,
             f.Name,
-            !f.IsDeleted,
-            nameOf(f.CreatedBy),
-            nameOf(f.UpdatedBy),
-
-            f.CreatedOn,
-            f.UpdatedOn,
-            f.TenantId,                  // Added TenantId
-            f.Tenant != null ? f.Tenant.Name : null
+            f.Active,
+            nameOf(f.CreatedById),
+            nameOf(f.UpdatedById),
+            f.CreatedOnUtc,
+            f.UpdatedOnUtc,
+            f.TenantId,
+            f.Tenant?.Name
         ));
 
         return Ok(ApiResponseFactory.Paginated(summaries, "Family statuses retrieved.", page, limit, total));
@@ -223,14 +221,12 @@ public sealed class FamilyStatusesController : ControllerBase
             familyStatus.Name = trimmedName;
         }
 
-        if (request.IsActive.HasValue)
+        if (request.Active.HasValue)
         {
-            familyStatus.IsDeleted = !request.IsActive.Value;
+            familyStatus.Active = request.Active.Value;
         }
 
-        familyStatus.UpdatedOn = DateTime.UtcNow;
-        familyStatus.UpdatedBy = User.GetUserId().ToString();
-
+        // UpdatedById/UpdatedOnUtc are stamped by the DbContext (AuditableEntity).
         _familyStatuses.Update(familyStatus);
 
         await _audit.AddAsync(nameof(FamilyStatus), familyStatus.FamilyStatusId.ToString(), "Updated", cancellationToken: cancellationToken);
@@ -248,7 +244,7 @@ public sealed class FamilyStatusesController : ControllerBase
     #region Delete Endpoint
 
     /// <summary>
-    /// Soft deletes a family status record by updating its IsDeleted flag.
+    /// Soft deletes a family status record (the DbContext turns the remove into Deleted = true).
     /// </summary>
     [HttpDelete("{id:guid}")]
     [RequirePermission(Permissions.FamilyStatusesDelete)]
@@ -268,14 +264,8 @@ public sealed class FamilyStatusesController : ControllerBase
             return NotFound(ApiResponseFactory.NotFound("Family status not found."));
         }
 
-        // Soft delete: set IsDeleted flag to true (1) instead of physical removal
-        familyStatus.IsDeleted = true;
-
-        // Optionally update audit fields if available (e.g., UpdatedOn / UpdatedBy)
-        familyStatus.UpdatedOn = DateTime.UtcNow;
-
-        // Update the entity state in the repository/context and log the audit event
-        _familyStatuses.Update(familyStatus);
+        // Soft delete: StampAudit converts the remove into Deleted/DeletedOnUtc + Updated* stamps.
+        _familyStatuses.Remove(familyStatus);
         await _audit.AddAsync(nameof(FamilyStatus), familyStatus.FamilyStatusId.ToString(), "SoftDeleted", cancellationToken: cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
@@ -304,20 +294,18 @@ public sealed class FamilyStatusesController : ControllerBase
 
     /// <summary>
     /// Resolves the user IDs stored in the audit fields into display names.
-    /// Falls back to the stored value when it is not a known user ID.
     /// </summary>
-    private async Task<Func<string?, string?>> AuditNamesAsync(IEnumerable<FamilyStatus> rows, CancellationToken cancellationToken)
+    private async Task<Func<Guid?, string?>> AuditNamesAsync(IEnumerable<FamilyStatus> rows, CancellationToken cancellationToken)
     {
         var ids = rows
-            .SelectMany(f => new[] { f.CreatedBy, f.UpdatedBy })
-            .Select(id => Guid.TryParse(id, out var userId) ? userId : (Guid?)null)
+            .SelectMany(f => new[] { f.CreatedById, f.UpdatedById })
             .Where(id => id.HasValue)
             .Select(id => id!.Value)
             .Distinct();
 
         var names = await _users.GetFullNamesAsync(ids, cancellationToken);
 
-        return value => Guid.TryParse(value, out var userId) && names.TryGetValue(userId, out var name) ? name : value;
+        return id => id is { } userId && names.TryGetValue(userId, out var name) ? name : null;
     }
 
     /// <summary>
@@ -330,11 +318,11 @@ public sealed class FamilyStatusesController : ControllerBase
         return new FamilyStatusDetail(
             familyStatus.FamilyStatusId,
             familyStatus.Name,
-            !familyStatus.IsDeleted,
-            nameOf(familyStatus.CreatedBy),
-            nameOf(familyStatus.UpdatedBy),
-            familyStatus.CreatedOn,
-            familyStatus.UpdatedOn);
+            familyStatus.Active,
+            nameOf(familyStatus.CreatedById),
+            nameOf(familyStatus.UpdatedById),
+            familyStatus.CreatedOnUtc,
+            familyStatus.UpdatedOnUtc);
     }
 
     #endregion

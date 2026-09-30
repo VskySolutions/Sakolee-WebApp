@@ -1,4 +1,4 @@
-﻿namespace Sakolee.Api.Models.FamilyStatus
+namespace Sakolee.Api.Models.FamilyStatus
 {
     /// <summary>
     /// Create payload for a standalone FamilyStatus master record.
@@ -10,6 +10,11 @@
         /// </summary>
         public string Name { get; set; } = string.Empty;
         public Guid TenantId { get; set; }
+
+        /// <summary>
+        /// Whether the family status is active (offered in the Family form's status dropdown).
+        /// </summary>
+        public bool Active { get; set; } = true;
     }
 
     /// <summary>
@@ -25,7 +30,7 @@
         /// <summary>
         /// Flag indicating whether the family status is active.
         /// </summary>
-        public bool? IsActive { get; set; }
+        public bool? Active { get; set; }
     }
 
     /// <summary>
@@ -34,16 +39,13 @@
     public sealed record FamilyStatusSummary(
         Guid Id,
         string Name,
-        bool IsActive,
+        bool Active,
         string? CreatedBy,
         string? UpdatedBy,
-
-
-        DateTime CreatedOn,
-        DateTime? UpdatedOn,
-        Guid TenantId,                  // Added TenantId
-        string Tenant
-        
+        DateTime CreatedOnUtc,
+        DateTime UpdatedOnUtc,
+        Guid TenantId,
+        string? Tenant
     );
 
     /// <summary>
@@ -52,7 +54,7 @@
     public sealed record FamilyStatusSelectItem(
         Guid Id,
         string Name,
-        bool IsActive
+        bool Active
     );
 
     /// <summary>
@@ -61,10 +63,10 @@
     public sealed record FamilyStatusDetail(
         Guid Id,
         string Name,
-        bool IsActive,
+        bool Active,
         string? CreatedBy,
         string? UpdatedBy,
-        DateTime CreatedOn,
-        DateTime? UpdatedOn
+        DateTime CreatedOnUtc,
+        DateTime UpdatedOnUtc
     );
 }

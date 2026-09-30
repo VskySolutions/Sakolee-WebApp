@@ -131,7 +131,7 @@ onMounted(async () => {
       form.timing = item.timing || item.Timing || item.time || "";
       
       // Format creation date string if available
-      const rawDate = item.createdOn || item.CreatedOn || item.createdAt || item.CreatedAt;
+      const rawDate = item.createdOnUtc || item.createdOn || item.CreatedOn || item.createdAt || item.CreatedAt;
       if (rawDate) {
         const date = new Date(rawDate);
         form.createdOn = isNaN(date.getTime()) ? String(rawDate) : date.toLocaleString();

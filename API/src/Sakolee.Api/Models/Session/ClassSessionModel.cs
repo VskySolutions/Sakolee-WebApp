@@ -21,6 +21,11 @@
         public string? Timing { get; set; }
 
         //public Guid TenantId { get; set; }
+
+        /// <summary>
+        /// Whether the session is active (offered in the Class form's Session dropdown).
+        /// </summary>
+        public bool Active { get; set; } = true;
     }
 
     /// <summary>
@@ -46,7 +51,7 @@
         /// <summary>
         /// Flag indicating whether the session is active.
         /// </summary>
-        public bool? IsActive { get; set; }
+        public bool? Active { get; set; }
     }
 
     /// <summary>
@@ -55,13 +60,13 @@
     public sealed record SessionSummary(
         Guid Id,
         string Name,
-        bool IsActive,
+        bool Active,
         string? CreatedBy,
         string? UpdatedBy,
-        DateTime CreatedOn,
-        DateTime? UpdatedOn,
-        Guid TenantId,                    // Added TenantId
-        string Tenant                     // Added Tenant Name
+        DateTime CreatedOnUtc,
+        DateTime UpdatedOnUtc,
+        Guid TenantId,
+        string Tenant
     );
 
     /// <summary>
@@ -71,7 +76,7 @@
         Guid Id,
         string Name,
         string? DanceStyle,
-        bool IsActive
+        bool Active
     );
 
     /// <summary>
@@ -80,11 +85,11 @@
     public sealed record SessionDetail(
         Guid Id,
         string Name,
-        bool IsActive,
+        bool Active,
         string? CreatedBy,
         string? UpdatedBy,
-        DateTime CreatedOn,
-        DateTime? UpdatedOn,
+        DateTime CreatedOnUtc,
+        DateTime UpdatedOnUtc,
         Guid TenantId,
         string? TenantName
     );

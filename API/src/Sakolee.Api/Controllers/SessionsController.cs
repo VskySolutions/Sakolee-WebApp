@@ -94,15 +94,14 @@ public sealed class SessionsController : ControllerBase
                 ApiErrorCodes.ValidationFailed, "Validation failed.", "Active tenant ID could not be determined."));
         }
 
-        // Initialize a new ClassSessions entity instance with the active tenant ID
+        // Initialize a new ClassSessions entity; CreatedById/CreatedOnUtc are stamped by the DbContext
+        // (AuditableEntity).
         var session = new ClassSessions
         {
             Id = Guid.NewGuid(),
             TenantId = tenantId,
             Name = request.Name.Trim(),
-            IsDeleted = false,
-            CreatedOn = DateTime.UtcNow,
-            CreatedBy = User.GetUserId().ToString()
+            Active = request.Active,
         };
 
         // Persist the new record to the database via repository and unit of work
@@ -167,11 +166,11 @@ public sealed class SessionsController : ControllerBase
             var summaries = items.Select(s => new SessionSummary(
                 s.Id,
                 s.Name,
-                !s.IsDeleted,
-                nameOf(s.CreatedBy),
-                nameOf(s.UpdatedBy),
-                s.CreatedOn,
-                s.UpdatedOn,
+                s.Active,
+                nameOf(s.CreatedById),
+                nameOf(s.UpdatedById),
+                s.CreatedOnUtc,
+                s.UpdatedOnUtc,
                 s.TenantId,
                 s.Tenant != null ? s.Tenant.Name : string.Empty
             ));
@@ -257,14 +256,12 @@ public sealed class SessionsController : ControllerBase
             session.Name = trimmedName;
         }
 
-        if (request.IsActive.HasValue)
+        if (request.Active.HasValue)
         {
-            session.IsDeleted = !request.IsActive.Value;
+            session.Active = request.Active.Value;
         }
 
-        session.UpdatedOn = DateTime.UtcNow;
-        session.UpdatedBy = User.GetUserId().ToString();
-
+        // UpdatedById/UpdatedOnUtc are stamped by the DbContext (AuditableEntity).
         _sessions.Update(session);
 
         await _audit.AddAsync(nameof(ClassSessions), session.Id.ToString(), "Updated", cancellationToken: cancellationToken);
@@ -280,7 +277,7 @@ public sealed class SessionsController : ControllerBase
     #region Delete Endpoint
 
     /// <summary>
-    /// Soft deletes a class session record by updating its IsDeleted flag.
+    /// Soft deletes a class session record (the DbContext turns the remove into Deleted = true).
     /// </summary>
     /// <param name="id">The unique identifier of the session to delete.</param>
     /// <param name="cancellationToken">Propagates notification that operations should be canceled.</param>
@@ -303,12 +300,8 @@ public sealed class SessionsController : ControllerBase
             return NotFound(ApiResponseFactory.NotFound("Session not found."));
         }
 
-        // Soft delete: set IsDeleted flag to true instead of physical removal
-        session.IsDeleted = true;
-        session.UpdatedOn = DateTime.UtcNow;
-
-        // Update the entity state in the repository/context and log the audit event
-        _sessions.Update(session);
+        // Soft delete: StampAudit converts the remove into Deleted/DeletedOnUtc + Updated* stamps.
+        _sessions.Remove(session);
         await _audit.AddAsync(nameof(ClassSessions), session.Id.ToString(), "SoftDeleted", cancellationToken: cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
@@ -340,20 +333,18 @@ public sealed class SessionsController : ControllerBase
 
     /// <summary>
     /// Resolves the user IDs stored in the audit fields into display names.
-    /// Falls back to the stored value when it is not a known user ID.
     /// </summary>
-    private async Task<Func<string?, string?>> AuditNamesAsync(IEnumerable<ClassSessions> rows, CancellationToken cancellationToken)
+    private async Task<Func<Guid?, string?>> AuditNamesAsync(IEnumerable<ClassSessions> rows, CancellationToken cancellationToken)
     {
         var ids = rows
-            .SelectMany(s => new[] { s.CreatedBy, s.UpdatedBy })
-            .Select(id => Guid.TryParse(id, out var userId) ? userId : (Guid?)null)
+            .SelectMany(s => new[] { s.CreatedById, s.UpdatedById })
             .Where(id => id.HasValue)
             .Select(id => id!.Value)
             .Distinct();
 
         var names = await _users.GetFullNamesAsync(ids, cancellationToken);
 
-        return value => Guid.TryParse(value, out var userId) && names.TryGetValue(userId, out var name) ? name : value;
+        return id => id is { } userId && names.TryGetValue(userId, out var name) ? name : null;
     }
 
     /// <summary>
@@ -366,11 +357,11 @@ public sealed class SessionsController : ControllerBase
         return new SessionDetail(
             session.Id,
             session.Name,
-            !session.IsDeleted,
-            nameOf(session.CreatedBy),
-            nameOf(session.UpdatedBy),
-            session.CreatedOn,
-            session.UpdatedOn,
+            session.Active,
+            nameOf(session.CreatedById),
+            nameOf(session.UpdatedById),
+            session.CreatedOnUtc,
+            session.UpdatedOnUtc,
             session.TenantId,
             session.Tenant?.Name);
     }

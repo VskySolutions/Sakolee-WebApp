@@ -161,7 +161,8 @@ const familyStatusOptions = computed(() => familyStatuses.value.map((s) => ({ la
 
 onMounted(async () => {
   try {
-    const statusRes = await familyStatusApi.list({ limit: 100 });
+    // Only active statuses are offered for selection (inactive ones stay on the Family Status page).
+    const statusRes = await familyStatusApi.list({ limit: 100, isActive: true });
     familyStatuses.value = statusRes?.data || [];
   } catch (err) {
     notify.error(getApiErrorMessage(err));
