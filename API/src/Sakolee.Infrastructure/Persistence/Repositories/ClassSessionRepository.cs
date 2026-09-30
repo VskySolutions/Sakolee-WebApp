@@ -85,8 +85,10 @@ internal sealed class ClassSessionRepository : IClassSessionRepository
         //var query = tenantId is { } tid ? _dbContext.ClassSessions.IgnoreQueryFilters().Where(s => s.TenantId == tid && !s.IsDeleted)   : _dbContext.ClassSessions.Where(s => !s.IsDeleted).AsQueryable();     //AsQueryable();
 
         var query = tenantId is { } tid
-          ? _dbContext.ClassSessions.IgnoreQueryFilters().Where(s => s.TenantId == tid)
-          : _dbContext.ClassSessions.AsQueryable();
+   ? _dbContext.ClassSessions.IgnoreQueryFilters().Where(s => s.TenantId == tid)
+   : _dbContext.ClassSessions.AsQueryable();
+
+        
         if (showDeleted != true)
         {
             query = query.Where(s => !s.IsDeleted);

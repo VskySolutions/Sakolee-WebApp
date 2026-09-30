@@ -1,80 +1,74 @@
 <template>
-  <app-form-drawer
+  <app-form-dialog
     v-model="isOpen"
     title="View Family Status"
-    :saving="viewLoading"
-    :save-label="''"
-    :hide-save="true"
+    size="sm"
+    hide-save
     @cancel="close"
   >
-  <!--view form content-->
+    <!-- Loading State Spinner -->
     <div v-if="viewLoading" class="row flex-center q-pa-xl">
       <q-spinner color="primary" size="40px" />
     </div>
 
-    <div v-else class="q-gutter-md">
-      <div>
-        <div class="text-86 fs-12 fw-500">
-          Family Status Name
-        </div>
-        <div class="text-2e fs-4">
-          {{ viewFamilyStatus.familyStatusName || '—' }}
+    <!-- Content Section -->
+    <div v-else class="row q-col-gutter-lg">
+      <!-- Family Status Name -->
+      <div class="col-12 col-sm-6">
+        <div class="text-86 fs-12 fw-500">Family Status Name</div>
+        <div class="text-2e fs-14">
+          {{ viewFamilyStatus.familyStatusName || "—" }}
         </div>
       </div>
 
-      <div>
-        <div class="text-86 fs-12 fw-500">
-          Status
-        </div>
-        <q-badge :color="viewFamilyStatus.active ? 'positive' : 'grey'">
+      <!-- Status -->
+      <div class="col-12 col-sm-6">
+        <div class="text-86 fs-12 fw-500">Status</div>
+        <q-badge :class="viewFamilyStatus.active ? 'active-badge' : 'inactive-badge'">
           {{ viewFamilyStatus.active ? "Active" : "Inactive" }}
         </q-badge>
       </div>
 
-      <div>
-        <div class="text-86 fs-12 fw-500">
-          Created By
-        </div>
+      <!-- Created By -->
+      <div class="col-12 col-sm-6">
+        <div class="text-86 fs-12 fw-500">Created By</div>
         <div class="text-2e fs-14">
           {{ viewFamilyStatus.createdBy || "—" }}
         </div>
       </div>
 
-      <div>
-        <div class="text-86 fs-12 fw-500">
-          Created On
-        </div>
+      <!-- Created On -->
+      <div class="col-12 col-sm-6">
+        <div class="text-86 fs-12 fw-500">Created On</div>
         <div class="text-2e fs-14">
           {{ formatDate(viewFamilyStatus.createdOnUtc) }}
         </div>
       </div>
 
-      <div>
-        <div class="text-86 fs-12 fw-500">
-          Updated By
-        </div>
+      <!-- Updated By -->
+      <div class="col-12 col-sm-6">
+        <div class="text-86 fs-12 fw-500">Updated By</div>
         <div class="text-2e fs-14">
           {{ viewFamilyStatus.updatedBy || "—" }}
         </div>
       </div>
 
-      <div>
-        <div class="text-86 fs-12 fw-500">
-          Updated On
-        </div>
+      <!-- Updated On -->
+      <div class="col-12 col-sm-6">
+        <div class="text-86 fs-12 fw-500">Updated On</div>
         <div class="text-2e fs-14">
           {{ formatDate(viewFamilyStatus.updatedOnUtc) }}
         </div>
       </div>
     </div>
-  </app-form-drawer>
+  </app-form-dialog>
 </template>
 
 <script setup>
 import { ref, reactive, watch } from "vue";
 import { familyStatusApi, getApiErrorMessage } from "services/api";
 import { useNotify } from "composables/useNotify";
-import AppFormDrawer from "components/common/AppFormDrawer.vue";
+import AppFormDialog from "components/common/AppFormDialog.vue";
 
 // Props and emits
 const props = defineProps({
@@ -120,16 +114,13 @@ const resetView = () => {
 // Watchers to handle prop changes and open/close state
 watch(() => props.modelValue, async (val) => {
   isOpen.value = val;
-  // When the drawer is opened and a recordId is provided, fetch the record data
   if (val && props.recordId) {
-    // Fetch the record data when the drawer is opened and a recordId is provided
     await fetchRecord(props.recordId);
   } else if (!val) {
     resetView();
   }
 });
 
-// Watch for changes in the isOpen state to emit updates to the parent component
 watch(isOpen, (val) => {
   emit("update:modelValue", val);
 });
@@ -143,7 +134,6 @@ const fetchRecord = async (id) => {
     const item = response?.data?.data || response?.data || response;
 
     if (item) {
-      // Populate the viewFamilyStatus reactive object with the fetched data
       viewFamilyStatus.id = id;
       viewFamilyStatus.familyStatusName = item.familyStatusName || item.FamilyStatusName || item.name || item.Name || "";
       viewFamilyStatus.active = item.active ?? item.Active ?? item.is_active ?? true;

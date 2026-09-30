@@ -413,10 +413,10 @@ namespace Sakolee.Infrastructure.Persistence.Migrations
                         .HasMaxLength(450)
                         .HasColumnType("nvarchar(450)");
 
-<<<<<<< Updated upstream
+
                 b.Property<DateTime?>("UpdatedOnUtc")
                     .HasColumnType("datetime2");
-=======
+
                     b.Property<DateTime?>("UpdatedOnUtc")
                         .HasColumnType("datetime2");
 
@@ -434,7 +434,7 @@ namespace Sakolee.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
->>>>>>> Stashed changes
+
 
                     b.Property<bool>("Active")
                         .HasColumnType("bit");

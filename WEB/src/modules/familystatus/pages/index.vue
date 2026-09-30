@@ -71,14 +71,14 @@
         <q-td :props="cell">
           <div class="row items-center q-gutter-x-sm">
             <q-toggle
-              :model-value="cell.row.active ?? cell.row.Active ?? true"
+              :model-value="cell.row.active ?? cell.row.Active ?? cell.row.isActive ?? cell.row.IsActive ?? true"
               @update:model-value="(val) => updateStatus(cell.row, val)"
               dense
               color="positive"
               :disable="cell.row.deleted || cell.row.Deleted"
             />
-            <span :class="(cell.row.active ?? cell.row.Active ?? true) ? 'text-positive' : 'text-grey'">
-              {{ (cell.row.active ?? cell.row.Active ?? true) ? "Active" : "Inactive" }}
+            <span :class="(cell.row.active ?? cell.row.Active ?? cell.row.isActive ?? cell.row.IsActive ?? true) ? 'text-positive' : 'text-grey'">
+              {{ (cell.row.active ?? cell.row.Active ?? cell.row.isActive ?? cell.row.IsActive ?? true) ? "Active" : "Inactive" }}
             </span>
           </div>
         </q-td>
@@ -179,15 +179,7 @@ const columns = [
     default: true,
     filterable: true
   },
-  {
-    name: "active",
-    label: "Status",
-    field: (r) => r.active ?? r.Active ?? true,
-    align: "left",
-    filterable: false,
-    sortable: true,
-    default: true
-  },
+ 
   {
     name: "createdOnUtc",
     label: "Created On",
@@ -226,6 +218,18 @@ const columns = [
     filterable: false,
     format: (val) => formatDate(val)
   },
+   {
+    name: "active",
+    label: "Status",
+    field: (r) => r.active ?? r.Active ?? r.isActive ?? r.IsActive ?? true,
+    align: "left",
+    sortable: true,
+    default: true,
+    filterOptions: [
+      { label: "", value: true },
+      { label: "", value: false }
+    ]
+  },
   {
     name: "actions",
     label: "Actions",
@@ -246,50 +250,37 @@ const {
   pageKey: "family-statuses",
   defaultSortBy: "createdOnUtc",
   defaultDescending: true,
-
- fetcher: (params) => {
-    const sortBy = params?.sortBy || pagination.value.sortBy || "createdOnUtc";
-    const descending = params?.descending ?? pagination.value.descending ?? true;
-
-   
-    return familyStatusApi.list({
+  fetcher: ({ sortBy, descending }) =>
+    familyStatusApi.list({
       search: search.value || undefined,
       showDeleted: showDeleted.value,
       includeDeleted: showDeleted.value,
-      
-      sortBy,
-      descending
+      sortBy: sortBy || 'createdOnUtc',
+      descending: descending ?? true,
+      includeInactive: true
     }).then((response) => {
       let items = response?.data?.items || response?.items || response?.data || [];
 
-
+      
       items.sort((a, b) => {
-        const fieldA = pagination.value.sortBy || sortBy;
-        const isDesc = pagination.value.descending ?? descending;
-
-        if (fieldA === 'createdOnUtc' || fieldA === 'updatedOnUtc' || fieldA === 'CreatedOnUtc') {
-          const valA = new Date(a.createdOnUtc || a.CreatedOnUtc || a.created_on_utc || a.createdOn || 0).getTime();
-          const valB = new Date(b.createdOnUtc || b.CreatedOnUtc || b.created_on_utc || b.createdOn || 0).getTime();
-          if (valA !== valB) return isDesc ? valB - valA : valA - valB;
+        const valA = new Date(a.createdOnUtc || a.CreatedOnUtc || a.created_on_utc || a.createdOn || 0).getTime();
+        const valB = new Date(b.createdOnUtc || b.CreatedOnUtc || b.created_on_utc || b.createdOn || 0).getTime();
+        
+        if (valA !== valB) {
+          return valB - valA; 
         }
-
+        
+     
         const idA = a.familyStatusId || a.FamilyStatusId || a.id || a.Id || 0;
         const idB = b.familyStatusId || b.FamilyStatusId || b.id || b.Id || 0;
-        if (typeof idA === 'number' && typeof idB === 'number' && idA !== idB) {
-          return isDesc ? idB - idA : idA - idB;
-        }
-
-        const nameA = String(a.familyStatusName || a.FamilyStatusName || a.name || '').toLowerCase();
-        const nameB = String(b.familyStatusName || b.FamilyStatusName || b.name || '').toLowerCase();
-        return isDesc ? nameB.localeCompare(nameA) : nameA.localeCompare(nameB);
+        return idB - idA;
       });
 
       return {
         data: items,
         total: response?.data?.totalCount || items.length
       };
-    });
-  },
+    }),
   onError: (err) => notify.error(getApiErrorMessage(err))
 });
 
@@ -311,7 +302,11 @@ const reload = debounce(() => {
   load();
 }, 300);
 
-watch([search, showDeleted], reload);
+watch(search, reload);
+watch(showDeleted, () => {
+  pagination.value.page = 1;
+  load();
+});
 
 onMounted(() => {
   pagination.value.sortBy = 'createdOnUtc';
@@ -344,15 +339,18 @@ const updateStatus = async (row, newStatus) => {
   const id = row.familyStatusId || row.FamilyStatusId || row.id || row.Id;
   if (!id) return;
 
-  const originalStatus = row.active ?? row.Active ?? true;
+  const originalStatus = row.active ?? row.Active ?? row.isActive ?? row.IsActive ?? true;
   
   if (row.active !== undefined) row.active = newStatus;
   if (row.Active !== undefined) row.Active = newStatus;
+  if (row.isActive !== undefined) row.isActive = newStatus;
+  if (row.IsActive !== undefined) row.IsActive = newStatus;
 
   try {
     const payload = {
       familyStatusName: row.familyStatusName || row.FamilyStatusName || row.name || row.Name,
-      active: newStatus
+      active: newStatus,
+      isActive: newStatus
     };
     await familyStatusApi.update(id, payload);
     notify.success("Status updated successfully.");
@@ -360,6 +358,8 @@ const updateStatus = async (row, newStatus) => {
   } catch (err) {
     if (row.active !== undefined) row.active = originalStatus;
     if (row.Active !== undefined) row.Active = originalStatus;
+    if (row.isActive !== undefined) row.isActive = originalStatus;
+    if (row.IsActive !== undefined) row.IsActive = originalStatus;
     notify.error(getApiErrorMessage(err));
   }
 };

@@ -143,7 +143,12 @@ public class SakoleeDbContext : DbContext, IDataProtectionKeyContext
 
         modelBuilder.Entity<ClassSessions>().HasQueryFilter(e => (!_tenantContext.IsResolved || e.TenantId == _tenantContext.TenantId) && !e.IsDeleted);
 
-
+       
+        //modelBuilder.Entity<ClassRooms>(entity =>
+        //{
+        //    entity.HasKey(e => e.Id);
+        //    entity.Property(e => e.Id).HasColumnName("Id"); 
+        //});
 
 
         // User groups + memberships are tenant-scoped so a tenant only ever sees its own groups.
@@ -213,7 +218,7 @@ public class SakoleeDbContext : DbContext, IDataProtectionKeyContext
         modelBuilder.Entity<PermissionGroupTemplate>().HasQueryFilter(e => !e.Deleted);
         modelBuilder.Entity<DashboardLayout>().HasQueryFilter(e => !e.Deleted);
         //tenant + soft-delete filters for tenant-scoped entities.
-        modelBuilder.Entity<TShirtSize>().HasQueryFilter(e =>(!_tenantContext.IsResolved || e.TenantId == _tenantContext.TenantId) && !e.Deleted);
+        modelBuilder.Entity<TShirtSize>().HasQueryFilter(e => (!_tenantContext.IsResolved || e.TenantId == _tenantContext.TenantId) && !e.Deleted);
     }
 
     public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)

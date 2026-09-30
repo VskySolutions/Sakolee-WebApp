@@ -552,3 +552,13 @@ export const familyRelationApi = {
   update: (id, payload) => api.put(`/api/admin/family-relations/${id}`, payload).then(unwrap),
   delete: (id) => api.delete(`/api/admin/family-relations/${id}`).then(unwrap)
 };
+
+
+//Class Room API mapping
+export const classRoomApi = {
+  list: (params) => api.get("/api/admin/class-rooms", { params }).then(envelope),
+  get: (id) => api.get(`/api/admin/class-rooms/${id}`).then(unwrap),
+  create: (payload) => api.post("/api/admin/class-rooms", payload).then(unwrap),
+  update: (id, payload) => api.put(`/api/admin/class-rooms/${id}`, payload).then(unwrap),
+  delete: (id) => api.delete(`/api/admin/class-rooms/${id}`).then(unwrap)
+};

@@ -1,4 +1,3 @@
-//Class Rooom index
 <template>
   <q-page padding>
     <!-- Page Header Component -->
@@ -57,6 +56,16 @@
       @request="onRequest"
       @refresh="load"
     >
+      <!-- Class Room Name Column with Deleted Indicator -->
+      <template #body-cell-name="cell">
+        <q-td :props="cell" :class="{ 'text-strike text-grey': cell.row.deleted || cell.row.Deleted || cell.row.isDeleted || cell.row.IsDeleted }">
+          {{ cell.row.name || cell.row.Name || cell.row.classRoomName || cell.row.ClassRoomName }}
+          <q-badge v-if="cell.row.deleted || cell.row.Deleted || cell.row.isDeleted || cell.row.IsDeleted" color="negative" class="q-ml-sm" dense>
+            Deleted
+          </q-badge>
+        </q-td>
+      </template>
+
       <!-- Location Name Column Slot -->
       <template #body-cell-location="cell">
         <q-td :props="cell">
@@ -64,12 +73,21 @@
         </q-td>
       </template>
 
-      <!-- Status Column Slot -->
+      <!-- Interactive Status Toggle Column Slot -->
       <template #body-cell-active="cell">
         <q-td :props="cell">
-          <q-badge :color="cell.value ? 'positive' : 'grey'">
-            {{ cell.value ? "Active" : "Inactive" }}
-          </q-badge>
+          <div class="row items-center q-gutter-x-sm">
+            <q-toggle
+              :model-value="cell.row.active ?? cell.row.Active ?? cell.row.isActive ?? cell.row.IsActive ?? true"
+              @update:model-value="(val) => updateStatus(cell.row, val)"
+              dense
+              color="positive"
+              :disable="cell.row.deleted || cell.row.Deleted || cell.row.isDeleted || cell.row.IsDeleted"
+            />
+            <span :class="(cell.row.active ?? cell.row.Active ?? cell.row.isActive ?? cell.row.IsActive ?? true) ? 'text-positive' : 'text-grey'">
+              {{ (cell.row.active ?? cell.row.Active ?? cell.row.isActive ?? cell.row.IsActive ?? true) ? "Active" : "Inactive" }}
+            </span>
+          </div>
         </q-td>
       </template>
 
@@ -93,6 +111,7 @@
             color="primary"
             icon="o_edit"
             @click="openEdit(cell.row)"
+            :disabled="cell.row.deleted || cell.row.Deleted || cell.row.isDeleted || cell.row.IsDeleted"
           >
             <q-tooltip>Edit</q-tooltip>
           </q-btn>
@@ -104,6 +123,7 @@
             color="negative"
             icon="o_delete"
             @click="removeClassRoom(cell.row)"
+            v-if="!(cell.row.deleted || cell.row.Deleted || cell.row.isDeleted || cell.row.IsDeleted)"
           >
             <q-tooltip>Delete</q-tooltip>
           </q-btn>
@@ -115,6 +135,7 @@
     <CreateEditClassRoom
       v-model="formOpen"
       :editing-id="editingId"
+      :initial-data="selectedRow"
       :location-options="locationOptions"
       @saved="handleSaved"
     />
@@ -129,14 +150,11 @@
 </template>
 
 <script setup>
-// Import necessary Vue and Quasar utilities
 import { ref, watch, onMounted } from "vue";
 import { debounce } from "quasar";
 
-// Import API services and composables
 import { classRoomApi, locationApi, getApiErrorMessage } from "services/api";
 
-// Import composables for notifications, confirmations, and table management
 import { useNotify } from "composables/useNotify";
 import { useConfirm } from "composables/useConfirm";
 import { useListTable } from "composables/useListTable";
@@ -151,7 +169,6 @@ import AppColumnFilters from "components/common/AppColumnFilters.vue";
 import CreateEditClassRoom from "src/modules/class-room/components/create_edit.vue";
 import ViewClassRoom from "src/modules/class-room/components/view.vue";
 
-// Reactive state variables
 const { showDeleted, canManageDeleted } = useDeletedRecords();
 const notify = useNotify();
 const { confirm } = useConfirm();
@@ -161,25 +178,21 @@ const locationMap = ref({});
 
 const formOpen = ref(false);
 const editingId = ref(null);
+const selectedRow = ref(null);
 
 const viewOpen = ref(false);
 const selectedViewId = ref(null);
 
-/** * Fetch available locations for selection dropdown and mapping lookup.*/
-
 const loadLocations = async () => {
   try {
-    // Fetch all locations with a high limit to ensure we get all available locations
     const response = await locationApi.list({ limit: 1000 });
     const items = response?.data?.items || response?.items || response?.data || [];
     
-    // Map the fetched locations to a simplified structure for dropdown options
     locationOptions.value = items.map(loc => ({
       id: loc.id || loc.LocationId || loc.locationId,
       name: loc.name || loc.LocationName || loc.locationName
     }));
 
-    // Create a mapping of location IDs to names for quick lookup in the table
     const map = {};
     locationOptions.value.forEach(loc => {
       if (loc.id) {
@@ -192,17 +205,12 @@ const loadLocations = async () => {
   }
 };
 
-/**
- * Helper to dynamically resolve location name.
- */
 const resolveLocationName = (row) => {
   if (!row) return "—";
   
-  //  Check direct properties on the row object
   const directName = row.locationName || row.LocationName || row.locationTitle || row.LocationTitle;
   if (directName) return directName;
 
-  // Check nested location object (e.g., row.location.name or row.Location.Name)
   const nestedLoc = row.location || row.Location;
   if (nestedLoc) {
     if (typeof nestedLoc === 'string') return nestedLoc;
@@ -210,7 +218,6 @@ const resolveLocationName = (row) => {
     if (nestedName) return nestedName;
   }
 
-  // Fallback to locationMap lookup using locationId
   const locId = row.locationId || row.LocationId;
   if (locId && locationMap.value[locId]) {
     return locationMap.value[locId];
@@ -218,29 +225,76 @@ const resolveLocationName = (row) => {
   return "—";
 };
 
-// Helper to format date values for display in the table
 const formatDate = (value) => {
   if (!value) return "—";
   const date = new Date(value);
   return isNaN(date.getTime()) ? String(value) : date.toLocaleString();
 };
 
-// Define the columns for the data table, including custom field resolvers and formatting
 const columns = [
-  { name: "name",   label: "Class Room Name",   field: (r) => r.name || r.Name || r.classRoomName || r.ClassRoomName,   align: "left",  sortable: true, default: true},
-  { name: "location",   label: "Location",  field: (r) => resolveLocationName(r),   align: "left",  sortable: true,  default: true  },
-  { name: "active", label: "Status",    field: (r) => r.active ?? r.Active ?? true, align: "left",  filterable: false, sortable: true, default: true   },
-  { name: "createdOnUtc", label: "Created On",  field: (r) => r.createdOnUtc || r.CreatedOnUtc || r.created_on_utc || r.createdOn || null,  align: "left",  filterable: false, sortable: true, default: true,   format: (val) => formatDate(val)    },
-  { name: "createdBy",  label: "Created By",    field: (r) => r.createdBy || r.CreatedBy || "—",    align: "left",  sortable: true, default: true,  filterable: false   },
-  { name: "updatedOnUtc",   label: "Updated On",    field: (r) => r.updatedOnUtc || r.UpdatedOnUtc || r.updated_on_utc || r.updatedOn || null,  align: "left",  sortable: true, default: true,  filterable: false,  format: (val) => formatDate(val)},
+  { 
+    name: "name", 
+    label: "Class Room Name", 
+    field: (r) => r.name || r.Name || r.classRoomName || r.ClassRoomName, 
+    align: "left", 
+    sortable: true, 
+    default: true
+  },
+  { 
+    name: "location", 
+    label: "Location", 
+    field: (r) => resolveLocationName(r), 
+    align: "left", 
+    sortable: true, 
+    default: true 
+  },
+ 
+  { 
+    name: "createdOnUtc", 
+    label: "Created On", 
+    field: (r) => r.createdOnUtc || r.CreatedOnUtc || r.created_on_utc || r.createdOn || null, 
+    align: "left", 
+    filterable: false, 
+    sortable: true, 
+    default: true, 
+    format: (val) => formatDate(val) 
+  },
+  { 
+    name: "createdBy", 
+    label: "Created By", 
+    field: (r) => r.createdBy || r.CreatedBy || "—", 
+    align: "left", 
+    sortable: true, 
+    default: true, 
+    filterable: false 
+  },
+  { 
+    name: "updatedOnUtc", 
+    label: "Updated On", 
+    field: (r) => r.updatedOnUtc || r.UpdatedOnUtc || r.updated_on_utc || r.updatedOn || null, 
+    align: "left", 
+    sortable: true, 
+    default: false, 
+    filterable: false, 
+    format: (val) => formatDate(val)
+  },
   {
     name: "updatedBy",
     label: "Updated By",
     field: (r) => r.updatedBy || r.UpdatedBy || "—",
     align: "left",
     sortable: true,
-    default: true,
+    default: false,
     filterable: false
+  },
+   { 
+    name: "active", 
+    label: "Status", 
+    field: (r) => r.active ?? r.Active ?? r.isActive ?? r.IsActive ?? true, 
+    align: "left", 
+    filterable: false, 
+    sortable: true, 
+    default: true 
   },
   {
     name: "actions",
@@ -250,20 +304,29 @@ const columns = [
   }
 ];
 
-// Use the useListTable composable to manage table data, pagination, and sorting
-const { rows, loading, search,  pagination, load,   onRequest} = 
-useListTable({ pageKey: "class-rooms", defaultSortBy: "createdOnUtc",defaultDescending: true,
+const {
+  rows,
+  loading,
+  search,
+  pagination,
+  load,
+  onRequest
+} = useListTable({
+  pageKey: "class-rooms",
+  defaultSortBy: "createdOnUtc",
+  defaultDescending: true,
 
-// Custom fetcher function to retrieve class room data from the API
   fetcher: (params) => {
     const sortBy = params?.sortBy || pagination.value.sortBy || "createdOnUtc";
     const descending = params?.descending ?? pagination.value.descending ?? true;
 
-    // Call the classRoomApi.list method with search and sorting parameters
     return classRoomApi.list({
       search: search.value || undefined,
+      showDeleted: showDeleted.value,
+      includeDeleted: showDeleted.value,
       sortBy,
-      descending
+      descending,
+      includeInactive: true
     }).then((response) => {
       let items = response?.data?.items || response?.items || response?.data || [];
 
@@ -300,10 +363,8 @@ useListTable({ pageKey: "class-rooms", defaultSortBy: "createdOnUtc",defaultDesc
   onError: (err) => notify.error(getApiErrorMessage(err))
 });
 
-// Reactive state for filter drawer visibility
 const filterOpen = ref(false);
 
-// Use the useColumnFilters composable to manage column-based filtering
 const {
   filters,
   filterableColumns,
@@ -315,15 +376,17 @@ const {
   server: false
 });
 
-// Debounced reload function to reset pagination and reload data when search changes
 const reload = debounce(() => {
   pagination.value.page = 1;
   load();
 }, 300);
 
 watch(search, reload);
+watch(showDeleted, () => {
+  pagination.value.page = 1;
+  load();
+});
 
-// onMounted lifecycle hook to load initial data and locations when the component is mounted
 onMounted(async () => {
   pagination.value.sortBy = 'createdOnUtc';
   pagination.value.descending = true;
@@ -331,24 +394,60 @@ onMounted(async () => {
   load();
 });
 
-// Functions to open the create, edit, and view drawers with appropriate data
 const openCreate = () => {
   editingId.value = null;
+  selectedRow.value = null;
   formOpen.value = true;
 };
 
-// Function to open the edit drawer with the selected row's ID
 const openEdit = (row) => {
   const id = row.id || row.Id || row.classRoomId || row.ClassRoomId;
   if (!id) {
     notify.error("Invalid record identifier for editing.");
     return;
   }
-  editingId.value = row; // Passing full row or id depending on form handling
+  editingId.value = id;
+  selectedRow.value = row;
   formOpen.value = true;
 };
 
-// Function to open the view drawer with the selected row's ID
+const updateStatus = async (row, newStatus) => {
+  const id = row.id || row.Id || row.classRoomId || row.ClassRoomId;
+  if (!id) return;
+
+  const originalStatus = row.active ?? row.Active ?? row.isActive ?? row.IsActive ?? true;
+  
+  if (row.active !== undefined) row.active = newStatus;
+  if (row.Active !== undefined) row.Active = newStatus;
+  if (row.isActive !== undefined) row.isActive = newStatus;
+  if (row.IsActive !== undefined) row.IsActive = newStatus;
+
+  try {
+    const payload = {
+      name: row.name || row.Name || row.classRoomName || row.ClassRoomName,
+      locationId: row.locationId || row.LocationId,
+      active: newStatus,
+      isActive: newStatus
+    };
+    await classRoomApi.update(id, payload);
+    notify.success("Status updated successfully.");
+    await load();
+  } catch (err) {
+    if (row.active !== undefined) row.active = originalStatus;
+    if (row.Active !== undefined) row.Active = originalStatus;
+    if (row.isActive !== undefined) row.isActive = originalStatus;
+    if (row.IsActive !== undefined) row.IsActive = originalStatus;
+    notify.error(getApiErrorMessage(err));
+  }
+};
+
+const handleSaved = () => {
+  pagination.value.page = 1;
+  pagination.value.sortBy = 'createdOnUtc';
+  pagination.value.descending = true;
+  load();
+};
+
 const openView = (row) => {
   const id = row.id || row.Id || row.classRoomId || row.ClassRoomId;
   if (!id) {
@@ -359,20 +458,10 @@ const openView = (row) => {
   viewOpen.value = true;
 };
 
-// Function to handle the saved event from the create/edit form, resetting pagination and reloading data
-const handleSaved = () => {
-  pagination.value.page = 1;
-  pagination.value.sortBy = 'createdOnUtc';
-  pagination.value.descending = true;
-  load();
-};
-
-// Function to remove a class room with confirmation and error handling
 const removeClassRoom = async (row) => {
   const id = row.id || row.Id || row.classRoomId || row.ClassRoomId;
   if (!id) return;
 
-  // Determine the label for the class room to display in the confirmation message
   const roomLabel = row.name || row.Name || 'this class room';
   const ok = await confirm({
     title: "Delete class room",
@@ -384,7 +473,6 @@ const removeClassRoom = async (row) => {
   if (!ok) return;
 
   try {
-    // Call the API to delete the class room by ID
     await classRoomApi.delete(id);
     notify.success("Class room deleted successfully.");
     await load();

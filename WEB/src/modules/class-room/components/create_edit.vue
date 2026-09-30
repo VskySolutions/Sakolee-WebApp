@@ -1,9 +1,10 @@
 <template>
-  <app-form-drawer
+  <app-form-dialog
     v-model="isOpen"
     :title="isEditing ? 'Edit Class Room' : 'Create Class Room'"
     :saving="saving"
     :save-label="isEditing ? 'Save' : 'Create'"
+    size="sm"
     @submit="submitForm"
     @cancel="resetForm"
   >
@@ -50,7 +51,7 @@
         label="Active"
       />
     </q-form>
-  </app-form-drawer>
+  </app-form-dialog>
 </template>
 
 <script setup>
@@ -58,7 +59,7 @@ import { ref, reactive, watch, computed } from "vue";
 import { classRoomApi, getApiErrorMessage, getApiErrorCode, ApiErrorCodes } from "services/api";
 import { useNotify } from "composables/useNotify";
 
-import AppFormDrawer from "components/common/AppFormDrawer.vue";
+import AppFormDialog from "components/common/AppFormDialog.vue";
 import AppTextField from "components/common/AppTextField.vue";
 import AppSelect from "components/common/AppSelect.vue";
 
@@ -66,6 +67,7 @@ import AppSelect from "components/common/AppSelect.vue";
 const props = defineProps({
   modelValue: { type: Boolean, default: false },
   editingId: { type: [Object, String, Number], default: null },
+  initialData: { type: Object, default: null },
   locationOptions: { type: Array, default: () => [] }
 });
 
@@ -78,25 +80,18 @@ const formRef = ref(null);
 
 const isOpen = ref(props.modelValue);
 
-// Check if we are in editing mode (handles both object or primitive id)
-const isEditing = computed(() => {
-  if (!props.editingId) return false;
-  if (typeof props.editingId === 'object') {
-    return !!(props.editingId.id || props.editingId.Id || props.editingId.classRoomId || props.editingId.ClassRoomId);
-  }
-  return true;
-});
+// Check if we are in editing mode
+const isEditing = computed(() => !!props.editingId);
 
 // Watcher to populate form when opened
 watch(() => props.modelValue, (val) => {
   isOpen.value = val;
   if (val) {
-    if (props.editingId && typeof props.editingId === 'object') {
-      const row = props.editingId;
-      // Robust locationId extraction covering various object casing & nested objects
+    if (props.editingId && props.initialData) {
+      const row = props.initialData;
       form.locationId = row.locationId || row.LocationId || row.location_id || row.location?.id || row.Location?.Id || null;
       form.name = row.name || row.Name || row.classRoomName || row.ClassRoomName || "";
-      form.active = row.active ?? row.Active ?? true;
+      form.active = row.active ?? row.Active ?? row.is_active ?? true;
     } else {
       resetFormValues();
     }
@@ -132,7 +127,7 @@ const resetFormValues = () => {
   formErrors.name.message = "";
 };
 
-// Function to reset the form and close the drawer
+// Function to reset the form and close the dialog
 const resetForm = () => {
   resetFormValues();
   isOpen.value = false;
@@ -152,42 +147,25 @@ const submitForm = async ({ clearDraft } = {}) => {
   saving.value = true;
 
   try {
-    // Prepare the payload for API submission
     const payload = {
       locationId: form.locationId,
       name: form.name.trim(),
       active: form.active
     };
 
-    // Extract row ID safely whether editingId is an object or primitive
-    let rowId = null;
     if (props.editingId) {
-      if (typeof props.editingId === 'object') {
-        rowId = props.editingId.id || props.editingId.Id || props.editingId.classRoomId || props.editingId.ClassRoomId;
-      } else {
-        rowId = props.editingId;
-      }
-    }
-
-    // Call the appropriate API method based on whether we are editing or creating a new class room
-    if (rowId) {
-      await classRoomApi.update(rowId, payload);
+      await classRoomApi.update(props.editingId, payload);
       notify.success("Class room updated successfully.");
     } else {
       await classRoomApi.create(payload);
       notify.success("Class room created successfully.");
     }
 
-    // Clear the draft if provided, close the drawer, reset form values, and emit the saved event
     clearDraft?.();
-    
-    // Close the drawer and reset form values after successful submission
     isOpen.value = false;
     resetFormValues();
     emit("saved");
   } catch (err) {
-
-    // Handle API errors, specifically checking for duplicate name errors and setting form error states accordingly
     const errCode = getApiErrorCode(err);
     const errMsg = getApiErrorMessage(err)?.toLowerCase() || '';
 

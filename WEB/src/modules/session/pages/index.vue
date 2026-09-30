@@ -1,14 +1,4 @@
 <template>
-<<<<<<< Updated upstream
-  <!--
-    ============================================================
-    Sessions Index Page Component
-    ============================================================
-    Manages session listings, filtering, server-side data grid operations,
-    and side-drawers for viewing, creating, and editing sessions.
-  -->
-=======
->>>>>>> Stashed changes
   <q-page padding>
     <app-list-header
       :breadcrumbs="[
@@ -78,14 +68,14 @@
         <q-td :props="cell">
           <div class="row items-center q-gutter-x-sm">
             <q-toggle
-              :model-value="cell.row.isActive ?? cell.row.IsActive ?? cell.row.active ?? cell.row.Active ?? true"
+              :model-value="parseBoolean(cell.row.isActive ?? cell.row.IsActive ?? cell.row.active ?? cell.row.Active)"
               @update:model-value="(val) => updateStatus(cell.row, val)"
               dense
               color="positive"
               :disable="cell.row.deleted || cell.row.Deleted || cell.row.isDeleted || cell.row.IsDeleted"
             />
-            <span :class="(cell.row.isActive ?? cell.row.IsActive ?? cell.row.active ?? cell.row.Active ?? true) ? 'text-positive' : 'text-grey'">
-              {{ (cell.row.isActive ?? cell.row.IsActive ?? cell.row.active ?? cell.row.Active ?? true) ? "Active" : "Inactive" }}
+            <span :class="parseBoolean(cell.row.isActive ?? cell.row.IsActive ?? cell.row.active ?? cell.row.Active) ? 'text-positive' : 'text-grey'">
+              {{ parseBoolean(cell.row.isActive ?? cell.row.IsActive ?? cell.row.active ?? cell.row.Active) ? "Active" : "Inactive" }}
             </span>
           </div>
         </q-td>
@@ -148,11 +138,7 @@
 </template>
 
 <script setup>
-<<<<<<< Updated upstream
-import { ref, reactive, watch, onMounted } from "vue";
-=======
 import { ref, watch, onMounted } from "vue";
->>>>>>> Stashed changes
 import { debounce } from "quasar";
 
 import { classSessionApi, getApiErrorMessage } from "services/api";
@@ -170,19 +156,16 @@ import AppColumnFilters from "components/common/AppColumnFilters.vue";
 import SessionForm from "src/modules/session/components/create_edit_session.vue";
 import SessionView from "src/modules/session/components/view_session.vue";
 
-// State variables for managing the list of sessions
 const { showDeleted, canManageDeleted } = useDeletedRecords();
 const notify = useNotify();
 const { confirm } = useConfirm();
 
-// Function to format date values for display
 const formatDate = (value) => {
   if (!value) return "—";
   const date = new Date(value);
   return isNaN(date.getTime()) ? String(value) : date.toLocaleString();
 };
 
-// Define the columns for the sessions data table
 const columns = [
   {
     name: "sessionName",
@@ -193,13 +176,14 @@ const columns = [
     default: true,
     filterable: true
   },
+ 
   {
     name: "createdBy",
     label: "Created By",
     field: (r) => r.createdBy || r.CreatedBy || r.created_by || "—",
     align: "left",
     sortable: true,
-    default: false,
+    default: true,
     filterable: false
   },
   {
@@ -208,7 +192,7 @@ const columns = [
     field: (r) => r.createdOnUtc || r.CreatedOnUtc || r.created_on_utc || r.createdOn || r.CreatedOn || r.created_on || null,
     align: "left",
     sortable: true,
-    default: false,
+    default: true,
     format: (val) => formatDate(val),
     filterable: false
   },
@@ -231,14 +215,17 @@ const columns = [
     format: (val) => formatDate(val),
     filterable: false
   },
- {
+{
     name: "active",
     label: "Status",
-    field: (r) => r.isActive ?? r.IsActive ?? r.active ?? r.Active ?? true,
-    align: "center",
+    field: (r) => parseBoolean(r.isActive ?? r.IsActive ?? r.active ?? r.Active),
+    align: "left",
     sortable: true,
     default: true,
-    filterable: false
+    filterOptions: [
+      { label: "Active", value: true },
+      { label: "Inactive", value: false }
+    ]
   },
   {
     name: "actions",
@@ -249,10 +236,6 @@ const columns = [
   }
 ];
 
-// Reactive state for managing the filter drawer visibility
-const filterOpen = ref(false);
-
-// Reactive state for managing the search input
 const {
   rows,
   loading,
@@ -262,15 +245,9 @@ const {
   onRequest
 } = useListTable({
   pageKey: "sessions",
-  pagination: {
-    sortBy: "createdOnUtc",
-    descending: true,
-    page: 1,
-    rowsPerPage: 20
-  },
-
-  // Fetcher function to retrieve session data from the API
-  fetcher: ({ page, limit, sortBy, descending }) => {
+  defaultSortBy: "createdOnUtc",
+  defaultDescending: true,
+  fetcher: ({ sortBy, descending }) => {
     let mappedSortBy = sortBy;
     if (sortBy === "sessionName") mappedSortBy = "Name";
     else if (sortBy === "createdBy") mappedSortBy = "CreatedBy";
@@ -278,32 +255,43 @@ const {
     else if (sortBy === "updatedBy") mappedSortBy = "UpdatedBy";
     else if (sortBy === "updatedOnUtc") mappedSortBy = "UpdatedOn";
 
-    // Construct query parameters for the API request
     const queryParams = {
-      page,
-      limit,
       search: search.value || undefined,
       sortBy: mappedSortBy || "CreatedOn",
       descending: descending ?? true,
       showDeleted: showDeleted.value,
-      includeDeleted: showDeleted.value
+      includeDeleted: showDeleted.value,
+      includeInactive: true
     };
 
-    // Fetch the session list from the API and return the data and total count
     return classSessionApi.list(queryParams).then((response) => {
-      const items = response?.data?.items || response?.items || response?.data || [];
-      const total = response?.data?.total || response?.total || items.length;
+      let items = response?.data?.items || response?.items || response?.data || [];
+
+      // Sort items descending by creation date to show newest first
+      items.sort((a, b) => {
+        const valA = new Date(a.createdOnUtc || a.CreatedOnUtc || a.created_on_utc || a.createdOn || 0).getTime();
+        const valB = new Date(b.createdOnUtc || b.CreatedOnUtc || b.created_on_utc || b.createdOn || 0).getTime();
+        
+        if (valA !== valB) {
+          return valB - valA; 
+        }
+        
+        const idA = a.sessionId || a.SessionId || a.id || a.Id || 0;
+        const idB = b.sessionId || b.SessionId || b.id || b.Id || 0;
+        return idB - idA;
+      });
+
       return {
         data: items,
-        total: total
+        total: response?.data?.totalCount || response?.data?.total || response?.total || items.length
       };
     });
   },
-
   onError: (err) => notify.error(getApiErrorMessage(err))
 });
 
-// Use the useColumnFilters composable to manage column-based filtering for the sessions data table
+const filterOpen = ref(false);
+
 const {
   filters,
   filterableColumns,
@@ -315,7 +303,6 @@ const {
   server: false
 });
 
-// Debounced reload function to reset pagination and reload data when search input changes
 const reload = debounce(() => {
   pagination.value.page = 1;
   load();
@@ -328,22 +315,21 @@ watch(showDeleted, () => {
 });
 
 onMounted(() => {
+  pagination.value.sortBy = 'createdOnUtc';
+  pagination.value.descending = true;
   load();
 });
 
-// Create / Edit Drawer states
 const formOpen = ref(false);
 const editingId = ref(null);
 const selectedRow = ref(null);
 
-// Function to open the create session drawer
 const openCreate = () => {
   editingId.value = null;
   selectedRow.value = null;
   formOpen.value = true;
 };
 
-// Function to open the edit session drawer with the selected row's data
 const openEdit = (row) => {
   const id = row.sessionId || row.SessionId || row.id || row.Id;
   if (!id) {
@@ -355,47 +341,52 @@ const openEdit = (row) => {
   formOpen.value = true;
 };
 
-// Function to update the active status inline via toggle
 const updateStatus = async (row, newStatus) => {
   const id = row.sessionId || row.SessionId || row.id || row.Id;
   if (!id) return;
 
   const originalStatus = row.isActive ?? row.IsActive ?? row.active ?? row.Active ?? true;
   
-  if (row.active !== undefined) row.active = newStatus;
-  if (row.Active !== undefined) row.Active = newStatus;
-  if (row.isActive !== undefined) row.isActive = newStatus;
-  if (row.IsActive !== undefined) row.IsActive = newStatus;
+  // Optimistically update UI properties
+  row.active = newStatus;
+  row.Active = newStatus;
+  row.isActive = newStatus;
+  row.IsActive = newStatus;
 
   try {
     const payload = {
+      sessionId: id,
+      sessionName: row.sessionName || row.SessionName || row.name || row.Name,
       name: row.sessionName || row.SessionName || row.name || row.Name,
       isActive: newStatus,
+      IsActive: newStatus,
       active: newStatus,
-      isDeleted: row.isDeleted || row.IsDeleted || false
+      Active: newStatus,
+      isDeleted: row.isDeleted || row.IsDeleted || row.deleted || row.Deleted || false,
+      IsDeleted: row.isDeleted || row.IsDeleted || row.deleted || row.Deleted || false
     };
     await classSessionApi.update(id, payload);
     notify.success("Status updated successfully.");
     await load();
   } catch (err) {
-    if (row.active !== undefined) row.active = originalStatus;
-    if (row.Active !== undefined) row.Active = originalStatus;
-    if (row.isActive !== undefined) row.isActive = originalStatus;
-    if (row.IsActive !== undefined) row.IsActive = originalStatus;
+    // Revert on error
+    row.active = originalStatus;
+    row.Active = originalStatus;
+    row.isActive = originalStatus;
+    row.IsActive = originalStatus;
     notify.error(getApiErrorMessage(err));
   }
 };
-// Function to handle the saved event from the create/edit drawer and reload the sessions list
 const handleSaved = async () => {
   pagination.value.page = 1;
+  pagination.value.sortBy = 'createdOnUtc';
+  pagination.value.descending = true;
   await load();
 };
 
-// View Drawer states
 const viewOpen = ref(false);
 const viewRecordId = ref(null);
 
-// Function to open the view session drawer with the selected row's data
 const openView = (row) => {
   const id = row.sessionId || row.SessionId || row.id || row.Id;
   if (!id) {
@@ -406,12 +397,15 @@ const openView = (row) => {
   viewOpen.value = true;
 };
 
-// Function to remove a session with confirmation and reload the sessions list
+const parseBoolean = (val) => {
+  if (val === 1 || val === "1" || val === true || val === "true") return true;
+  return false;
+};
 const removeSession = async (row) => {
   const id = row.sessionId || row.SessionId || row.id || row.Id;
   if (!id) return;
 
-  const sessionLabel = row.sessionName || row.SessionName || row.name || row.Name || "this session";
+  const sessionLabel = row.sessionName || row.SessionName || row.name || row.Name || 'this session';
   const ok = await confirm({
     title: "Delete session",
     message: `Are you sure you want to delete the session "${sessionLabel}"?`,

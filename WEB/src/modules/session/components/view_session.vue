@@ -1,9 +1,8 @@
 <template>
-  <!-- Center Popup Dialog matching the requested layout changes -->
   <q-dialog v-model="isOpen" persistent>
     <q-card class="column q-pa-lg relative-position" style="width: 820px; max-width: 95vw; border-radius: 16px;">
       
-      <!-- Fixed Close Button with proper Cross Symbol using HTML entity -->
+      <!-- Fixed Close Button -->
       <q-btn
         flat
         round
@@ -17,7 +16,7 @@
         &times;
       </q-btn>
 
-      <!-- Modal Header Section with increased bottom gap -->
+      <!-- Modal Header Section -->
       <div class="row items-center q-mb-xl q-pr-lg">
         <div class="row items-center q-gutter-md">
           <q-avatar color="primary" text-color="white" size="48px" font-size="18px">
@@ -42,7 +41,7 @@
       <!-- Content Section -->
       <div v-else class="col scroll q-gutter-y-md">
         
-        <!-- Top Metric Cards Row (Side-by-Side with Uniform Height) -->
+        <!-- Top Metric Cards Row -->
         <div class="row q-col-gutter-md">
           <!-- Status Card -->
           <div class="col-12 col-sm-6">
@@ -121,25 +120,20 @@
 </template>
 
 <script setup>
-// Import necessary Vue reactivity and Lifecycle modules
 import { ref, reactive, computed, watch } from "vue";
 import { classSessionApi, getApiErrorMessage } from "services/api";
 import { useNotify } from "composables/useNotify";
 
-// Define component properties for binding visibility and record lookup identifier
 const props = defineProps({
   modelValue: { type: Boolean, default: false },
   recordId: { type: [String, Number, null], default: null }
 });
 
-// Define component emits to handle state synchronization with parent view
 const emit = defineEmits(["update:modelValue"]);
 
-// Initialize notification helper and loading state variables
 const notify = useNotify();
 const viewLoading = ref(false);
 
-// Reactive state object holding individual session record properties
 const viewSession = reactive({
   id: null,
   sessionName: "",
@@ -150,13 +144,11 @@ const viewSession = reactive({
   updatedOnUtc: null
 });
 
-// Computed property to seamlessly manage dialog visibility bindings via v-model
 const isOpen = computed({
   get: () => props.modelValue,
   set: (val) => emit("update:modelValue", val)
 });
 
-// Helper utility function to extract initials for the header avatar icon
 const getInitials = (name) => {
   if (!name) return "CS";
   const parts = name.trim().split(" ");
@@ -166,14 +158,12 @@ const getInitials = (name) => {
   return name.substring(0, 2).toUpperCase();
 };
 
-// Utility function to format raw date timestamps into readable strings
 const formatDate = (value) => {
   if (!value) return "—";
   const date = new Date(value);
   return isNaN(date.getTime()) ? String(value) : date.toLocaleString();
 };
 
-// Function to reset the view session reactive state back to default values
 const resetViewSession = () => {
   viewSession.id = null;
   viewSession.sessionName = "";
@@ -184,7 +174,6 @@ const resetViewSession = () => {
   viewSession.updatedOnUtc = null;
 };
 
-// Watcher to trigger record data fetching when the modal opens with a valid record identifier
 watch(
   () => props.modelValue,
   async (val) => {
@@ -196,7 +185,6 @@ watch(
   }
 );
 
-// Asynchronous function to retrieve detailed class session record data from the API endpoint
 const fetchRecordDetails = async (id) => {
   resetViewSession();
   viewLoading.value = true;
@@ -205,7 +193,6 @@ const fetchRecordDetails = async (id) => {
     const response = await classSessionApi.get(id);
     const item = response?.data?.data || response?.data || response;
 
-    // Populate reactive properties with safely extracted response data mapping
     if (item) {
       viewSession.id = id;
       viewSession.sessionName = item.sessionName || item.SessionName || item.name || item.Name || "";
@@ -223,7 +210,6 @@ const fetchRecordDetails = async (id) => {
   }
 };
 
-// Handler function to cleanly close the dialog popup and clear data state
 const closeView = () => {
   isOpen.value = false;
   resetViewSession();

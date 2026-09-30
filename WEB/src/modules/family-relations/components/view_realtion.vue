@@ -1,54 +1,74 @@
 <template>
-  <app-form-drawer
+  <app-form-dialog
     v-model="isOpen"
     title="View Family Relation"
-    :saving="viewLoading"
-    :save-label="''"
-    :hide-save="true"
+    size="sm"
+    hide-save
     @cancel="close"
   >
+    <!-- Loading State Spinner -->
     <div v-if="viewLoading" class="row flex-center q-pa-xl">
       <q-spinner color="primary" size="40px" />
     </div>
 
-    <div v-else class="q-gutter-md">
-      <div>
+    <!-- Content Section -->
+    <div v-else class="row q-col-gutter-lg">
+      <!-- Relation Name -->
+      <div class="col-12 col-sm-6">
         <div class="text-86 fs-12 fw-500">Relation Name</div>
-        <div class="text-2e fs-4">{{ viewRelation.name }}</div>
+        <div class="text-2e fs-14">
+          {{ viewRelation.name || "—" }}
+        </div>
       </div>
-      <div>
+
+      <!-- Status -->
+      <div class="col-12 col-sm-6">
         <div class="text-86 fs-12 fw-500">Status</div>
-        <q-badge :color="viewRelation.active ? 'positive' : 'grey'">
+        <q-badge :class="viewRelation.active ? 'active-badge' : 'inactive-badge'">
           {{ viewRelation.active ? "Active" : "Inactive" }}
         </q-badge>
       </div>
-      <div>
+
+      <!-- Created By -->
+      <div class="col-12 col-sm-6">
         <div class="text-86 fs-12 fw-500">Created By</div>
-        <div class="text-2e fs-14">{{ viewRelation.createdBy || "—" }}</div>
+        <div class="text-2e fs-14">
+          {{ viewRelation.createdBy || "—" }}
+        </div>
       </div>
-      <div>
+
+      <!-- Created On -->
+      <div class="col-12 col-sm-6">
         <div class="text-86 fs-12 fw-500">Created On</div>
-        <div class="text-2e fs-14">{{ formatDate(viewRelation.createdOnUtc) }}</div>
+        <div class="text-2e fs-14">
+          {{ formatDate(viewRelation.createdOnUtc) }}
+        </div>
       </div>
-      <div>
+
+      <!-- Updated By -->
+      <div class="col-12 col-sm-6">
         <div class="text-86 fs-12 fw-500">Updated By</div>
-        <div class="text-2e fs-14">{{ viewRelation.updatedBy || "—" }}</div>
+        <div class="text-2e fs-14">
+          {{ viewRelation.updatedBy || "—" }}
+        </div>
       </div>
-      <div>
+
+      <!-- Updated On -->
+      <div class="col-12 col-sm-6">
         <div class="text-86 fs-12 fw-500">Updated On</div>
-        <div class="text-2e fs-14">{{ formatDate(viewRelation.updatedOnUtc) }}</div>
+        <div class="text-2e fs-14">
+          {{ formatDate(viewRelation.updatedOnUtc) }}
+        </div>
       </div>
     </div>
-  </app-form-drawer>
+  </app-form-dialog>
 </template>
 
 <script setup>
-
-
 import { ref, reactive, watch } from "vue";
 import { familyRelationApi, getApiErrorMessage } from "services/api";
 import { useNotify } from "composables/useNotify";
-import AppFormDrawer from "components/common/AppFormDrawer.vue";
+import AppFormDialog from "components/common/AppFormDialog.vue";
 
 // Props and Emits
 const props = defineProps({
@@ -73,7 +93,7 @@ const viewRelation = reactive({
   updatedOnUtc: null
 });
 
-//handles date formatting for createdOnUtc and updatedOnUtc fields
+// Handles date formatting for createdOnUtc and updatedOnUtc fields
 const formatDate = (value) => {
   if (!value) return "—";
   return new Date(value).toLocaleString();
@@ -127,7 +147,7 @@ const fetchRelation = async (id) => {
   }
 };
 
-// Function to close the drawer and reset the viewRelation object
+// Function to close the dialog and reset the viewRelation object
 const close = () => {
   isOpen.value = false;
   resetViewRelation();

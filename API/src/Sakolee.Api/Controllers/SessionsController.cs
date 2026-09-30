@@ -196,7 +196,7 @@ public sealed class SessionsController : ControllerBase
                     updatedByName = uName;
                 }
 
-                return new SessionSummary(  s.Id,   s.Name, !s.IsDeleted, createdByName, updatedByName, s.CreatedOn,    s.UpdatedOn,    s.TenantId, s.Tenant != null ? s.Tenant.Name : string.Empty );
+                return new SessionSummary(  s.Id,   s.Name, s.Active,  createdByName, updatedByName, s.CreatedOn,    s.UpdatedOn,    s.TenantId, s.Tenant != null ? s.Tenant.Name : string.Empty );
             });
 
             return Ok(ApiResponseFactory.Paginated(summaries, "Sessions retrieved.", page, limit, total));

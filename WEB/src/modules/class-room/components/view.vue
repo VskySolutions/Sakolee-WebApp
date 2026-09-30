@@ -1,100 +1,86 @@
 <template>
-  <app-form-drawer
+  <app-form-dialog
     v-model="isOpen"
     title="View Class Room"
-    :saving="viewLoading"
-    :save-label="''"
-    :hide-save="true"
-    @cancel="closeView"
+    size="sm"
+    hide-save
+    @cancel="close"
   >
-    <!-- Loading Spinner Overlay -->
+    <!-- Loading State Spinner -->
     <div v-if="viewLoading" class="row flex-center q-pa-xl">
       <q-spinner color="primary" size="40px" />
     </div>
 
-    <div v-else class="q-gutter-md">
-      <!-- Field: Location Name -->
-      <div>
-        <div class="text-86 fs-12 fw-500">
-          Location
-        </div>
+    <!-- Content Section -->
+    <div v-else class="row q-col-gutter-lg">
+      <!-- Location -->
+      <div class="col-12 col-sm-6">
+        <div class="text-86 fs-12 fw-500">Location</div>
         <div class="text-2e fs-14">
           {{ resolveLocationName(viewClassRoom) }}
         </div>
       </div>
 
-      <!-- Field: Class Room Name -->
-      <div>
-        <div class="text-86 fs-12 fw-500">
-          Class Room Name
-        </div>
-        <div class="text-2e fs-4">
-          {{ viewClassRoom.name || '—' }}
+      <!-- Class Room Name -->
+      <div class="col-12 col-sm-6">
+        <div class="text-86 fs-12 fw-500">Class Room Name</div>
+        <div class="text-2e fs-14">
+          {{ viewClassRoom.name || "—" }}
         </div>
       </div>
 
-      <!-- Field: Status -->
-      <div>
-        <div class="text-86 fs-12 fw-500">
-          Status
-        </div>
-        <q-badge :color="viewClassRoom.active ? 'positive' : 'grey'">
+      <!-- Status -->
+      <div class="col-12 col-sm-6">
+        <div class="text-86 fs-12 fw-500">Status</div>
+        <q-badge :class="viewClassRoom.active ? 'active-badge' : 'inactive-badge'">
           {{ viewClassRoom.active ? "Active" : "Inactive" }}
         </q-badge>
       </div>
 
-      <!-- Field: Created By -->
-      <div>
-        <div class="text-86 fs-12 fw-500">
-          Created By
-        </div>
+      <!-- Created By -->
+      <div class="col-12 col-sm-6">
+        <div class="text-86 fs-12 fw-500">Created By</div>
         <div class="text-2e fs-14">
           {{ viewClassRoom.createdBy || "—" }}
         </div>
       </div>
 
-      <!-- Field: Created On -->
-      <div>
-        <div class="text-86 fs-12 fw-500">
-          Created On
-        </div>
+      <!-- Created On -->
+      <div class="col-12 col-sm-6">
+        <div class="text-86 fs-12 fw-500">Created On</div>
         <div class="text-2e fs-14">
           {{ formatDate(viewClassRoom.createdOnUtc) }}
         </div>
       </div>
 
-      <!-- Field: Updated By -->
-      <div>
-        <div class="text-86 fs-12 fw-500">
-          Updated By
-        </div>
+      <!-- Updated By -->
+      <div class="col-12 col-sm-6">
+        <div class="text-86 fs-12 fw-500">Updated By</div>
         <div class="text-2e fs-14">
           {{ viewClassRoom.updatedBy || "—" }}
         </div>
       </div>
 
-      <!-- Field: Updated On -->
-      <div>
-        <div class="text-86 fs-12 fw-500">
-          Updated On
-        </div>
+      <!-- Updated On -->
+      <div class="col-12 col-sm-6">
+        <div class="text-86 fs-12 fw-500">Updated On</div>
         <div class="text-2e fs-14">
           {{ formatDate(viewClassRoom.updatedOnUtc) }}
         </div>
       </div>
     </div>
-  </app-form-drawer>
+  </app-form-dialog>
 </template>
 
 <script setup>
 import { ref, reactive, watch } from "vue";
 import { classRoomApi, getApiErrorMessage } from "services/api";
 import { useNotify } from "composables/useNotify";
-import AppFormDrawer from "components/common/AppFormDrawer.vue";
+import AppFormDialog from "components/common/AppFormDialog.vue";
 
 const props = defineProps({
   modelValue: { type: Boolean, default: false },
-  viewId: { type: [String, Number], default: null },
+  viewId: { type: [Object, String, Number], default: null },
   locationMap: { type: Object, default: () => ({}) }
 });
 
@@ -116,10 +102,30 @@ const viewClassRoom = reactive({
   updatedOnUtc: null
 });
 
+const formatDate = (value) => {
+  if (!value) return "—";
+  const date = new Date(value);
+  return isNaN(date.getTime()) ? String(value) : date.toLocaleString();
+};
+
+const resetView = () => {
+  viewClassRoom.id = null;
+  viewClassRoom.locationId = null;
+  viewClassRoom.locationName = "";
+  viewClassRoom.name = "";
+  viewClassRoom.active = true;
+  viewClassRoom.createdBy = "";
+  viewClassRoom.createdOnUtc = null;
+  viewClassRoom.updatedBy = "";
+  viewClassRoom.updatedOnUtc = null;
+};
+
 watch(() => props.modelValue, async (val) => {
   isOpen.value = val;
   if (val && props.viewId) {
     await fetchDetails(props.viewId);
+  } else if (!val) {
+    resetView();
   }
 });
 
@@ -128,6 +134,7 @@ watch(isOpen, (val) => {
 });
 
 const fetchDetails = async (id) => {
+  resetView();
   viewLoading.value = true;
   try {
     const response = await classRoomApi.get(id);
@@ -165,13 +172,8 @@ const resolveLocationName = (row) => {
   return "—";
 };
 
-const formatDate = (value) => {
-  if (!value) return "—";
-  const date = new Date(value);
-  return isNaN(date.getTime()) ? String(value) : date.toLocaleString();
-};
-
-const closeView = () => {
+const close = () => {
   isOpen.value = false;
+  resetView();
 };
 </script>

@@ -137,18 +137,7 @@ const columns = [
     sortable: true,
     default: true
   },
-  {
-    name: "active",
-    label: "Status",
-    field: (r) => r.active ?? r.Active ?? r.is_active ?? true,
-    align: "left",
-    sortable: true,
-    default: true,
-    filterOptions: [
-      { label: "Active", value: true },
-      { label: "Inactive", value: false }
-    ]
-  },
+  
   {
     name: "createdBy",
     label: "Created By",
@@ -186,6 +175,18 @@ const columns = [
     default: false,
     filterable: false,
     format: (val) => formatDate(val)
+  },
+  {
+    name: "active",
+    label: "Status",
+    field: (r) => r.active ?? r.Active ?? r.is_active ?? true,
+    align: "left",
+    sortable: true,
+    default: true,
+    filterOptions: [
+      { label: "Active", value: true },
+      { label: "Inactive", value: false }
+    ]
   },
   {
     name: "actions",
