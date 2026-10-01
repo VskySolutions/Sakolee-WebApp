@@ -53,13 +53,10 @@
       @request="onRequest"
       @refresh="load"
     >
-      <!-- Session Name Column with Deleted Indicator -->
+      <!-- Session Name Column without strike-through line -->
       <template #body-cell-sessionName="cell">
-        <q-td :props="cell" :class="{ 'text-strike text-grey': cell.row.deleted || cell.row.Deleted || cell.row.isDeleted || cell.row.IsDeleted }">
+        <q-td :props="cell" :class="{ 'text-grey': cell.row.deleted || cell.row.Deleted || cell.row.isDeleted || cell.row.IsDeleted }">
           {{ cell.row.sessionName || cell.row.SessionName || cell.row.name || cell.row.Name }}
-          <q-badge v-if="cell.row.deleted || cell.row.Deleted || cell.row.isDeleted || cell.row.IsDeleted" color="negative" class="q-ml-sm" dense>
-            Deleted
-          </q-badge>
         </q-td>
       </template>
 
@@ -74,9 +71,6 @@
               color="positive"
               :disable="cell.row.deleted || cell.row.Deleted || cell.row.isDeleted || cell.row.IsDeleted"
             />
-            <!-- <span :class="parseBoolean(cell.row.isActive ?? cell.row.IsActive ?? cell.row.active ?? cell.row.Active) ? 'text-positive' : 'text-grey'">
-              {{ parseBoolean(cell.row.isActive ?? cell.row.IsActive ?? cell.row.active ?? cell.row.Active) ? "Active" : "Inactive" }}
-            </span> -->
           </div>
         </q-td>
       </template>
@@ -160,10 +154,24 @@ const { showDeleted, canManageDeleted } = useDeletedRecords();
 const notify = useNotify();
 const { confirm } = useConfirm();
 
+const parseBoolean = (val) => {
+  if (val === 1 || val === "1" || val === true || val === "true") return true;
+  return false;
+};
+
+// const formatDate = (value) => {
+//   if (!value) return "—";
+//   const date = new Date(value);
+//   return isNaN(date.getTime()) ? String(value) : date.toLocaleString();
+// };
+
+// Enhanced date formatting to handle invalid dates and .NET MinValue
 const formatDate = (value) => {
   if (!value) return "—";
   const date = new Date(value);
-  return isNaN(date.getTime()) ? String(value) : date.toLocaleString();
+  // Check if date is invalid or the default .NET MinValue (0001-01-01)
+  if (isNaN(date.getTime()) || date.getFullYear() <= 1) return "—";
+  return date.toLocaleString();
 };
 
 const columns = [
@@ -176,7 +184,6 @@ const columns = [
     default: true,
     filterable: true
   },
- 
   {
     name: "createdBy",
     label: "Created By",
@@ -215,13 +222,14 @@ const columns = [
     format: (val) => formatDate(val),
     filterable: false
   },
-{
+  {
     name: "active",
     label: "Status",
     field: (r) => parseBoolean(r.isActive ?? r.IsActive ?? r.active ?? r.Active),
     align: "center",
     sortable: true,
     default: true,
+    filterable: true,
     filterOptions: [
       { label: "Active", value: true },
       { label: "Inactive", value: false }
@@ -249,11 +257,12 @@ const {
   defaultDescending: true,
   fetcher: ({ sortBy, descending }) => {
     let mappedSortBy = sortBy;
-    if (sortBy === "sessionName") mappedSortBy = "Name";
-    else if (sortBy === "createdBy") mappedSortBy = "CreatedBy";
-    else if (sortBy === "createdOnUtc") mappedSortBy = "CreatedOn";
-    else if (sortBy === "updatedBy") mappedSortBy = "UpdatedBy";
-    else if (sortBy === "updatedOnUtc") mappedSortBy = "UpdatedOn";
+    if (sortBy === "sessionName") mappedSortBy = "name";
+    else if (sortBy === "createdBy") mappedSortBy = "createdBy";
+    else if (sortBy === "createdOnUtc") mappedSortBy = "createdOnUtc";
+    else if (sortBy === "updatedBy") mappedSortBy = "updatedBy";
+    else if (sortBy === "updatedOnUtc") mappedSortBy = "updatedOnUtc";
+    else if (sortBy === "active") mappedSortBy = "active";
 
     const queryParams = {
       search: search.value || undefined,
@@ -267,19 +276,20 @@ const {
     return classSessionApi.list(queryParams).then((response) => {
       let items = response?.data?.items || response?.items || response?.data || [];
 
-      // Sort items descending by creation date to show newest first
-      items.sort((a, b) => {
-        const valA = new Date(a.createdOnUtc || a.CreatedOnUtc || a.created_on_utc || a.createdOn || 0).getTime();
-        const valB = new Date(b.createdOnUtc || b.CreatedOnUtc || b.created_on_utc || b.createdOn || 0).getTime();
-        
-        if (valA !== valB) {
-          return valB - valA; 
-        }
-        
-        const idA = a.sessionId || a.SessionId || a.id || a.Id || 0;
-        const idB = b.sessionId || b.SessionId || b.id || b.Id || 0;
-        return idB - idA;
-      });
+      if (!sortBy || sortBy === 'createdOnUtc') {
+        items.sort((a, b) => {
+          const valA = new Date(a.createdOnUtc || a.CreatedOnUtc || a.created_on_utc || a.createdOn || 0).getTime();
+          const valB = new Date(b.createdOnUtc || b.CreatedOnUtc || b.created_on_utc || b.createdOn || 0).getTime();
+          
+          if (valA !== valB) {
+            return descending !== false ? valB - valA : valA - valB; 
+          }
+          
+          const idA = a.sessionId || a.SessionId || a.id || a.Id || 0;
+          const idB = b.sessionId || b.SessionId || b.id || b.Id || 0;
+          return idB - idA;
+        });
+      }
 
       return {
         data: items,
@@ -347,7 +357,6 @@ const updateStatus = async (row, newStatus) => {
 
   const originalStatus = row.isActive ?? row.IsActive ?? row.active ?? row.Active ?? true;
   
-  // Optimistically update UI properties
   row.active = newStatus;
   row.Active = newStatus;
   row.isActive = newStatus;
@@ -369,7 +378,6 @@ const updateStatus = async (row, newStatus) => {
     notify.success("Status updated successfully.");
     await load();
   } catch (err) {
-    // Revert on error
     row.active = originalStatus;
     row.Active = originalStatus;
     row.isActive = originalStatus;
@@ -377,6 +385,7 @@ const updateStatus = async (row, newStatus) => {
     notify.error(getApiErrorMessage(err));
   }
 };
+
 const handleSaved = async () => {
   pagination.value.page = 1;
   pagination.value.sortBy = 'createdOnUtc';
@@ -397,10 +406,6 @@ const openView = (row) => {
   viewOpen.value = true;
 };
 
-const parseBoolean = (val) => {
-  if (val === 1 || val === "1" || val === true || val === "true") return true;
-  return false;
-};
 const removeSession = async (row) => {
   const id = row.sessionId || row.SessionId || row.id || row.Id;
   if (!id) return;
@@ -423,4 +428,6 @@ const removeSession = async (row) => {
     notify.error(getApiErrorMessage(err));
   }
 };
+
+
 </script>

@@ -47,6 +47,7 @@ public class SakoleeDbContext : DbContext, IDataProtectionKeyContext
     public DbSet<ClassRooms> ClassRooms { get; set; }
     public DbSet<FamilyRelation> FamilyRelations { get; set; }
     public DbSet<MembershipType> MembershipType { get; set; }
+    public DbSet<StudentGradeLevel> StudentGradeLevel { get; set; }
 
 
 
@@ -219,6 +220,7 @@ public class SakoleeDbContext : DbContext, IDataProtectionKeyContext
 
         modelBuilder.Entity<MembershipType>().HasQueryFilter(e => (!_tenantContext.IsResolved || e.TenantId == _tenantContext.TenantId) && !e.Deleted);
         modelBuilder.Entity<Location>().HasQueryFilter(e => (!_tenantContext.IsResolved || e.TenantId == _tenantContext.TenantId) && !e.Deleted);
+        modelBuilder.Entity<StudentGradeLevel>().HasQueryFilter(e => (!_tenantContext.IsResolved || e.TenantId == _tenantContext.TenantId) && !e.Deleted);
 
 
 
@@ -415,6 +417,10 @@ public class SakoleeDbContext : DbContext, IDataProtectionKeyContext
 
                 case MembershipType membershipType when membershipType.TenantId is null || membershipType.TenantId == Guid.Empty:
                     membershipType.TenantId = _tenantContext.TenantId;
+                    break;
+
+                case StudentGradeLevel studentGradeLevel when studentGradeLevel.TenantId is null || studentGradeLevel.TenantId == Guid.Empty:
+                    studentGradeLevel.TenantId = _tenantContext.TenantId;
                     break;
             }
         }

@@ -844,7 +844,13 @@ const settingsSection = {
   icon: "o_card_membership",
   to: "/membership-types",
   permissions: [Permissions.MembershipTypesRead]
-}
+},
+{
+          label: "Student Grade Levels",
+          icon: "o_school",
+          to: "/student-grade-levels",
+          permissions: [Permissions.StudentGradeLevelsRead]
+        },
       ]
     },
     {

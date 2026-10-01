@@ -87,6 +87,10 @@ public static class DependencyInjection
             services.AddScoped<IFamilyRelationRepository, FamilyRelationRepository>();
         // Membership Type Repository registration
         services.AddScoped<IMembershipTypeRepository, MembershipTypeRepository>();
+        services.AddScoped<IStudentGradeLevelRepository, StudentGradeLevelRepository>();
+
+
+        
 
 
         services.AddScoped<IUserGroupRepository, UserGroupRepository>();

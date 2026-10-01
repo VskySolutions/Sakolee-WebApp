@@ -105,10 +105,18 @@ const viewClassRoom = reactive({
 });
 
 //Formats the Date
+// const formatDate = (value) => {
+//   if (!value) return "—";
+//   const date = new Date(value);
+//   return isNaN(date.getTime()) ? String(value) : date.toLocaleString();
+// };
+
 const formatDate = (value) => {
   if (!value) return "—";
   const date = new Date(value);
-  return isNaN(date.getTime()) ? String(value) : date.toLocaleString();
+  // Check if date is invalid or the default .NET MinValue (0001-01-01)
+  if (isNaN(date.getTime()) || date.getFullYear() <= 1) return "—";
+  return date.toLocaleString();
 };
 
 //Resets the view

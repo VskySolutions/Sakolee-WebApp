@@ -65,7 +65,10 @@ export const Permissions = Object.freeze({
  MembershipTypesWrite : "membershipTypes.write",
   MembershipTypesDelete : "membershipTypes.delete",
 
-
+// StudentGradeLevel
+StudentGradeLevelsRead : "studentGradeLevels.read",
+StudentGradeLevelsWrite :"studentGradeLevels.write",
+StudentGradeLevelsDelete :"studentGradeLevels.delete",
 
   UsersRead: "users.read",
   UsersWrite: "users.write",

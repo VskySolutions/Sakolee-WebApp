@@ -603,3 +603,18 @@ export const membershipTypeApi = {
 
   delete: (id) => api.delete(`/api/admin/membership-types/${id}`).then(envelope)
 };
+
+/**
+ * API service for managing student grade level operations.
+ */
+export const studentGradeLevelApi = {
+  list: (params) => api.get("/api/admin/student-grade-levels", { params }).then(envelope),
+
+  get: (id) => api.get(`/api/admin/student-grade-levels/${id}`).then(unwrap),
+
+  create: (payload) => api.post("/api/admin/student-grade-levels", payload).then(unwrap),
+
+  update: (id, payload) => api.put(`/api/admin/student-grade-levels/${id}`, payload).then(unwrap),
+
+  delete: (id) => api.delete(`/api/admin/student-grade-levels/${id}`).then(envelope)
+};

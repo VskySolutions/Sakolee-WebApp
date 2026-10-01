@@ -42,6 +42,11 @@ public static class Permissions
     public const string MembershipTypesWrite = "membershipTypes.write";
     public const string MembershipTypesDelete = "membershipTypes.delete";
 
+    // StudentGradeLevel
+    public const string StudentGradeLevelsRead = "studentGradeLevels.read";
+    public const string StudentGradeLevelsWrite = "studentGradeLevels.write";
+    public const string StudentGradeLevelsDelete = "studentGradeLevels.delete";
+
     // Families (household records — contacts + students, see Family entity)
     public const string FamiliesRead = "families.read";
     public const string FamiliesWrite = "families.write";
@@ -126,6 +131,7 @@ public static class Permissions
         ClassRoomsRead,ClassRoomsWrite,ClassRoomsDelete,
         BillingMethodsRead, BillingMethodsWrite, BillingMethodsDelete,
         MembershipTypesRead, MembershipTypesWrite, MembershipTypesDelete,
+        StudentGradeLevelsRead,StudentGradeLevelsWrite,StudentGradeLevelsDelete,
 
         StudentsRead, StudentsWrite, StudentsDelete,
         ClassesRead, ClassesWrite, ClassesDelete,
@@ -156,6 +162,7 @@ public static class Permissions
         FamiliesRead, FamiliesWrite, FamiliesDelete,
 
         MembershipTypesRead,MembershipTypesRead, MembershipTypesWrite,
+        StudentGradeLevelsRead,StudentGradeLevelsWrite,StudentGradeLevelsDelete,
 
         ClassSessionsRead, ClassSessionsWrite, ClassSessionsDelete,
         ClassRoomsRead,ClassRoomsWrite,ClassRoomsDelete,

@@ -2,16 +2,16 @@
   <q-page padding>
     <!-- Page Header Component -->
     <app-list-header
-      :breadcrumbs="[{ label: 'Home', to: '/' }, { label: 'Billing Methods' }]"
-      title="Billing Methods"
-      description="Manage your all billing methods here."
+      :breadcrumbs="[{ label: 'Home', to: '/' }, { label: 'Student Grade Levels' }]"
+      title="Student Grade Levels"
+      description="Manage your all student grade levels here."
       :search="search"
       show-search
-      search-placeholder="Search billing methods"
+      search-placeholder="Search student grade levels"
       show-filters
       :filter-count="filterChips.length"
       show-add
-      add-label="Create Billing Method"
+      add-label="Create Student Grade Level"
       show-back
       @update:search="search = $event"
       @filters="filterOpen = true"
@@ -27,9 +27,9 @@
 
     <!-- Core Data Table Grid Component -->
     <app-data-table
-      page-key="billing-methods"
-      :row-key="(row) => row.billingMethodId || row.BillingMethodId || row.id || row.Id"
-      title="Billing Methods"
+      page-key="student-grade-levels"
+      row-key="id"
+      title="Student Grade Levels"
       :rows="filteredRows"
       :columns="columns"
       :loading="loading"
@@ -38,10 +38,10 @@
       @request="onRequest"
       @refresh="load"
     >
-      Name Cell with Deleted Indicator
+      <!-- Name Cell with Deleted Indicator -->
       <template #body-cell-name="cell">
         <q-td :props="cell" :class="{ 'text-strike text-grey': cell.row.deleted || cell.row.Deleted }">
-          {{ cell.row.name || cell.row.Name || cell.row.billingMethodName || cell.row.BillingMethodName }}
+          {{ cell.row.name || cell.row.Name || cell.row.studentGradeLevelName || cell.row.StudentGradeLevelName }}
           <q-badge v-if="cell.row.deleted || cell.row.Deleted" color="negative" class="q-ml-sm" dense>
             Deleted
           </q-badge>
@@ -59,9 +59,6 @@
               color="positive"
               :disable="cell.row.deleted || cell.row.Deleted"
             />
-            <!-- <span :class="(cell.row.active ?? cell.row.Active ?? cell.row.is_active ?? true) ? 'text-positive' : 'text-grey'">
-              {{ (cell.row.active ?? cell.row.Active ?? cell.row.is_active ?? true) ? "Active" : "Inactive" }}
-            </span> -->
           </div>
         </q-td>
       </template>
@@ -75,7 +72,7 @@
           <q-btn flat round dense color="primary" icon="o_edit" @click="openEdit(cell.row)" :disabled="cell.row.deleted || cell.row.Deleted">
             <q-tooltip>Edit</q-tooltip>
           </q-btn>
-          <q-btn flat round dense color="negative" icon="o_delete" @click="removeBillingMethod(cell.row)" v-if="!(cell.row.deleted || cell.row.Deleted)">
+          <q-btn flat round dense color="negative" icon="o_delete" @click="removeStudentGradeLevel(cell.row)" v-if="!(cell.row.deleted || cell.row.Deleted)">
             <q-tooltip>Delete</q-tooltip>
           </q-btn>
         </q-td>
@@ -83,7 +80,7 @@
     </app-data-table>
 
     <!-- Create / Edit Form Component -->
-    <billing-method-form
+    <student-grade-level-form
       v-model="formDrawerOpen"
       :editing-id="editingId"
       :initial-data="selectedRow"
@@ -91,7 +88,7 @@
     />
 
     <!-- View Component -->
-    <billing-method-view
+    <student-grade-level-view
       v-model="viewDrawerOpen"
       :record-id="viewRecordId"
     />
@@ -102,7 +99,7 @@
 import { ref, computed, watch, onMounted } from "vue";
 import { debounce } from "quasar";
 
-import { billingMethodApi, getApiErrorMessage } from "services/api";
+import { studentGradeLevelApi, getApiErrorMessage } from "services/api";
 
 import { useNotify } from "composables/useNotify";
 import { useConfirm } from "composables/useConfirm";
@@ -115,18 +112,12 @@ import AppListHeader from "components/common/AppListHeader.vue";
 import AppFilterDrawer from "components/common/AppFilterDrawer.vue";
 import AppColumnFilters from "components/common/AppColumnFilters.vue";
 
-import BillingMethodForm from "src/modules/billing-method/components/create_edit.vue";
-import BillingMethodView from "src/modules/billing-method/components/view.vue";
+import StudentGradeLevelForm from "src/modules/student-grade-level/components/create_edit.vue";
+import StudentGradeLevelView from "src/modules/student-grade-level/components/view.vue";
 
 const { showDeleted, canManageDeleted } = useDeletedRecords();
 const notify = useNotify();
 const { confirm } = useConfirm();
-
-// const formatDate = (value) => {
-//   if (!value) return "—";
-//   const date = new Date(value);
-//   return isNaN(date.getTime()) ? String(value) : date.toLocaleString();
-// };
 
 // Enhanced date formatting to handle invalid dates and .NET MinValue
 const formatDate = (value) => {
@@ -141,13 +132,12 @@ const formatDate = (value) => {
 const columns = [
   {
     name: "name",
-    label: "Billing Method Name",
-    field: (r) => r.name || r.Name || r.billingMethodName || r.BillingMethodName,
+    label: "Student Grade Level Name",
+    field: (r) => r.name || r.Name || r.studentGradeLevelName || r.StudentGradeLevelName,
     align: "left",
     sortable: true,
     default: true
   },
-  
   {
     name: "createdBy",
     label: "Created By",
@@ -215,9 +205,9 @@ const {
   load,
   onRequest
 } = useListTable({
-  pageKey: "billing-methods",
+  pageKey: "student-grade-levels",
   fetcher: ({ sortBy, descending }) =>
-    billingMethodApi.list({
+    studentGradeLevelApi.list({
       search: search.value || undefined,
       showDeleted: showDeleted.value,
       sortBy: sortBy || 'createdOnUtc',
@@ -260,7 +250,7 @@ const reload = debounce(() => {
   load();
 }, 300);
 
-//  Watch the search term and trigger reload when it changes
+// Watch the search term and trigger reload when it changes
 watch(search, reload);
 
 // Ensure the table is sorted by "Created On" in descending order on initial load
@@ -284,7 +274,7 @@ const openCreate = () => {
 
 // Function to open the edit form with selected record
 const openEdit = (row) => {
-  const id = row.billingMethodId || row.BillingMethodId || row.id || row.Id;
+  const id = row.studentGradeLevelId || row.StudentGradeLevelId || row.id || row.Id;
   if (!id) {
     notify.error("Invalid record identifier for editing.");
     return;
@@ -296,24 +286,21 @@ const openEdit = (row) => {
 
 // Function to update status directly from table toggle and sync with DB
 const updateStatus = async (row, newStatus) => {
-  const id = row.billingMethodId || row.BillingMethodId || row.id || row.Id;
+  const id = row.studentGradeLevelId || row.StudentGradeLevelId || row.id || row.Id;
   if (!id) return;
 
-  
   const originalStatus = row.active ?? row.Active ?? row.is_active ?? true;
-  
+
   if (row.active !== undefined) row.active = newStatus;
   if (row.Active !== undefined) row.Active = newStatus;
   if (row.is_active !== undefined) row.is_active = newStatus;
 
   try {
-    
     const payload = {
-      
-      name: row.name || row.Name || row.billingMethodName || row.BillingMethodName,
+      name: row.name || row.Name || row.studentGradeLevelName || row.StudentGradeLevelName,
       active: newStatus
     };
-    await billingMethodApi.update(id, payload);
+    await studentGradeLevelApi.update(id, payload);
     notify.success("Status updated successfully.");
     await load();
   } catch (err) {
@@ -325,7 +312,6 @@ const updateStatus = async (row, newStatus) => {
   }
 };
 
-
 const handleSaved = async () => {
   pagination.value.page = 1;
   pagination.value.sortBy = "createdOnUtc";
@@ -333,13 +319,12 @@ const handleSaved = async () => {
   await load();
 };
 
-
 const viewDrawerOpen = ref(false);
 const viewRecordId = ref(null);
 
-//Opens the view
+// Opens the view drawer
 const openView = (row) => {
-  const id = row.billingMethodId || row.BillingMethodId || row.id || row.Id;
+  const id = row.studentGradeLevelId || row.StudentGradeLevelId || row.id || row.Id;
   if (!id) {
     notify.error("Invalid record identifier for viewing.");
     return;
@@ -348,15 +333,15 @@ const openView = (row) => {
   viewDrawerOpen.value = true;
 };
 
-//Remove Method
-const removeBillingMethod = async (row) => {
-  const id = row.billingMethodId || row.BillingMethodId || row.id || row.Id;
+// Remove/Delete Method
+const removeStudentGradeLevel = async (row) => {
+  const id = row.studentGradeLevelId || row.StudentGradeLevelId || row.id || row.Id;
   if (!id) return;
 
-  const methodLabel = row.name || row.Name || row.billingMethodName || row.BillingMethodName || 'this billing method';
+  const gradeLabel = row.name || row.Name || row.studentGradeLevelName || row.StudentGradeLevelName || 'this student grade level';
   const ok = await confirm({
-    title: "Delete billing method",
-    message: `Are you sure you want to delete the billing method "${methodLabel}"?`,
+    title: "Delete student grade level",
+    message: `Are you sure you want to delete the student grade level "${gradeLabel}"?`,
     confirmLabel: "Delete",
     type: "danger"
   });
@@ -364,8 +349,8 @@ const removeBillingMethod = async (row) => {
   if (!ok) return;
 
   try {
-    await billingMethodApi.delete(id);
-    notify.success("Billing method deleted successfully.");
+    await studentGradeLevelApi.delete(id);
+    notify.success("Student grade level deleted successfully.");
     await load();
   } catch (err) {
     notify.error(getApiErrorMessage(err));

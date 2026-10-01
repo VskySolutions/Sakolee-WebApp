@@ -59,6 +59,7 @@ internal sealed class FamilyStatusRepository : IFamilyStatusRepository
     // "createdOn"/"updatedOn" are kept as aliases for callers still sending the pre-AuditableEntity names.
     private static readonly SortMap<FamilyStatus> Sorts = new SortMap<FamilyStatus>("updatedOnUtc")
         .Add("name", f => f.Name)
+        //.Add("sessionname", s => s.Name)
         .Add("active", f => f.Active, f => f.UpdatedOnUtc)
         .Add("createdOnUtc", f => f.CreatedOnUtc)
         .Add("updatedOnUtc", f => f.UpdatedOnUtc)

@@ -43,6 +43,7 @@ import tShirtSizeRoutes from "modules/t-shirt-size/routes";
 import classRoomRoutes from "modules/class-room/routes";
 import billingMethodRoutes from "modules/billing-method/routes";
 import membershipTypeRoutes from "modules/membership-type/routes";
+import studentGradeLevelRoutes from "modules/student-grade-level/routes";
 
 routes.push(...accountRoutes);
 routes.push(...authRoutes);
@@ -70,6 +71,7 @@ routes.push(...tShirtSizeRoutes);
 routes.push(...classRoomRoutes);
 routes.push(...billingMethodRoutes);
 routes.push(...membershipTypeRoutes);
+routes.push(...studentGradeLevelRoutes);
 
 // Route meta `permissions` requires any one of the listed permission keys; the deepest matched
 // record's list wins.

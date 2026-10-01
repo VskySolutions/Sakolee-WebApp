@@ -1,7 +1,7 @@
 <template>
   <app-form-dialog
     v-model="isOpen"
-    title="View Membership Type"
+    title="View Student Grade Level"
     size="sm"
     hide-save
     @cancel="close"
@@ -13,19 +13,19 @@
 
     <!-- Content Section -->
     <div v-else class="row q-col-gutter-lg">
-      <!-- Membership Type Name -->
+      <!-- Student Grade Level Name -->
       <div class="col-12 col-sm-6">
-        <div class="text-86 fs-12 fw-500">Membership Type Name</div>
+        <div class="text-86 fs-12 fw-500">Student Grade Level Name</div>
         <div class="text-2e fs-14">
-          {{ viewMembershipType.name || "—" }}
+          {{ viewStudentGradeLevel.name || "—" }}
         </div>
       </div>
 
       <!-- Status -->
       <div class="col-12 col-sm-6">
         <div class="text-86 fs-12 fw-500">Status</div>
-        <q-badge :class="viewMembershipType.active ? 'active-badge' : 'inactive-badge'">
-          {{ viewMembershipType.active ? "Active" : "Inactive" }}
+        <q-badge :class="viewStudentGradeLevel.active ? 'active-badge' : 'inactive-badge'">
+          {{ viewStudentGradeLevel.active ? "Active" : "Inactive" }}
         </q-badge>
       </div>
 
@@ -33,7 +33,7 @@
       <div class="col-12 col-sm-6">
         <div class="text-86 fs-12 fw-500">Created By</div>
         <div class="text-2e fs-14">
-          {{ viewMembershipType.createdBy || "—" }}
+          {{ viewStudentGradeLevel.createdBy || "—" }}
         </div>
       </div>
 
@@ -41,7 +41,7 @@
       <div class="col-12 col-sm-6">
         <div class="text-86 fs-12 fw-500">Created On</div>
         <div class="text-2e fs-14">
-          {{ formatDate(viewMembershipType.createdOnUtc) }}
+          {{ formatDate(viewStudentGradeLevel.createdOnUtc) }}
         </div>
       </div>
 
@@ -49,7 +49,7 @@
       <div class="col-12 col-sm-6">
         <div class="text-86 fs-12 fw-500">Updated By</div>
         <div class="text-2e fs-14">
-          {{ viewMembershipType.updatedBy || "—" }}
+          {{ viewStudentGradeLevel.updatedBy || "—" }}
         </div>
       </div>
 
@@ -57,7 +57,7 @@
       <div class="col-12 col-sm-6">
         <div class="text-86 fs-12 fw-500">Updated On</div>
         <div class="text-2e fs-14">
-          {{ formatDate(viewMembershipType.updatedOnUtc) }}
+          {{ formatDate(viewStudentGradeLevel.updatedOnUtc) }}
         </div>
       </div>
     </div>
@@ -66,7 +66,7 @@
 
 <script setup>
 import { ref, reactive, watch } from "vue";
-import { membershipTypeApi, getApiErrorMessage } from "services/api";
+import { studentGradeLevelApi, getApiErrorMessage } from "services/api";
 import { useNotify } from "composables/useNotify";
 import AppFormDialog from "components/common/AppFormDialog.vue";
 
@@ -82,8 +82,8 @@ const notify = useNotify();
 const isOpen = ref(props.modelValue);
 const viewLoading = ref(false);
 
-// Reactive object to hold the membership type data for viewing
-const viewMembershipType = reactive({
+// Reactive object to hold the student grade level data for viewing
+const viewStudentGradeLevel = reactive({
   id: null,
   name: "",
   active: true,
@@ -93,13 +93,7 @@ const viewMembershipType = reactive({
   updatedOnUtc: null
 });
 
-// Utility function to format date
-// const formatDate = (value) => {
-//   if (!value) return "—";
-//   const date = new Date(value);
-//   return isNaN(date.getTime()) ? String(value) : date.toLocaleString();
-// };
-
+// Enhanced date formatting to handle invalid dates and .NET MinValue
 const formatDate = (value) => {
   if (!value) return "—";
   const date = new Date(value);
@@ -110,13 +104,13 @@ const formatDate = (value) => {
 
 // Function to reset the view state
 const resetView = () => {
-  viewMembershipType.id = null;
-  viewMembershipType.name = "";
-  viewMembershipType.active = true;
-  viewMembershipType.createdBy = "";
-  viewMembershipType.createdOnUtc = null;
-  viewMembershipType.updatedBy = "";
-  viewMembershipType.updatedOnUtc = null;
+  viewStudentGradeLevel.id = null;
+  viewStudentGradeLevel.name = "";
+  viewStudentGradeLevel.active = true;
+  viewStudentGradeLevel.createdBy = "";
+  viewStudentGradeLevel.createdOnUtc = null;
+  viewStudentGradeLevel.updatedBy = "";
+  viewStudentGradeLevel.updatedOnUtc = null;
 };
 
 // Watchers to handle prop changes and open/close state
@@ -138,17 +132,17 @@ const fetchRecord = async (id) => {
   resetView();
   viewLoading.value = true;
   try {
-    const response = await membershipTypeApi.get(id);
+    const response = await studentGradeLevelApi.get(id);
     const item = response?.data?.data || response?.data || response;
 
     if (item) {
-      viewMembershipType.id = id;
-      viewMembershipType.name = item.name || item.Name || item.membershipTypeName || item.MembershipTypeName || "";
-      viewMembershipType.active = item.active ?? item.Active ?? item.is_active ?? true;
-      viewMembershipType.createdBy = item.createdBy || item.CreatedBy || item.created_by || "";
-      viewMembershipType.createdOnUtc = item.createdOnUtc || item.CreatedOnUtc || item.created_on_utc || item.createdOn || item.CreatedOn || item.created_on || null;
-      viewMembershipType.updatedBy = item.updatedBy || item.UpdatedBy || item.updated_by || "";
-      viewMembershipType.updatedOnUtc = item.updatedOnUtc || item.UpdatedOnUtc || item.updated_on_utc || item.updatedOn || item.UpdatedOn || item.updated_on || null;
+      viewStudentGradeLevel.id = id;
+      viewStudentGradeLevel.name = item.name || item.Name || item.studentGradeLevelName || item.StudentGradeLevelName || "";
+      viewStudentGradeLevel.active = item.active ?? item.Active ?? item.is_active ?? true;
+      viewStudentGradeLevel.createdBy = item.createdBy || item.CreatedBy || item.created_by || "";
+      viewStudentGradeLevel.createdOnUtc = item.createdOnUtc || item.CreatedOnUtc || item.created_on_utc || item.createdOn || item.CreatedOn || item.created_on || null;
+      viewStudentGradeLevel.updatedBy = item.updatedBy || item.UpdatedBy || item.updated_by || "";
+      viewStudentGradeLevel.updatedOnUtc = item.updatedOnUtc || item.UpdatedOnUtc || item.updated_on_utc || item.updatedOn || item.UpdatedOn || item.updated_on || null;
     }
   } catch (err) {
     isOpen.value = false;
@@ -158,6 +152,7 @@ const fetchRecord = async (id) => {
   }
 };
 
+// Function to close the dialog and reset the view state
 const close = () => {
   isOpen.value = false;
   resetView();
