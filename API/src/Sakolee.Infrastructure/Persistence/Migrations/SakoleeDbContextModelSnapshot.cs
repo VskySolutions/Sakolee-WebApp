@@ -22,6 +22,55 @@ namespace Sakolee.Infrastructure.Persistence.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
+            modelBuilder.Entity("ClassRoom", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("Active")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true);
+
+                    b.Property<Guid?>("CreatedById")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedOnUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("Deleted")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("DeletedOnUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("LocationId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<Guid?>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("UpdatedById")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("UpdatedOnUtc")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("LocationId");
+
+                    b.HasIndex("TenantId");
+
+                    b.ToTable("ClassRooms");
+                });
+
             modelBuilder.Entity("Microsoft.AspNetCore.DataProtection.EntityFrameworkCore.DataProtectionKey", b =>
             {
                 b.Property<int>("Id")
@@ -329,91 +378,99 @@ namespace Sakolee.Infrastructure.Persistence.Migrations
             });
 
             modelBuilder.Entity("Sakolee.Domain.Entities.BillingCycle", b =>
-            {
-                b.Property<string>("Id")
-                    .ValueGeneratedOnAdd()
-                    .HasMaxLength(450)
-                    .HasColumnType("nvarchar(450)");
+                {
+                    b.Property<string>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
 
-                b.Property<string>("CreatedById")
-                    .HasMaxLength(450)
-                    .HasColumnType("nvarchar(450)");
+                    b.Property<string>("CreatedById")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
 
-                b.Property<DateTime>("CreatedOnUtc")
-                    .ValueGeneratedOnAdd()
-                    .HasColumnType("datetime2")
-                    .HasDefaultValueSql("sysutcdatetime()");
+                    b.Property<DateTime>("CreatedOnUtc")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("sysutcdatetime()");
 
-                b.Property<bool>("Deleted")
-                    .ValueGeneratedOnAdd()
-                    .HasColumnType("bit")
-                    .HasDefaultValue(false);
+                    b.Property<bool>("Deleted")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
 
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
-                b.Property<string>("TenantId")
-                    .IsRequired()
-                    .HasMaxLength(450)
-                    .HasColumnType("nvarchar(450)")
-                    .HasColumnName("TenentId");
+                    b.Property<string>("TenantId")
+                        .IsRequired()
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)")
+                        .HasColumnName("TenentId");
 
-                b.Property<string>("UpdatedById")
-                    .HasMaxLength(450)
-                    .HasColumnType("nvarchar(450)");
+                    b.Property<string>("UpdatedById")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
 
                     b.Property<DateTime?>("UpdatedOnUtc")
                         .HasColumnType("datetime2");
 
-                b.HasKey("Id");
+                    b.Property<DateTime?>("UpdatedOnUtc")
+                        .HasColumnType("datetime2");
 
-                b.HasIndex("TenantId", "Name")
-                    .IsUnique()
-                    .HasFilter("[Deleted] = 0");
+                    b.HasKey("Id");
 
-                b.ToTable("BillingCycle", (string)null);
-            });
+                    b.HasIndex("TenantId", "Name")
+                        .IsUnique()
+                        .HasFilter("[Deleted] = 0");
+
+                    b.ToTable("BillingCycle", (string)null);
+                });
 
             modelBuilder.Entity("Sakolee.Domain.Entities.BillingMethod", b =>
-            {
-                b.Property<Guid>("Id")
-                    .ValueGeneratedOnAdd()
-                    .HasColumnType("uniqueidentifier");
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
 
-                b.Property<bool>("Active")
-                    .HasColumnType("bit");
 
-                b.Property<Guid?>("CreatedById")
-                    .HasColumnType("uniqueidentifier");
+                    b.Property<bool>("Active")
+                        .HasColumnType("bit");
 
-                b.Property<DateTime>("CreatedOnUtc")
-                    .HasColumnType("datetime2");
+                    b.Property<Guid?>("CreatedById")
+                        .HasColumnType("uniqueidentifier");
 
-                b.Property<bool>("Deleted")
-                    .HasColumnType("bit");
+                    b.Property<DateTime>("CreatedOnUtc")
+                        .HasColumnType("datetime2");
 
-                b.Property<DateTime?>("DeletedOnUtc")
-                    .HasColumnType("datetime2");
+                    b.Property<bool>("Deleted")
+                        .HasColumnType("bit");
 
-                b.Property<string>("Name")
-                    .IsRequired()
-                    .HasColumnType("nvarchar(max)");
+                    b.Property<DateTime?>("DeletedOnUtc")
+                        .HasColumnType("datetime2");
 
-                b.Property<Guid?>("TenantId")
-                    .HasColumnType("uniqueidentifier");
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
-                b.Property<Guid?>("UpdatedById")
-                    .HasColumnType("uniqueidentifier");
+                    b.Property<Guid?>("TenantId")
+                        .HasColumnType("uniqueidentifier");
 
-                b.Property<DateTime>("UpdatedOnUtc")
-                    .HasColumnType("datetime2");
+                    b.Property<Guid?>("UpdatedById")
+                        .HasColumnType("uniqueidentifier");
 
-                b.HasKey("Id");
+                    b.Property<DateTime>("UpdatedOnUtc")
+                        .HasColumnType("datetime2");
 
-                b.HasIndex("TenantId");
+                    b.HasKey("Id");
 
+<<<<<<< HEAD
+=======
+                    b.HasIndex("TenantId");
+
+>>>>>>> 5dfdb44bfd54d7af21c852b84d64ddd32f8a6cd6
                     b.ToTable("BillingMethod");
                 });
 
@@ -3456,6 +3513,26 @@ namespace Sakolee.Infrastructure.Persistence.Migrations
                     b.ToTable("UserTenantRoles", (string)null);
                 });
 
+<<<<<<< HEAD
+=======
+            modelBuilder.Entity("ClassRoom", b =>
+                {
+                    b.HasOne("Sakolee.Domain.Entities.Location", "Location")
+                        .WithMany()
+                        .HasForeignKey("LocationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Sakolee.Domain.Entities.Tenant", "Tenant")
+                        .WithMany()
+                        .HasForeignKey("TenantId");
+
+                    b.Navigation("Location");
+
+                    b.Navigation("Tenant");
+                });
+
+>>>>>>> 5dfdb44bfd54d7af21c852b84d64ddd32f8a6cd6
             modelBuilder.Entity("Sakolee.Domain.Entities.AuditTrailEntry", b =>
                 {
                     b.HasOne("Sakolee.Domain.Entities.Tenant", null)

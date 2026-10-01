@@ -60,6 +60,7 @@ public sealed class FamilyRelationsController : ControllerBase
         [FromQuery] int limit = 20,
         [FromQuery] string? search = null,
         [FromQuery] bool? active = null,
+        [FromQuery] bool? showDeleted = null,
         [FromQuery] string? sortBy = null,
         [FromQuery] bool descending = true,
         CancellationToken cancellationToken = default)
@@ -75,7 +76,7 @@ public sealed class FamilyRelationsController : ControllerBase
         var tenantId = User.GetActiveTenantId();
 
         var (items, total) = await _familyRelationRepository.ListAsync(
-            search, tenantId, active, new SortRequest(sortBy, descending), page, limit,
+            search, tenantId, active, showDeleted, new SortRequest(sortBy, descending), page, limit,
             cancellationToken: cancellationToken);
 
         var nameOf = await AuditNamesAsync(items, cancellationToken);
@@ -245,7 +246,11 @@ public sealed class FamilyRelationsController : ControllerBase
             return NotFound(ApiResponseFactory.NotFound("Family relation not found."));
         }
 
-        _familyRelationRepository.Remove(familyRelation);
+        //_familyRelationRepository.Remove(familyRelation);
+        familyRelation.Deleted = true;
+
+        familyRelation.DeletedOnUtc = DateTime.UtcNow;
+        _familyRelationRepository.Update(familyRelation);
 
         await _audit.AddAsync(nameof(FamilyRelation), familyRelation.Id.ToString(), "Deleted",
             details: $"name={familyRelation.Name}",
@@ -291,6 +296,8 @@ public sealed class FamilyRelationsController : ControllerBase
             familyRelation.TenantId,
             familyRelation.Name,
             familyRelation.Active,
+            familyRelation.Deleted,
+            familyRelation.DeletedOnUtc,
             nameOf(familyRelation.CreatedById),
             familyRelation.CreatedOnUtc,
            nameOf(familyRelation.UpdatedById),
@@ -302,9 +309,10 @@ public sealed class FamilyRelationsController : ControllerBase
             familyRelation.Id,
             familyRelation.TenantId,
             familyRelation.Name,
-            
             familyRelation.Active,
-            familyRelation.Tenant != null ? familyRelation.Tenant.Name : null,
+            familyRelation.Deleted,
+            familyRelation.DeletedOnUtc,
+            familyRelation.Tenant != null ? familyRelation.Tenant.Name : null, 
             nameOf(familyRelation.CreatedById),
             familyRelation.CreatedOnUtc,
             nameOf(familyRelation.UpdatedById),

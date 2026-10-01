@@ -57,6 +57,7 @@ public sealed class FamiliesController : ControllerBase
     private readonly IActorAccessor _actorAccessor;
     private readonly IUnitOfWork _unitOfWork;
     private readonly IAuditTrailService _audit;
+    private readonly ICredentialEncryptionService _credentialEncryption;
 
     #endregion
 
@@ -75,7 +76,8 @@ public sealed class FamiliesController : ControllerBase
         ITenantContext tenantContext,
         IActorAccessor actorAccessor,
         IUnitOfWork unitOfWork,
-        IAuditTrailService audit)
+        IAuditTrailService audit,
+        ICredentialEncryptionService credentialEncryption)
     {
         _families = families;
         _persons = persons;
@@ -87,6 +89,7 @@ public sealed class FamiliesController : ControllerBase
         _actorAccessor = actorAccessor;
         _unitOfWork = unitOfWork;
         _audit = audit;
+        _credentialEncryption = credentialEncryption;
     }
 
     #endregion
@@ -299,6 +302,72 @@ public sealed class FamiliesController : ControllerBase
         var names = await ResolveActorNamesAsync(new[] { family.CreatedById, family.UpdatedById }, cancellationToken);
 
         return Ok(ApiResponseFactory.Success(ToDetail(family, students, studentPersons, names), "Family retrieved."));
+    }
+
+    #endregion
+
+    #region Send Credentials Endpoint
+
+    /// <summary>
+    /// Emails every parent contact (primary and secondary) of the family who has a login account their
+    /// credentials — username and temporary password — the family counterpart of the Staff list's
+    /// "Send Credentials". Students are never included. Resend-or-mint rules live in
+    /// <see cref="IUserCredentialsService"/>.
+    /// </summary>
+    [HttpPost("{id:guid}/send-credentials")]
+    [RequirePermission(Permissions.FamiliesWrite)]
+    [ProducesResponseType<ApiResponse<SendFamilyCredentialsResponse>>(StatusCodes.Status200OK)]
+    public async Task<IActionResult> SendCredentials(
+        Guid id, [FromServices] IUserCredentialsService credentials, CancellationToken cancellationToken)
+    {
+        var family = await LoadAsync(id, cancellationToken);
+        if (family is null)
+        {
+            return NotFound(ApiResponseFactory.NotFound("Family not found."));
+        }
+
+        // Parent contacts = the family's active FamilyPersonMapping rows, plus the primary contact inlined on
+        // the Family row itself (covers a family predating its primary mapping row). Primary first.
+        var contactPersonIds = family.Contacts
+            .Where(c => !c.Deleted && c.PersonId.HasValue)
+            .OrderByDescending(c => c.IsPrimaryContact)
+            .Select(c => c.PersonId!.Value)
+            .Prepend(family.PersonId ?? Guid.Empty)
+            .Where(pid => pid != Guid.Empty)
+            .Distinct()
+            .ToList();
+        var persons = contactPersonIds.Count > 0
+            ? (await _persons.GetByIdsAsync(contactPersonIds, cancellationToken)).ToDictionary(p => p.Id)
+            : new Dictionary<Guid, Person>();
+
+        var results = new List<FamilyContactCredentialsResult>();
+        foreach (var personId in contactPersonIds)
+        {
+            if (!persons.TryGetValue(personId, out var person) || person.UserId is not { } userId)
+            {
+                continue; // no login account for this contact — nothing to send
+            }
+
+            var user = await _users.GetByIdAsync(userId, cancellationToken);
+            if (user is null)
+            {
+                continue;
+            }
+
+            var result = await credentials.SendAsync(user, family.TenantId, cancellationToken);
+            results.Add(new FamilyContactCredentialsResult(
+                user.Id, user.DisplayName, user.Email, personId == family.PersonId,
+                result.TemporaryPassword, result.EmailSent, result.PasswordWasReset));
+        }
+
+        if (results.Count == 0)
+        {
+            return BadRequest(ApiResponseFactory.Error(
+                ApiErrorCodes.ValidationFailed, "Validation failed.", "This family has no parent contact with a login account."));
+        }
+
+        return Ok(ApiResponseFactory.Success(
+            new SendFamilyCredentialsResponse(family.Id, results), "Credentials sent."));
     }
 
     #endregion
@@ -560,6 +629,9 @@ public sealed class FamiliesController : ControllerBase
             MustChangePassword = true,
             TokenVersion = 1,
             CreatedDate = now,
+            // Kept (encrypted) only until the contact signs in and sets their own password, so "Send
+            // Credentials" can resend it without minting a new one (same as UsersController.Create).
+            EncryptedTemporaryPassword = _credentialEncryption.Encrypt(temporaryPassword),
         };
         await _users.AddAsync(user, cancellationToken);
         await _users.AddAssignmentAsync(new UserTenantRole
@@ -812,7 +884,7 @@ public sealed class FamiliesController : ControllerBase
             students.Select(s =>
             {
                 var person = s.PersonId is { } pid && studentPersons.TryGetValue(pid, out var p) ? p : null;
-                return new FamilyStudentSummary(s.Id, person?.FirstName, person?.LastName, s.StudentNumber, s.Active, s.ClassId);
+                return new FamilyStudentSummary(s.Id, person?.FirstName, person?.LastName, s.StudentNumber, s.Active, s.ClassId, s.BirthDate);
             }).ToList(),
             NameOf(names, f.CreatedById), f.CreatedOnUtc, NameOf(names, f.UpdatedById), f.UpdatedOnUtc);
     }

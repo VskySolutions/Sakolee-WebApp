@@ -1,151 +1,165 @@
 <template>
-  <q-page padding>
-    <!-- Page Header: Renders navigation breadcrumbs and route actions -->
-    <app-detail-header
-      :items="[
-        { label: 'Home', icon: 'o_home', to: '/' },
-        { label: 'Sessions', to: { name: 'sessions' } },
-        { label: 'View Session' }
-      ]"
-      :back-to="{ name: 'sessions' }"
-    />
-
-    <!-- Loading Spinner Overlay: Displayed during asynchronous data retrieval -->
-    <div v-if="loading" class="row flex-center q-pa-xl">
+  <app-form-dialog
+    v-model="isOpen"
+    title="View Session"
+    size="sm"
+    hide-save
+    @cancel="close"
+  >
+    <!-- Loading State Spinner -->
+    <div v-if="viewLoading" class="row flex-center q-pa-xl">
       <q-spinner color="primary" size="40px" />
     </div>
 
-    <!-- Main Card Container: Wraps the entity details view interface -->
-    <q-card v-else flat bordered class="q-pa-md">
-      <q-form class="q-gutter-md">
-        
-        <!-- Session Name Field (View-only) -->
-        <app-text-field
-          v-model="form.sessionName"
-          label="Session Name"
-          readonly
-          disable
-          class="q-mb-md"
-        />
-
-        <!-- Tenant Name Field (View-only with fallback handling) -->
-        <app-text-field
-          v-model="form.tenantName"
-          label="Tenant Name"
-          readonly
-          disable
-          class="q-mb-md"
-        />
-
-
-        <!-- Created Date Field (View-only) -->
-        <app-text-field
-          v-model="form.createdOn"
-          label="Created Date"
-          readonly
-          disable
-          class="q-mb-md"
-        />
-
-        <!-- Form Action Buttons: Back/Close navigation trigger -->
-        <div class="row q-gutter-sm justify-end">
-          <q-btn unelevated color="primary" label="Back" :to="{ name: 'sessions' }" />
+    <!-- Content Section -->
+    <div v-else class="row q-col-gutter-lg">
+      <!-- Session Name -->
+      <div class="col-12 col-sm-6">
+        <div class="text-86 fs-12 fw-500">Session Name</div>
+        <div class="text-2e fs-14">
+          {{ viewSession.sessionName || "—" }}
         </div>
-      </q-form>
-    </q-card>
-  </q-page>
+      </div>
+
+      <!-- Status -->
+      <div class="col-12 col-sm-6">
+        <div class="text-86 fs-12 fw-500">Status</div>
+        <q-badge :class="viewSession.isActive ? 'active-badge' : 'inactive-badge'">
+          {{ viewSession.isActive ? "Active" : "Inactive" }}
+        </q-badge>
+      </div>
+
+      <!-- Created By -->
+      <div class="col-12 col-sm-6">
+        <div class="text-86 fs-12 fw-500">Created By</div>
+        <div class="text-2e fs-14">
+          {{ viewSession.createdBy || "—" }}
+        </div>
+      </div>
+
+      <!-- Created On -->
+      <div class="col-12 col-sm-6">
+        <div class="text-86 fs-12 fw-500">Created On</div>
+        <div class="text-2e fs-14">
+          {{ formatDate(viewSession.createdOnUtc) }}
+        </div>
+      </div>
+
+      <!-- Updated By -->
+      <div class="col-12 col-sm-6">
+        <div class="text-86 fs-12 fw-500">Updated By</div>
+        <div class="text-2e fs-14">
+          {{ viewSession.updatedBy || "—" }}
+        </div>
+      </div>
+
+      <!-- Updated On -->
+      <div class="col-12 col-sm-6">
+        <div class="text-86 fs-12 fw-500">Updated On</div>
+        <div class="text-2e fs-14">
+          {{ formatDate(viewSession.updatedOnUtc) }}
+        </div>
+      </div>
+    </div>
+  </app-form-dialog>
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from "vue";
-import { useRoute } from "vue-router";
+import { ref, reactive, watch } from "vue";
 import { classSessionApi, getApiErrorMessage } from "services/api";
 import { useNotify } from "composables/useNotify";
-import { useTenantOptions } from "composables/useTenantOptions";
+import AppFormDialog from "components/common/AppFormDialog.vue";
 
-import AppDetailHeader from "components/common/AppDetailHeader.vue";
-import AppTextField from "components/common/AppTextField.vue";
-
-// Composables & Instance Initializations
-const route = useRoute();
-const notify = useNotify();
-const { tenantOptions, loadTenants } = useTenantOptions();
-
-// Component State & Parameter References
-const sessionId = route.params.id;
-const loading = ref(false);
-
-// Form Data Model Binding Structure for View Details
-const form = reactive({ 
-  sessionName: "", 
-  tenantName: "",
-  danceStyle: "",
-  timing: "",
-  createdOn: ""
+// Props and emits
+const props = defineProps({
+  modelValue: { type: Boolean, default: false },
+  recordId: { type: [Object, String, Number], default: null }
 });
 
-// Global Error Handler
-const onError = (err) => {
-  notify.error(getApiErrorMessage(err));
+const emit = defineEmits(["update:modelValue"]);
+
+const notify = useNotify();
+const isOpen = ref(props.modelValue);
+const viewLoading = ref(false);
+
+// Reactive object to hold the session data for viewing
+const viewSession = reactive({
+  id: null,
+  sessionName: "",
+  isActive: true,
+  createdBy: "",
+  createdOnUtc: null,
+  updatedBy: "",
+  updatedOnUtc: null
+});
+
+// Utility function to format date
+// const formatDate = (value) => {
+//   if (!value) return "—";
+//   const date = new Date(value);
+//   return isNaN(date.getTime()) ? String(value) : date.toLocaleString();
+// };
+
+const formatDate = (value) => {
+  if (!value) return "—";
+  const date = new Date(value);
+  // Check if date is invalid or the default .NET MinValue (0001-01-01)
+  if (isNaN(date.getTime()) || date.getFullYear() <= 1) return "—";
+  return date.toLocaleString();
 };
 
-// Lifecycle Hooks & Data Fetching
-onMounted(async () => {
-  if (!sessionId) {
-    notify.error("Invalid session identifier provided in route.");
-    return;
-  }
+// Function to reset the view state
+const resetView = () => {
+  viewSession.id = null;
+  viewSession.sessionName = "";
+  viewSession.isActive = true;
+  viewSession.createdBy = "";
+  viewSession.createdOnUtc = null;
+  viewSession.updatedBy = "";
+  viewSession.updatedOnUtc = null;
+};
 
-  loading.value = true;
-
-  try {
-    // Try loading tenants safely without breaking the main flow if it fails
-    try {
-      if (loadTenants) await loadTenants();
-    } catch (tenantErr) {
-      console.warn("Could not load tenant options:", tenantErr);
-    }
-
-    // Fetch existing record details to display
-    const response = await classSessionApi.get(sessionId);
-    console.log("API Response for Session Details:", response); // Debugging ke liye
-
-    // Extract item payload safely based on standard API wrappers
-    const item = response?.data?.data || response?.data || response;
-    
-    if (item) {
-      form.sessionName = item.sessionName || item.SessionName || item.name || "";
-      
-      // Resolve tenant name with multiple fallbacks
-      let resolvedTenant = item.tenantName || item.tenant_name || item.tenant?.name;
-      if (!resolvedTenant && tenantOptions?.value) {
-        const tenantId = item.tenantId || item.tenantid || item.TenantId;
-        if (tenantId) {
-          const found = tenantOptions.value.find((t) => t.value === tenantId || t.id === tenantId);
-          resolvedTenant = found ? found.label : tenantId;
-        }
-      }
-      form.tenantName = resolvedTenant || "-";
-
-      form.danceStyle = item.danceStyle || item.DanceStyle || item.style || "";
-      form.timing = item.timing || item.Timing || item.time || "";
-      
-      // Format creation date string if available
-      const rawDate = item.createdOn || item.CreatedOn || item.createdAt || item.CreatedAt;
-      if (rawDate) {
-        const date = new Date(rawDate);
-        form.createdOn = isNaN(date.getTime()) ? String(rawDate) : date.toLocaleString();
-      } else {
-        form.createdOn = "-";
-      }
-    } else {
-      notify.error("Session record details could not be found.");
-    }
-  } catch (err) {
-    console.error("Error fetching session details:", err);
-    onError(err);
-  } finally {
-    loading.value = false;
+// Watchers to handle prop changes and open/close state
+watch(() => props.modelValue, async (val) => {
+  isOpen.value = val;
+  if (val && props.recordId) {
+    await fetchRecord(props.recordId);
+  } else if (!val) {
+    resetView();
   }
 });
+
+watch(isOpen, (val) => {
+  emit("update:modelValue", val);
+});
+
+// Function to fetch a record by ID
+const fetchRecord = async (id) => {
+  resetView();
+  viewLoading.value = true;
+  try {
+    const response = await classSessionApi.get(id);
+    const item = response?.data?.data || response?.data || response;
+
+    if (item) {
+      viewSession.id = id;
+      viewSession.sessionName = item.sessionName || item.SessionName || item.name || item.Name || "";
+      viewSession.isActive = item.isActive ?? item.IsActive ?? item.active ?? item.Active ?? true;
+      viewSession.createdBy = item.createdBy || item.CreatedBy || item.created_by || "";
+      viewSession.createdOnUtc = item.createdOnUtc || item.CreatedOnUtc || item.created_on_utc || item.createdOn || item.CreatedOn || item.created_on || null;
+      viewSession.updatedBy = item.updatedBy || item.UpdatedBy || item.updated_by || "";
+      viewSession.updatedOnUtc = item.updatedOnUtc || item.UpdatedOnUtc || item.updated_on_utc || item.updatedOn || item.UpdatedOn || item.updated_on || null;
+    }
+  } catch (err) {
+    isOpen.value = false;
+    notify.error(getApiErrorMessage(err));
+  } finally {
+    viewLoading.value = false;
+  }
+};
+
+const close = () => {
+  isOpen.value = false;
+  resetView();
+};
 </script>

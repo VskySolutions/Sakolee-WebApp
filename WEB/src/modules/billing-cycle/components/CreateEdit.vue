@@ -1,6 +1,11 @@
 <template>
+<<<<<<< HEAD
   <!-- Dialog used for creating and editing a Billing Cycle -->
   <app-form-dialog
+=======
+  <!-- Drawer used for creating and editing a Billing Cycle -->
+  <app-form-drawer
+>>>>>>> 5dfdb44bfd54d7af21c852b84d64ddd32f8a6cd6
     v-model="formOpen"
     :title="editing ? 'Edit Billing Cycle' : 'Create Billing Cycle'"
     :saving="saving"

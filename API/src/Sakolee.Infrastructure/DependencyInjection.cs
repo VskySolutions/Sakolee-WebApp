@@ -77,12 +77,20 @@ public static class DependencyInjection
         services.AddScoped<IStudentRepository, StudentRepository>();
         services.AddScoped<IClassRepository, ClassRepository>();
         services.AddScoped<IClassCategoryRepository, ClassCategoryRepository>();
+        services.AddScoped<IClassRoomRepository, ClassRoomRepository>();
+
 
         services.AddScoped<IFamilyStatusRepository, FamilyStatusRepository>();
         services.AddScoped<IFamilyRepository, FamilyRepository>();
         services.AddScoped<IClassSessionRepository, ClassSessionRepository>();
         services.AddScoped<IBillingMethodRepository, BillingMethodRepository>();
-        services.AddScoped<IFamilyRelationRepository, FamilyRelationRepository>();
+            services.AddScoped<IFamilyRelationRepository, FamilyRelationRepository>();
+        // Membership Type Repository registration
+        services.AddScoped<IMembershipTypeRepository, MembershipTypeRepository>();
+        services.AddScoped<IStudentGradeLevelRepository, StudentGradeLevelRepository>();
+
+
+        
 
 
         services.AddScoped<IUserGroupRepository, UserGroupRepository>();

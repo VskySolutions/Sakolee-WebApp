@@ -117,7 +117,7 @@ public sealed record FamilyResponse(Guid FamilyId, string? FamilyName, IReadOnly
 /// <summary>A student enrolled under a family — the minimal projection a family's detail view needs
 /// (full detail lives on the Students screen).</summary>
 public sealed record FamilyStudentSummary(
-    Guid StudentId, string? FirstName, string? LastName, string? StudentNumber, bool Active, Guid? ClassId);
+    Guid StudentId, string? FirstName, string? LastName, string? StudentNumber, bool Active, Guid? ClassId, DateTime? BirthDate);
 
 /// <summary>Full family detail: its own fields, every contact, and every enrolled student.</summary>
 public sealed record FamilyDetail(
@@ -148,6 +148,15 @@ public sealed record FamilyDetail(
     DateTime CreatedOnUtc,
     string? UpdatedBy,
     DateTime? UpdatedOnUtc);
+
+/// <summary>One parent contact's outcome from <c>FamiliesController.SendCredentials</c>.
+/// <see cref="TemporaryPassword"/> is returned so it can be shown once when <see cref="EmailSent"/> is false.</summary>
+public sealed record FamilyContactCredentialsResult(
+    Guid UserId, string? Name, string Email, bool IsPrimaryContact,
+    string TemporaryPassword, bool EmailSent, bool PasswordWasReset);
+
+/// <summary>Response from sending a family's parent contacts their login credentials.</summary>
+public sealed record SendFamilyCredentialsResponse(Guid FamilyId, IReadOnlyList<FamilyContactCredentialsResult> Contacts);
 
 /// <summary>A family row for the list page.</summary>
 public sealed record FamilySummary(

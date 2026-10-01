@@ -27,10 +27,25 @@ public static class Permissions
     public const string FamilyRelationsWrite = "familyRelations.write";
     public const string FamilyRelationsDelete = "familyRelations.delete";
 
-    // Sessions (Dance academy session master records)
+    // Sessions 
     public const string ClassSessionsRead = "classSessions.read";
     public const string ClassSessionsWrite = "classSessions.write";
     public const string ClassSessionsDelete = "classSessions.delete";
+
+    // ClassRooms 
+    public const string ClassRoomsRead = "classRooms.read";
+    public const string ClassRoomsWrite = "classRooms.write";
+    public const string ClassRoomsDelete = "classRooms.delete";
+
+    //MemberShipType
+    public const string MembershipTypesRead = "membershipTypes.read";
+    public const string MembershipTypesWrite = "membershipTypes.write";
+    public const string MembershipTypesDelete = "membershipTypes.delete";
+
+    // StudentGradeLevel
+    public const string StudentGradeLevelsRead = "studentGradeLevels.read";
+    public const string StudentGradeLevelsWrite = "studentGradeLevels.write";
+    public const string StudentGradeLevelsDelete = "studentGradeLevels.delete";
 
     // Families (household records — contacts + students, see Family entity)
     public const string FamiliesRead = "families.read";
@@ -122,11 +137,16 @@ public static class Permissions
     {
         TenantsRead, TenantsWrite, TenantsArchive,
         PersonsRead, PersonsWrite, PersonsDelete,
+
         FamilyStatusesRead,FamilyStatusesWrite,FamilyStatusesDelete,
         FamiliesRead, FamiliesWrite, FamiliesDelete,
-          FamilyRelationsRead, FamilyRelationsWrite, FamilyRelationsDelete,
+        FamilyRelationsRead, FamilyRelationsWrite, FamilyRelationsDelete,
         ClassSessionsRead, ClassSessionsWrite, ClassSessionsDelete,
+        ClassRoomsRead,ClassRoomsWrite,ClassRoomsDelete,
         BillingMethodsRead, BillingMethodsWrite, BillingMethodsDelete,
+        MembershipTypesRead, MembershipTypesWrite, MembershipTypesDelete,
+        StudentGradeLevelsRead,StudentGradeLevelsWrite,StudentGradeLevelsDelete,
+
         StudentsRead, StudentsWrite, StudentsDelete,
         ClassesRead, ClassesWrite, ClassesDelete,
         ClassCategoriesRead, ClassCategoriesWrite, ClassCategoriesDelete, 
@@ -157,7 +177,12 @@ public static class Permissions
         //Class Session
         // Families are owned entirely within a tenant, so Tenant Admins get full CRUD.
         FamiliesRead, FamiliesWrite, FamiliesDelete,
+
+        MembershipTypesRead,MembershipTypesRead, MembershipTypesWrite,
+        StudentGradeLevelsRead,StudentGradeLevelsWrite,StudentGradeLevelsDelete,
+
         ClassSessionsRead, ClassSessionsWrite, ClassSessionsDelete,
+        ClassRoomsRead,ClassRoomsWrite,ClassRoomsDelete,
 
         //Billing Method
          BillingMethodsRead, BillingMethodsWrite, BillingMethodsDelete,

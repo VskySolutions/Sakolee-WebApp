@@ -37,12 +37,19 @@ public class SakoleeDbContext : DbContext, IDataProtectionKeyContext
     public DbSet<AuditTrailEntry> AuditTrail => Set<AuditTrailEntry>();
 
     public DbSet<Tenant> Tenants => Set<Tenant>();
-    public DbSet<FamilyStatus> FamilyStatuses { get; set; }
 
+
+
+    public DbSet<FamilyStatus> FamilyStatuses { get; set; }
     public DbSet<ClassSessions> ClassSessions { get; set; }
     public DbSet<BillingMethod> BillingMethod { get; set; }
-
+    public DbSet<ClassRooms> ClassRooms { get; set; }
     public DbSet<FamilyRelation> FamilyRelations { get; set; }
+    public DbSet<MembershipType> MembershipType { get; set; }
+    public DbSet<StudentGradeLevel> StudentGradeLevel { get; set; }
+
+
+
     public DbSet<User> Users => Set<User>();
 
     public DbSet<UserTenantRole> UserTenantRoles => Set<UserTenantRole>();
@@ -120,6 +127,8 @@ public class SakoleeDbContext : DbContext, IDataProtectionKeyContext
     public DbSet<ModifiedLogFieldConfig> ModifiedLogFieldConfigs => Set<ModifiedLogFieldConfig>();
     public DbSet<BillingCycle> BillingCycles => Set<BillingCycle>();
     public DbSet<TShirtSize> TShirtSizes => Set<TShirtSize>();
+
+
     public DbSet<HearAboutUs> HearAboutUs => Set<HearAboutUs>();
     public DbSet<EPaymentSchedule> EPaymentSchedules => Set<EPaymentSchedule>();
     public DbSet<AccountType> AccountTypes => Set<AccountType>();
@@ -140,7 +149,14 @@ public class SakoleeDbContext : DbContext, IDataProtectionKeyContext
         // sees another tenant's people. Self-profile reads bypass this filter via GetByUserIdAsync.
         modelBuilder.Entity<Person>().HasQueryFilter(e => (!_tenantContext.IsResolved || e.TenantId == _tenantContext.TenantId) && !e.Deleted);
 
-        modelBuilder.Entity<ClassSessions>().HasQueryFilter(e => (!_tenantContext.IsResolved || e.TenantId == _tenantContext.TenantId) && !e.IsDeleted);
+        modelBuilder.Entity<ClassSessions>().HasQueryFilter(e => (!_tenantContext.IsResolved || e.TenantId == _tenantContext.TenantId) && !e.Deleted);
+
+       
+        //modelBuilder.Entity<ClassRooms>(entity =>
+        //{
+        //    entity.HasKey(e => e.Id);
+        //    entity.Property(e => e.Id).HasColumnName("Id"); 
+        //});
 
 
         // User groups + memberships are tenant-scoped so a tenant only ever sees its own groups.
@@ -150,7 +166,7 @@ public class SakoleeDbContext : DbContext, IDataProtectionKeyContext
         // SMTP accounts are tenant-scoped; a tenant only ever sees its own mail accounts.
         modelBuilder.Entity<SmtpAccount>().HasQueryFilter(e => (!_tenantContext.IsResolved || e.TenantId == _tenantContext.TenantId) && !e.Deleted);
         // Family statuses are tenant-scoped; switching the active/viewed tenant must change what this list returns.
-        modelBuilder.Entity<FamilyStatus>().HasQueryFilter(e => (!_tenantContext.IsResolved || e.TenantId == _tenantContext.TenantId) && !e.IsDeleted);
+        modelBuilder.Entity<FamilyStatus>().HasQueryFilter(e => (!_tenantContext.IsResolved || e.TenantId == _tenantContext.TenantId) && !e.Deleted);
         // Families are tenant-scoped the same way (direct TenantId, not resolved through a contact).
         modelBuilder.Entity<Family>().HasQueryFilter(e => (!_tenantContext.IsResolved || e.TenantId == _tenantContext.TenantId) && !e.Deleted);
 
@@ -197,10 +213,18 @@ public class SakoleeDbContext : DbContext, IDataProtectionKeyContext
         //modelBuilder.Entity<Location>().HasQueryFilter(e => !_tenantContext.IsResolved || e.TenantId == _tenantContext.TenantId);
         modelBuilder.Entity<Location>().HasQueryFilter(e => (!_tenantContext.IsResolved || e.TenantId == _tenantContext.TenantId) && !e.Deleted);
 
-        // Apply tenant-based filtering and soft-delete condition for BankMethod entity
+        // Apply tenant-based filtering and soft-delete condition for BillingMethod entity
         modelBuilder.Entity<BillingMethod>().HasQueryFilter(e => (!_tenantContext.IsResolved || e.TenantId == _tenantContext.TenantId) && !e.Deleted);
 
         modelBuilder.Entity<FamilyRelation>().HasQueryFilter(e => (!_tenantContext.IsResolved || e.TenantId == _tenantContext.TenantId) && !e.Deleted);
+
+        modelBuilder.Entity<ClassRooms>().HasQueryFilter(e => (!_tenantContext.IsResolved || e.TenantId == _tenantContext.TenantId) && !e.Deleted);
+
+        modelBuilder.Entity<MembershipType>().HasQueryFilter(e => (!_tenantContext.IsResolved || e.TenantId == _tenantContext.TenantId) && !e.Deleted);
+        modelBuilder.Entity<Location>().HasQueryFilter(e => (!_tenantContext.IsResolved || e.TenantId == _tenantContext.TenantId) && !e.Deleted);
+        modelBuilder.Entity<StudentGradeLevel>().HasQueryFilter(e => (!_tenantContext.IsResolved || e.TenantId == _tenantContext.TenantId) && !e.Deleted);
+
+
 
         modelBuilder.Entity<TenantRole>().HasQueryFilter(e => !e.Deleted);
         modelBuilder.Entity<Address>().HasQueryFilter(e => !e.Deleted);
@@ -208,10 +232,7 @@ public class SakoleeDbContext : DbContext, IDataProtectionKeyContext
         modelBuilder.Entity<PermissionGroupTemplate>().HasQueryFilter(e => !e.Deleted);
         modelBuilder.Entity<DashboardLayout>().HasQueryFilter(e => !e.Deleted);
         //tenant + soft-delete filters for tenant-scoped entities.
-        modelBuilder.Entity<TShirtSize>().HasQueryFilter(e =>(!_tenantContext.IsResolved || e.TenantId == _tenantContext.TenantId) && !e.Deleted);
-        modelBuilder.Entity<HearAboutUs>().HasQueryFilter(e =>(!_tenantContext.IsResolved || e.TenantId == _tenantContext.TenantId) && !e.Deleted);
-        modelBuilder.Entity<EPaymentSchedule>().HasQueryFilter(e =>(!_tenantContext.IsResolved || e.TenantId == _tenantContext.TenantId) && !e.Deleted);
-        modelBuilder.Entity<AccountType>().HasQueryFilter(e =>(!_tenantContext.IsResolved || e.TenantId == _tenantContext.TenantId) && !e.Deleted);
+        modelBuilder.Entity<TShirtSize>().HasQueryFilter(e => (!_tenantContext.IsResolved || e.TenantId == _tenantContext.TenantId) && !e.Deleted);
     }
 
     public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
@@ -373,7 +394,7 @@ public class SakoleeDbContext : DbContext, IDataProtectionKeyContext
                     location.TenantId = _tenantContext.TenantId;
                     break;
 
-                case ClassSessions classsessions when classsessions.TenantId != null || classsessions.TenantId == Guid.Empty:
+                case ClassSessions classsessions when classsessions.TenantId == Guid.Empty:
                     classsessions.TenantId = _tenantContext.TenantId;
                     break;
 
@@ -381,20 +402,27 @@ public class SakoleeDbContext : DbContext, IDataProtectionKeyContext
                     bankMethod.TenantId = _tenantContext.TenantId;
                     break;
 
+                case FamilyStatus familyStatus when familyStatus.TenantId == Guid.Empty:
+                    familyStatus.TenantId = _tenantContext.TenantId;
+                    break;
                 case FamilyRelation familyRelation when familyRelation.TenantId == Guid.Empty:
                     familyRelation.TenantId = _tenantContext.TenantId;
                     break;
+
+                case ClassRooms classRoom when classRoom.TenantId is null || classRoom.TenantId == Guid.Empty:
+                    classRoom.TenantId = _tenantContext.TenantId;
+                    break;
+
                 case TShirtSize tShirtSize when tShirtSize.TenantId == Guid.Empty:
                     tShirtSize.TenantId = _tenantContext.TenantId;
                     break;
-                case HearAboutUs hearAboutUs when hearAboutUs.TenantId == Guid.Empty:
-                    hearAboutUs.TenantId = _tenantContext.TenantId;
+
+                case MembershipType membershipType when membershipType.TenantId is null || membershipType.TenantId == Guid.Empty:
+                    membershipType.TenantId = _tenantContext.TenantId;
                     break;
-                case EPaymentSchedule ePaymentSchedule when ePaymentSchedule.TenantId == Guid.Empty:
-                    ePaymentSchedule.TenantId = _tenantContext.TenantId;
-                    break;
-                case AccountType accountType when accountType.TenantId == Guid.Empty:
-                    accountType.TenantId = _tenantContext.TenantId;
+
+                case StudentGradeLevel studentGradeLevel when studentGradeLevel.TenantId is null || studentGradeLevel.TenantId == Guid.Empty:
+                    studentGradeLevel.TenantId = _tenantContext.TenantId;
                     break;
             }
         }

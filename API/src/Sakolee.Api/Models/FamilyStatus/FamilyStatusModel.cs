@@ -1,4 +1,4 @@
-﻿namespace Sakolee.Api.Models.FamilyStatus
+namespace Sakolee.Api.Models.FamilyStatus
 {
     /// <summary>
     /// Create payload for a standalone FamilyStatus master record.
@@ -9,6 +9,12 @@
         /// The unique name of the family status.
         /// </summary>
         public string Name { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Whether the family status is active (offered in the Family form's status dropdown).
+        /// </summary>
+        public bool? Active { get; set; } = true;
+
         public Guid TenantId { get; set; }
     }
 
@@ -25,7 +31,12 @@
         /// <summary>
         /// Flag indicating whether the family status is active.
         /// </summary>
-        public bool? IsActive { get; set; }
+        public bool? Active { get; set; }
+
+        /// <summary>
+        /// Flag indicating whether the family status is soft deleted (false restores a deleted record).
+        /// </summary>
+        public bool IsDeleted { get; set; }
     }
 
     /// <summary>
@@ -34,16 +45,15 @@
     public sealed record FamilyStatusSummary(
         Guid Id,
         string Name,
-        bool IsActive,
+        bool Active,
+        bool IsDeleted,
         string? CreatedBy,
         string? UpdatedBy,
-
-
         DateTime CreatedOn,
         DateTime? UpdatedOn,
-        Guid TenantId,                  // Added TenantId
+        DateTime? DeletedOnUtc,
+        Guid TenantId,
         string Tenant
-        
     );
 
     /// <summary>
@@ -52,7 +62,7 @@
     public sealed record FamilyStatusSelectItem(
         Guid Id,
         string Name,
-        bool IsActive
+        bool Active
     );
 
     /// <summary>
@@ -61,10 +71,13 @@
     public sealed record FamilyStatusDetail(
         Guid Id,
         string Name,
-        bool IsActive,
+        bool Active,
         string? CreatedBy,
         string? UpdatedBy,
         DateTime CreatedOn,
-        DateTime? UpdatedOn
+        DateTime? UpdatedOn,
+        DateTime? DeletedOnUtc,
+        Guid TenantId,
+        string? TenantName
     );
 }

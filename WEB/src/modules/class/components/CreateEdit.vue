@@ -4,7 +4,7 @@
       :items="[
         { label: 'Home', icon: 'o_home', to: '/' },
         { label: 'Classes', to: { name: 'classes' } },
-        { label: 'Edit Class' }
+        { label: isEdit ? 'Edit Class' : 'Add Class' }
       ]"
       :back-to="{ name: 'classes' }"
     />
@@ -15,11 +15,11 @@
 
     <q-card v-else flat bordered class="q-pa-md">
       <q-form ref="formRef" greedy @submit.prevent="submitForm">
-        <class-form-fields v-model="form" show-active-toggle />
+        <class-form-fields v-model="form" :show-active-toggle="isEdit" />
 
         <div class="row justify-end q-gutter-sm q-mt-md">
           <q-btn flat no-caps label="Cancel" color="grey" :to="{ name: 'classes' }" />
-          <q-btn unelevated no-caps color="primary" label="Update" :loading="saving" @click="submitForm" />
+          <q-btn unelevated no-caps color="primary" :label="isEdit ? 'Update' : 'Save'" :loading="saving" @click="submitForm" />
         </div>
       </q-form>
     </q-card>
@@ -40,13 +40,17 @@ const route = useRoute();
 const router = useRouter();
 const notify = useNotify();
 
+// Shared by the class_create ("/classes/create") and class_edit ("/classes/:id/edit") routes —
+// edit mode whenever the route carries an id.
 const classId = route.params.id;
+const isEdit = !!classId;
 const loading = ref(false);
 const saving = ref(false);
 const formRef = ref(null);
 const form = reactive(blankClassForm());
 
 onMounted(async () => {
+  if (!isEdit) return;
   loading.value = true;
   try {
     const row = await classApi.get(classId);
@@ -64,8 +68,13 @@ const submitForm = async () => {
 
   saving.value = true;
   try {
-    await classApi.update(classId, { ...toClassPayload(form), active: form.active });
-    notify.success("Class updated.");
+    if (isEdit) {
+      await classApi.update(classId, { ...toClassPayload(form), active: form.active });
+      notify.success("Class updated.");
+    } else {
+      await classApi.create(toClassPayload(form));
+      notify.success("Class created.");
+    }
     router.push({ name: "classes" });
   } catch (err) {
     notify.error(getApiErrorMessage(err));

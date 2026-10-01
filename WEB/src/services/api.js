@@ -186,7 +186,11 @@ export const familyApi = {
   get: (id) => api.get(`/api/admin/families/${id}`).then(unwrap),
   create: (payload) => api.post("/api/admin/families", payload).then(unwrap),
   update: (id, payload) => api.put(`/api/admin/families/${id}`, payload).then(unwrap),
-  remove: (id) => api.delete(`/api/admin/families/${id}`).then(envelope)
+  remove: (id) => api.delete(`/api/admin/families/${id}`).then(envelope),
+  // Emails every parent contact with a login (never students) their username + temporary password.
+  // Response: { familyId, contacts: [{ name, email, isPrimaryContact, temporaryPassword, emailSent,
+  // passwordWasReset }] } — same one-time-reveal contract as userApi.sendCredentials.
+  sendCredentials: (id) => api.post(`/api/admin/families/${id}/send-credentials`).then(unwrap)
 };
 
 export const studentApi = {
@@ -200,7 +204,10 @@ export const studentApi = {
   // Which of `emails` already belong to a login account → { inUse: [...] }.
   emailsInUse: (emails) => api.post("/api/admin/students/emails-in-use", { emails }).then(unwrap),
   update: (id, payload) => api.put(`/api/admin/students/${id}`, payload).then(unwrap),
-  remove: (id) => api.delete(`/api/admin/students/${id}`).then(envelope)
+  remove: (id) => api.delete(`/api/admin/students/${id}`).then(envelope),
+  // Emails the student their username (login email) + temporary password. Response: { email,
+  // temporaryPassword, emailSent, passwordWasReset } — same one-time-reveal contract as userApi.sendCredentials.
+  sendCredentials: (id) => api.post(`/api/admin/students/${id}/send-credentials`).then(unwrap)
 };
 
 export const userApi = {
@@ -216,6 +223,10 @@ export const userApi = {
   setStatus: (id, isActive) => api.put(`/api/admin/users/${id}/status`, { isActive }).then(unwrap),
   // Admin password reset (REQ-ADM-013) — returns a new temporary password.
   resetPassword: (id) => api.post(`/api/admin/users/${id}/reset-password`).then(unwrap),
+  // Emails the user their username (login email) + temporary password. Re-sends the existing temporary
+  // password when one is on file, else mints a new one. Response: { temporaryPassword, emailSent,
+  // passwordWasReset } — same one-time-reveal contract as resetPassword.
+  sendCredentials: (id) => api.post(`/api/admin/users/${id}/send-credentials`).then(unwrap),
   // payload: { tenantId, roleIds[] } — reconciles the full set of roles the user holds in the tenant
   // (adds/removes to match; an empty set removes tenant access). WO-123 multi-role.
   assignTenantRole: (id, payload) =>
@@ -539,6 +550,21 @@ export const dashboardApi = {
   saveLayout: (payload) => api.put("/api/dashboard/layout", payload).then(unwrap)
 };
 
+// export const locationApi = {
+//   list: (params) => api.get("/api/admin/locations", { params }).then(envelope),
+
+//   get: (id) => api.get(`/api/admin/locations/${id}`).then(unwrap),
+
+//   create: (payload) => api.post("/api/admin/locations", payload).then(unwrap),
+
+//   update: (id, payload) => api.put(`/api/admin/locations/${id}`, payload).then(unwrap),
+
+//   remove: (id) => api.delete(`/api/admin/locations/${id}`).then(envelope)
+// };
+
+/**
+ * API service for managing location operations.
+ */
 export const locationApi = {
   list: (params) => api.get("/api/admin/locations", { params }).then(envelope),
 
@@ -548,7 +574,7 @@ export const locationApi = {
 
   update: (id, payload) => api.put(`/api/admin/locations/${id}`, payload).then(unwrap),
 
-  remove: (id) => api.delete(`/api/admin/locations/${id}`).then(envelope)
+  delete: (id) => api.delete(`/api/admin/locations/${id}`).then(envelope)
 };
 
 /**
@@ -575,4 +601,44 @@ export const familyRelationApi = {
   create: (payload) => api.post("/api/admin/family-relations", payload).then(unwrap),
   update: (id, payload) => api.put(`/api/admin/family-relations/${id}`, payload).then(unwrap),
   delete: (id) => api.delete(`/api/admin/family-relations/${id}`).then(unwrap)
+};
+
+
+//Class Room API mapping
+export const classRoomApi = {
+  list: (params) => api.get("/api/admin/class-rooms", { params }).then(envelope),
+  get: (id) => api.get(`/api/admin/class-rooms/${id}`).then(unwrap),
+  create: (payload) => api.post("/api/admin/class-rooms", payload).then(unwrap),
+  update: (id, payload) => api.put(`/api/admin/class-rooms/${id}`, payload).then(unwrap),
+  delete: (id) => api.delete(`/api/admin/class-rooms/${id}`).then(unwrap)
+};
+
+/**
+ * API service for managing membership type operations.
+ */
+export const membershipTypeApi = {
+  list: (params) => api.get("/api/admin/membership-types", { params }).then(envelope),
+
+  get: (id) => api.get(`/api/admin/membership-types/${id}`).then(unwrap),
+
+  create: (payload) => api.post("/api/admin/membership-types", payload).then(unwrap),
+
+  update: (id, payload) => api.put(`/api/admin/membership-types/${id}`, payload).then(unwrap),
+
+  delete: (id) => api.delete(`/api/admin/membership-types/${id}`).then(envelope)
+};
+
+/**
+ * API service for managing student grade level operations.
+ */
+export const studentGradeLevelApi = {
+  list: (params) => api.get("/api/admin/student-grade-levels", { params }).then(envelope),
+
+  get: (id) => api.get(`/api/admin/student-grade-levels/${id}`).then(unwrap),
+
+  create: (payload) => api.post("/api/admin/student-grade-levels", payload).then(unwrap),
+
+  update: (id, payload) => api.put(`/api/admin/student-grade-levels/${id}`, payload).then(unwrap),
+
+  delete: (id) => api.delete(`/api/admin/student-grade-levels/${id}`).then(envelope)
 };

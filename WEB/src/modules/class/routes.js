@@ -12,13 +12,13 @@ export default [
       {
         path: "create",
         name: "class_create",
-        component: () => import("modules/class/components/create.vue"),
+        component: () => import("modules/class/components/CreateEdit.vue"),
         meta: { requiresAuth: true, permissions: ["classes.read"], title: "Add Class" }
       },
       {
         path: ":id/edit",
         name: "class_edit",
-        component: () => import("modules/class/components/edit.vue"),
+        component: () => import("modules/class/components/CreateEdit.vue"),
         meta: { requiresAuth: true, permissions: ["classes.read"], title: "Edit Class" }
       },
       {

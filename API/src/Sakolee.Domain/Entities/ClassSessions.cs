@@ -1,23 +1,19 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+namespace Sakolee.Domain.Entities;
 
-namespace Sakolee.Domain.Entities
+/// <summary>
+/// Tenant-scoped Class Session master record (offered in the Class form's Session dropdown).
+/// Audit fields and soft-delete (Deleted / DeletedOnUtc) come from <see cref="AuditableEntity"/> and are
+/// stamped by the DbContext; <see cref="Active"/> is the separate, user-controlled enabled/disabled flag.
+/// </summary>
+public class ClassSessions : AuditableEntity
 {
-    public class ClassSessions
-    {
-        public Guid Id { get; set; }
-        public Guid TenantId { get; set; }
-        public string Name { get; set; } = string.Empty;
-        public bool Active { get; set; } = true;
-        public bool IsDeleted { get; set; } = false;
-        public DateTime CreatedOn { get; set; } = DateTime.UtcNow;
-        public string? CreatedBy { get; set; }
-        public DateTime? UpdatedOn { get; set; }
-        public string? UpdatedBy { get; set; }
+    public Guid Id { get; set; }
 
-        public virtual Tenant? Tenant { get; set; }
-    }
+    public Guid TenantId { get; set; }
+
+    public string Name { get; set; } = string.Empty;
+
+    public bool Active { get; set; } = true;
+
+    public virtual Tenant? Tenant { get; set; }
 }

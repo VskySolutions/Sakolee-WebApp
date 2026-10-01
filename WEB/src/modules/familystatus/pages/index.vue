@@ -1,13 +1,6 @@
 <template>
-  <!-- 
-    ============================================================
-    Family Status Index Page Component
-    ============================================================
-    Manages family status listings, filtering, server-side data grid operations,
-    and side-drawers for viewing, creating, and editing family statuses.
-  -->
   <q-page padding>
-    <!-- Page Header Component: Manages breadcrumb navigation, live search inputs, and entity creation triggers -->
+    <!-- Page Header Component -->
     <app-list-header
       :breadcrumbs="[
         { label: 'Home', to: '/' },
@@ -29,7 +22,7 @@
       @back="$router.back()"
     />
 
-    <!-- Filter Drawer Component: Advanced filtering and deleted records controls -->
+    <!-- Filter Drawer Component -->
     <app-filter-drawer
       v-model="filterOpen"
       :chips="filterChips"
@@ -50,7 +43,7 @@
       />
     </app-filter-drawer>
 
-    <!-- Core Data Table Grid Component: Handles server-side pagination, sorting, row selection, and dataset display -->
+    <!-- Core Data Table Grid Component -->
     <app-data-table
       page-key="family-statuses"
       :row-key="(row) => row.familyStatusId || row.FamilyStatusId || row.id || row.Id"
@@ -63,16 +56,29 @@
       @request="onRequest"
       @refresh="load"
     >
-      <!-- Status Column Slot: Renders Active/Inactive badge indicators -->
-      <template #body-cell-active="cell">
-        <q-td :props="cell">
-          <q-badge :color="cell.value ? 'positive' : 'grey'">
-            {{ cell.value ? "Active" : "Inactive" }}
-          </q-badge>
+      <!-- Family Status Name Column without strike-through line -->
+      <template #body-cell-familyStatusName="cell">
+        <q-td :props="cell" :class="{ 'text-grey': cell.row.deleted || cell.row.Deleted || cell.row.isDeleted || cell.row.IsDeleted }">
+          {{ cell.row.familyStatusName || cell.row.FamilyStatusName || cell.row.name || cell.row.Name }}
         </q-td>
       </template>
 
-      <!-- Row Actions Slot: Renders individual record operations including view details, editing, and deletion -->
+      <!-- Interactive Status Toggle Column Slot -->
+      <template #body-cell-active="cell">
+        <q-td :props="cell">
+          <div class="flex flex-center">
+            <q-toggle
+              :model-value="cell.row.active ?? cell.row.Active ?? cell.row.isActive ?? cell.row.IsActive ?? true"
+              @update:model-value="(val) => updateStatus(cell.row, val)"
+              dense
+              color="positive"
+              :disable="cell.row.deleted || cell.row.Deleted || cell.row.isDeleted || cell.row.IsDeleted"
+            />
+          </div>
+        </q-td>
+      </template>
+
+      <!-- Row Actions Slot with Disabled check for deleted records -->
       <template #body-cell-actions="cell">
         <q-td :props="cell">
           <q-btn
@@ -92,6 +98,7 @@
             color="primary"
             icon="o_edit"
             @click="openEdit(cell.row)"
+            :disabled="cell.row.deleted || cell.row.Deleted || cell.row.isDeleted || cell.row.IsDeleted"
           >
             <q-tooltip>Edit</q-tooltip>
           </q-btn>
@@ -103,6 +110,7 @@
             color="negative"
             icon="o_delete"
             @click="removeFamilyStatus(cell.row)"
+            v-if="!(cell.row.deleted || cell.row.Deleted || cell.row.isDeleted || cell.row.IsDeleted)"
           >
             <q-tooltip>Delete</q-tooltip>
           </q-btn>
@@ -110,133 +118,27 @@
       </template>
     </app-data-table>
 
-    <!-- =========================================================
-         Create / Edit Family Status Form Drawer
-         ========================================================= -->
-    <app-form-drawer
+    <!-- Create / Edit Drawer Component -->
+    <family-status-form
       v-model="formOpen"
-      :title="editingId ? 'Edit Family Status' : 'Create Family Status'"
-      :saving="saving"
-      :save-label="editingId ? 'Save' : 'Create'"
-      @submit="submitForm"
-      @cancel="resetForm"
-    >
-      <q-form ref="formRef" greedy>
-        <!-- Primary Entity Property: Family Status Name -->
-        <app-text-field
-          v-model="form.familyStatusName"
-          label="Family Status Name"
-          required
-          class="q-mb-md"
-          :rules="[
-            (v) => !!v?.trim() || 'Family status name is required',
-            (v) =>
-              !v ||
-              v.trim().length <= 100 ||
-              'Family status name cannot exceed 100 characters'
-          ]"
-        />
+      :editing-id="editingId"
+      :initial-data="selectedRow"
+      @saved="handleSaved"
+    />
 
-        <!-- Status Toggle -->
-        <q-toggle
-          v-model="form.active"
-          label="Active"
-        />
-      </q-form>
-    </app-form-drawer>
-
-    <!-- =========================================================
-         View Family Status Details Drawer
-         ========================================================= -->
-    <app-form-drawer
+    <!-- View Details Drawer Component -->
+    <family-status-view
       v-model="viewOpen"
-      title="View Family Status"
-      :saving="viewLoading"
-      :save-label="''"
-      :hide-save="true"
-      @cancel="closeView"
-    >
-      <!-- Loading Spinner Overlay during asynchronous fetch operations -->
-      <div v-if="viewLoading" class="row flex-center q-pa-xl">
-        <q-spinner color="primary" size="40px" />
-      </div>
-
-      <div v-else class="q-gutter-md">
-        <!-- Field: Family Status Name -->
-        <div>
-          <div class="text-86 fs-12 fw-500">
-            Family Status Name
-          </div>
-          <div class="text-2e fs-4">
-            {{ viewFamilyStatus.familyStatusName || '—' }}
-          </div>
-        </div>
-
-        <!-- Field: Status -->
-        <div>
-          <div class="text-86 fs-12 fw-500">
-            Status
-          </div>
-          <q-badge :color="viewFamilyStatus.active ? 'positive' : 'grey'">
-            {{ viewFamilyStatus.active ? "Active" : "Inactive" }}
-          </q-badge>
-        </div>
-
-        <!-- Field: Created By -->
-        <div>
-          <div class="text-86 fs-12 fw-500">
-            Created By
-          </div>
-          <div class="text-2e fs-14">
-            {{ viewFamilyStatus.createdBy || "—" }}
-          </div>
-        </div>
-
-        <!-- Field: Created On -->
-        <div>
-          <div class="text-86 fs-12 fw-500">
-            Created On
-          </div>
-          <div class="text-2e fs-14">
-            {{ formatDate(viewFamilyStatus.createdOnUtc) }}
-          </div>
-        </div>
-
-        <!-- Field: Updated By -->
-        <div>
-          <div class="text-86 fs-12 fw-500">
-            Updated By
-          </div>
-          <div class="text-2e fs-14">
-            {{ viewFamilyStatus.updatedBy || "—" }}
-          </div>
-        </div>
-
-        <!-- Field: Updated On -->
-        <div>
-          <div class="text-86 fs-12 fw-500">
-            Updated On
-          </div>
-          <div class="text-2e fs-14">
-            {{ formatDate(viewFamilyStatus.updatedOnUtc) }}
-          </div>
-        </div>
-      </div>
-    </app-form-drawer>
+      :record-id="viewRecordId"
+    />
   </q-page>
 </template>
 
 <script setup>
-import { ref, reactive, computed, watch, onMounted } from "vue";
+import { ref, watch, onMounted } from "vue";
 import { debounce } from "quasar";
 
-import {
-  familyStatusApi,
-  getApiErrorMessage,
-  getApiErrorCode,
-  ApiErrorCodes
-} from "services/api";
-
+import { familyStatusApi, getApiErrorMessage } from "services/api";
 import { useNotify } from "composables/useNotify";
 import { useConfirm } from "composables/useConfirm";
 import { useListTable } from "composables/useListTable";
@@ -244,33 +146,24 @@ import { useColumnFilters } from "composables/useColumnFilters";
 import { useDeletedRecords } from "composables/useDeletedRecords";
 
 import AppDataTable from "components/common/AppDataTable.vue";
-import AppFormDrawer from "components/common/AppFormDrawer.vue";
 import AppListHeader from "components/common/AppListHeader.vue";
 import AppFilterDrawer from "components/common/AppFilterDrawer.vue";
 import AppColumnFilters from "components/common/AppColumnFilters.vue";
-import AppTextField from "components/common/AppTextField.vue";
+
+import FamilyStatusForm from "src/modules/familystatus/components/create_edit_status.vue";
+import FamilyStatusView from "src/modules/familystatus/components/viewstatus.vue";
 
 const { showDeleted, canManageDeleted } = useDeletedRecords();
 const notify = useNotify();
 const { confirm } = useConfirm();
 
-/**
- * Standard date formatter matching global display expectations.
- * @param {String|Date} value - Raw date string or timestamp.
- */
 const formatDate = (value) => {
-  if (!value) {
-    return "—";
-  }
+  if (!value) return "—";
   const date = new Date(value);
-  return isNaN(date.getTime()) ? String(value) : date.toLocaleString();
+  if (isNaN(date.getTime()) || date.getFullYear() <= 1) return "—";
+  return date.toLocaleString();
 };
 
-/*
- * ------------------------------------------------------------
- * Table columns definition (filterable: false set on audit columns)
- * ------------------------------------------------------------
- */
 const columns = [
   {
     name: "familyStatusName",
@@ -278,21 +171,18 @@ const columns = [
     field: (r) => r.familyStatusName || r.FamilyStatusName || r.name || r.Name,
     align: "left",
     sortable: true,
-    default: true
+    default: true,
+    filterable: true
   },
-  // {
-  //   name: "active",
-  //   label: "Status",
-  //   field: (r) => r.active ?? r.Active ?? r.is_active ?? true,
-  //   align: "left",
-  //   sortable: true,
-  //   default: true,
-  //   filterOptions: [
-  //     { label: "Active", value: true },
-  //     { label: "Inactive", value: false }
-  //   ]
-  // },
- 
+  {
+    name: "createdBy",
+    label: "Created By",
+    field: (r) => r.createdBy || r.CreatedBy || r.created_by || "—",
+    align: "left",
+    sortable: true,
+    default: true,
+    filterable: false
+  },
   {
     name: "createdOnUtc",
     label: "Created On",
@@ -303,17 +193,6 @@ const columns = [
     filterable: false,
     format: (val) => formatDate(val)
   },
-
-   {
-    name: "createdBy",
-    label: "Created By",
-    field: (r) => r.createdBy || r.CreatedBy || r.created_by || "—",
-    align: "left",
-    sortable: true,
-    default: true,
-    filterable: false
-  },
-  
   {
     name: "updatedBy",
     label: "Updated By",
@@ -333,20 +212,28 @@ const columns = [
     filterable: false,
     format: (val) => formatDate(val)
   },
-  
+  {
+    name: "active",
+    label: "Status",
+    field: (r) => r.active ?? r.Active ?? r.isActive ?? r.IsActive ?? true,
+    align: "center",
+    sortable: true,
+    default: true,
+    filterable: true,
+    filterOptions: [
+      { label: "Active", value: true },
+      { label: "Inactive", value: false }
+    ]
+  },
   {
     name: "actions",
     label: "Actions",
     field: "actions",
-    align: "left"
+    align: "left",
+    filterable: false
   }
 ];
 
-/*
- * ------------------------------------------------------------
- * List Table Data Management Composable with Robust Sorting
- * ------------------------------------------------------------
- */
 const {
   rows,
   loading,
@@ -358,45 +245,35 @@ const {
   pageKey: "family-statuses",
   defaultSortBy: "createdOnUtc",
   defaultDescending: true,
-
-  fetcher: (params) => {
-    const sortBy = params?.sortBy || pagination.value.sortBy || "createdOnUtc";
-    const descending = params?.descending ?? pagination.value.descending ?? true;
+  fetcher: ({ sortBy, descending }) => {
+    let mappedSortBy = sortBy;
+    if (sortBy === "active") mappedSortBy = "Active";
+    else if (sortBy === "familyStatusName") mappedSortBy = "Name";
 
     return familyStatusApi.list({
       search: search.value || undefined,
-      sortBy,
-      descending
+      showDeleted: showDeleted.value,
+      includeDeleted: showDeleted.value,
+      sortBy: mappedSortBy || 'createdOnUtc',
+      descending: descending ?? true,
+      includeInactive: true
     }).then((response) => {
       let items = response?.data?.items || response?.items || response?.data || [];
 
-      // 100% Guaranteed Strict Client-Side Sorting to show newest/newly-created on top
-      items.sort((a, b) => {
-        const fieldA = pagination.value.sortBy || sortBy;
-        const isDesc = pagination.value.descending ?? descending;
-
-        if (fieldA === 'createdOnUtc' || fieldA === 'updatedOnUtc' || fieldA === 'CreatedOnUtc') {
+      if (!sortBy || sortBy === 'createdOnUtc') {
+        items.sort((a, b) => {
           const valA = new Date(a.createdOnUtc || a.CreatedOnUtc || a.created_on_utc || a.createdOn || 0).getTime();
           const valB = new Date(b.createdOnUtc || b.CreatedOnUtc || b.created_on_utc || b.createdOn || 0).getTime();
           
           if (valA !== valB) {
-            return isDesc ? valB - valA : valA - valB;
+            return descending !== false ? valB - valA : valA - valB; 
           }
-        }
-
-        // Fallback sort by ID (newer IDs are usually larger numbers)
-        const idA = a.familyStatusId || a.FamilyStatusId || a.id || a.Id || 0;
-        const idB = b.familyStatusId || b.FamilyStatusId || b.id || b.Id || 0;
-        
-        if (typeof idA === 'number' && typeof idB === 'number' && idA !== idB) {
-          return isDesc ? idB - idA : idA - idB;
-        }
-
-        // Secondary fallback by name string
-        const nameA = String(a.familyStatusName || a.FamilyStatusName || a.name || '').toLowerCase();
-        const nameB = String(b.familyStatusName || b.FamilyStatusName || b.name || '').toLowerCase();
-        return isDesc ? nameB.localeCompare(nameA) : nameA.localeCompare(nameB);
-      });
+          
+          const idA = a.familyStatusId || a.FamilyStatusId || a.id || a.Id || 0;
+          const idB = b.familyStatusId || b.FamilyStatusId || b.id || b.Id || 0;
+          return idB - idA;
+        });
+      }
 
       return {
         data: items,
@@ -404,7 +281,6 @@ const {
       };
     });
   },
-
   onError: (err) => notify.error(getApiErrorMessage(err))
 });
 
@@ -427,6 +303,10 @@ const reload = debounce(() => {
 }, 300);
 
 watch(search, reload);
+watch(showDeleted, () => {
+  pagination.value.page = 1;
+  load();
+});
 
 onMounted(() => {
   pagination.value.sortBy = 'createdOnUtc';
@@ -434,96 +314,16 @@ onMounted(() => {
   load();
 });
 
-/*
- * ------------------------------------------------------------
- * View Family Status Drawer State & Handler Methods
- * ------------------------------------------------------------
- */
-const viewOpen = ref(false);
-const viewLoading = ref(false);
-
-const viewFamilyStatus = reactive({
-  id: null,
-  familyStatusName: "",
-  active: true,
-  createdBy: "",
-  createdOnUtc: null,
-  updatedBy: "",
-  updatedOnUtc: null
-});
-
-const resetViewFamilyStatus = () => {
-  viewFamilyStatus.id = null;
-  viewFamilyStatus.familyStatusName = "";
-  viewFamilyStatus.active = true;
-  viewFamilyStatus.createdBy = "";
-  viewFamilyStatus.createdOnUtc = null;
-  viewFamilyStatus.updatedBy = "";
-  viewFamilyStatus.updatedOnUtc = null;
-};
-
-const openView = async (row) => {
-  const id = row.familyStatusId || row.FamilyStatusId || row.id || row.Id;
-  if (!id) {
-    notify.error("Invalid record identifier for viewing.");
-    return;
-  }
-
-  resetViewFamilyStatus();
-  viewOpen.value = true;
-  viewLoading.value = true;
-
-  try {
-    const response = await familyStatusApi.get(id);
-    const item = response?.data?.data || response?.data || response;
-
-    if (item) {
-      viewFamilyStatus.id = id;
-      viewFamilyStatus.familyStatusName = item.familyStatusName || item.FamilyStatusName || item.name || item.Name || "";
-      viewFamilyStatus.active = item.active ?? item.Active ?? item.is_active ?? true;
-      viewFamilyStatus.createdBy = item.createdBy || item.CreatedBy || item.created_by || "";
-      viewFamilyStatus.createdOnUtc = item.createdOnUtc || item.CreatedOnUtc || item.created_on_utc || item.createdOn || item.CreatedOn || item.created_on || null;
-      viewFamilyStatus.updatedBy = item.updatedBy || item.UpdatedBy || item.updated_by || "";
-      viewFamilyStatus.updatedOnUtc = item.updatedOnUtc || item.UpdatedOnUtc || item.updated_on_utc || item.updatedOn || item.UpdatedOn || item.updated_on || null;
-    }
-  } catch (err) {
-    viewOpen.value = false;
-    notify.error(getApiErrorMessage(err));
-  } finally {
-    viewLoading.value = false;
-  }
-};
-
-const closeView = () => {
-  viewOpen.value = false;
-  resetViewFamilyStatus();
-};
-
-/*
- * ------------------------------------------------------------
- * Create / Edit Form Drawer State & Persistence Handlers
- * ------------------------------------------------------------
- */
 const formOpen = ref(false);
-const saving = ref(false);
 const editingId = ref(null);
-const formRef = ref(null);
-
-const form = reactive({
-  familyStatusName: "",
-  active: true
-});
-
-const resetForm = () => {
-  editingId.value = null;
-  form.familyStatusName = "";
-  form.active = true;
-};
+const selectedRow = ref(null);
 
 const openCreate = () => {
-  resetForm();
+  editingId.value = null;
+  selectedRow.value = null;
   formOpen.value = true;
 };
+
 
 const openEdit = (row) => {
   const id = row.familyStatusId || row.FamilyStatusId || row.id || row.Id;
@@ -531,61 +331,61 @@ const openEdit = (row) => {
     notify.error("Invalid record identifier for editing.");
     return;
   }
-
   editingId.value = id;
-  form.familyStatusName = row.familyStatusName || row.FamilyStatusName || row.name || row.Name || "";
-  form.active = row.active ?? row.Active ?? row.is_active ?? true;
-
+  selectedRow.value = row;
   formOpen.value = true;
 };
 
-const submitForm = async ({ clearDraft } = {}) => {
-  if (!(await formRef.value?.validate())) {
-    return;
-  }
+const updateStatus = async (row, newStatus) => {
+  const id = row.familyStatusId || row.FamilyStatusId || row.id || row.Id;
+  if (!id) return;
 
-  saving.value = true;
+  const originalStatus = row.active ?? row.Active ?? row.isActive ?? row.IsActive ?? true;
+  
+  if (row.active !== undefined) row.active = newStatus;
+  if (row.Active !== undefined) row.Active = newStatus;
+  if (row.isActive !== undefined) row.isActive = newStatus;
+  if (row.IsActive !== undefined) row.IsActive = newStatus;
 
   try {
     const payload = {
-      name: form.familyStatusName.trim(),
-      familyStatusName: form.familyStatusName.trim(),
-      active: form.active
+      familyStatusName: row.familyStatusName || row.FamilyStatusName || row.name || row.Name,
+      active: newStatus,
+      isActive: newStatus
     };
-
-    if (editingId.value) {
-      await familyStatusApi.update(editingId.value, payload);
-      notify.success("Family status updated successfully.");
-    } else {
-      await familyStatusApi.create(payload);
-      notify.success("Family status created successfully.");
-    }
-
-    clearDraft?.();
-    formOpen.value = false;
-    resetForm();
-
-    // Reset pagination to first page and reload to fetch properly sorted fresh records from backend/frontend
-    pagination.value.page = 1;
-    pagination.value.sortBy = 'createdOnUtc';
-    pagination.value.descending = true;
+    await familyStatusApi.update(id, payload);
+    notify.success("Status updated successfully.");
     await load();
   } catch (err) {
-    if (getApiErrorCode(err) === ApiErrorCodes.DuplicateIdentifier) {
-      notify.error("A family status with this name already exists.");
-    } else {
-      notify.error(getApiErrorMessage(err));
-    }
-  } finally {
-    saving.value = false;
+    if (row.active !== undefined) row.active = originalStatus;
+    if (row.Active !== undefined) row.Active = originalStatus;
+    if (row.isActive !== undefined) row.isActive = originalStatus;
+    if (row.IsActive !== undefined) row.IsActive = originalStatus;
+    notify.error(getApiErrorMessage(err));
   }
 };
 
-/*
- * ------------------------------------------------------------
- * Deletion Handling Workflow
- * ------------------------------------------------------------
- */
+const handleSaved = async () => {
+  pagination.value.page = 1;
+  pagination.value.sortBy = 'createdOnUtc';
+  pagination.value.descending = true;
+  await load();
+};
+
+const viewOpen = ref(false);
+const viewRecordId = ref(null);
+
+const openView = (row) => {
+  const id = row.familyStatusId || row.FamilyStatusId || row.id || row.Id;
+  if (!id) {
+    notify.error("Invalid record identifier for viewing.");
+    return;
+  }
+  viewRecordId.value = id;
+  viewOpen.value = true;
+};
+
+//Remove Family status
 const removeFamilyStatus = async (row) => {
   const id = row.familyStatusId || row.FamilyStatusId || row.id || row.Id;
   if (!id) return;
@@ -598,9 +398,7 @@ const removeFamilyStatus = async (row) => {
     type: "danger"
   });
 
-  if (!ok) {
-    return;
-  }
+  if (!ok) return;
 
   try {
     await familyStatusApi.delete(id);

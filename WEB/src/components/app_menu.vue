@@ -804,6 +804,12 @@ const settingsSection = {
           permissions: [Permissions.LocationsRead]
         },
         {
+          label: "Class Rooms",
+          icon: "o_class",
+          to: "/class-rooms",
+          permissions: [Permissions.ClassRoomsRead]
+       },
+        {
           label: "Class Categories",
           icon: "o_category",
           to: "/class-categories",
@@ -856,7 +862,19 @@ const settingsSection = {
           icon: "o_supervised_user_circle",
           to: "/family-relations",
           permissions: [Permissions.FamilyRelationsRead]
-        }
+        },
+        {
+  label: "Membership Types",
+  icon: "o_card_membership",
+  to: "/membership-types",
+  permissions: [Permissions.MembershipTypesRead]
+},
+{
+          label: "Student Grade Levels",
+          icon: "o_school",
+          to: "/student-grade-levels",
+          permissions: [Permissions.StudentGradeLevelsRead]
+        },
       ]
     },
     {

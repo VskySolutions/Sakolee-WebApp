@@ -23,13 +23,10 @@ public interface IFamilyStatusRepository
     /// Paginated list with optional free-text search (name) and optional
     /// structured filters (owning tenant, active state).
     /// </summary>
-    Task<(IReadOnlyList<FamilyStatus> Items, int Total)> ListAsync(
-        string? search, Guid? tenantId, bool? isActive, SortRequest sort, int page, int limit,
-        CancellationToken cancellationToken = default);
+    Task<(IReadOnlyList<FamilyStatus> Items, int Total)> ListAsync( string? search, Guid? tenantId, bool? Active, bool? showDeleted, SortRequest sort, int page, int limit, CancellationToken cancellationToken = default);
 
     /// <summary>Lightweight selection list for dropdowns.</summary>
-    Task<IReadOnlyList<FamilyStatus>> ListSelectableAsync(
-        Guid? tenantId = null, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<FamilyStatus>> ListSelectableAsync(Guid? tenantId = null, CancellationToken cancellationToken = default);
 
     Task AddAsync(FamilyStatus familyStatus, CancellationToken cancellationToken = default);
 

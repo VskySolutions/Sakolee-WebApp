@@ -94,15 +94,14 @@ public sealed class SessionsController : ControllerBase
                 ApiErrorCodes.ValidationFailed, "Validation failed.", "Active tenant ID could not be determined."));
         }
 
-        // Initialize a new ClassSessions entity instance with the active tenant ID
+        // Initialize a new ClassSessions entity; CreatedById/CreatedOnUtc are stamped by the DbContext
+        // (AuditableEntity).
         var session = new ClassSessions
         {
             Id = Guid.NewGuid(),
             TenantId = tenantId,
             Name = request.Name.Trim(),
-            IsDeleted = false,
-            CreatedOn = DateTime.UtcNow,
-            CreatedBy = User.GetUserId().ToString()
+            Active = request.IsActive ?? true,
         };
 
         // Persist the new record to the database via repository and unit of work
@@ -110,11 +109,8 @@ public sealed class SessionsController : ControllerBase
         await _audit.AddAsync(nameof(ClassSessions), session.Id.ToString(), "Created", details: session.Name, cancellationToken: cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        // Map the created entity to a detailed response DTO matching constructor parameter sequence
-        var detail = await ToDetailAsync(session, cancellationToken);
-
         return StatusCode(StatusCodes.Status201Created,
-            ApiResponseFactory.Success(detail, "Session created."));
+            ApiResponseFactory.Success(await ToDetailAsync(session, cancellationToken), "Session created."));
     }
 
     #endregion
@@ -142,6 +138,7 @@ public sealed class SessionsController : ControllerBase
         [FromQuery] string? search = null,
         [FromQuery] Guid? tenantId = null,
         [FromQuery] bool? isActive = null,
+        [FromQuery] bool? showDeleted = null,
         [FromQuery] string? sortBy = null,
         [FromQuery] bool descending = true,
         CancellationToken cancellationToken = default)
@@ -152,41 +149,31 @@ public sealed class SessionsController : ControllerBase
             page = Math.Max(1, page);
             limit = Math.Clamp(limit, 1, 100);
 
-            // Scope tenant filter for super admin users if explicitly specified in query parameters
+            // Scope tenant filter for super admin users if explicitly specified in query parameters. Showing
+            // soft-deleted rows means reading past the ambient filter, so the tenant is pinned explicitly
+            // (the active one, unless a Super Admin named another).
             Guid? scopeTenant = User.IsSuperAdmin() && tenantId is { } tid ? tid : null;
+            if (showDeleted == true)
+            {
+                scopeTenant ??= User.GetActiveTenantId();
+            }
 
             // Fetch filtered, sorted, and paginated records from the repository
             var (items, total) = await _sessions.ListAsync(
-                search, scopeTenant, isActive, new SortRequest(sortBy, descending), page, limit,
+                search, scopeTenant, isActive, showDeleted, new SortRequest(sortBy, descending), page, limit,
                 cancellationToken: cancellationToken);
 
-            // Resolve the audit user IDs into display names for the Created By / Updated By columns
+            // Resolve the audit user IDs into display names, then project to summary DTOs
             var nameOf = await AuditNamesAsync(items, cancellationToken);
-
-            // Project database model items into summary DTOs including Tenant information matching exact constructor signature
             var summaries = items.Select(s => new SessionSummary(
-                s.Id,
-                s.Name,
-                !s.IsDeleted,
-                nameOf(s.CreatedBy),
-                nameOf(s.UpdatedBy),
-                s.CreatedOn,
-                s.UpdatedOn,
-                s.TenantId,
-                s.Tenant != null ? s.Tenant.Name : string.Empty
-            ));
+                s.Id, s.Name, s.Active, nameOf(s.CreatedById), nameOf(s.UpdatedById),
+                s.CreatedOnUtc, s.UpdatedOnUtc, s.TenantId, s.Tenant != null ? s.Tenant.Name : string.Empty, s.Deleted));
 
             return Ok(ApiResponseFactory.Paginated(summaries, "Sessions retrieved.", page, limit, total));
         }
         catch (Exception ex)
         {
-            return StatusCode(StatusCodes.Status500InternalServerError, new
-            {
-                success = false,
-                message = ex.Message,
-                innerException = ex.InnerException?.Message,
-                stackTrace = ex.StackTrace
-            });
+            return StatusCode(StatusCodes.Status500InternalServerError, new { success = false, message = ex.Message, innerException = ex.InnerException?.Message, stackTrace = ex.StackTrace });
         }
     }
 
@@ -211,10 +198,7 @@ public sealed class SessionsController : ControllerBase
             return NotFound(ApiResponseFactory.NotFound("Session not found."));
         }
 
-        // Map entity details to response DTO
-        var detail = await ToDetailAsync(session, cancellationToken);
-
-        return Ok(ApiResponseFactory.Success(detail, "Session retrieved."));
+        return Ok(ApiResponseFactory.Success(await ToDetailAsync(session, cancellationToken), "Session retrieved."));
     }
 
     #endregion
@@ -237,12 +221,6 @@ public sealed class SessionsController : ControllerBase
         {
             return NotFound(ApiResponseFactory.NotFound("Session not found."));
         }
-
-        //if (!string.IsNullOrWhiteSpace(request.Name))
-        //{
-        //    session.Name = request.Name.Trim();
-        //}
-
         if (!string.IsNullOrWhiteSpace(request.Name))
         {
             var trimmedName = request.Name.Trim();
@@ -256,23 +234,29 @@ public sealed class SessionsController : ControllerBase
 
             session.Name = trimmedName;
         }
-
         if (request.IsActive.HasValue)
         {
-            session.IsDeleted = !request.IsActive.Value;
+            session.Active = request.IsActive.Value;
         }
 
-        session.UpdatedOn = DateTime.UtcNow;
-        session.UpdatedBy = User.GetUserId().ToString();
+        // isDeleted on the payload soft-deletes or restores the row (AuditableEntity.Deleted).
+        session.Deleted = request.IsDeleted;
+        if (session.Deleted)
+        {
+            session.DeletedOnUtc ??= DateTime.UtcNow;
+        }
+        else
+        {
+            session.DeletedOnUtc = null;
+        }
 
+        // UpdatedById/UpdatedOnUtc are stamped by the DbContext (AuditableEntity).
         _sessions.Update(session);
 
         await _audit.AddAsync(nameof(ClassSessions), session.Id.ToString(), "Updated", cancellationToken: cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        var detail = await ToDetailAsync(session, cancellationToken);
-
-        return Ok(ApiResponseFactory.Success(detail, "Session updated."));
+        return Ok(ApiResponseFactory.Success(await ToDetailAsync(session, cancellationToken), "Session updated."));
     }
 
     #endregion
@@ -280,7 +264,7 @@ public sealed class SessionsController : ControllerBase
     #region Delete Endpoint
 
     /// <summary>
-    /// Soft deletes a class session record by updating its IsDeleted flag.
+    /// Soft deletes a class session record (the DbContext turns the remove into Deleted = true).
     /// </summary>
     /// <param name="id">The unique identifier of the session to delete.</param>
     /// <param name="cancellationToken">Propagates notification that operations should be canceled.</param>
@@ -292,8 +276,7 @@ public sealed class SessionsController : ControllerBase
         // Verify delete permissions if the caller is not a super admin
         if (!User.IsSuperAdmin() && !User.HasPermission(Permissions.ClassSessionsDelete))
         {
-            return StatusCode(StatusCodes.Status403Forbidden,
-                ApiResponseFactory.Forbidden("You do not have permission to delete sessions."));
+            return StatusCode(StatusCodes.Status403Forbidden, ApiResponseFactory.Forbidden("You do not have permission to delete sessions."));
         }
 
         // Load the target session entity
@@ -303,12 +286,8 @@ public sealed class SessionsController : ControllerBase
             return NotFound(ApiResponseFactory.NotFound("Session not found."));
         }
 
-        // Soft delete: set IsDeleted flag to true instead of physical removal
-        session.IsDeleted = true;
-        session.UpdatedOn = DateTime.UtcNow;
-
-        // Update the entity state in the repository/context and log the audit event
-        _sessions.Update(session);
+        // Soft delete: the DbContext turns the remove into Deleted/DeletedOnUtc + Updated* stamps.
+        _sessions.Remove(session);
         await _audit.AddAsync(nameof(ClassSessions), session.Id.ToString(), "SoftDeleted", cancellationToken: cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
@@ -321,43 +300,28 @@ public sealed class SessionsController : ControllerBase
 
     #region Private Helper Methods
 
-    #region LoadAsync Helper
+    #region Audit Name & Mapping Helpers
 
     /// <summary>
-    /// Loads a class session entity based on super admin privileges or standard tenant context filters.
+    /// Resolves the user IDs stored in the audit fields (CreatedById / UpdatedById) into display names.
     /// </summary>
-    /// <param name="id">The unique identifier of the session.</param>
-    /// <param name="cancellationToken">Propagates notification that operations should be canceled.</param>
-    /// <returns>Returns the matching <see cref="ClassSessions"/> entity if found; otherwise, null.</returns>
-    private Task<ClassSessions?> LoadAsync(Guid id, CancellationToken cancellationToken)
-        => User.IsSuperAdmin()
-            ? _sessions.GetByIdUnscopedAsync(id, cancellationToken)
-            : _sessions.GetByIdAsync(id, cancellationToken);
-
-    #endregion
-
-    #region Audit Name Helpers
-
-    /// <summary>
-    /// Resolves the user IDs stored in the audit fields into display names.
-    /// Falls back to the stored value when it is not a known user ID.
-    /// </summary>
-    private async Task<Func<string?, string?>> AuditNamesAsync(IEnumerable<ClassSessions> rows, CancellationToken cancellationToken)
+    private async Task<Func<Guid?, string?>> AuditNamesAsync(IEnumerable<ClassSessions> rows, CancellationToken cancellationToken)
     {
         var ids = rows
-            .SelectMany(s => new[] { s.CreatedBy, s.UpdatedBy })
-            .Select(id => Guid.TryParse(id, out var userId) ? userId : (Guid?)null)
+            .SelectMany(s => new[] { s.CreatedById, s.UpdatedById })
             .Where(id => id.HasValue)
             .Select(id => id!.Value)
             .Distinct();
 
         var names = await _users.GetFullNamesAsync(ids, cancellationToken);
 
-        return value => Guid.TryParse(value, out var userId) && names.TryGetValue(userId, out var name) ? name : value;
+        return id => id is { } userId && names.TryGetValue(userId, out var name) ? name : null;
     }
 
     /// <summary>
-    /// Maps a class session entity to its detail response with audit names resolved.
+    /// Maps a class session entity to its detail response with audit names resolved. The response keeps
+    /// the pre-AuditableEntity field names (isActive / isDeleted / createdOn / updatedOn) the Sessions
+    /// pages read.
     /// </summary>
     private async Task<SessionDetail> ToDetailAsync(ClassSessions session, CancellationToken cancellationToken)
     {
@@ -366,14 +330,28 @@ public sealed class SessionsController : ControllerBase
         return new SessionDetail(
             session.Id,
             session.Name,
-            !session.IsDeleted,
-            nameOf(session.CreatedBy),
-            nameOf(session.UpdatedBy),
-            session.CreatedOn,
-            session.UpdatedOn,
+            session.Active,
+            session.Deleted,
+            nameOf(session.CreatedById),
+            nameOf(session.UpdatedById),
+            session.CreatedOnUtc,
+            session.UpdatedOnUtc,
+            session.DeletedOnUtc,
             session.TenantId,
             session.Tenant?.Name);
     }
+
+    #endregion
+
+    #region LoadAsync Helper
+
+    /// <summary>
+    /// Loads a class session entity based on super admin privileges or standard tenant context filters.
+    /// </summary>
+    /// <param name="id">The unique identifier of the session.</param>
+    /// <param name="cancellationToken">Propagates notification that operations should be canceled.</param>
+    /// <returns>Returns the matching <see cref="ClassSessions"/> entity if found; otherwise, null.</returns>
+    private Task<ClassSessions?> LoadAsync(Guid id, CancellationToken cancellationToken) => User.IsSuperAdmin() ? _sessions.GetByIdUnscopedAsync(id, cancellationToken) : _sessions.GetByIdAsync(id, cancellationToken);
 
     #endregion
 

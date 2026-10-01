@@ -26,36 +26,45 @@ internal sealed class BillingMethodRepository : IBillingMethodRepository
          string? search,
          Guid? tenantId,
          bool? active,
+         bool? showDeleted,
          SortRequest sort,
          int page,
          int limit,
          CancellationToken cancellationToken = default)
     {
-        var query = _dbContext.BillingMethod.AsQueryable();
+        //var query = _dbContext.BillingMethod.AsQueryable();
 
-        // 1. Tenant Filter
+        var query = tenantId is { } tid
+          ? _dbContext.BillingMethod.IgnoreQueryFilters().Where(s => s.TenantId == tid)
+          : _dbContext.BillingMethod.IgnoreQueryFilters().AsQueryable();
+        if (showDeleted != true)
+        {
+            query = query.Where(s => !s.Deleted);
+        }
+
+        //  Tenant Filter
         if (tenantId.HasValue)
         {
             query = query.Where(b => b.TenantId == tenantId.Value);
         }
 
-        // 2. Search Filter
+        //  Search Filter
         if (!string.IsNullOrWhiteSpace(search))
         {
             var term = search.Trim();
             query = query.Where(b => b.Name.Contains(term));
         }
 
-        // 3. Active Status Filter
+        //  Active Status Filter
         if (active.HasValue)
         {
             query = query.Where(b => b.Active == active.Value);
         }
 
-        // 4. Total Count Before Paging
+        //  Total Count Before Paging
         var totalCount = await query.CountAsync(cancellationToken);
 
-        // 5. Dynamic Sorting
+        //  Dynamic Sorting
         query = sort.SortBy?.ToLower() switch
         {
             "name" => sort.Descending ? query.OrderByDescending(b => b.Name) : query.OrderBy(b => b.Name),
@@ -63,7 +72,7 @@ internal sealed class BillingMethodRepository : IBillingMethodRepository
             _ => sort.Descending ? query.OrderByDescending(b => b.UpdatedOnUtc) : query.OrderBy(b => b.UpdatedOnUtc)
         };
 
-        // 6. Pagination (Skip & Take)
+        //  Pagination (Skip & Take)
         var items = await query
             .Skip((page - 1) * limit)
             .Take(limit)
