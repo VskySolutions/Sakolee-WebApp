@@ -808,7 +808,7 @@ const settingsSection = {
           icon: "o_class",
           to: "/class-rooms",
           permissions: [Permissions.ClassRoomsRead]
-       },
+        },
         {
           label: "Class Categories",
           icon: "o_category",

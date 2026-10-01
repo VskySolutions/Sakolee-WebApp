@@ -466,11 +466,8 @@ namespace Sakolee.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
-<<<<<<< HEAD
-=======
                     b.HasIndex("TenantId");
 
->>>>>>> 5dfdb44bfd54d7af21c852b84d64ddd32f8a6cd6
                     b.ToTable("BillingMethod");
                 });
 
@@ -3513,8 +3510,6 @@ namespace Sakolee.Infrastructure.Persistence.Migrations
                     b.ToTable("UserTenantRoles", (string)null);
                 });
 
-<<<<<<< HEAD
-=======
             modelBuilder.Entity("ClassRoom", b =>
                 {
                     b.HasOne("Sakolee.Domain.Entities.Location", "Location")
@@ -3532,7 +3527,6 @@ namespace Sakolee.Infrastructure.Persistence.Migrations
                     b.Navigation("Tenant");
                 });
 
->>>>>>> 5dfdb44bfd54d7af21c852b84d64ddd32f8a6cd6
             modelBuilder.Entity("Sakolee.Domain.Entities.AuditTrailEntry", b =>
                 {
                     b.HasOne("Sakolee.Domain.Entities.Tenant", null)
