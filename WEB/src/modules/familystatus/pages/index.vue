@@ -154,6 +154,8 @@ import FamilyStatusForm from "src/modules/familystatus/components/create_edit_st
 import FamilyStatusView from "src/modules/familystatus/components/viewstatus.vue";
 
 const { showDeleted, canManageDeleted } = useDeletedRecords();
+// The API's FamilyStatusSummary flags soft-deleted rows as `isDeleted` (only returned with "Show deleted?" on).
+const isDeleted = (row) => !!(row?.isDeleted ?? row?.IsDeleted ?? row?.deleted ?? row?.Deleted);
 const notify = useNotify();
 const { confirm } = useConfirm();
 
@@ -264,11 +266,11 @@ const {
         items.sort((a, b) => {
           const valA = new Date(a.createdOnUtc || a.CreatedOnUtc || a.created_on_utc || a.createdOn || 0).getTime();
           const valB = new Date(b.createdOnUtc || b.CreatedOnUtc || b.created_on_utc || b.createdOn || 0).getTime();
-          
+
           if (valA !== valB) {
-            return descending !== false ? valB - valA : valA - valB; 
+            return descending !== false ? valB - valA : valA - valB;
           }
-          
+
           const idA = a.familyStatusId || a.FamilyStatusId || a.id || a.Id || 0;
           const idB = b.familyStatusId || b.FamilyStatusId || b.id || b.Id || 0;
           return idB - idA;
@@ -341,7 +343,7 @@ const updateStatus = async (row, newStatus) => {
   if (!id) return;
 
   const originalStatus = row.active ?? row.Active ?? row.isActive ?? row.IsActive ?? true;
-  
+
   if (row.active !== undefined) row.active = newStatus;
   if (row.Active !== undefined) row.Active = newStatus;
   if (row.isActive !== undefined) row.isActive = newStatus;

@@ -28,7 +28,7 @@ public class Class
     /// <summary>Owning session/term (no Session management feature yet).</summary>
     public Guid? SessionId { get; set; }
 
-    /// <summary>The class's primary instructor (no Instructor management feature yet).</summary>
+    /// <summary>The class's primary instructor: a Staff user (User.Id) of the tenant.</summary>
     public Guid? PrimaryInstructorId { get; set; }
 
     /// <summary>Selected "Category 1" option (see <see cref="ClassCategory"/>).</summary>
@@ -54,7 +54,7 @@ public class Class
 
     public string? ClassName { get; set; }
 
-    /// <summary>Free text on the live schema, not a list of ids — preserved as-is.</summary>
+    /// <summary>Up to 2 additional instructors: Staff User ids of the tenant, comma-separated.</summary>
     public string? AdditionalInstructors { get; set; }
 
     public DateTime? StartDate { get; set; }
@@ -99,7 +99,7 @@ public class Class
 
     public DateTime? CutoffDate { get; set; }
 
-    /// <summary>Free text on the live schema, not a list of ids — preserved as-is.</summary>
+    /// <summary>Up to 2 additional instructors: Staff User ids of the tenant, comma-separated.</summary>
     public string? PolicyGroups { get; set; }
 
     /// <summary>Maps to the physical "VirtualClassURL" column.</summary>

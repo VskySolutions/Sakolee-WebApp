@@ -30,10 +30,10 @@
       page-key="locations"
       :row-key="(row) => row.locationId || row.LocationId || row.id || row.Id"
       title="Locations"
-      :rows="rows"
+      :rows="filteredRows"
       :columns="columns"
       :loading="loading"
-      :total-records="totalRecords"
+      :total-records="filteredRows.length"
       :pagination="pagination"
       @request="onRequest"
       @refresh="load"
@@ -96,7 +96,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted } from "vue";
+import { ref, watch, onMounted } from "vue";
 import { debounce } from "quasar";
 
 import { locationApi, getApiErrorMessage } from "services/api";
@@ -204,8 +204,6 @@ const {
   pageKey: "locations",
   fetcher: ({ sortBy, descending }) =>
     locationApi.list({
-      page,
-      limit,
       search: search.value || undefined,
       showDeleted: showDeleted.value,
       sortBy: sortBy || "createdOnUtc",
@@ -343,10 +341,4 @@ const removeLocation = async (row) => {
     notify.error(getApiErrorMessage(err));
   }
 };
-
-watch(
-  [search, filters],
-  reload,
-  { deep: true }
-);
 </script>

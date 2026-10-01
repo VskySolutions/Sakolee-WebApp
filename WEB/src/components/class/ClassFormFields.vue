@@ -7,17 +7,21 @@
         :disable="disable" :rules="[(v) => !!v || 'Class name is required']"
       />
 
-      <!-- Category 1/2/3, Location and Session save to the Class record (backed by ClassCategory/
-           Locations/ClassSessions). Room/Instructor are still placeholder option lists — there is no management feature for them
-           yet, so those don't save to the class record until that backing data exists. -->
+      <!-- Category 1/2/3, Location, Session and Primary/Additional Instructors save to the Class record (backed by
+           ClassCategory/Locations/ClassSessions/the tenant's Staff users). Room is still a placeholder option list —
+           there is no management feature for it yet, so it doesn't save to the class record. -->
       <app-select :key="`category1-${categoriesLoaded}`" v-model="form.category1" label="Category 1 *" :options="category1Options" class="col-12 col-sm-6" :disable="disable" />
       <app-select :key="`category2-${categoriesLoaded}`" v-model="form.category2" label="Category 2" :options="category2Options" class="col-12 col-sm-6" :disable="disable" />
       <app-select :key="`category3-${categoriesLoaded}`" v-model="form.category3" label="Category 3" :options="category3Options" class="col-12 col-sm-6" :disable="disable" />
       <app-select :key="`location-${categoriesLoaded}`" v-model="form.location" label="Location *" :options="locationOptions" class="col-12 col-sm-6" :disable="disable" />
       <app-select v-model="form.room" label="Room *" :options="roomOptions" class="col-12 col-sm-6" :disable="disable" />
       <app-select :key="`session-${categoriesLoaded}`" v-model="form.session" label="Session *" :options="sessionOptions" class="col-12 col-sm-6" :disable="disable" />
-      <app-select v-model="form.primaryInstructor" label="Primary Instructor *" :options="instructorOptions" class="col-12 col-sm-6" :disable="disable" />
-      <app-text-field v-model="form.additionalInstructors" label="Additional Instructors (Max 2)" hint="Free text (no instructor list yet)" class="col-12 col-sm-6" :disable="disable" />
+      <app-select :key="`instructor-${categoriesLoaded}`" v-model="form.primaryInstructor" label="Primary Instructor *" :options="instructorOptions" class="col-12 col-sm-6" :disable="disable" />
+      <app-select
+        :key="`additional-instructors-${categoriesLoaded}`" v-model="form.additionalInstructors" label="Additional Instructors (Max 2)"
+        :options="additionalInstructorOptions" multiple class="col-12 col-sm-6" :disable="disable"
+        :rules="[(v) => !v || v.length <= 2 || 'Select at most 2 additional instructors']"
+      />
     </div>
 
     <q-separator class="q-my-sm" />
@@ -118,7 +122,7 @@
 <script setup>
 // The Class create/edit/view field set, defined once and reused by the Add/Edit/View class pages.
 import { ref, computed, watch, onMounted } from "vue";
-import { classCategoryApi, classSessionApi, locationApi, getApiErrorMessage } from "services/api";
+import { classApi, classCategoryApi, classSessionApi, locationApi, getApiErrorMessage } from "services/api";
 import { useNotify } from "composables/useNotify";
 import { formatDuration } from "composables/classForm";
 
@@ -142,11 +146,13 @@ const notify = useNotify();
 // Category 1/2/3: real options loaded from ClassCategory (scoped to the caller's active tenant), one
 // flat list told apart by categoryType — selections save to Class.Category1Id/2Id/3Id (see
 // classForm.js's toClassPayload). Location/Session: the tenant's active Locations and ClassSessions,
-// saved to Class.LocationId/SessionId. Room/Instructor stay demo option lists standing in for the
-// not-yet-built management features and are not sent on submit.
+// saved to Class.LocationId/SessionId. Primary Instructor: the tenant's active Staff users, saved to
+// Class.PrimaryInstructorId. Room stays a demo option list standing in for the not-yet-built management
+// feature and is not sent on submit.
 const classCategories = ref([]);
 const locations = ref([]);
 const sessions = ref([]);
+const instructors = ref([]);
 // The Category/Location/Session selects mount before these async fetches resolve, and QSelect's value→label
 // mapping (map-options) doesn't reliably re-run once `options` fills in later — an edit page showing
 // a class's saved category renders the raw id instead of its name until this remounts them. Keying
@@ -154,10 +160,11 @@ const sessions = ref([]);
 const categoriesLoaded = ref(false);
 onMounted(async () => {
   // Loaded independently: one list failing must not leave the other empty.
-  const [categoryResult, locationResult, sessionResult] = await Promise.allSettled([
+  const [categoryResult, locationResult, sessionResult, instructorResult] = await Promise.allSettled([
     classCategoryApi.list(),
     locationApi.list({ active: true }),
-    classSessionApi.list({ isActive: true, limit: 100 })
+    classSessionApi.list({ isActive: true, limit: 100 }),
+    classApi.instructors()
   ]);
   if (categoryResult.status === "fulfilled") classCategories.value = categoryResult.value?.data || [];
   else notify.error(getApiErrorMessage(categoryResult.reason));
@@ -165,6 +172,8 @@ onMounted(async () => {
   else notify.error(getApiErrorMessage(locationResult.reason));
   if (sessionResult.status === "fulfilled") sessions.value = sessionResult.value?.data || [];
   else notify.error(getApiErrorMessage(sessionResult.reason));
+  if (instructorResult.status === "fulfilled") instructors.value = instructorResult.value?.data || [];
+  else notify.error(getApiErrorMessage(instructorResult.reason));
   categoriesLoaded.value = true;
 });
 
@@ -199,7 +208,32 @@ const lookupOptions = (list, field) => computed(() => {
 const locationOptions = lookupOptions(locations, "location");
 const sessionOptions = lookupOptions(sessions, "session");
 const roomOptions = ["Studio A", "Studio B", "Main Gym"];
-const instructorOptions = ["Sarah Jenkins", "Michael Chen", "Elena Rodriguez"];
+const instructorOptions = lookupOptions(instructors, "primaryInstructor");
+// Additional Instructors: the same Staff list, minus whoever is the primary instructor. Once 2 are
+// picked the rest are disabled so the Max 2 limit can't be exceeded. Saved picks missing from the list
+// still show by name (from the class row's additionalInstructorNames).
+const additionalInstructorOptions = computed(() => {
+  const selected = form.value.additionalInstructors || [];
+  const options = instructors.value
+    .filter((i) => i.id !== form.value.primaryInstructor)
+    .map((i) => ({ label: i.name, value: i.id }));
+  (form.value.additionalInstructorNames || []).forEach((saved) => {
+    if (selected.includes(saved.id) && !options.some((o) => o.value === saved.id)) {
+      options.unshift({ label: saved.name, value: saved.id });
+    }
+  });
+  return options.map((o) => ({ ...o, disable: selected.length >= 2 && !selected.includes(o.value) }));
+});
+// Picking someone as primary drops them from the additional list, so nobody is listed twice.
+watch(
+  () => form.value.primaryInstructor,
+  (primary) => {
+    const additional = form.value.additionalInstructors || [];
+    if (primary && additional.includes(primary)) {
+      form.value.additionalInstructors = additional.filter((id) => id !== primary);
+    }
+  }
+);
 
 const genderOptions = [
   { label: "All", value: "All" },

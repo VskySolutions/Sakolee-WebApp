@@ -27,6 +27,9 @@ namespace Sakolee.Api.Controllers;
 [ProducesResponseType<ApiErrorResponse>(StatusCodes.Status404NotFound)]
 public sealed class ClassesController : ControllerBase
 {
+    /// <summary>The role whose holders are offered as class instructors (the same role the Staff list shows).</summary>
+    private const string StaffRole = "Staff";
+
     private readonly IClassRepository _classes;
     private readonly IClassCategoryRepository _categories;
     private readonly ILocationRepository _locations;
@@ -83,7 +86,7 @@ public sealed class ClassesController : ControllerBase
         };
         ApplyRequest(entity, request.LocationId, request.RoomId, request.SessionId, request.PrimaryInstructorId,
             request.Category1Id, request.Category2Id, request.Category3Id,
-            request.ClassName, request.AdditionalInstructors, request.StartDate, request.EndDate,
+            request.ClassName, request.AdditionalInstructorIds, request.StartDate, request.EndDate,
             request.RegistrationOpenDate, request.ActiveDays, request.StartTime, request.EndTime, request.Duration,
             request.TuitionFee, request.BillingMethod, request.BillingCycle, request.RegistrationFee,
             request.Description, request.Gender, request.MinAge, request.MaxAge, request.MaxClassSize,
@@ -136,6 +139,29 @@ public sealed class ClassesController : ControllerBase
         return Ok(ApiResponseFactory.Paginated(pageItems, "Classes retrieved.", page, limit, filtered.Count));
     }
 
+    /// <summary>
+    /// The Primary Instructor picker's options: the active tenant's active users holding the "Staff" role
+    /// (the same people the Staff list shows). Readable with Classes permissions alone, so the class form
+    /// does not need users.read.
+    /// </summary>
+    [HttpGet("instructors")]
+    [RequireAnyPermission(Permissions.ClassesRead, Permissions.ClassesWrite)]
+    [ProducesResponseType<ApiResponse<IReadOnlyList<ClassInstructorOption>>>(StatusCodes.Status200OK)]
+    public async Task<IActionResult> ListInstructors(CancellationToken cancellationToken)
+    {
+        if (User.GetActiveTenantId() is not { } tenantId)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, ApiResponseFactory.Forbidden("No active tenant for the caller."));
+        }
+
+        var staff = await _users.ListByTenantRolesAsync(tenantId, new[] { StaffRole }, cancellationToken);
+        var options = staff
+            .Select(u => new ClassInstructorOption(u.Id, u.Person?.FullName ?? u.DisplayName))
+            .OrderBy(o => o.Name, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        return Ok(ApiResponseFactory.Success(options, "Instructors retrieved."));
+    }
+
     [HttpGet("{id:guid}")]
     [RequirePermission(Permissions.ClassesRead)]
     [ProducesResponseType<ApiResponse<ClassSummary>>(StatusCodes.Status200OK)]
@@ -154,15 +180,22 @@ public sealed class ClassesController : ControllerBase
         string? CategoryName(Guid? id) => id is { } categoryId && categoryNames.TryGetValue(categoryId, out var name) ? name : null;
         var location = entity.LocationId is { } locationId ? await _locations.GetByIdAsync(locationId, cancellationToken) : null;
         var session = entity.SessionId is { } sessionId ? await _sessions.GetByIdAsync(sessionId, cancellationToken) : null;
+        var additionalIds = ParseInstructorIds(entity.AdditionalInstructors);
+        var instructorNames = await ResolveActorNamesAsync(
+            additionalIds.Select(i => (Guid?)i).Append(entity.PrimaryInstructorId), cancellationToken);
 
         return Ok(ApiResponseFactory.Success(
             ToSummary(entity, names) with
             {
+                AdditionalInstructors = additionalIds
+                    .Select(i => new ClassInstructorOption(i, NameOf(instructorNames, i) ?? string.Empty))
+                    .ToList(),
                 Category1Name = CategoryName(entity.Category1Id),
                 Category2Name = CategoryName(entity.Category2Id),
                 Category3Name = CategoryName(entity.Category3Id),
                 LocationName = location?.Name,
                 SessionName = session?.Name,
+                PrimaryInstructorName = NameOf(instructorNames, entity.PrimaryInstructorId),
             },
             "Class retrieved."));
     }
@@ -180,7 +213,7 @@ public sealed class ClassesController : ControllerBase
 
         ApplyRequest(entity, request.LocationId, request.RoomId, request.SessionId, request.PrimaryInstructorId,
             request.Category1Id, request.Category2Id, request.Category3Id,
-            request.ClassName, request.AdditionalInstructors, request.StartDate, request.EndDate,
+            request.ClassName, request.AdditionalInstructorIds, request.StartDate, request.EndDate,
             request.RegistrationOpenDate, request.ActiveDays, request.StartTime, request.EndTime, request.Duration,
             request.TuitionFee, request.BillingMethod, request.BillingCycle, request.RegistrationFee,
             request.Description, request.Gender, request.MinAge, request.MaxAge, request.MaxClassSize,
@@ -225,7 +258,7 @@ public sealed class ClassesController : ControllerBase
     private static void ApplyRequest(
         Class entity, Guid? locationId, Guid? roomId, Guid? sessionId, Guid? primaryInstructorId,
         Guid? category1Id, Guid? category2Id, Guid? category3Id,
-        string className, string? additionalInstructors, DateTime? startDate, DateTime? endDate,
+        string className, IReadOnlyList<Guid>? additionalInstructorIds, DateTime? startDate, DateTime? endDate,
         DateTime? registrationOpenDate, string? activeDays, string? startTime, string? endTime, string? duration,
         decimal? tuitionFee, string? billingMethod, string? billingCycle, bool? registrationFee,
         string? description, string? gender, int? minAge, int? maxAge, int? maxClassSize, int? maxWaitlistSize,
@@ -242,7 +275,9 @@ public sealed class ClassesController : ControllerBase
         entity.Category2Id = category2Id;
         entity.Category3Id = category3Id;
         entity.ClassName = className.Trim();
-        entity.AdditionalInstructors = additionalInstructors?.Trim();
+        entity.AdditionalInstructors = additionalInstructorIds is { Count: > 0 }
+            ? string.Join(",", additionalInstructorIds.Distinct())
+            : null;
         entity.StartDate = startDate;
         entity.EndDate = endDate;
         entity.RegistrationOpenDate = registrationOpenDate;
@@ -276,6 +311,20 @@ public sealed class ClassesController : ControllerBase
         entity.DropInFee = dropInFee;
     }
 
+    /// <summary>
+    /// <see cref="Class.AdditionalInstructors"/> holds the additional instructors' User ids, comma-separated.
+    /// Anything that isn't an id (free text saved before the column held ids) is skipped.
+    /// </summary>
+    private static IReadOnlyList<Guid> ParseInstructorIds(string? value)
+        => string.IsNullOrWhiteSpace(value)
+            ? Array.Empty<Guid>()
+            : value.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .Select(part => Guid.TryParse(part, out var id) ? id : (Guid?)null)
+                .Where(id => id.HasValue)
+                .Select(id => id!.Value)
+                .Distinct()
+                .ToList();
+
     private Guid? CurrentActorId()
         => Guid.TryParse(_actorAccessor.GetCurrentActor(), out var id) ? id : null;
 
@@ -287,7 +336,7 @@ public sealed class ClassesController : ControllerBase
 
     private static ClassSummary ToSummary(Class c, IReadOnlyDictionary<Guid, string> names) => new(
         c.Id, c.LocationId, c.RoomId, c.SessionId, c.PrimaryInstructorId, c.Category1Id, c.Category2Id, c.Category3Id,
-        c.ClassName, c.AdditionalInstructors,
+        c.ClassName, ParseInstructorIds(c.AdditionalInstructors),
         c.StartDate, c.EndDate, c.RegistrationOpenDate, c.ActiveDays, c.StartTime, c.EndTime, c.Duration,
         c.TuitionFee, c.BillingMethod, c.BillingCycle, c.RegistrationFee, c.Description, c.Gender, c.MinAge,
         c.MaxAge, c.MaxClassSize, c.MaxWaitlistSize, c.CutoffDate, c.PolicyGroups, c.VirtualClassUrl,

@@ -55,6 +55,7 @@
             </q-list>
           </q-btn-dropdown>
 
+          
           <!-- Active-tenant roles: the user's roles for the active tenant, shown on every
                authenticated screen alongside their name (in user-info). -->
           <!-- <div v-if="isLoggedIn && activeRoles.length" class="gt-xs row items-center q-gutter-xs">
