@@ -27,10 +27,10 @@ export const formatDuration = (startTime, endTime) => {
 };
 
 // A blank Class create/edit form — one canonical shape reused by the Add/Edit/View class pages.
-// Room and Instructor are still placeholder-only fields (see ClassFormFields.vue)
-// — none of them are sent on submit, since the Class record has no backing columns for them yet.
-// Category1/2/3, Location and Session are backed by real Class.Category1Id/2Id/3Id/LocationId/SessionId
-// columns and are sent on submit.
+// Room is still a placeholder-only field (see ClassFormFields.vue)
+// — it is not sent on submit, since there is no Room management feature to back it yet.
+// Category1/2/3, Location, Session and Primary/Additional Instructors are backed by real Class.Category1Id/2Id/3Id/
+// LocationId/SessionId/PrimaryInstructorId/AdditionalInstructors columns and are sent on submit.
 export const blankClassForm = () => ({
   classId: null,
   className: "",
@@ -41,7 +41,7 @@ export const blankClassForm = () => ({
   room: "",
   session: "",
   primaryInstructor: "",
-  additionalInstructors: "",
+  additionalInstructors: [],
   gender: "",
   minAge: null,
   maxAge: null,
@@ -85,7 +85,8 @@ export const toClassPayload = (form) => ({
   category3Id: form.category3 || null,
   locationId: form.location || null,
   sessionId: form.session || null,
-  additionalInstructors: form.additionalInstructors || null,
+  primaryInstructorId: form.primaryInstructor || null,
+  additionalInstructorIds: form.additionalInstructors || [],
   gender: form.gender || null,
   minAge: form.minAge,
   maxAge: form.maxAge,
@@ -133,11 +134,13 @@ export const classFormFromRow = (row) => ({
   category3Name: row.category3Name || "",
   locationName: row.locationName || "",
   sessionName: row.sessionName || "",
+  primaryInstructorName: row.primaryInstructorName || "",
+  additionalInstructorNames: row.additionalInstructors || [],
   location: row.locationId || "",
   room: "",
   session: row.sessionId || "",
-  primaryInstructor: "",
-  additionalInstructors: row.additionalInstructors || "",
+  primaryInstructor: row.primaryInstructorId || "",
+  additionalInstructors: row.additionalInstructorIds || [],
   gender: row.gender || "",
   minAge: row.minAge ?? null,
   maxAge: row.maxAge ?? null,
