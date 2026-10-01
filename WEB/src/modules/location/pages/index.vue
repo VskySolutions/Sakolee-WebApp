@@ -30,10 +30,10 @@
       page-key="locations"
       :row-key="(row) => row.locationId || row.LocationId || row.id || row.Id"
       title="Locations"
-      :rows="rows"
+      :rows="filteredRows"
       :columns="columns"
       :loading="loading"
-      :total-records="totalRecords"
+      :total-records="filteredRows.length"
       :pagination="pagination"
       @request="onRequest"
       @refresh="load"
@@ -54,10 +54,10 @@
           <div class="flex flex-center">
             <q-toggle
               :model-value="cell.row.active ?? cell.row.Active ?? cell.row.is_active ?? true"
+              @update:model-value="(val) => updateStatus(cell.row, val)"
               dense
               color="positive"
               :disable="cell.row.deleted || cell.row.Deleted"
-              @update:model-value="(val) => updateStatus(cell.row, val)"
             />
           </div>
         </q-td>
@@ -69,10 +69,10 @@
           <q-btn flat round dense color="primary" icon="o_visibility" @click="openView(cell.row)">
             <q-tooltip>View</q-tooltip>
           </q-btn>
-          <q-btn flat round dense color="primary" icon="o_edit" :disabled="cell.row.deleted || cell.row.Deleted" @click="openEdit(cell.row)">
+          <q-btn flat round dense color="primary" icon="o_edit" @click="openEdit(cell.row)" :disabled="cell.row.deleted || cell.row.Deleted">
             <q-tooltip>Edit</q-tooltip>
           </q-btn>
-          <q-btn v-if="!(cell.row.deleted || cell.row.Deleted)" flat round dense color="negative" icon="o_delete" @click="removeLocation(cell.row)">
+          <q-btn flat round dense color="negative" icon="o_delete" @click="removeLocation(cell.row)" v-if="!(cell.row.deleted || cell.row.Deleted)">
             <q-tooltip>Delete</q-tooltip>
           </q-btn>
         </q-td>
@@ -125,6 +125,7 @@ const formatDate = (value) => {
   if (isNaN(date.getTime()) || date.getFullYear() <= 1) return "—";
   return date.toLocaleString();
 };
+
 
 const columns = [
   {
@@ -204,11 +205,9 @@ const {
   pageKey: "locations",
   fetcher: ({ sortBy, descending }) =>
     locationApi.list({
-      page,
-      limit,
       search: search.value || undefined,
       showDeleted: showDeleted.value,
-      sortBy: sortBy || "createdOnUtc",
+      sortBy: sortBy || 'createdOnUtc',
       descending: descending ?? true,
       includeInactive: true
     }).then((response) => {
@@ -247,7 +246,7 @@ const reload = debounce(() => {
 watch(search, reload);
 
 onMounted(() => {
-  pagination.value.sortBy = "createdOnUtc";
+  pagination.value.sortBy = 'createdOnUtc';
   pagination.value.descending = true;
   load();
 });
@@ -279,7 +278,7 @@ const updateStatus = async (row, newStatus) => {
   if (!id) return;
 
   const originalStatus = row.active ?? row.Active ?? row.is_active ?? true;
-
+  
   if (row.active !== undefined) row.active = newStatus;
   if (row.Active !== undefined) row.Active = newStatus;
   if (row.is_active !== undefined) row.is_active = newStatus;
@@ -325,7 +324,7 @@ const removeLocation = async (row) => {
   const id = row.locationId || row.LocationId || row.id || row.Id;
   if (!id) return;
 
-  const methodLabel = row.name || row.Name || row.locationName || row.LocationName || "this location";
+  const methodLabel = row.name || row.Name || row.locationName || row.LocationName || 'this location';
   const ok = await confirm({
     title: "Delete location",
     message: `Are you sure you want to delete the location "${methodLabel}"?`,
@@ -343,10 +342,4 @@ const removeLocation = async (row) => {
     notify.error(getApiErrorMessage(err));
   }
 };
-
-watch(
-  [search, filters],
-  reload,
-  { deep: true }
-);
 </script>

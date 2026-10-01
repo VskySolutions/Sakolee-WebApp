@@ -117,7 +117,7 @@ public sealed record FamilyResponse(Guid FamilyId, string? FamilyName, IReadOnly
 /// <summary>A student enrolled under a family — the minimal projection a family's detail view needs
 /// (full detail lives on the Students screen).</summary>
 public sealed record FamilyStudentSummary(
-    Guid StudentId, string? FirstName, string? LastName, string? StudentNumber, bool Active, Guid? ClassId, DateTime? BirthDate);
+    Guid StudentId, string? FirstName, string? LastName, string? StudentNumber, bool Active, Guid? ClassId);
 
 /// <summary>Full family detail: its own fields, every contact, and every enrolled student.</summary>
 public sealed record FamilyDetail(

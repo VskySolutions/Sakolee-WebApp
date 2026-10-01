@@ -45,9 +45,6 @@
           <q-btn flat round dense color="primary" icon="o_visibility" :to="{ name: 'class_detail', params: { id: cell.row.classId } }">
             <q-tooltip>View</q-tooltip>
           </q-btn>
-          <!-- <q-btn flat round dense color="primary" icon="o_visibility" @click="openView(cell.row.studentId)">
-            <q-tooltip>View</q-tooltip>
-          </q-btn> -->
           <q-btn v-if="canWrite" flat round dense color="primary" icon="o_edit" :to="{ name: 'class_edit', params: { id: cell.row.classId } }">
             <q-tooltip>Edit</q-tooltip>
           </q-btn>
@@ -57,12 +54,11 @@
         </q-td>
       </template>
     </app-data-table>
-    <view-class :id="viewingId" v-model="viewOpen" />
   </q-page>
 </template>
 
 <script setup>
-import { ref, computed, reactive, watch } from "vue";
+import { computed, reactive, watch } from "vue";
 import { debounce } from "quasar";
 import { classApi, getApiErrorMessage } from "services/api";
 import { useNotify } from "composables/useNotify";
@@ -76,7 +72,6 @@ import AppDataTable from "components/common/AppDataTable.vue";
 import AppFilterDrawer from "components/common/AppFilterDrawer.vue";
 import AppListHeader from "components/common/AppListHeader.vue";
 import AppSelect from "components/common/AppSelect.vue";
-import ViewClass from "modules/class/components/view_class.vue";
 
 const notify = useNotify();
 const { confirm } = useConfirm();
@@ -149,16 +144,4 @@ const remove = async (row) => {
     notify.error(getApiErrorMessage(err));
   }
 };
-
-/*
- * ------------------------------------------------------------
- * View Class
- * ------------------------------------------------------------
- */
-const viewOpen = ref(false);
-const viewingId = ref(null);
-// const openView = (classId) => {
-//   viewingId.value = classId;
-//   viewOpen.value = true;
-// };
 </script>
