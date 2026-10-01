@@ -3,7 +3,7 @@
     v-model="dialogOpen"
     persistent
     transition-show="scale"
-    transition-hide="scale"
+    transition-hide="scale" class="dialogs-scss"
   >
     <q-card
       class="app-form-dialog"
@@ -11,20 +11,23 @@
     >
       <!-- Header -->
       <q-card-section class="app-form-dialog__header">
-        <div class="text-h6 fw-600">
-          {{ title }}
+        <div class="app-form-dialog__header-content">
+          <div v-if="avatarText" class="app-form-dialog__avatar">
+            {{ avatarText }}
+          </div>
+
+          <div class="app-form-dialog__title-content">
+            <div class="app-form-dialog__title">
+              {{ title }}
+            </div>
+
+            <div v-if="subtitle" class="app-form-dialog__subtitle">
+              {{ subtitle }}
+            </div>
+          </div>
         </div>
 
-        <q-btn
-          flat
-          round
-          dense
-          icon="o_close"
-          :disable="saving"
-          size="12px"
-          class="text-grey-7"
-          @click="cancel"
-        >
+        <q-btn flat round dense icon="o_close" :disable="saving" size="12px" class="text-grey-7" @click="cancel">
           <q-tooltip>Close</q-tooltip>
         </q-btn>
       </q-card-section>
@@ -49,8 +52,8 @@
             no-caps
             label="Cancel"
             :disable="saving"
-            @click="cancel"
             class="close-btn br-12"
+            @click="cancel"
           />
 
           <q-btn
@@ -61,8 +64,8 @@
             :label="saveLabel"
             :loading="saving"
             :disable="saving"
-            @click="$emit('submit')"
             class="save-btn br-12"
+            @click="$emit('submit')"
           />
         </q-card-actions>
       </template>
@@ -80,6 +83,16 @@ const props = defineProps({
   },
 
   title: {
+    type: String,
+    default: ""
+  },
+
+  subtitle: {
+    type: String,
+    default: ""
+  },
+
+  avatarText: {
     type: String,
     default: ""
   },
@@ -104,15 +117,10 @@ const props = defineProps({
     default: false
   },
 
-  /*
-   * sm = simple forms
-   * md = normal CRUD forms
-   * lg = larger/multi-section forms
-   */
   size: {
     type: String,
     default: "md",
-    validator: (value) => ["sm", "md", "lg"].includes(value)
+    validator: (value) => ["sm", "md", "lg", "xl"].includes(value)
   }
 });
 
@@ -134,80 +142,6 @@ const cancel = () => {
   emit("cancel");
 };
 </script>
-
 <style scoped lang="scss">
-.app-form-dialog {
-  width: calc(100vw - 32px);
-  max-height: calc(100vh - 48px);
-  display: flex;
-  flex-direction: column;
-  border-radius: 16px;
-  overflow: hidden;
 
-  /*
-   * Dialog width is controlled by the form complexity.
-   * Content can increase height until max-height is reached;
-   * after that only the body scrolls.
-   */
-  &--sm {
-    max-width: 480px;
-  }
-
-  &--md {
-    max-width: 680px;
-  }
-
-  &--lg {
-    max-width: 900px;
-  }
-
-  &__header {
-    min-height: 64px;
-    padding: 16px 20px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 16px;
-    flex-shrink: 0;
-  }
-
-  &__body {
-    padding: 20px;
-    overflow-y: auto;
-    overflow-x: hidden;
-    flex: 1 1 auto;
-    background-color: #fbfbfe !important;
-  }
-
-  &__footer {
-    min-height: 64px;
-    padding: 12px 20px;
-    flex-shrink: 0;
-  }
-}
-
-/*
- * Mobile:
- * Keep the dialog inside the viewport with a small outer margin.
- * Width becomes effectively full-screen while preserving rounded edges.
- */
-@media (max-width: 599px) {
-  .app-form-dialog {
-    width: calc(100vw - 24px);
-    max-width: calc(100vw - 24px) !important;
-    max-height: calc(100vh - 24px);
-
-    &__header {
-      padding: 14px 16px;
-    }
-
-    &__body {
-      padding: 16px;
-    }
-
-    &__footer {
-      padding: 12px 16px;
-    }
-  }
-}
 </style>

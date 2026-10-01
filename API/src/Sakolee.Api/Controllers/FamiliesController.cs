@@ -884,7 +884,7 @@ public sealed class FamiliesController : ControllerBase
             students.Select(s =>
             {
                 var person = s.PersonId is { } pid && studentPersons.TryGetValue(pid, out var p) ? p : null;
-                return new FamilyStudentSummary(s.Id, person?.FirstName, person?.LastName, s.StudentNumber, s.Active, s.ClassId);
+                return new FamilyStudentSummary(s.Id, person?.FirstName, person?.LastName, s.StudentNumber, s.Active, s.ClassId, s.BirthDate);
             }).ToList(),
             NameOf(names, f.CreatedById), f.CreatedOnUtc, NameOf(names, f.UpdatedById), f.UpdatedOnUtc);
     }
