@@ -336,7 +336,7 @@ const { rows, loading, totalRecords, search, pagination, load, onRequest } = use
     billingCycleApi.list({ page, limit, search: search.value || undefined, sortBy, descending, name: filters.name || undefined, active: filters.active ?? undefined, showDeleted: showDeleted.value })
       .then((response) => ({ data: response?.data || [], total: response?.meta?.totalRecords || 0 })),
   // Handle errors that occur during the API call.
-  onError: (error) => { notify.error(getApiErrorMessage(error, "Unable to load billing cycles."));}
+  onError: (error) => { notify.error(getApiErrorMessage(error, "Unable to load billing cycles.")); }
 });
 const {
   filters,
