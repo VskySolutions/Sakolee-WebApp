@@ -6,6 +6,7 @@ using Sakolee.Application.Abstractions.Auditing;
 using Sakolee.Application.Abstractions.Persistence;
 using Sakolee.Application.Abstractions.Security;
 using Sakolee.Application.Common;
+using Sakolee.Application.Common;
 using Sakolee.Domain.Entities;
 using Sakolee.Shared.Contracts;
 using Sakolee.Shared.Security;
@@ -52,6 +53,43 @@ public sealed class LocationsController : ControllerBase
     /// Gets all locations belonging to the active tenant. Also readable with classes.read/families.read:
     /// the Class and Family forms load this list for their Location dropdowns.
     /// </summary>
+    //[HttpGet]
+    //[RequireAnyPermission(Permissions.LocationsRead, Permissions.ClassesRead, Permissions.FamiliesRead)]
+    //[ProducesResponseType<ApiResponse<IReadOnlyList<LocationSummary>>>(StatusCodes.Status200OK)]
+    //public async Task<IActionResult> List([FromQuery] string? search = null, [FromQuery] bool? active = null, CancellationToken cancellationToken = default)
+    //{
+    //    if (!HasActiveTenant())
+    //    {
+    //        return NoActiveTenant();
+    //    }
+
+    //    var locations = await _locations.ListAsync(cancellationToken);
+
+    //    IEnumerable<Location> result = locations;
+
+    //    // Search by Location Name
+    //    if (!string.IsNullOrWhiteSpace(search))
+    //    {
+    //        var term = search.Trim();
+
+    //        result = result.Where(location => location.Name.Contains(term, StringComparison.OrdinalIgnoreCase));
+    //    }
+
+    //    // Optional Active filter
+    //    if (active.HasValue)
+    //    {
+    //        result = result.Where(location => location.Active == active.Value);
+    //    }
+
+    //    var page = result.ToList();
+
+    //    var nameOf = await AuditNamesAsync(page, cancellationToken);
+
+    //    var summaries = page.Select(location => ToSummary(location, nameOf)).ToList();
+
+    //    return Ok(ApiResponseFactory.Success(summaries, "Locations retrieved."));
+    //}
+
     [HttpGet]
     [RequireAnyPermission(Permissions.LocationsRead, Permissions.ClassesRead, Permissions.FamiliesRead)]
     [ProducesResponseType<ApiResponse<IReadOnlyList<LocationSummary>>>(StatusCodes.Status200OK)]
