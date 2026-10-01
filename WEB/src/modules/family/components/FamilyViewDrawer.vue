@@ -121,7 +121,7 @@
                   <span class="fs-11 fw-700 text-86">AGREEMENTS</span>
                 </div>
 
-                <template v-if="form.secondaryContact">
+                <!-- <template v-if="form.secondaryContact">
                   <div class="fv-value fw-700">
                     {{ fullName(form.secondaryContact.firstName, form.secondaryContact.lastName) }}
                   </div>
@@ -146,9 +146,10 @@
                       <q-icon name="o_check_circle" size="13px" /> Authorized Pick Up
                     </span>
                   </div>
-                </template>
+                </template> -->
 
-                <div v-else class="fv-empty">No Agreement yet.</div>
+                <!--Remove v-else -->
+                <div class="fv-empty">No Agreement yet.</div>
               </div>
             </div>
           </div>

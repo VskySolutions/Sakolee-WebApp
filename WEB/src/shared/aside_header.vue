@@ -16,10 +16,14 @@
         <q-icon v-else name="o_account_balance" class="text-white" size="24px" />
       </q-avatar>
       <div class="tenant-info q-mini-drawer-hide">
-        <div class="tenant-name text-white">{{ tenantName }}</div>
+        <div class="tenant-name text-white">{{ tenantName }}
+          <q-tooltip anchor="bottom middle" self="top middle">{{ tenantName }}</q-tooltip>
+        </div>
       </div>
       <div class="tenant-info" :class="$q.screen.width < 1024 ? '' : 'hidden'">
-        <div class="tenant-name text-white">{{ tenantName }}</div>
+        <div class="tenant-name text-white">{{ tenantName }}
+          <q-tooltip anchor="bottom middle" self="top middle">{{ tenantName }}</q-tooltip>
+        </div>
       </div>
     </div>
 
@@ -162,5 +166,10 @@ onBeforeUnmount(() => {
   display: flex;
   justify-content: center;
   margin-top: 16px;
+}
+
+.tenant-info {
+  min-width: 0; 
+  flex: 1;
 }
 </style>
