@@ -97,6 +97,8 @@ public static class DependencyInjection
         services.AddScoped<ILocationRepository, LocationRepository>();
         services.AddScoped<ITShirtSizeRepository, TShirtSizeRepository>();
         services.AddScoped<IHearAboutUsRepository, HearAboutUsRepository>();
+        services.AddScoped<IEPaymentScheduleRepository, EPaymentScheduleRepository>();
+        services.AddScoped<IAccountTypeRepository, AccountTypeRepository>();
         // Universal Features (Phase 14) repositories.
         services.AddScoped<IActivityEventRepository, ActivityEventRepository>();
         services.AddScoped<INotificationRepository, NotificationRepository>();

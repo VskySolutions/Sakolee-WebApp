@@ -19,6 +19,11 @@ public class ClassCategory : AuditableEntity
 
     public string Name { get; set; } = string.Empty;
 
+    /// <summary>
+    /// Gets or sets whether the Class Category is active.
+    /// </summary>
+    public bool Active { get; set; } = true;
+
     /// <summary>Which dropdown this option belongs to on the Class form: "Category 1", "Category 2", or "Category 3".</summary>
     public string? CategoryType { get; set; }
 

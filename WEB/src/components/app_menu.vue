@@ -828,6 +828,18 @@ const settingsSection = {
           permissions: [Permissions.HearAboutUsRead]
         },
         {
+          label: "E-Payment Schedule",
+          icon: "o_payments",
+          to: "/e-payment-schedule",
+          permissions: [Permissions.EPaymentSchedulesRead]
+        },
+        {
+          label: "Account Types",
+          icon: "o_account_balance_wallet",
+          to: "/account-type",
+          permissions: [Permissions.AccountTypesRead]
+        },
+        {
           label: "Class Sessions",
           icon: "o_date_range",
           to: "/sessions",

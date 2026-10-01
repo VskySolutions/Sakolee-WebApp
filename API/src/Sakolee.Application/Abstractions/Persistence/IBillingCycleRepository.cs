@@ -11,7 +11,7 @@ public interface IBillingCycleRepository
     /// Gets every non-deleted Billing Cycle owned by the given tenant.
     /// Supports searching by Billing Cycle name.
     /// </summary>
-    Task<(IReadOnlyList<BillingCycle> Items, int Total)> ListByTenantAsync(Guid tenantId, string? search = null, string? sortBy = null,bool descending = false, int page = 1, int limit = 20, CancellationToken cancellationToken = default);
+    Task<(IReadOnlyList<BillingCycle> Items, int Total)> ListByTenantAsync(Guid tenantId, string? search = null, string? name = null, bool showDeleted = false,bool? active = null, string? sortBy = null,bool descending = false, int page = 1, int limit = 20, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Returns a non-deleted Billing Cycle by id belonging to the specified tenant.

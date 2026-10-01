@@ -195,7 +195,11 @@
             Updated On
           </div>
           <div class="text-2e fs-14">
-            {{ formatDateTime(viewHearAboutUs.updatedOnUtc) }}
+            {{
+              viewHearAboutUs.updatedBy
+                ? formatDateTime(viewHearAboutUs.updatedOnUtc)
+                : "—"
+            }}
           </div>
         </div>
       </div>
@@ -244,7 +248,8 @@ const formatDateTime = (value) => {
   // Add UTC indicator when the API date does not include
   // timezone information.
   const iso = /(Z|[+-]\d{2}:\d{2})$/i.test(value) ? value : `${value}Z`;
-  return date.formatDate(new Date(iso),"MM/DD/YYYY hh:mm A");};
+  return date.formatDate(new Date(iso), "MM/DD/YYYY hh:mm A");
+};
 // Define the columns displayed in the Hear About Us table.
 const columns = [
   {
@@ -303,7 +308,10 @@ const columns = [
     sortable: true,
     default: true,
     filterable: false,
-    format: (val) => formatDateTime(val)
+    format: (val, row) =>
+      row?.updatedBy
+        ? formatDateTime(val)
+        : "—"
   },
   {
     name: "active",

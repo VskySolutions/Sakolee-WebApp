@@ -14,6 +14,10 @@ public class BillingCycle : AuditableEntity
     public string Name { get; set; } = string.Empty;
 
     /// <summary>
+    /// Gets or sets whether the Billing Cycle is active.
+    /// </summary>
+    public bool Active { get; set; } = true;
+    /// <summary>
     /// Navigation property for the owning tenant.
     /// </summary>
     public Tenant? Tenant { get; set; }

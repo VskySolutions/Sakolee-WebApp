@@ -18,13 +18,12 @@ internal sealed class ClassCategoryConfiguration : IEntityTypeConfiguration<Clas
         builder.Property(c => c.TenantId).HasConversion<string>().HasMaxLength(450).HasColumnName("TenentId").IsRequired();
         builder.Property(c => c.CreatedById).HasConversion<string>().HasMaxLength(450);
         builder.Property(c => c.UpdatedById).HasConversion<string>().HasMaxLength(450);
-
         builder.Property(c => c.Name).IsRequired().HasMaxLength(100);
         builder.Property(c => c.CategoryType).HasMaxLength(30);
-
+        // Active status.
+        builder.Property(c => c.Active).IsRequired().HasDefaultValue(true);
         builder.Property(c => c.CreatedOnUtc).HasDefaultValueSql("sysutcdatetime()");
         builder.Property(c => c.Deleted).HasDefaultValue(false);
-
         // A tenant may not list the same option twice under the same dropdown.
         builder.HasIndex(c => new { c.TenantId, c.CategoryType, c.Name }).IsUnique().HasFilter("[Deleted] = 0");
         // Tenant is populated manually by the repository. TenentId is nvarchar(450) while Tenants.Id is

@@ -43,10 +43,33 @@ internal sealed class ClassCategoryRepository : IClassCategoryRepository
     /// Gets all non-deleted Class Categories belonging to the specified tenant.
     /// Supports searching by category name or category type.
     /// </summary>
-    public async Task<(IReadOnlyList<ClassCategory> Items, int Total)> ListByTenantAsync(Guid tenantId, string? search = null, string? sortBy = null,bool descending = false, int page = 1,int limit = 20, CancellationToken cancellationToken = default)
+    public async Task<(IReadOnlyList<ClassCategory> Items, int Total)> ListByTenantAsync(Guid tenantId, string? name = null,string? categoryType = null,bool showDeleted = false,bool? active = null, string? search = null, string? sortBy = null,bool descending = false, int page = 1,int limit = 20, CancellationToken cancellationToken = default)
     {
-        // Get non-deleted categories for the current tenant.
-        var query = _dbContext.ClassCategories.Where(c => !c.Deleted && c.TenantId == tenantId);
+        // Get records for the current tenant.
+        // When showDeleted is true, bypass the global soft-delete filter.
+        var query = showDeleted ? _dbContext.ClassCategories .IgnoreQueryFilters() .Where(x => x.TenantId == tenantId) : _dbContext.ClassCategories.Where(x => x.TenantId == tenantId);
+        // Show only non-deleted records by default.
+        if (!showDeleted)
+        {
+            query = query.Where(x => !x.Deleted);
+        }
+        // Filter by Active/Inactive when requested.
+        if (active.HasValue)
+        {
+            query = query.Where(x => x.Active == active.Value);
+        }
+        // Filter by Name when provided.
+        if (!string.IsNullOrWhiteSpace(name))
+        {
+            name = name.Trim();
+            query = query.Where(x => x.Name.Contains(name));
+        }
+        // Filter by Category Type when provided.
+        if (!string.IsNullOrWhiteSpace(categoryType))
+        {
+            categoryType = categoryType.Trim();
+            query = query.Where(x => x.CategoryType == categoryType);
+        }
         // Apply search filtering only when search text is provided.
         if (!string.IsNullOrWhiteSpace(search))
         {
@@ -62,6 +85,7 @@ internal sealed class ClassCategoryRepository : IClassCategoryRepository
         {
             "name" => descending? query.OrderByDescending(c => c.Name) : query.OrderBy(c => c.Name),
             "categorytype" => descending ? query.OrderByDescending(c => c.CategoryType) : query.OrderBy(c => c.CategoryType),
+            "active" =>descending ? query.OrderByDescending(x => x.Active) : query.OrderBy(x => x.Active),
             "createdonutc" => descending ? query.OrderByDescending(c => c.CreatedOnUtc) : query.OrderBy(c => c.CreatedOnUtc),
             "updatedonutc" => descending ? query.OrderByDescending(c => c.UpdatedOnUtc) : query.OrderBy(c => c.UpdatedOnUtc),
             // Default: show the most recently created or updated record first.

@@ -14,6 +14,11 @@ public class TShirtSize : AuditableEntity
     public string Name { get; set; } = string.Empty;
 
     /// <summary>
+    /// Gets or sets whether the T-Shirt Size is active.
+    /// </summary>
+    public bool Active { get; set; } = true;
+
+    /// <summary>
     /// Navigation property for the owning tenant.
     /// </summary>
     public Tenant? Tenant { get; set; }

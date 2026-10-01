@@ -1,10 +1,9 @@
+using Microsoft.AspNetCore.DataProtection.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Sakolee.Application.Abstractions.Security;
 using Sakolee.Application.Abstractions.Tenancy;
 using Sakolee.Domain.Entities;
-using Microsoft.AspNetCore.DataProtection.EntityFrameworkCore;
-
-
-using Microsoft.EntityFrameworkCore;
+using System;
 
 namespace Sakolee.Infrastructure.Persistence;
 
@@ -122,6 +121,8 @@ public class SakoleeDbContext : DbContext, IDataProtectionKeyContext
     public DbSet<BillingCycle> BillingCycles => Set<BillingCycle>();
     public DbSet<TShirtSize> TShirtSizes => Set<TShirtSize>();
     public DbSet<HearAboutUs> HearAboutUs => Set<HearAboutUs>();
+    public DbSet<EPaymentSchedule> EPaymentSchedules => Set<EPaymentSchedule>();
+    public DbSet<AccountType> AccountTypes => Set<AccountType>();
     /// <summary>Data Protection key ring storage (Multi-Tenancy ADR-002).</summary>
     public DbSet<DataProtectionKey> DataProtectionKeys => Set<DataProtectionKey>();
 
@@ -209,6 +210,8 @@ public class SakoleeDbContext : DbContext, IDataProtectionKeyContext
         //tenant + soft-delete filters for tenant-scoped entities.
         modelBuilder.Entity<TShirtSize>().HasQueryFilter(e =>(!_tenantContext.IsResolved || e.TenantId == _tenantContext.TenantId) && !e.Deleted);
         modelBuilder.Entity<HearAboutUs>().HasQueryFilter(e =>(!_tenantContext.IsResolved || e.TenantId == _tenantContext.TenantId) && !e.Deleted);
+        modelBuilder.Entity<EPaymentSchedule>().HasQueryFilter(e =>(!_tenantContext.IsResolved || e.TenantId == _tenantContext.TenantId) && !e.Deleted);
+        modelBuilder.Entity<AccountType>().HasQueryFilter(e =>(!_tenantContext.IsResolved || e.TenantId == _tenantContext.TenantId) && !e.Deleted);
     }
 
     public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
@@ -386,6 +389,12 @@ public class SakoleeDbContext : DbContext, IDataProtectionKeyContext
                     break;
                 case HearAboutUs hearAboutUs when hearAboutUs.TenantId == Guid.Empty:
                     hearAboutUs.TenantId = _tenantContext.TenantId;
+                    break;
+                case EPaymentSchedule ePaymentSchedule when ePaymentSchedule.TenantId == Guid.Empty:
+                    ePaymentSchedule.TenantId = _tenantContext.TenantId;
+                    break;
+                case AccountType accountType when accountType.TenantId == Guid.Empty:
+                    accountType.TenantId = _tenantContext.TenantId;
                     break;
             }
         }

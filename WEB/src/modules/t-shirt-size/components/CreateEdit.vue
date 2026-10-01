@@ -1,9 +1,11 @@
 <template>
-  <!-- Drawer used for creating and editing a T-Shirt Size -->
-  <app-form-drawer
+  <!-- Dialog used for creating and editing a T-Shirt Size record -->
+  <app-form-dialog
     v-model="formOpen"
     :title="editing ? 'Edit T-Shirt Size' : 'Create T-Shirt Size'"
     :saving="saving"
+    :save-label="editing ? 'Save' : 'Create'"
+    size="sm"
     @submit="submit"
     @cancel="reset"
   >
@@ -22,15 +24,21 @@
         ]"
         @update:model-value="clearNameError"
       />
+
+      <!-- Active status -->
+      <q-toggle
+        v-model="form.active"
+        label="Active"
+      />
     </q-form>
-  </app-form-drawer>
+  </app-form-dialog>
 </template>
 
 <script setup>
 import { reactive, ref, watch } from "vue";
 import { tShirtSizeApi, getApiErrorMessage } from "services/api";
 import { useNotify } from "composables/useNotify";
-import AppFormDrawer from "components/common/AppFormDrawer.vue";
+import AppFormDialog from "components/common/AppFormDialog.vue";
 import AppTextField from "components/common/AppTextField.vue";
 
 // Define the properties received from the parent component.
@@ -39,11 +47,13 @@ const props = defineProps({
     type: Boolean,
     default: false
   },
+
   // Indicates whether the form is used for editing.
   editing: {
     type: Boolean,
     default: false
   },
+
   // Contains the T-Shirt Size data when editing.
   tShirtSize: {
     type: Object,
@@ -56,29 +66,34 @@ const emit = defineEmits([
   "update:modelValue",
   "saved"
 ]);
+
 const notify = useNotify();
+
 const formOpen = ref(props.modelValue);
 const formRef = ref(null);
 const saving = ref(false);
 const nameError = ref("");
+
 // Form data.
 const form = reactive({
-  name: ""
+  name: "",
+  active: true
 });
 
-// Watch for changes to the drawer state from the parent.
+// Watch for changes to the dialog state from the parent.
 watch(
   () => props.modelValue,
   (value) => {
     formOpen.value = value;
-    // Load form data when the drawer is opened.
+
+    // Load form data when the dialog is opened.
     if (value) {
       loadForm();
     }
   }
 );
 
-// Send drawer state changes back to the parent.
+// Send dialog state changes back to the parent.
 watch(formOpen, (value) => {
   emit("update:modelValue", value);
 });
@@ -86,6 +101,7 @@ watch(formOpen, (value) => {
 // Load existing T-Shirt Size data when editing.
 const loadForm = () => {
   form.name = props.tShirtSize?.name || "";
+  form.active = props.tShirtSize?.active ?? true;
   nameError.value = "";
 };
 
@@ -99,6 +115,7 @@ const clearNameError = () => {
 // Reset the form fields and validation.
 const reset = () => {
   form.name = "";
+  form.active = true;
   nameError.value = "";
   formRef.value?.resetValidation();
 };
@@ -106,15 +123,21 @@ const reset = () => {
 // Validate and save the T-Shirt Size.
 const submit = async ({ clearDraft } = {}) => {
   nameError.value = "";
+
   const valid = await formRef.value?.validate();
+
   if (!valid) {
     return;
   }
+
   saving.value = true;
+
   try {
     const payload = {
-      name: form.name.trim()
+      name: form.name.trim(),
+      active: form.active
     };
+
     // Update the existing T-Shirt Size when editing.
     if (
       props.editing &&
@@ -124,28 +147,36 @@ const submit = async ({ clearDraft } = {}) => {
         props.tShirtSize.tShirtSizeId,
         payload
       );
+
       notify.success("T-Shirt size updated.");
     } else {
       // Create a new T-Shirt Size.
       await tShirtSizeApi.create(payload);
+
       notify.success("T-Shirt size created.");
     }
+
     clearDraft?.();
+
     formOpen.value = false;
     reset();
+
     emit("saved");
   } catch (error) {
-    // Handle duplicate T-Shirt Size names.
+    // Handle duplicate-name validation from the API.
     if (error?.response?.status === 409) {
       nameError.value =
         "A T-Shirt size with this name already exists.";
+
       return;
     }
+
     // Get a user-friendly error message from the API.
     const message = getApiErrorMessage(
       error,
       "Unable to save T-Shirt size."
     );
+
     notify.error(message);
   } finally {
     saving.value = false;

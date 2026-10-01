@@ -11,7 +11,7 @@ public interface IClassCategoryRepository
     /// Gets every non-deleted category owned by the given tenant.
     /// Supports searching by category name or category type.
     /// </summary>
-    Task<(IReadOnlyList<ClassCategory> Items, int Total)> ListByTenantAsync(Guid tenantId,string? search = null, string? sortBy = null,bool descending = false, int page = 1,int limit = 20, CancellationToken cancellationToken = default);
+    Task<(IReadOnlyList<ClassCategory> Items, int Total)> ListByTenantAsync(Guid tenantId, string? name = null,string? categoryType = null,bool showDeleted = false,bool? active = null, string? search = null, string? sortBy = null,bool descending = false, int page = 1,int limit = 20, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Returns a non-deleted category by id belonging to the specified tenant.

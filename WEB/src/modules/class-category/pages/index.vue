@@ -2,23 +2,43 @@
   <q-page padding>
     <!-- Page header with breadcrumbs, search, and create button -->
     <app-list-header
-      :breadcrumbs="[
-        { label: 'Home', icon: 'o_home', to: '/' },
-        { label: 'Class Categories' }
-      ]"
+      :breadcrumbs="[ { label: 'Home', icon: 'o_home', to: '/' }, { label: 'Class Categories' }]"
       title="Class Categories"
       description="Manage your class categories here."
       :search="search"
       show-search
       search-placeholder="Search name or category type"
+      show-filters
+      :filter-count="filterChips.length"
       :show-add="canWrite"
       add-label="Create Class Category"
       show-back
       @update:search="search = $event"
+      @filters="filterOpen = true"
       @add="openCreate"
       @back="$router.back()"
     />
-    <!-- Table displaying all Class Categories -->
+    <!-- Filter drawer -->
+    <app-filter-drawer
+      v-model="filterOpen"
+      :chips="filterChips"
+      @remove="removeFilter"
+      @clear="clearFilters"
+    >
+      <app-column-filters
+        v-model="filters"
+        :columns="filterableColumns"
+      />
+      <!-- Show deleted -->
+      <q-toggle
+        v-if="canManageDeleted"
+        v-model="showDeleted"
+        label="Show deleted?"
+        dense
+        class="q-mt-md"
+      />
+    </app-filter-drawer>
+    <!-- Class Category table -->
     <app-data-table
       page-key="class-categories"
       row-key="classCategoryId"
@@ -31,18 +51,39 @@
       @request="onRequest"
       @refresh="load"
     >
-     <!-- Display Category Type as a badge -->
+      <!-- Category Type -->
       <template #body-cell-categoryType="cell">
         <q-td :props="cell">
           <q-badge color="primary">
-            {{ cell.value }}
+            {{ cell.value || "—" }}
           </q-badge>
         </q-td>
       </template>
-      <!-- Action buttons for viewing, editing, and deleting -->
+      <!-- Active Status -->
+      <template #body-cell-active="cell">
+        <q-td :props="cell">
+          <q-toggle
+            :model-value="cell.row.active"
+            :disable="!canWrite"
+            color="positive"
+            @update:model-value="
+              toggleActive(cell.row, $event)
+            "
+          >
+            <q-tooltip>
+              {{
+                cell.row.active
+                  ? "Active"
+                  : "Inactive"
+              }}
+            </q-tooltip>
+          </q-toggle>
+        </q-td>
+      </template>
+      <!-- Action buttons -->
       <template #body-cell-actions="cell">
-         <q-td :props="cell">
-          <!-- View button -->
+        <q-td :props="cell">
+          <!-- View -->
           <q-btn
             v-if="canRead"
             type="a"
@@ -55,7 +96,7 @@
           >
             <q-tooltip>View</q-tooltip>
           </q-btn>
-          <!-- Edit button -->
+          <!-- Edit -->
           <q-btn
             v-if="canWrite"
             type="a"
@@ -68,7 +109,7 @@
           >
             <q-tooltip>Edit</q-tooltip>
           </q-btn>
-          <!-- Delete button -->
+          <!-- Delete -->
           <q-btn
             v-if="canDelete"
             type="a"
@@ -84,7 +125,7 @@
         </q-td>
       </template>
     </app-data-table>
-     <!-- Drawer used for creating and editing Class Categories -->
+    <!-- Create / Edit Dialog -->
     <class-category-form
       v-model="formOpen"
       :editing="editing"
@@ -92,40 +133,34 @@
       @saved="load"
     />
     <!-- View Class Category -->
-    <app-form-drawer
+    <app-form-dialog
       v-model="viewOpen"
-      title="Class Category Details"
-      :saving="viewLoading"
-      :save-label="''"
-      :hide-save="true"
+      title="View Class Category"
+      size="sm"
+      hide-save
       @cancel="closeView"
     >
-      <div class="q-gutter-md">
-        <div>
+      <div class="row q-col-gutter-lg">
+        <!-- Name -->
+        <div class="col-12 col-sm-6">
           <div class="text-86 fs-12 fw-500">
             Name
           </div>
-          <div class="text-2e fs-4">
+          <div class="text-2e fs-14">
             {{ viewCategory.name || "—" }}
           </div>
         </div>
-        <div>
-          <div class="text-86 fs-12 fw-500">
-            Category Type
-          </div>
-          <div class="text-2e fs-4">
-            {{ viewCategory.categoryType || "—" }}
-          </div>
-        </div>
-        <div>
+        <!-- Tenant -->
+        <div class="col-12 col-sm-6">
           <div class="text-86 fs-12 fw-500">
             Tenant
           </div>
-          <div class="text-2e fs-4">
+          <div class="text-2e fs-14">
             {{ viewCategory.tenantName || "—" }}
           </div>
         </div>
-        <div>
+        <!-- Created By -->
+        <div class="col-12 col-sm-6">
           <div class="text-86 fs-12 fw-500">
             Created By
           </div>
@@ -133,15 +168,21 @@
             {{ viewCategory.createdBy || "—" }}
           </div>
         </div>
-        <div>
+        <!-- Created On -->
+        <div class="col-12 col-sm-6">
           <div class="text-86 fs-12 fw-500">
             Created On
           </div>
           <div class="text-2e fs-14">
-            {{ formatDateTime(viewCategory.createdOnUtc) }}
+            {{
+              formatDateTime(
+                viewCategory.createdOnUtc
+              )
+            }}
           </div>
         </div>
-        <div>
+        <!-- Updated By -->
+        <div class="col-12 col-sm-6">
           <div class="text-86 fs-12 fw-500">
             Updated By
           </div>
@@ -149,16 +190,33 @@
             {{ viewCategory.updatedBy || "—" }}
           </div>
         </div>
-        <div>
+        <!-- Updated On -->
+        <div class="col-12 col-sm-6">
           <div class="text-86 fs-12 fw-500">
             Updated On
           </div>
           <div class="text-2e fs-14">
-            {{ formatDateTime(viewCategory.updatedOnUtc) }}
+            {{ viewCategory.updatedBy ? formatDateTime( viewCategory.updatedOnUtc ) : "—" }}
           </div>
         </div>
+        <!-- Category Type -->
+        <div class="col-12 col-sm-6">
+          <div class="text-86 fs-12 fw-500">
+            Category Type
+          </div>
+          <div class="text-2e fs-14">
+            {{ viewCategory.categoryType || "—" }}
+          </div>
+        </div>
+        <!-- Status -->
+        <div class="col-12 col-sm-6">
+          <div class="text-86 fs-12 fw-500">
+            Status
+          </div>
+          <q-badge :class=" viewCategory.active ? 'active-badge' : 'inactive-badge'">{{ viewCategory.active ? "Active" : "Inactive" }}</q-badge>
+        </div>
       </div>
-    </app-form-drawer>
+    </app-form-dialog>
   </q-page>
 </template>
 
@@ -170,28 +228,47 @@ import { useNotify } from "composables/useNotify";
 import { useConfirm } from "composables/useConfirm";
 import { usePermissions } from "composables/usePermissions";
 import { useListTable } from "composables/useListTable";
+import { useColumnFilters } from "composables/useColumnFilters";
+import { useDeletedRecords } from "composables/useDeletedRecords";
 import AppDataTable from "components/common/AppDataTable.vue";
 import AppListHeader from "components/common/AppListHeader.vue";
-import AppFormDrawer from "components/common/AppFormDrawer.vue";
+import AppFormDialog from "components/common/AppFormDialog.vue";
+import AppFilterDrawer from "components/common/AppFilterDrawer.vue";
+import AppColumnFilters from "components/common/AppColumnFilters.vue";
 import ClassCategoryForm from "modules/class-category/components/ClassCategoryForm.vue";
 
 const notify = useNotify();
 const { confirm } = useConfirm();
 const { has } = usePermissions();
-const canRead = computed(() => has("classes.read"));
-const canWrite = computed(() => has("classes.write"));
-const canDelete = computed(() => has("classes.delete"));
-
-// Format UTC date values for display.
+const { showDeleted, canManageDeleted } = useDeletedRecords();
+/*
+ * Permissions
+ */
+const canRead = computed(() =>
+  has("classes.read")
+);
+const canWrite = computed(() =>
+  has("classes.write")
+);
+const canDelete = computed(() =>
+  has("classes.delete")
+);
+/*
+ * Format UTC date values for display.
+ */
 const formatDateTime = (value) => {
-  if (!value) return "—";
-  // DateTime values from SQL Server can arrive without a "Z", and JS would then
-  // read them as local time. Force UTC so the browser converts to the user's timezone.
+  if (!value) {
+    return "—";
+  }
   const iso = /(Z|[+-]\d{2}:\d{2})$/i.test(value) ? value : `${value}Z`;
   return date.formatDate(new Date(iso), "MM/DD/YYYY hh:mm A");
 };
-
-// Define the columns displayed in the Class Category table.
+/*
+ * Table columns.
+ *
+ * Category Type and Status are placed
+ * at the end, similar to Hear About Us.
+ */
 const columns = [
   {
     name: "name",
@@ -199,15 +276,8 @@ const columns = [
     field: "name",
     align: "left",
     sortable: true,
-    default: true
-  },
-  {
-    name: "categoryType",
-    label: "Category Type",
-    field: "categoryType",
-    align: "left",
-    sortable: true,
-    default: true
+    default: true,
+    filterable: true
   },
   {
     name: "tenantName",
@@ -215,15 +285,17 @@ const columns = [
     field: "tenantName",
     align: "left",
     sortable: true,
-    default: true
+    default: true,
+    filterable: false
   },
-   {
+  {
     name: "createdBy",
     label: "Created By",
     field: "createdBy",
     align: "left",
     sortable: true,
     default: true,
+    filterable: false,
     format: (val) => val || "—"
   },
   {
@@ -233,7 +305,9 @@ const columns = [
     align: "left",
     sortable: true,
     default: true,
-    format: (val) => formatDateTime(val)
+    filterable: false,
+    format: (val) =>
+      formatDateTime(val)
   },
   {
     name: "updatedBy",
@@ -242,6 +316,7 @@ const columns = [
     align: "left",
     sortable: true,
     default: true,
+    filterable: false,
     format: (val) => val || "—"
   },
   {
@@ -251,7 +326,59 @@ const columns = [
     align: "left",
     sortable: true,
     default: true,
-    format: (val) => formatDateTime(val)
+    filterable: false,
+    format: (val, row) =>
+      row?.updatedBy
+        ? formatDateTime(val)
+        : "—"
+  },
+  /*
+   * Category Type is near the end.
+   */
+  {
+    name: "categoryType",
+    label: "Category Type",
+    field: "categoryType",
+    align: "left",
+    sortable: true,
+    default: true,
+    filterable: true,
+    filterOptions: [
+      {
+        label: "Category 1",
+        value: "Category 1"
+      },
+      {
+        label: "Category 2",
+        value: "Category 2"
+      },
+      {
+        label: "Category 3",
+        value: "Category 3"
+      }
+    ]
+  },
+  /*
+   * Status is immediately before Actions.
+   */
+  {
+    name: "active",
+    label: "Status",
+    field: "active",
+    align: "left",
+    sortable: true,
+    default: true,
+    filterable: true,
+    filterOptions: [
+      {
+        label: "Active",
+        value: true
+      },
+      {
+        label: "Inactive",
+        value: false
+      }
+    ]
   },
   {
     name: "actions",
@@ -260,48 +387,94 @@ const columns = [
     align: "left"
   }
 ];
-// Use the useListTable composable to manage the Class Category table data and state.
-const { rows, loading, totalRecords, search, pagination, load, onRequest } = useListTable({ pageKey: "class-categories",
-  // Fetch Class Categories from the API with optional search and sorting.
-    // Fetch Class Categories from the API with server-side pagination, search, and sorting.
-  fetcher: ({ page, limit, sortBy, descending }) =>classCategoryApi.list({ page, limit, search: search.value || undefined, sortBy, descending }).then((response) => ({
-        data: response?.data || [], total: response?.meta?.totalRecords || 0
-      })),
-  // Handle errors that occur during the API call.
+const filterOpen = ref(false);
+/*
+ * Server-side filters.
+ *
+ * Filters:
+ * - Name
+ * - Category Type
+ * - Status
+ */
+const {
+  filters,
+  filterableColumns,
+  filterChips,
+  removeFilter,
+  clearFilters
+} = useColumnFilters(
+  columns,
+  ref([]),
+  {
+    server: true
+  }
+);
+/*
+ * Class Category table.
+ */
+const {
+  rows,
+  loading,
+  totalRecords,
+  search,
+  pagination,
+  load,
+  onRequest
+} = useListTable({
+  pageKey: "class-categories",
+  fetcher: ({ page, limit, sortBy, descending }) => classCategoryApi.list({ page, limit, search: search.value || undefined, sortBy, descending, name: filters.name || undefined, categoryType: filters.categoryType || undefined, active: filters.active ?? undefined, showDeleted: showDeleted.value })
+    .then((response) => ({ data: response?.data || [], total: response?.meta?.totalRecords || 0 })),
   onError: (error) => {
-    notify.error(getApiErrorMessage(error,"Unable to load class categories."));
+    notify.error(getApiErrorMessage(error, "Unable to load class categories."));
   }
 });
-// Reload the table when the search value changes.
-// Debounce prevents an API call for every keystroke.
+
+/*
+ * Reload the table when:
+ * - Search changes
+ * - Name filter changes
+ * - Category Type filter changes
+ * - Status filter changes
+ * - Show Deleted changes
+ */
 const reload = debounce(() => {
   pagination.value.page = 1;
   load();
 }, 300);
-watch(search, reload);
-
+watch([search, showDeleted, filters], reload, { deep: true });
+/*
+ * Create / Edit state.
+ */
 const formOpen = ref(false);
 const editing = ref(false);
 const selectedCategory = ref(null);
+/*
+ * View state.
+ */
 const viewOpen = ref(false);
 const viewLoading = ref(false);
-// Define the structure of the category being viewed.
 const viewCategory = ref({
   classCategoryId: null,
   name: "",
   categoryType: "",
+  active: true,
+  deleted: false,
   tenantName: "",
   createdBy: null,
   createdOnUtc: null,
   updatedBy: null,
   updatedOnUtc: null
 });
-// Reset the viewCategory to its initial state.
+/*
+ * Reset view data.
+ */
 const resetViewCategory = () => {
   viewCategory.value = {
     classCategoryId: null,
     name: "",
     categoryType: "",
+    active: true,
+    deleted: false,
     tenantName: "",
     createdBy: null,
     createdOnUtc: null,
@@ -309,21 +482,21 @@ const resetViewCategory = () => {
     updatedOnUtc: null
   };
 };
-// Open the view dialog for the selected Class Category and load its details.
+/*
+ * Open View dialog.
+ */
 const openView = async (row) => {
-  // Reset the viewCategory to ensure no stale data is displayed.
   resetViewCategory();
   viewOpen.value = true;
   viewLoading.value = true;
   try {
-    const category = await classCategoryApi.get(
-      row.classCategoryId
-    );
-    // Set the viewCategory with the fetched data for display.
+    const category = await classCategoryApi.get(row.classCategoryId);
     viewCategory.value = {
       classCategoryId: category?.classCategoryId,
       name: category?.name || "",
       categoryType: category?.categoryType || "",
+      active: category?.active ?? true,
+      deleted: category?.deleted ?? false,
       tenantName: category?.tenantName || "",
       createdBy: category?.createdBy || "",
       createdOnUtc: category?.createdOnUtc || null,
@@ -332,50 +505,62 @@ const openView = async (row) => {
     };
   } catch (error) {
     viewOpen.value = false;
-    notify.error(
-      getApiErrorMessage(
-        error,
-        "Unable to load class category."
-      )
-    );
+    notify.error(getApiErrorMessage(error, "Unable to load class category."));
   } finally {
     viewLoading.value = false;
   }
 };
-// Load Class Categories when the page is opened.
+/*
+ * Close View dialog.
+ */
 const closeView = () => {
   viewOpen.value = false;
   resetViewCategory();
 };
-// Open the form for creating a new category.
+/*
+ * Open Create dialog.
+ */
 const openCreate = () => {
   selectedCategory.value = null;
   editing.value = false;
   formOpen.value = true;
 };
-
-// Load the selected category and open the edit form.
+/*
+ * Open Edit dialog.
+ */
 const openEdit = async (row) => {
   try {
-    const category = await classCategoryApi.get(
-      row.classCategoryId
-    );
-      // Set the category data and enable edit mode.
+    const category =
+      await classCategoryApi.get(row.classCategoryId);
     selectedCategory.value = category;
     editing.value = true;
     formOpen.value = true;
   } catch (error) {
-    // Show an error if the category cannot be loaded.
     notify.error(
-      getApiErrorMessage(
-        error,
-        "Unable to load class category."
-      )
+      getApiErrorMessage(error, "Unable to load class category.")
     );
   }
 };
 
-// Delete the selected Class Category.
+/*
+ * Toggle Active / Inactive.
+ */
+const toggleActive = async (row, active) => {
+  const previousValue = row.active;
+  // Update the table immediately.
+  row.active = active;
+  try {
+    await classCategoryApi.update(row.classCategoryId, { name: row.name, categoryType: row.categoryType, active });
+    notify.success(active ? "Class category activated." : "Class category deactivated.");
+  } catch (error) {
+    // Restore the previous value if update fails.
+    row.active = previousValue;
+    notify.error(getApiErrorMessage(error, "Unable to update class category status."));
+  }
+};
+/*
+ * Delete Class Category.
+ */
 const deleteCategory = async (row) => {
   const confirmed = await confirm({
     title: "Delete Class Category",
@@ -383,27 +568,21 @@ const deleteCategory = async (row) => {
     confirmLabel: "Delete",
     type: "danger"
   });
-  // Stop if the user cancels the operation.
   if (!confirmed) {
     return;
   }
   try {
-    // Delete the category using the API.
-    await classCategoryApi.remove(
-      row.classCategoryId
-    );
+    await classCategoryApi.remove(row.classCategoryId);
     notify.success("Class category deleted.");
-    // Reload the table with the latest data.
     load();
   } catch (error) {
     notify.error(
-      getApiErrorMessage(
-        error,
-        "Unable to delete class category."
-      )
+      getApiErrorMessage(error, "Unable to delete class category.")
     );
   }
 };
-// Load Class Categories when the page is opened.
+/*
+ * Initial load.
+ */
 load();
 </script>

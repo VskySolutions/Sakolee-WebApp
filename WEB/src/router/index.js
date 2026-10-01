@@ -6,7 +6,6 @@ import { useAuthStore } from "stores/auth";
 import { isJwtExpired } from "services/jwt";
 import { useNotify } from "composables/useNotify";
 
-
 /*
  * If not building with SSR mode, you can
  * directly export the Router instantiation;
@@ -41,6 +40,8 @@ import familyrelationRoutes from "modules/family-relations/routes";
 import billingCycleRoutes from "modules/billing-cycle/routes";
 import tShirtSizeRoutes from "modules/t-shirt-size/routes";
 import hearAboutUsRoutes from "modules/hear-about-us/routes";
+import ePaymentScheduleRoutes from "modules/e-payment-schedule/routes";
+import accountTypeRoutes from "modules/account-type/routes";
 
 routes.push(...accountRoutes);
 routes.push(...authRoutes);
@@ -63,10 +64,12 @@ routes.push(...locationRoutes);
 routes.push(...classCategoryRoutes);
 routes.push(...sessionRoutes);
 routes.push(...bankmethodRoutes);
-routes.push(...familyrelationRoutes);routes.push(...billingCycleRoutes);
+routes.push(...familyrelationRoutes);
+routes.push(...billingCycleRoutes);
 routes.push(...tShirtSizeRoutes);
 routes.push(...hearAboutUsRoutes);
-
+routes.push(...ePaymentScheduleRoutes);
+routes.push(...accountTypeRoutes);
 // Route meta `permissions` requires any one of the listed permission keys; the deepest matched
 // record's list wins.
 const requiredPermissionsFor = (route) => route.matched.reduce((permissions, record) => {

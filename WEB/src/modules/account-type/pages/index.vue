@@ -1,20 +1,17 @@
 <template>
   <q-page padding>
-    <!-- Page header with breadcrumbs, search, and create button -->
+    <!-- Page header -->
     <app-list-header
-      :breadcrumbs="[
-        { label: 'Home', icon: 'o_home', to: '/' },
-        { label: 'Billing Cycles' }
-      ]"
-      title="Billing Cycles"
-      description="Manage your billing cycles here."
+      :breadcrumbs="[{ label: 'Home', icon: 'o_home', to: '/' },{ label: 'Account Type' }]"
+      title="Account Type"
+      description="Manage your Account Type here."
       :search="search"
       show-search
-      search-placeholder="Search billing cycle name"
+      search-placeholder="Search Account Type name"
       show-filters
       :filter-count="filterChips.length"
       :show-add="canWrite"
-      add-label="Create Billing Cycle"
+      add-label="Create Account Type"
       show-back
       @update:search="search = $event"
       @filters="filterOpen = true"
@@ -32,7 +29,6 @@
         v-model="filters"
         :columns="filterableColumns"
       />
-
       <q-toggle
         v-if="canManageDeleted"
         v-model="showDeleted"
@@ -41,11 +37,11 @@
         class="q-mt-md"
       />
     </app-filter-drawer>
-    <!-- Table displaying all Billing Cycles -->
+    <!-- Account Type table -->
     <app-data-table
-      page-key="billing-cycles"
-      row-key="billingCycleId"
-      title="Billing Cycles"
+      page-key="account-type"
+      row-key="accountTypeId"
+      title="Account Type"
       :rows="rows"
       :columns="columns"
       :loading="loading"
@@ -54,25 +50,33 @@
       @request="onRequest"
       @refresh="load"
     >
-      <!-- Active toggle column -->
+      <!-- Active status -->
       <template #body-cell-active="cell">
         <q-td :props="cell">
           <q-toggle
             :model-value="cell.row.active"
-            :disable="!canWrite"
+            :disable="!canWrite || cell.row.deleted"
             color="positive"
-            @update:model-value="toggleActive(cell.row, $event)"
+            @update:model-value="
+              toggleActive(cell.row, $event)
+            "
           >
             <q-tooltip>
-              {{ cell.row.active ? "Active" : "Inactive" }}
+              {{
+                cell.row.deleted
+                  ? "Deleted record"
+                  : cell.row.active
+                    ? "Active"
+                    : "Inactive"
+              }}
             </q-tooltip>
           </q-toggle>
         </q-td>
       </template>
-      <!-- Action buttons for viewing, editing, and deleting -->
+      <!-- Actions -->
       <template #body-cell-actions="cell">
         <q-td :props="cell">
-          <!-- View button -->
+          <!-- View -->
           <q-btn
             v-if="canRead"
             type="a"
@@ -85,7 +89,7 @@
           >
             <q-tooltip>View</q-tooltip>
           </q-btn>
-          <!-- Edit button -->
+          <!-- Edit -->
           <q-btn
             v-if="canWrite"
             type="a"
@@ -94,11 +98,18 @@
             dense
             color="primary"
             icon="o_edit"
+            :disable="cell.row.deleted"
             @click="openEdit(cell.row)"
           >
-            <q-tooltip>Edit</q-tooltip>
+            <q-tooltip>
+              {{
+                cell.row.deleted
+                  ? "Deleted record"
+                  : "Edit"
+              }}
+            </q-tooltip>
           </q-btn>
-          <!-- Delete button -->
+          <!-- Delete -->
           <q-btn
             v-if="canDelete"
             type="a"
@@ -107,96 +118,97 @@
             dense
             color="negative"
             icon="o_delete"
-            @click="deleteBillingCycle(cell.row)"
+            :disable="cell.row.deleted"
+            @click="deleteAccountType(cell.row)"
           >
-            <q-tooltip>Delete</q-tooltip>
+            <q-tooltip>
+              {{
+                cell.row.deleted
+                  ? "Deleted record"
+                  : "Delete"
+              }}
+            </q-tooltip>
           </q-btn>
         </q-td>
       </template>
     </app-data-table>
-    <!-- Drawer used to create or edit a Billing Cycle -->
+    <!-- Create / Edit dialog -->
     <create-edit
       v-model="formOpen"
       :editing="editing"
-      :billing-cycle="selectedBillingCycle"
+      :account-type="selectedAccountType"
       @saved="load"
     />
-    <!-- Drawer used to display Billing Cycle details -->
+    <!-- View dialog -->
     <app-form-dialog
       v-model="viewOpen"
-      title="View Billing Cycle"
+      title="View Account Type"
       size="sm"
-      :saving="viewLoading"
       hide-save
       @cancel="closeView"
     >
       <div class="row q-col-gutter-lg">
+        <!-- Name -->
         <div class="col-12 col-sm-6">
           <div class="text-86 fs-12 fw-500">
             Name
           </div>
           <div class="text-2e fs-14">
-            {{ viewBillingCycle.name || "—" }}
+            {{ viewAccountType.name || "—" }}
           </div>
         </div>
-
+        <!-- Status -->
         <div class="col-12 col-sm-6">
           <div class="text-86 fs-12 fw-500">
             Status
           </div>
-          <q-badge
-            :class="
-              viewBillingCycle.active
-                ? 'active-badge'
-                : 'inactive-badge'
-            "
-          >
-            {{ viewBillingCycle.active ? "Active" : "Inactive" }}
+          <q-badge :class="viewAccountType.active ? 'active-badge': 'inactive-badge'">
+            {{ viewAccountType.active ? "Active" : "Inactive" }}
           </q-badge>
         </div>
-
+        <!-- Tenant -->
         <div class="col-12 col-sm-6">
           <div class="text-86 fs-12 fw-500">
             Tenant
           </div>
           <div class="text-2e fs-14">
-            {{ viewBillingCycle.tenantName || "—" }}
+            {{ viewAccountType.tenantName || "—" }}
           </div>
         </div>
-
+        <!-- Created By -->
         <div class="col-12 col-sm-6">
           <div class="text-86 fs-12 fw-500">
             Created By
           </div>
           <div class="text-2e fs-14">
-            {{ viewBillingCycle.createdBy || "—" }}
+            {{ viewAccountType.createdBy || "—" }}
           </div>
         </div>
-
+        <!-- Created On -->
         <div class="col-12 col-sm-6">
           <div class="text-86 fs-12 fw-500">
             Created On
           </div>
           <div class="text-2e fs-14">
-            {{ formatDateTime(viewBillingCycle.createdOnUtc) }}
+            {{ formatDateTime( viewAccountType.createdOnUtc ) }}
           </div>
         </div>
-
+        <!-- Updated By -->
         <div class="col-12 col-sm-6">
           <div class="text-86 fs-12 fw-500">
             Updated By
           </div>
           <div class="text-2e fs-14">
-            {{ viewBillingCycle.updatedBy || "—" }}
+            {{ viewAccountType.updatedBy || "—" }}
           </div>
         </div>
-
+        <!-- Updated On -->
         <div class="col-12 col-sm-6">
           <div class="text-86 fs-12 fw-500">
             Updated On
           </div>
           <div class="text-2e fs-14">
-            {{ viewBillingCycle.updatedBy ? formatDateTime(viewBillingCycle.updatedOnUtc): "—" }}
+            {{ viewAccountType.updatedBy ? formatDateTime( viewAccountType.updatedOnUtc ) : "—" }}
           </div>
         </div>
       </div>
@@ -207,39 +219,49 @@
 <script setup>
 import { computed, ref, watch } from "vue";
 import { date, debounce } from "quasar";
-import { billingCycleApi, getApiErrorMessage } from "services/api";
+import { accountTypeApi, getApiErrorMessage } from "services/api";
 import { useNotify } from "composables/useNotify";
 import { useConfirm } from "composables/useConfirm";
 import { usePermissions } from "composables/usePermissions";
 import { useListTable } from "composables/useListTable";
-import AppDataTable from "components/common/AppDataTable.vue";
-import AppListHeader from "components/common/AppListHeader.vue";
 import { useColumnFilters } from "composables/useColumnFilters";
 import { useDeletedRecords } from "composables/useDeletedRecords";
+import AppDataTable from "components/common/AppDataTable.vue";
+import AppListHeader from "components/common/AppListHeader.vue";
+import AppFormDialog from "components/common/AppFormDialog.vue";
 import AppFilterDrawer from "components/common/AppFilterDrawer.vue";
 import AppColumnFilters from "components/common/AppColumnFilters.vue";
-import AppFormDialog from "components/common/AppFormDialog.vue";
-import CreateEdit from "modules/billing-cycle/components/CreateEdit.vue";
+import CreateEdit from "modules/account-type/components/CreateEdit.vue";
 
 const notify = useNotify();
 const { confirm } = useConfirm();
 const { has } = usePermissions();
 const { showDeleted, canManageDeleted } = useDeletedRecords();
-// Check permissions for Billing Cycle actions.
-const canRead = computed(() => has("billingCycles.read"));
-const canWrite = computed(() => has("billingCycles.write"));
-const canDelete = computed(() => has("billingCycles.delete"));
-// Format UTC date values for display.
+/*
+ * Permissions.
+ */
+const canRead = computed(() =>
+  has("accountTypes.read")
+);
+const canWrite = computed(() =>
+  has("accountTypes.write")
+);
+const canDelete = computed(() =>
+  has("accountTypes.delete")
+);
+/*
+ * Format UTC date.
+ */
 const formatDateTime = (value) => {
   if (!value) {
     return "—";
   }
-  // Add UTC indicator when the API date does not include timezone information.
   const iso = /(Z|[+-]\d{2}:\d{2})$/i.test(value) ? value : `${value}Z`;
   return date.formatDate(new Date(iso), "MM/DD/YYYY hh:mm A");
 };
-
-// Define the columns displayed in the Billing Cycle table.
+/*
+ * Table columns.
+ */
 const columns = [
   {
     name: "name",
@@ -256,8 +278,8 @@ const columns = [
     field: "tenantName",
     align: "left",
     sortable: true,
-    default: true,
-    filterable: false
+    filterable: false,
+    default: true
   },
   {
     name: "createdBy",
@@ -328,172 +350,185 @@ const columns = [
     align: "left"
   }
 ];
+
 const filterOpen = ref(false);
+/*
+ * List table.
+ */
 const { rows, loading, totalRecords, search, pagination, load, onRequest } = useListTable({
-  pageKey: "billing-cycles",
-  // Fetch Billing Cycles from the API with optional search and sorting.
-  fetcher: ({ page, limit, sortBy, descending }) =>
-    billingCycleApi.list({ page, limit, search: search.value || undefined, sortBy, descending, name: filters.name || undefined, active: filters.active ?? undefined, showDeleted: showDeleted.value })
-      .then((response) => ({ data: response?.data || [], total: response?.meta?.totalRecords || 0 })),
-  // Handle errors that occur during the API call.
-  onError: (error) => { notify.error(getApiErrorMessage(error, "Unable to load billing cycles."));}
+  pageKey: "account-type",
+  fetcher: ({ page, limit, sortBy, descending }) => accountTypeApi.list({ page, limit, search: search.value || undefined, sortBy, descending, name: filters.name || undefined, active: filters.active ?? undefined, showDeleted: showDeleted.value })
+    .then((response) => ({ data: response?.data || [], total: response?.meta?.totalRecords || 0 }
+    )),
+  onError: (error) => {
+    notify.error(getApiErrorMessage(error, "Unable to load Account Type records."));
+  }
 });
+
+/*
+ * Server-side filters.
+ */
 const {
   filters,
   filterableColumns,
   filterChips,
   removeFilter,
   clearFilters
-} = useColumnFilters(columns, rows, {
-  server: true
-});
-// Reload the table when the search value changes.
-// Debounce prevents an API call for every keystroke.
+} = useColumnFilters(
+  columns,
+  rows,
+  {
+    server: true
+  }
+);
+
+/*
+ * Reload after filters/search change.
+ */
 const reload = debounce(() => {
   pagination.value.page = 1;
   load();
 }, 300);
 
 watch([search, showDeleted, filters], reload, { deep: true });
+/*
+ * Create / Edit dialog.
+ */
 const formOpen = ref(false);
 const editing = ref(false);
-const selectedBillingCycle = ref(null);
+const selectedAccountType = ref(null);
+/*
+ * View dialog.
+ */
 const viewOpen = ref(false);
 const viewLoading = ref(false);
-// Define the structure of the Billing Cycle being viewed.
-const viewBillingCycle = ref({
-  billingCycleId: null,
+const viewAccountType = ref({
+  accountTypeId: null,
   name: "",
-  active: true,
   tenantName: "",
   createdBy: null,
   createdOnUtc: null,
   updatedBy: null,
   updatedOnUtc: null,
+  active: true,
   deleted: false
 });
-// Reset the viewBillingCycle to its initial state.
-const resetViewBillingCycle = () => {
-  viewBillingCycle.value = {
-    billingCycleId: null,
+/*
+ * Reset view object.
+ */
+const resetViewAccountType = () => {
+  viewAccountType.value = {
+    accountTypeId: null,
     name: "",
-    active: true,
     tenantName: "",
     createdBy: null,
     createdOnUtc: null,
     updatedBy: null,
     updatedOnUtc: null,
+    active: true,
     deleted: false
   };
 };
-// Open the View drawer for the selected Billing Cycle.
+/*
+ * Open View.
+ */
 const openView = async (row) => {
-  resetViewBillingCycle();
+  resetViewAccountType();
   viewOpen.value = true;
   viewLoading.value = true;
-  // Fetch the latest Billing Cycle details from the API to ensure accurate information is displayed.
   try {
-    const billingCycle = await billingCycleApi.get(
-      row.billingCycleId
-    );
-    viewBillingCycle.value = {
-      billingCycleId: billingCycle?.billingCycleId,
-      name: billingCycle?.name || "",
-      active: billingCycle?.active ?? true,
-      tenantName: billingCycle?.tenantName || "",
-      createdBy: billingCycle?.createdBy || "",
-      createdOnUtc: billingCycle?.createdOnUtc || null,
-      updatedBy: billingCycle?.updatedBy || "",
-      updatedOnUtc: billingCycle?.updatedOnUtc || null,
-      deleted: billingCycle?.deleted ?? false
+    const accountType = await accountTypeApi.get(row.accountTypeId);
+    viewAccountType.value = {
+      accountTypeId: accountType?.accountTypeId,
+      name: accountType?.name || "",
+      tenantName: accountType?.tenantName || "",
+      createdBy: accountType?.createdBy || "",
+      createdOnUtc: accountType?.createdOnUtc || null,
+      updatedBy: accountType?.updatedBy || "",
+      updatedOnUtc: accountType?.updatedOnUtc || null,
+      active: accountType?.active ?? true,
+      deleted: accountType?.deleted ?? false
     };
   } catch (error) {
     viewOpen.value = false;
-    notify.error(
-      getApiErrorMessage(
-        error,
-        "Unable to load billing cycle."
-      )
-    );
+    notify.error(getApiErrorMessage(error, "Unable to load Account Type record."));
   } finally {
     viewLoading.value = false;
   }
 };
-// Close the View drawer and reset the viewBillingCycle state.
+/*
+ * Close View.
+ */
 const closeView = () => {
   viewOpen.value = false;
-  resetViewBillingCycle();
+  resetViewAccountType();
 };
-
-// Open the form for creating a new Billing Cycle.
+/*
+ * Open Create.
+ */
 const openCreate = () => {
-  selectedBillingCycle.value = null;
+  selectedAccountType.value = null;
   editing.value = false;
   formOpen.value = true;
 };
-
-// Load the selected Billing Cycle and open the edit form.
+/*
+ * Open Edit.
+ */
 const openEdit = async (row) => {
   try {
-  // Get the latest Billing Cycle details from the API.
-    const billingCycle = await billingCycleApi.get(
-      row.billingCycleId
-    );
-    selectedBillingCycle.value = billingCycle;
+    const accountType = await accountTypeApi.get(row.accountTypeId);
+    selectedAccountType.value = accountType;
     editing.value = true;
     formOpen.value = true;
   } catch (error) {
-    notify.error(
-      getApiErrorMessage(
-        error,
-        "Unable to load billing cycle."
-      )
-    );
+    notify.error(getApiErrorMessage(error, "Unable to load Account Type record."));
   }
 };
-// Watch for changes to the formOpen state and load the form when it opens.
+
+/*
+ * Toggle Active / Inactive.
+ */
 const toggleActive = async (row, active) => {
+  if (row.deleted) {
+    return;
+  }
   const previousValue = row.active;
-  // Update UI immediately.
   row.active = active;
   try {
-    await billingCycleApi.update(row.billingCycleId, { name: row.name, active });
-    notify.success(active ? "Billing cycle activated." : "Billing cycle deactivated.");
+    await accountTypeApi.update(row.accountTypeId, { name: row.name, active });
+    notify.success(active ? "Account Type activated." : "Account Type deactivated.");
   } catch (error) {
-    // Restore previous value if update fails.
     row.active = previousValue;
-    notify.error(
-      getApiErrorMessage(error, "Unable to update Billing Cycle status.")
-    );
+    notify.error(getApiErrorMessage(error, "Unable to update Account Type status."));
   }
 };
-// Delete the selected Billing Cycle.
-const deleteBillingCycle = async (row) => {
+
+/*
+ * Delete Account Type.
+ */
+const deleteAccountType = async (row) => {
+  if (row.deleted) {
+    return;
+  }
   const confirmed = await confirm({
-    title: "Delete Billing Cycle",
+    title: "Delete Account Type",
     message: `Delete "${row.name}"?`,
     confirmLabel: "Delete",
     type: "danger"
   });
-  // Stop if the user cancels the operation.
   if (!confirmed) {
     return;
   }
   try {
-    await billingCycleApi.remove(
-      row.billingCycleId
-    );
-    notify.success("Billing cycle deleted.");
+    await accountTypeApi.remove(row.accountTypeId);
+    notify.success("Account Type deleted.");
     load();
   } catch (error) {
-    notify.error(
-      getApiErrorMessage(
-        error,
-        "Unable to delete billing cycle."
-      )
-    );
+    notify.error(getApiErrorMessage(error, "Unable to delete Account Type record."));
   }
 };
-// Load Billing Cycles when the page is opened.
+/*
+ * Initial load.
+ */
 load();
 </script>

@@ -70,6 +70,15 @@ public static class Permissions
     public const string HearAboutUsWrite = "hearAboutUs.write";
     public const string HearAboutUsDelete = "hearAboutUs.delete";
 
+    // E-Payment Schedule
+    public const string EPaymentSchedulesRead = "ePaymentSchedules.read";
+    public const string EPaymentSchedulesWrite = "ePaymentSchedules.write";
+    public const string EPaymentSchedulesDelete = "ePaymentSchedules.delete";
+
+    // Account Type
+    public const string AccountTypesRead = "accountTypes.read";
+    public const string AccountTypesWrite = "accountTypes.write";
+    public const string AccountTypesDelete = "accountTypes.delete";
     // Users
     public const string UsersRead = "users.read";
     public const string UsersWrite = "users.write";
@@ -124,6 +133,8 @@ public static class Permissions
         BillingCyclesRead, BillingCyclesWrite, BillingCyclesDelete,
         TShirtSizesRead,TShirtSizesWrite,TShirtSizesDelete,
         HearAboutUsRead,HearAboutUsWrite,HearAboutUsDelete,
+        EPaymentSchedulesRead, EPaymentSchedulesWrite, EPaymentSchedulesDelete,
+        AccountTypesRead,AccountTypesWrite,AccountTypesDelete,
         LocationsRead, LocationsWrite, LocationsDelete,
         UsersRead, UsersWrite, UsersResetPassword, UsersGroupManagement,
         RolesRead, RolesWrite, RolesAssign,
@@ -165,6 +176,10 @@ public static class Permissions
         TShirtSizesRead,TShirtSizesWrite,TShirtSizesDelete,
         // Hear About Us
         HearAboutUsRead,HearAboutUsWrite,HearAboutUsDelete,
+        // E-Payment Schedule
+        EPaymentSchedulesRead, EPaymentSchedulesWrite, EPaymentSchedulesDelete,
+        // Account Type
+        AccountTypesRead, AccountTypesWrite, AccountTypesDelete,
         // Location
         LocationsRead, LocationsWrite, LocationsDelete,
         // Users

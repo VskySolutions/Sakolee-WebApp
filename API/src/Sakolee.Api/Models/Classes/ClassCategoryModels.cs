@@ -1,14 +1,14 @@
 namespace Sakolee.Api.Models.Classes;
 
 /// <summary>A Class form Category 1/2/3 dropdown option.</summary>
-public sealed record ClassCategorySummary(Guid ClassCategoryId, string Name, string? CategoryType,Guid TenantId,string TenantName, string? CreatedBy, DateTime CreatedOnUtc, string? UpdatedBy, DateTime UpdatedOnUtc);
+public sealed record ClassCategorySummary(Guid ClassCategoryId, string Name, string? CategoryType, bool Active,bool Deleted, Guid TenantId,string TenantName, string? CreatedBy, DateTime CreatedOnUtc, string? UpdatedBy, DateTime UpdatedOnUtc);
 
 /// <summary>
 /// Request used to create a Class Category.
 /// </summary>
-public sealed record CreateClassCategoryRequest(string Name,string CategoryType);
+public sealed record CreateClassCategoryRequest(string Name,string CategoryType, bool Active = true);
 
 /// <summary>
 /// Request used to update a Class Category.
 /// </summary>
-public sealed record UpdateClassCategoryRequest(string Name,string CategoryType);
+public sealed record UpdateClassCategoryRequest(string Name,string CategoryType, bool Active);

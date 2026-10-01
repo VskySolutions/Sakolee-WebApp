@@ -48,7 +48,7 @@ public sealed class TShirtSizesController : ControllerBase
     [HttpGet]
     [RequirePermission(Permissions.TShirtSizesRead)]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task<IActionResult> List([FromQuery] string? search = null,[FromQuery] string? sortBy = null,[FromQuery] bool descending = false,[FromQuery] int page = 1,[FromQuery] int limit = 20, CancellationToken cancellationToken = default)
+    public async Task<IActionResult> List([FromQuery] string? name = null,[FromQuery] bool showDeleted = false,[FromQuery] bool? active = null, [FromQuery] string? search = null,[FromQuery] string? sortBy = null,[FromQuery] bool descending = false,[FromQuery] int page = 1,[FromQuery] int limit = 20, CancellationToken cancellationToken = default)
     {
         // Get the active tenant ID from the currently logged-in user's claims.
         if (User.GetActiveTenantId() is not { } tenantId)
@@ -59,7 +59,7 @@ public sealed class TShirtSizesController : ControllerBase
         page = Math.Max(1, page);
         limit = Math.Clamp(limit, 1, 100);
         // Get paginated T-Shirt Sizes for the active tenant.
-        var (tShirtSizes, total) =await _tShirtSizes.ListByTenantAsync(tenantId,search,sortBy,descending,page,limit,cancellationToken);
+        var (tShirtSizes, total) =await _tShirtSizes.ListByTenantAsync(tenantId, name, showDeleted, active, search,sortBy,descending,page,limit,cancellationToken);
         // Resolve the Created By and Updated By user IDs into display names.This avoids returning only user IDs in the API response.
         var nameOf = await AuditNamesAsync(tShirtSizes, cancellationToken);
         // Convert each T-Shirt Size entity into the response summary model.
@@ -133,7 +133,7 @@ public sealed class TShirtSizesController : ControllerBase
             return Conflict(new { message = $"A T-Shirt size with the name '{name}' already exists." });
         }
         // Create a new T-Shirt Size entity with tenant and audit information.
-        var tShirtSize = new Domain.Entities.TShirtSize { Id = Guid.NewGuid(),TenantId = tenantId, Name = name };
+        var tShirtSize = new Domain.Entities.TShirtSize { Id = Guid.NewGuid(),TenantId = tenantId, Name = name , Active = request.Active };
         // Add the new entity to the current DbContext.
         await _tShirtSizes.AddAsync(tShirtSize,cancellationToken);
         // Save the new record to the database.
@@ -192,6 +192,7 @@ public sealed class TShirtSizesController : ControllerBase
         }
         // Update the T-Shirt Size name.
         tShirtSize.Name = name;
+        tShirtSize.Active = request.Active;
         // Mark the entity as modified in the current DbContext.
         _tShirtSizes.Update(tShirtSize);
         // Save the updated record to the database.
@@ -251,7 +252,7 @@ public sealed class TShirtSizesController : ControllerBase
     private static TShirtSizeSummary ToSummary(Domain.Entities.TShirtSize tShirtSize,Func<Guid?, string?> nameOf)
     {
         // Create the API response model and resolve the audit user names.
-        return new TShirtSizeSummary(tShirtSize.Id,tShirtSize.Name,tShirtSize.TenantId,tShirtSize.Tenant?.Name ?? string.Empty,nameOf(tShirtSize.CreatedById),tShirtSize.CreatedOnUtc,nameOf(tShirtSize.UpdatedById),tShirtSize.UpdatedOnUtc);
+        return new TShirtSizeSummary(tShirtSize.Id,tShirtSize.Name, tShirtSize.Active,tShirtSize.Deleted, tShirtSize.TenantId,tShirtSize.Tenant?.Name ?? string.Empty,nameOf(tShirtSize.CreatedById),tShirtSize.CreatedOnUtc,nameOf(tShirtSize.UpdatedById),tShirtSize.UpdatedOnUtc);
     }
 
     #endregion

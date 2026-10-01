@@ -56,7 +56,7 @@ public sealed class ClassCategoriesController : ControllerBase
     [HttpGet]
     [RequireAnyPermission(Permissions.ClassCategoriesRead, Permissions.ClassesRead)]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task<IActionResult> List([FromQuery] string? search = null,[FromQuery] string? sortBy = null,[FromQuery] bool descending = false,[FromQuery] int page = 1,[FromQuery] int limit = 20, CancellationToken cancellationToken = default)
+    public async Task<IActionResult> List([FromQuery] string? name = null,[FromQuery] string? categoryType = null,[FromQuery] bool showDeleted = false,[FromQuery] bool? active = null, [FromQuery] string? search = null,[FromQuery] string? sortBy = null,[FromQuery] bool descending = false,[FromQuery] int page = 1,[FromQuery] int limit = 20, CancellationToken cancellationToken = default)
     {
         // Get the active tenant ID of the currently logged-in user.
         // If the user does not have an active tenant, return Forbidden.
@@ -69,7 +69,7 @@ public sealed class ClassCategoriesController : ControllerBase
         limit = Math.Clamp(limit, 1, 100);
         // Retrieve all non-deleted Class Categories for the active tenant.
         // Get the requested page of Class Categories.
-        var (categories, total) =await _classCategories.ListByTenantAsync(tenantId,search,sortBy,descending,page,limit,cancellationToken);
+        var (categories, total) =await _classCategories.ListByTenantAsync(tenantId, name,categoryType,showDeleted,active, search,sortBy,descending,page,limit,cancellationToken);
         // Resolve the Created By and Updated By user IDs into display names.
         var nameOf = await AuditNamesAsync(categories, cancellationToken);
         // Convert the entities into summary response models.
@@ -153,7 +153,7 @@ public sealed class ClassCategoriesController : ControllerBase
             return Conflict(new { message = $"A class category with the name '{name}' already exists."});
         }
         // Create the new Class Category entity.
-        var classCategory = new Domain.Entities.ClassCategory { Id = Guid.NewGuid(), TenantId = tenantId, Name = name, CategoryType = categoryType };
+        var classCategory = new Domain.Entities.ClassCategory { Id = Guid.NewGuid(), TenantId = tenantId, Name = name, CategoryType = categoryType, Active = request.Active };
         // Add the new Class Category to the database context.
         await _classCategories.AddAsync(classCategory,cancellationToken);
         // Save the new Class Category to the database.
@@ -224,6 +224,7 @@ public sealed class ClassCategoriesController : ControllerBase
         // Update the Class Category values.
         classCategory.Name = name;
         classCategory.CategoryType = categoryType;
+        classCategory.Active = request.Active;
         // Mark the Class Category as updated in the database context.
         _classCategories.Update(classCategory);
         // Save the changes to the database.
@@ -282,7 +283,7 @@ public sealed class ClassCategoriesController : ControllerBase
     private static ClassCategorySummary ToSummary(Domain.Entities.ClassCategory classCategory,Func<Guid?, string?> nameOf)
     {
         // Create and return the summary response using the Class Category entity values and resolved audit user names.
-        return new ClassCategorySummary(classCategory.Id,classCategory.Name,classCategory.CategoryType,classCategory.TenantId,classCategory.Tenant?.Name ?? string.Empty,nameOf(classCategory.CreatedById), classCategory.CreatedOnUtc, nameOf(classCategory.UpdatedById),classCategory.UpdatedOnUtc);
+        return new ClassCategorySummary(classCategory.Id,classCategory.Name,classCategory.CategoryType, classCategory.Active,classCategory.Deleted, classCategory.TenantId,classCategory.Tenant?.Name ?? string.Empty,nameOf(classCategory.CreatedById), classCategory.CreatedOnUtc, nameOf(classCategory.UpdatedById),classCategory.UpdatedOnUtc);
     }
 
     #endregion
@@ -301,6 +302,5 @@ public sealed class ClassCategoriesController : ControllerBase
         // Return a function that resolves a user ID to its display name Return null when the user ID is not found.
         return id =>id is { } userId && names.TryGetValue(userId, out var name) ? name : null;
     }
-
     #endregion
 }

@@ -3,14 +3,14 @@
 /// <summary>
 /// Represents the T-Shirt Size data returned by the API.
 /// </summary>
-public sealed record TShirtSizeSummary(Guid TShirtSizeId,string Name,Guid TenantId,string TenantName, string? CreatedBy,DateTime CreatedOnUtc,string? UpdatedBy,DateTime UpdatedOnUtc);
+public sealed record TShirtSizeSummary(Guid TShirtSizeId,string Name, bool Active,bool Deleted, Guid TenantId,string TenantName, string? CreatedBy,DateTime CreatedOnUtc,string? UpdatedBy,DateTime UpdatedOnUtc);
 
 /// <summary>
 /// Request used to create a new T-Shirt Size.
 /// </summary>
-public sealed record CreateTShirtSizeRequest(string Name);
+public sealed record CreateTShirtSizeRequest(string Name, bool Active = true);
 
 /// <summary>
 /// Request used to update an existing T-Shirt Size.
 /// </summary>
-public sealed record UpdateTShirtSizeRequest(string Name);
+public sealed record UpdateTShirtSizeRequest(string Name, bool Active);

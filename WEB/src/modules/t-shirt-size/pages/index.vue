@@ -1,6 +1,6 @@
 <template>
   <q-page padding>
-    <!-- Page header with breadcrumbs, search, and create button -->
+    <!-- Page header with breadcrumbs, search, filters, and create button -->
     <app-list-header
       :breadcrumbs="[
         { label: 'Home', icon: 'o_home', to: '/' },
@@ -11,14 +11,37 @@
       :search="search"
       show-search
       search-placeholder="Search T-Shirt size name"
+      show-filters
+      :filter-count="filterChips.length"
       :show-add="canWrite"
       add-label="Create T-Shirt Size"
       show-back
       @update:search="search = $event"
+      @filters="filterOpen = true"
       @add="openCreate"
       @back="$router.back()"
     />
-    <!-- Table displaying all T-Shirt Sizes -->
+    <!-- Filter drawer -->
+    <app-filter-drawer
+      v-model="filterOpen"
+      :chips="filterChips"
+      @remove="removeFilter"
+      @clear="clearFilters"
+    >
+      <app-column-filters
+        v-model="filters"
+        :columns="filterableColumns"
+      />
+      <!-- Show deleted records -->
+      <q-toggle
+        v-if="canManageDeleted"
+        v-model="showDeleted"
+        label="Show deleted?"
+        dense
+        class="q-mt-md"
+      />
+    </app-filter-drawer>
+    <!-- T-Shirt Size table -->
     <app-data-table
       page-key="t-shirt-sizes"
       row-key="tShirtSizeId"
@@ -31,7 +54,24 @@
       @request="onRequest"
       @refresh="load"
     >
-      <!-- Action buttons for viewing, editing, and deleting -->
+      <!-- Active Status -->
+      <template #body-cell-active="cell">
+        <q-td :props="cell">
+          <q-toggle
+            :model-value="cell.row.active"
+            :disable="!canWrite"
+            color="positive"
+            @update:model-value="
+              toggleActive(cell.row, $event)
+            "
+          >
+            <q-tooltip>
+              {{ cell.row.active ? "Active" : "Inactive" }}
+            </q-tooltip>
+          </q-toggle>
+        </q-td>
+      </template>
+      <!-- Action buttons -->
       <template #body-cell-actions="cell">
         <q-td :props="cell">
           <!-- View button -->
@@ -76,40 +116,61 @@
         </q-td>
       </template>
     </app-data-table>
-    <!-- Drawer used for creating and editing T-Shirt Sizes -->
+    <!-- Create/Edit dialog -->
     <create-edit
       v-model="formOpen"
       :editing="editing"
       :t-shirt-size="selectedTShirtSize"
       @saved="load"
     />
-    <!-- Drawer used to display T-Shirt Size details -->
-    <app-form-drawer
+    <!-- View T-Shirt Size -->
+    <app-form-dialog
       v-model="viewOpen"
-      title="T-Shirt Size Details"
-      :saving="viewLoading"
-      :save-label="''"
-      :hide-save="true"
+      title="View T-Shirt Size"
+      size="sm"
+      hide-save
       @cancel="closeView"
     >
-      <div class="q-gutter-md">
-        <div>
+      <div class="row q-col-gutter-lg">
+        <!-- Name -->
+        <div class="col-12 col-sm-6">
           <div class="text-86 fs-12 fw-500">
             Name
           </div>
-          <div class="text-2e fs-4">
+          <div class="text-2e fs-14">
             {{ viewTShirtSize.name || "—" }}
           </div>
         </div>
-        <div>
+        <!-- Status -->
+        <div class="col-12 col-sm-6">
+          <div class="text-86 fs-12 fw-500">
+            Status
+          </div>
+          <q-badge
+            :class="
+              viewTShirtSize.active
+                ? 'active-badge'
+                : 'inactive-badge'
+            "
+          >
+            {{
+              viewTShirtSize.active
+                ? "Active"
+                : "Inactive"
+            }}
+          </q-badge>
+        </div>
+        <!-- Tenant -->
+        <div class="col-12 col-sm-6">
           <div class="text-86 fs-12 fw-500">
             Tenant
           </div>
-          <div class="text-2e fs-4">
+          <div class="text-2e fs-14">
             {{ viewTShirtSize.tenantName || "—" }}
           </div>
         </div>
-        <div>
+        <!-- Created By -->
+        <div class="col-12 col-sm-6">
           <div class="text-86 fs-12 fw-500">
             Created By
           </div>
@@ -117,7 +178,8 @@
             {{ viewTShirtSize.createdBy || "—" }}
           </div>
         </div>
-        <div>
+        <!-- Created On -->
+        <div class="col-12 col-sm-6">
           <div class="text-86 fs-12 fw-500">
             Created On
           </div>
@@ -125,7 +187,8 @@
             {{ formatDateTime(viewTShirtSize.createdOnUtc) }}
           </div>
         </div>
-        <div>
+        <!-- Updated By -->
+        <div class="col-12 col-sm-6">
           <div class="text-86 fs-12 fw-500">
             Updated By
           </div>
@@ -133,46 +196,81 @@
             {{ viewTShirtSize.updatedBy || "—" }}
           </div>
         </div>
-        <div>
+        <!-- Updated On -->
+        <div class="col-12 col-sm-6">
           <div class="text-86 fs-12 fw-500">
             Updated On
           </div>
           <div class="text-2e fs-14">
-            {{ formatDateTime(viewTShirtSize.updatedOnUtc) }}
+            {{ viewTShirtSize.updatedBy ? formatDateTime(viewTShirtSize.updatedOnUtc): "—" }}
           </div>
         </div>
       </div>
-    </app-form-drawer>
+    </app-form-dialog>
   </q-page>
 </template>
 
 <script setup>
 import { computed, ref, watch } from "vue";
 import { date, debounce } from "quasar";
-import { tShirtSizeApi, getApiErrorMessage } from "services/api";
+import {
+  tShirtSizeApi,
+  getApiErrorMessage
+} from "services/api";
 import { useNotify } from "composables/useNotify";
 import { useConfirm } from "composables/useConfirm";
 import { usePermissions } from "composables/usePermissions";
 import { useListTable } from "composables/useListTable";
+import { useColumnFilters } from "composables/useColumnFilters";
+import { useDeletedRecords } from "composables/useDeletedRecords";
 import AppDataTable from "components/common/AppDataTable.vue";
 import AppListHeader from "components/common/AppListHeader.vue";
-import AppFormDrawer from "components/common/AppFormDrawer.vue";
+import AppFormDialog from "components/common/AppFormDialog.vue";
+import AppFilterDrawer from "components/common/AppFilterDrawer.vue";
+import AppColumnFilters from "components/common/AppColumnFilters.vue";
 import CreateEdit from "modules/t-shirt-size/components/CreateEdit.vue";
 
 const notify = useNotify();
 const { confirm } = useConfirm();
 const { has } = usePermissions();
-// Check permissions for T-Shirt Size actions.
-const canRead = computed(() => has("tShirtSizes.read"));
-const canWrite = computed(() => has("tShirtSizes.write"));
-const canDelete = computed(() => has("tShirtSizes.delete"));
-// Format UTC date values for display.
-const formatDateTime = (value) => { if (!value) { return "—"; }
-  // Add UTC indicator when the API date does not include timezone information.
-  const iso =/(Z|[+-]\d{2}:\d{2})$/i.test(value) ? value : `${value}Z`;
-  return date.formatDate(new Date(iso),"MM/DD/YYYY hh:mm A");
+const {
+  showDeleted,
+  canManageDeleted
+} = useDeletedRecords();
+/* ---------------------------------
+ * Permissions
+ * --------------------------------- */
+const canRead = computed(() =>
+  has("tShirtSizes.read")
+);
+const canWrite = computed(() =>
+  has("tShirtSizes.write")
+);
+const canDelete = computed(() =>
+  has("tShirtSizes.delete")
+);
+/* ---------------------------------
+ * Date formatting
+ * --------------------------------- */
+const formatDateTime = (value) => {
+  if (!value) {
+    return "—";
+  }
+  // Add UTC indicator when the API date
+  // does not include timezone information.
+  const iso =
+    /(Z|[+-]\d{2}:\d{2})$/i.test(value)
+      ? value
+      : `${value}Z`;
+  return date.formatDate(
+    new Date(iso),
+    "MM/DD/YYYY hh:mm A"
+  );
 };
-// Define the columns displayed in the T-Shirt Size table.
+
+/* ---------------------------------
+ * Table columns
+ * --------------------------------- */
 const columns = [
   {
     name: "name",
@@ -180,7 +278,8 @@ const columns = [
     field: "name",
     align: "left",
     sortable: true,
-    default: true
+    default: true,
+    filterable: true
   },
   {
     name: "tenantName",
@@ -188,6 +287,7 @@ const columns = [
     field: "tenantName",
     align: "left",
     sortable: true,
+    filterable: false,
     default: true
   },
   {
@@ -197,6 +297,7 @@ const columns = [
     align: "left",
     sortable: true,
     default: true,
+    filterable: false,
     format: (val) => val || "—"
   },
   {
@@ -206,6 +307,7 @@ const columns = [
     align: "left",
     sortable: true,
     default: true,
+    filterable: false,
     format: (val) => formatDateTime(val)
   },
   {
@@ -215,6 +317,7 @@ const columns = [
     align: "left",
     sortable: true,
     default: true,
+    filterable: false,
     format: (val) => val || "—"
   },
   {
@@ -224,7 +327,30 @@ const columns = [
     align: "left",
     sortable: true,
     default: true,
-    format: (val) => formatDateTime(val)
+    filterable: false,
+    format: (val, row) =>
+      row?.updatedBy
+        ? formatDateTime(val)
+        : "—"
+  },
+  {
+    name: "active",
+    label: "Status",
+    field: "active",
+    align: "left",
+    sortable: true,
+    default: true,
+    filterable: true,
+    filterOptions: [
+      {
+        label: "Active",
+        value: true
+      },
+      {
+        label: "Inactive",
+        value: false
+      }
+    ]
   },
   {
     name: "actions",
@@ -233,29 +359,48 @@ const columns = [
     align: "left"
   }
 ];
-// Configure the reusable list table functionality.
-const { rows ,loading ,totalRecords ,search ,pagination ,load ,onRequest } = useListTable({
+/* ---------------------------------
+ * Filter state
+ * --------------------------------- */
+const filterOpen = ref(false);
+/* ---------------------------------
+ * List table
+ * --------------------------------- */
+const { rows, loading, totalRecords, search, pagination, load, onRequest } = useListTable({
   pageKey: "t-shirt-sizes",
   // Fetch T-Shirt Sizes from the API.
-    fetcher: ({  page, limit, sortBy, descending }) => tShirtSizeApi.list({ page, limit ,search: search.value || undefined, sortBy, descending })
-       .then((response) => ({ data: response?.data || [], total: response?.meta?.totalRecords || 0 })),
-  onError: (error) => { notify.error( getApiErrorMessage( error, "Unable to load T-Shirt sizes."));}
+  fetcher: ({ page, limit, sortBy, descending }) => tShirtSizeApi.list({ page, limit, search: search.value || undefined, sortBy, descending, name:filters.name || undefined, active: filters.active ?? undefined, showDeleted: showDeleted.value })
+    .then((response) => ({ data: response?.data || [], total: response?.meta?.totalRecords || 0 })),
+  // Handle API errors.
+  onError: (error) => {
+    notify.error(
+      getApiErrorMessage(error,"Unable to load T-Shirt sizes.")
+    );
+  }
 });
-
-// Reload the table when the search value changes.
-// Debounce prevents an API call for every keystroke.
+/* ---------------------------------
+ * Server-side column filters
+ * --------------------------------- */
+const { filters, filterableColumns, filterChips, removeFilter, clearFilters } = useColumnFilters(columns, rows, { server: true });
+/* ---------------------------------
+ * Reload when filters/search change
+ * --------------------------------- */
 const reload = debounce(() => {
   pagination.value.page = 1;
   load();
 }, 300);
-
-watch(search, reload);
+watch([search, showDeleted, filters], reload, { deep: true });
+/* ---------------------------------
+ * Create/Edit state
+ * --------------------------------- */
 const formOpen = ref(false);
 const editing = ref(false);
 const selectedTShirtSize = ref(null);
+/* ---------------------------------
+ * View state
+ * --------------------------------- */
 const viewOpen = ref(false);
 const viewLoading = ref(false);
-// Define the structure of the T-Shirt Size being viewed.
 const viewTShirtSize = ref({
   tShirtSizeId: null,
   name: "",
@@ -263,9 +408,13 @@ const viewTShirtSize = ref({
   createdBy: null,
   createdOnUtc: null,
   updatedBy: null,
-  updatedOnUtc: null
+  updatedOnUtc: null,
+  active: true,
+  deleted: false
 });
-// Reset the viewTShirtSize to its initial state.
+/* ---------------------------------
+ * Reset view state
+ * --------------------------------- */
 const resetViewTShirtSize = () => {
   viewTShirtSize.value = {
     tShirtSizeId: null,
@@ -274,18 +423,20 @@ const resetViewTShirtSize = () => {
     createdBy: null,
     createdOnUtc: null,
     updatedBy: null,
-    updatedOnUtc: null
+    updatedOnUtc: null,
+    active: true,
+    deleted: false
   };
 };
-// Open the View drawer for the selected T-Shirt Size.
+/* ---------------------------------
+ * Open View
+ * --------------------------------- */
 const openView = async (row) => {
   resetViewTShirtSize();
   viewOpen.value = true;
   viewLoading.value = true;
   try {
-    const tShirtSize = await tShirtSizeApi.get(
-      row.tShirtSizeId
-    );
+    const tShirtSize = await tShirtSizeApi.get(row.tShirtSizeId);
     viewTShirtSize.value = {
       tShirtSizeId: tShirtSize?.tShirtSizeId,
       name: tShirtSize?.name || "",
@@ -293,78 +444,92 @@ const openView = async (row) => {
       createdBy: tShirtSize?.createdBy || "",
       createdOnUtc: tShirtSize?.createdOnUtc || null,
       updatedBy: tShirtSize?.updatedBy || "",
-      updatedOnUtc: tShirtSize?.updatedOnUtc || null
+      updatedOnUtc: tShirtSize?.updatedOnUtc || null,
+      active: tShirtSize?.active ?? true,
+      deleted: tShirtSize?.deleted ?? false
     };
   } catch (error) {
     viewOpen.value = false;
     notify.error(
-      getApiErrorMessage(
-        error,
-        "Unable to load T-Shirt size."
-      )
+      getApiErrorMessage(error, "Unable to load T-Shirt size.")
     );
   } finally {
     viewLoading.value = false;
   }
 };
-// Close the View drawer and reset the viewTShirtSize state.
+/* ---------------------------------
+ * Close View
+ * --------------------------------- */
 const closeView = () => {
   viewOpen.value = false;
   resetViewTShirtSize();
 };
-
-// Open the form for creating a new T-Shirt Size.
+/* ---------------------------------
+ * Create
+ * --------------------------------- */
 const openCreate = () => {
   selectedTShirtSize.value = null;
   editing.value = false;
   formOpen.value = true;
 };
-
-// Load the selected T-Shirt Size and open the edit form.
+/* ---------------------------------
+ * Edit
+ * --------------------------------- */
 const openEdit = async (row) => {
   try {
-    // Get the latest T-Shirt Size details from the API.
     const tShirtSize = await tShirtSizeApi.get(row.tShirtSizeId);
     selectedTShirtSize.value = tShirtSize;
     editing.value = true;
     formOpen.value = true;
   } catch (error) {
     notify.error(
-      getApiErrorMessage(
-        error,
-        "Unable to load T-Shirt size."
-      )
+      getApiErrorMessage(error, "Unable to load T-Shirt size.")
     );
   }
 };
-
-// Delete the selected T-Shirt Size.
-const deleteTShirtSize = async (row) => {
+/* ---------------------------------
+ * Toggle Active
+ * --------------------------------- */
+const toggleActive = async (row, active) => { const previousValue = row.active;
+  // Update UI immediately.
+  row.active = active;
+  try {
+    await tShirtSizeApi.update(row.tShirtSizeId, { name: row.name, active });
+    notify.success(active ? "T-Shirt size activated." : "T-Shirt size deactivated.");
+  } catch (error) {
+    // Restore previous value if update fails.
+    row.active = previousValue;
+    notify.error(getApiErrorMessage(error, "Unable to update T-Shirt size status.")
+    );
+  }
+};
+/* ---------------------------------
+ * Delete
+ * --------------------------------- */
+const deleteTShirtSize = async (
+  row
+) => {
   const confirmed = await confirm({
     title: "Delete T-Shirt Size",
     message: `Delete "${row.name}"?`,
     confirmLabel: "Delete",
     type: "danger"
   });
-  // Stop if the user cancels the operation.
+  // Stop if the user cancels.
   if (!confirmed) {
     return;
   }
   try {
-    await tShirtSizeApi.remove(
-      row.tShirtSizeId
-    );
+    await tShirtSizeApi.remove(row.tShirtSizeId);
     notify.success("T-Shirt size deleted.");
     load();
   } catch (error) {
-    notify.error(
-      getApiErrorMessage(
-        error,
-        "Unable to delete T-Shirt size."
-      )
+    notify.error(getApiErrorMessage(error, "Unable to delete T-Shirt size.")
     );
   }
 };
-// Load T-Shirt Sizes when the page is opened.
+/* ---------------------------------
+ * Initial load
+ * --------------------------------- */
 load();
 </script>
