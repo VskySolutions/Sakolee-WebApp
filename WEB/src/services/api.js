@@ -127,7 +127,31 @@ export const tShirtSizeApi = {
   update: (id, payload) => api.put(`/api/admin/t-shirt-sizes/${id}`, payload).then(unwrap),
   remove: (id) => api.delete(`/api/admin/t-shirt-sizes/${id}`).then(envelope)
 };
+// Hear About Us API mapping.
+export const hearAboutUsApi = {
+  list: (params) => api.get("/api/admin/hear-about-us", { params }).then(envelope),
+  get: (id) => api.get(`/api/admin/hear-about-us/${id}`).then(unwrap),
+  create: (payload) => api.post("/api/admin/hear-about-us", payload).then(unwrap),
+  update: (id, payload) => api.put(`/api/admin/hear-about-us/${id}`, payload).then(unwrap),
+  remove: (id) => api.delete(`/api/admin/hear-about-us/${id}`).then(envelope)
+};
+// E-Payment Schedule API mapping.
 
+export const ePaymentScheduleApi = {
+  list: (params) => api.get("/api/admin/e-payment-schedules", { params }).then(envelope),
+  get: (id) => api.get(`/api/admin/e-payment-schedules/${id}`).then(unwrap),
+  create: (payload) => api.post("/api/admin/e-payment-schedules", payload).then(unwrap),
+  update: (id, payload) => api.put(`/api/admin/e-payment-schedules/${id}`, payload).then(unwrap),
+  remove: (id) => api.delete(`/api/admin/e-payment-schedules/${id}`).then(envelope)
+};
+// Account Type API mapping.
+export const accountTypeApi = {
+  list: (params) => api.get("/api/admin/account-types", { params }).then(envelope),
+  get: (id) => api.get(`/api/admin/account-types/${id}`).then(unwrap),
+  create: (payload) => api.post("/api/admin/account-types", payload).then(unwrap),
+  update: (id, payload) => api.put(`/api/admin/account-types/${id}`, payload).then(unwrap),
+  remove: (id) => api.delete(`/api/admin/account-types/${id}`).then(envelope)
+};
 // Family Status API mapping
 export const familyStatusApi = {
   list: (params) => api.get("/api/admin/family-statuses", { params }).then(envelope),

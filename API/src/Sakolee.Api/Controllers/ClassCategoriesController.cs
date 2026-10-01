@@ -3,9 +3,10 @@ using Microsoft.AspNetCore.Mvc;
 using Sakolee.Api.Models.Classes;
 using Sakolee.Api.Security;
 using Sakolee.Application.Abstractions.Persistence;
+using Sakolee.Application.Abstractions.Security;
 using Sakolee.Shared.Contracts;
 using Sakolee.Shared.Security;
-using Sakolee.Application.Abstractions.Security;
+using System.Globalization;
 namespace Sakolee.Api.Controllers;
 
 /// <summary>
@@ -55,7 +56,7 @@ public sealed class ClassCategoriesController : ControllerBase
     [HttpGet]
     [RequireAnyPermission(Permissions.ClassCategoriesRead, Permissions.ClassesRead)]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task<IActionResult> List([FromQuery] string? search = null,CancellationToken cancellationToken = default)
+    public async Task<IActionResult> List([FromQuery] string? name = null,[FromQuery] string? categoryType = null,[FromQuery] bool showDeleted = false,[FromQuery] bool? active = null, [FromQuery] string? search = null,[FromQuery] string? sortBy = null,[FromQuery] bool descending = false,[FromQuery] int page = 1,[FromQuery] int limit = 20, CancellationToken cancellationToken = default)
     {
         // Get the active tenant ID of the currently logged-in user.
         // If the user does not have an active tenant, return Forbidden.
@@ -63,14 +64,18 @@ public sealed class ClassCategoriesController : ControllerBase
         {
             return StatusCode(StatusCodes.Status403Forbidden,ApiResponseFactory.Forbidden("No active tenant for the caller."));
         }
+        // Keep pagination values within valid limits.
+        page = Math.Max(1, page);
+        limit = Math.Clamp(limit, 1, 100);
         // Retrieve all non-deleted Class Categories for the active tenant.
-        var categories = await _classCategories.ListByTenantAsync(tenantId,search,cancellationToken);
+        // Get the requested page of Class Categories.
+        var (categories, total) =await _classCategories.ListByTenantAsync(tenantId, name,categoryType,showDeleted,active, search,sortBy,descending,page,limit,cancellationToken);
         // Resolve the Created By and Updated By user IDs into display names.
         var nameOf = await AuditNamesAsync(categories, cancellationToken);
         // Convert the entities into summary response models.
         var summaries = categories.Select(x => ToSummary(x, nameOf)).ToList();
         // Return the Class Category list in the standard API response format.
-        return Ok(ApiResponseFactory.Success(summaries,"Class categories retrieved."));
+        return Ok(ApiResponseFactory.Paginated(summaries,"Class categories retrieved.",page,limit,total));
     }
     #endregion
 
@@ -117,7 +122,7 @@ public sealed class ClassCategoriesController : ControllerBase
     [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> Create([FromBody] CreateClassCategoryRequest request,CancellationToken cancellationToken)
     {
-        // Get the active tenant ID of the currently logged-in user. // If there is no active tenant, return Forbidden.
+        // Get the active tenant ID of the currently logged-in user.If there is no active tenant, return Forbidden.
         if (User.GetActiveTenantId() is not { } tenantId)
         {
             return StatusCode(StatusCodes.Status403Forbidden,ApiResponseFactory.Forbidden("No active tenant for the caller."));
@@ -148,7 +153,7 @@ public sealed class ClassCategoriesController : ControllerBase
             return Conflict(new { message = $"A class category with the name '{name}' already exists."});
         }
         // Create the new Class Category entity.
-        var classCategory = new Domain.Entities.ClassCategory { Id = Guid.NewGuid(), TenantId = tenantId, Name = name, CategoryType = categoryType,CreatedOnUtc = DateTime.UtcNow,CreatedById = User.GetUserId(), Deleted = false };
+        var classCategory = new Domain.Entities.ClassCategory { Id = Guid.NewGuid(), TenantId = tenantId, Name = name, CategoryType = categoryType, Active = request.Active };
         // Add the new Class Category to the database context.
         await _classCategories.AddAsync(classCategory,cancellationToken);
         // Save the new Class Category to the database.
@@ -219,9 +224,7 @@ public sealed class ClassCategoriesController : ControllerBase
         // Update the Class Category values.
         classCategory.Name = name;
         classCategory.CategoryType = categoryType;
-        // Update audit information.
-        classCategory.UpdatedOnUtc = DateTime.UtcNow;
-        classCategory.UpdatedById = User.GetUserId();
+        classCategory.Active = request.Active;
         // Mark the Class Category as updated in the database context.
         _classCategories.Update(classCategory);
         // Save the changes to the database.
@@ -260,9 +263,7 @@ public sealed class ClassCategoriesController : ControllerBase
         }
         // Mark the category as deleted instead of physically removing it.
         classCategory.Deleted = true;
-        // Update the audit information.
-        classCategory.UpdatedOnUtc = DateTime.UtcNow;
-        classCategory.UpdatedById = User.GetUserId();
+        classCategory.DeletedOnUtc = DateTime.UtcNow;
         // Mark the Class Category as updated in the database context.
         _classCategories.Update(classCategory);
         // Save the soft-delete changes to the database.
@@ -282,7 +283,7 @@ public sealed class ClassCategoriesController : ControllerBase
     private static ClassCategorySummary ToSummary(Domain.Entities.ClassCategory classCategory,Func<Guid?, string?> nameOf)
     {
         // Create and return the summary response using the Class Category entity values and resolved audit user names.
-        return new ClassCategorySummary(classCategory.Id,classCategory.Name,classCategory.CategoryType,classCategory.TenantId,classCategory.Tenant?.Name ?? string.Empty,nameOf(classCategory.CreatedById), classCategory.CreatedOnUtc, nameOf(classCategory.UpdatedById),classCategory.UpdatedOnUtc);
+        return new ClassCategorySummary(classCategory.Id,classCategory.Name,classCategory.CategoryType, classCategory.Active,classCategory.Deleted, classCategory.TenantId,classCategory.Tenant?.Name ?? string.Empty,nameOf(classCategory.CreatedById), classCategory.CreatedOnUtc, nameOf(classCategory.UpdatedById),classCategory.UpdatedOnUtc);
     }
 
     #endregion
@@ -301,6 +302,5 @@ public sealed class ClassCategoriesController : ControllerBase
         // Return a function that resolves a user ID to its display name Return null when the user ID is not found.
         return id =>id is { } userId && names.TryGetValue(userId, out var name) ? name : null;
     }
-
     #endregion
 }

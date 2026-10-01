@@ -9,7 +9,7 @@ public interface ITShirtSizeRepository
     /// Gets every non-deleted T-Shirt Size owned by the given tenant.
     /// Supports searching by T-Shirt Size name.
     /// </summary>
-    Task<IReadOnlyList<TShirtSize>> ListByTenantAsync(Guid tenantId,string? search = null,CancellationToken cancellationToken = default);
+    Task<(IReadOnlyList<TShirtSize> Items, int Total)> ListByTenantAsync(Guid tenantId, string? name = null, bool showDeleted = false,bool? active = null, string? search = null, string? sortBy = null, bool descending = false, int page = 1,int limit = 20, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Returns a non-deleted T-Shirt Size by id belonging to the specified tenant.

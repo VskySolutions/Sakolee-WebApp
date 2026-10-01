@@ -1,9 +1,16 @@
 <template>
+<<<<<<< HEAD
+  <!-- Dialog used for creating and editing a Billing Cycle -->
+  <app-form-dialog
+=======
   <!-- Drawer used for creating and editing a Billing Cycle -->
   <app-form-drawer
+>>>>>>> 5dfdb44bfd54d7af21c852b84d64ddd32f8a6cd6
     v-model="formOpen"
     :title="editing ? 'Edit Billing Cycle' : 'Create Billing Cycle'"
     :saving="saving"
+    :save-label="editing ? 'Save' : 'Create'"
+    size="sm"
     @submit="submit"
     @cancel="reset"
   >
@@ -22,32 +29,26 @@
         ]"
         @update:model-value="clearNameError"
       />
+      <!-- Active status -->
+      <q-toggle
+        v-model="form.active"
+        label="Active"
+      />
     </q-form>
-  </app-form-drawer>
+  </app-form-dialog>
 </template>
 
 <script setup>
 import { reactive, ref, watch } from "vue";
 import { billingCycleApi, getApiErrorMessage } from "services/api";
 import { useNotify } from "composables/useNotify";
-import AppFormDrawer from "components/common/AppFormDrawer.vue";
+import AppFormDialog from "components/common/AppFormDialog.vue";
 import AppTextField from "components/common/AppTextField.vue";
 // Define the properties received from the parent component.
 const props = defineProps({
-  modelValue: {
-    type: Boolean,
-    default: false
-  },
-  // Indicates whether the form is used for editing.
-  editing: {
-    type: Boolean,
-    default: false
-  },
-  // Contains the Billing Cycle data when editing.
-  billingCycle: {
-    type: Object,
-    default: null
-  }
+  modelValue: { type: Boolean, default: false },
+  editing: { type: Boolean, default: false },
+  billingCycle: { type: Object, default: null }
 });
 // Events sent back to the parent component.
 const emit = defineEmits([
@@ -60,24 +61,17 @@ const formOpen = ref(props.modelValue);
 const formRef = ref(null);
 const saving = ref(false);
 const nameError = ref("");
-
-// Form data.
-const form = reactive({
-  name: ""
-});
-
+const form = reactive({ name: "", active: true });
 // Watch for changes to the drawer state from the parent.
 watch(
   () => props.modelValue,
   (value) => {
     formOpen.value = value;
-    // Load form data when the drawer is opened.
     if (value) {
       loadForm();
     }
   }
 );
-
 // Send drawer state changes back to the parent.
 watch(formOpen, (value) => {
   emit("update:modelValue", value);
@@ -85,6 +79,7 @@ watch(formOpen, (value) => {
 // Load existing Billing Cycle data when editing.
 const loadForm = () => {
   form.name = props.billingCycle?.name || "";
+  form.active = props.billingCycle?.active ?? true;
   nameError.value = "";
 };
 // Clear the duplicate name error when the user changes the name.
@@ -93,32 +88,31 @@ const clearNameError = () => {
     nameError.value = "";
   }
 };
-
-// Reset the form fields and validation.
+// Reset the form to its initial state.
 const reset = () => {
   form.name = "";
+  form.active = true;
   nameError.value = "";
   formRef.value?.resetValidation();
 };
-
-// Validate and save the Billing Cycle.
+// Handle form submission for creating or updating a Billing Cycle.
 const submit = async ({ clearDraft } = {}) => {
   nameError.value = "";
+  // Validate the form before submission.
   const valid = await formRef.value?.validate();
   if (!valid) {
     return;
   }
   saving.value = true;
+  // Prepare the payload for the API request.
   try {
     const payload = {
-      name: form.name.trim()
+      name: form.name.trim(),
+      active: form.active
     };
-    // Update the existing Billing Cycle when editing.
+    // Update the existing Billing Cycle record when editing.
     if (props.editing && props.billingCycle?.billingCycleId) {
-      await billingCycleApi.update(
-        props.billingCycle.billingCycleId,
-        payload
-      );
+      await billingCycleApi.update(props.billingCycle.billingCycleId, payload);
       notify.success("Billing cycle updated.");
     } else {
       await billingCycleApi.create(payload);
@@ -129,11 +123,12 @@ const submit = async ({ clearDraft } = {}) => {
     reset();
     emit("saved");
   } catch (error) {
+    // Handle duplicate-name validation from the API.
     if (error?.response?.status === 409) {
       nameError.value = "A billing cycle with this name already exists.";
       return;
     }
-    // Get a user-friendly error message from the API.
+    // Handle other API errors and notify the user.
     const message = getApiErrorMessage(error, "Unable to save billing cycle.");
     notify.error(message);
   } finally {

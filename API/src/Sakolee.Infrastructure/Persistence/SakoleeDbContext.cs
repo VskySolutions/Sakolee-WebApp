@@ -1,10 +1,9 @@
+using Microsoft.AspNetCore.DataProtection.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Sakolee.Application.Abstractions.Security;
 using Sakolee.Application.Abstractions.Tenancy;
 using Sakolee.Domain.Entities;
-using Microsoft.AspNetCore.DataProtection.EntityFrameworkCore;
-
-
-using Microsoft.EntityFrameworkCore;
+using System;
 
 namespace Sakolee.Infrastructure.Persistence;
 
@@ -130,6 +129,9 @@ public class SakoleeDbContext : DbContext, IDataProtectionKeyContext
     public DbSet<TShirtSize> TShirtSizes => Set<TShirtSize>();
 
 
+    public DbSet<HearAboutUs> HearAboutUs => Set<HearAboutUs>();
+    public DbSet<EPaymentSchedule> EPaymentSchedules => Set<EPaymentSchedule>();
+    public DbSet<AccountType> AccountTypes => Set<AccountType>();
     /// <summary>Data Protection key ring storage (Multi-Tenancy ADR-002).</summary>
     public DbSet<DataProtectionKey> DataProtectionKeys => Set<DataProtectionKey>();
 

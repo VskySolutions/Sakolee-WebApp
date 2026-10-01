@@ -24,6 +24,8 @@ internal sealed class TShirtSizeConfiguration : IEntityTypeConfiguration<TShirtS
         builder.Property(c => c.CreatedById).HasConversion<string>().HasMaxLength(450);
         builder.Property(c => c.UpdatedById).HasConversion<string>().HasMaxLength(450);
         builder.Property(c => c.Name).IsRequired().HasMaxLength(50);
+        // Configure Active status.
+        builder.Property(c => c.Active).IsRequired().HasDefaultValue(true);
         builder.Property(c => c.CreatedOnUtc).HasDefaultValueSql("sysutcdatetime()");
         builder.Property(c => c.Deleted).HasDefaultValue(false);
         // Create a unique filtered index on TenantId and Name.
