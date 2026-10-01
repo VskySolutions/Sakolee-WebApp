@@ -34,7 +34,8 @@ internal sealed class ClassConfiguration : IEntityTypeConfiguration<Class>
         builder.Property(c => c.Deleted).HasDefaultValue(false);
 
         builder.Property(c => c.ClassName).HasMaxLength(50);
-        builder.Property(c => c.AdditionalInstructors).HasMaxLength(50);
+        // Up to 2 comma-separated User ids (2 x 36 + 1 = 73 chars).
+        builder.Property(c => c.AdditionalInstructors).HasMaxLength(100);
         builder.Property(c => c.ActiveDays).HasMaxLength(200);
         builder.Property(c => c.StartTime).HasMaxLength(20);
         builder.Property(c => c.EndTime).HasMaxLength(20);

@@ -58,9 +58,9 @@
     >
       <!-- Family Status Name Column with Deleted Indicator -->
       <template #body-cell-familyStatusName="cell">
-        <q-td :props="cell" :class="{ 'text-strike text-grey': cell.row.deleted || cell.row.Deleted }">
+        <q-td :props="cell" :class="{ 'text-strike text-grey': isDeleted(cell.row) }">
           {{ cell.row.familyStatusName || cell.row.FamilyStatusName || cell.row.name || cell.row.Name }}
-          <q-badge v-if="cell.row.deleted || cell.row.Deleted" color="negative" class="q-ml-sm" dense>
+          <q-badge v-if="isDeleted(cell.row)" color="negative" class="q-ml-sm" dense>
             Deleted
           </q-badge>
         </q-td>
@@ -75,7 +75,7 @@
               @update:model-value="(val) => updateStatus(cell.row, val)"
               dense
               color="positive"
-              :disable="cell.row.deleted || cell.row.Deleted"
+              :disable="isDeleted(cell.row)"
             />
             <!-- <span :class="(cell.row.active ?? cell.row.Active ?? cell.row.isActive ?? cell.row.IsActive ?? true) ? 'text-positive' : 'text-grey'">
               {{ (cell.row.active ?? cell.row.Active ?? cell.row.isActive ?? cell.row.IsActive ?? true) ? "Active" : "Inactive" }}
@@ -104,7 +104,7 @@
             color="primary"
             icon="o_edit"
             @click="openEdit(cell.row)"
-            :disabled="cell.row.deleted || cell.row.Deleted"
+            :disabled="isDeleted(cell.row)"
           >
             <q-tooltip>Edit</q-tooltip>
           </q-btn>
@@ -116,7 +116,7 @@
             color="negative"
             icon="o_delete"
             @click="removeFamilyStatus(cell.row)"
-            v-if="!(cell.row.deleted || cell.row.Deleted)"
+            v-if="!isDeleted(cell.row)"
           >
             <q-tooltip>Delete</q-tooltip>
           </q-btn>
@@ -160,6 +160,8 @@ import FamilyStatusForm from "src/modules/familystatus/components/create_edit_st
 import FamilyStatusView from "src/modules/familystatus/components/viewstatus.vue";
 
 const { showDeleted, canManageDeleted } = useDeletedRecords();
+// The API's FamilyStatusSummary flags soft-deleted rows as `isDeleted` (only returned with "Show deleted?" on).
+const isDeleted = (row) => !!(row?.isDeleted ?? row?.IsDeleted ?? row?.deleted ?? row?.Deleted);
 const notify = useNotify();
 const { confirm } = useConfirm();
 

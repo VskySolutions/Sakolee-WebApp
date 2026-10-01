@@ -10,7 +10,8 @@ public sealed class CreateClassRequest
     public Guid? Category2Id { get; set; }
     public Guid? Category3Id { get; set; }
     public string ClassName { get; set; } = string.Empty;
-    public string? AdditionalInstructors { get; set; }
+    /// <summary>Up to 2 Staff users (User.Id) of the active tenant, besides the primary instructor.</summary>
+    public IReadOnlyList<Guid>? AdditionalInstructorIds { get; set; }
     public DateTime? StartDate { get; set; }
     public DateTime? EndDate { get; set; }
     public DateTime? RegistrationOpenDate { get; set; }
@@ -54,7 +55,8 @@ public sealed class UpdateClassRequest
     public Guid? Category2Id { get; set; }
     public Guid? Category3Id { get; set; }
     public string ClassName { get; set; } = string.Empty;
-    public string? AdditionalInstructors { get; set; }
+    /// <summary>Up to 2 Staff users (User.Id) of the active tenant, besides the primary instructor.</summary>
+    public IReadOnlyList<Guid>? AdditionalInstructorIds { get; set; }
     public DateTime? StartDate { get; set; }
     public DateTime? EndDate { get; set; }
     public DateTime? RegistrationOpenDate { get; set; }
@@ -100,7 +102,7 @@ public sealed record ClassSummary(
     Guid? Category2Id,
     Guid? Category3Id,
     string? ClassName,
-    string? AdditionalInstructors,
+    IReadOnlyList<Guid> AdditionalInstructorIds,
     DateTime? StartDate,
     DateTime? EndDate,
     DateTime? RegistrationOpenDate,
@@ -143,4 +145,10 @@ public sealed record ClassSummary(
     string? Category2Name = null,
     string? Category3Name = null,
     string? LocationName = null,
-    string? SessionName = null);
+    string? SessionName = null,
+    string? PrimaryInstructorName = null,
+    // The additional instructors with their names, in saved order — single-class read only, like the names above.
+    IReadOnlyList<ClassInstructorOption>? AdditionalInstructors = null);
+
+/// <summary>One option in the class form's Primary Instructor picker — a Staff user of the active tenant.</summary>
+public sealed record ClassInstructorOption(Guid Id, string Name);

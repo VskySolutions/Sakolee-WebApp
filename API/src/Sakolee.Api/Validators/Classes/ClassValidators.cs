@@ -8,7 +8,8 @@ public sealed class CreateClassRequestValidator : AbstractValidator<CreateClassR
     public CreateClassRequestValidator()
     {
         RuleFor(x => x.ClassName).NotEmpty().MaximumLength(50);
-        RuleFor(x => x.AdditionalInstructors).MaximumLength(50).When(x => x.AdditionalInstructors is not null);
+        RuleFor(x => x.AdditionalInstructorIds).Must(ids => ids!.Distinct().Count() <= 2)
+            .WithMessage("At most 2 additional instructors can be selected.").When(x => x.AdditionalInstructorIds is not null);
         RuleFor(x => x.ActiveDays).MaximumLength(200).When(x => x.ActiveDays is not null);
         RuleFor(x => x.StartTime).MaximumLength(20).When(x => x.StartTime is not null);
         RuleFor(x => x.EndTime).MaximumLength(20).When(x => x.EndTime is not null);
@@ -32,7 +33,8 @@ public sealed class UpdateClassRequestValidator : AbstractValidator<UpdateClassR
     public UpdateClassRequestValidator()
     {
         RuleFor(x => x.ClassName).NotEmpty().MaximumLength(50);
-        RuleFor(x => x.AdditionalInstructors).MaximumLength(50).When(x => x.AdditionalInstructors is not null);
+        RuleFor(x => x.AdditionalInstructorIds).Must(ids => ids!.Distinct().Count() <= 2)
+            .WithMessage("At most 2 additional instructors can be selected.").When(x => x.AdditionalInstructorIds is not null);
         RuleFor(x => x.ActiveDays).MaximumLength(200).When(x => x.ActiveDays is not null);
         RuleFor(x => x.StartTime).MaximumLength(20).When(x => x.StartTime is not null);
         RuleFor(x => x.EndTime).MaximumLength(20).When(x => x.EndTime is not null);
