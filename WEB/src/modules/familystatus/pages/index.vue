@@ -56,13 +56,10 @@
       @request="onRequest"
       @refresh="load"
     >
-      <!-- Family Status Name Column with Deleted Indicator -->
+      <!-- Family Status Name Column without strike-through line -->
       <template #body-cell-familyStatusName="cell">
-        <q-td :props="cell" :class="{ 'text-strike text-grey': isDeleted(cell.row) }">
+        <q-td :props="cell" :class="{ 'text-grey': cell.row.deleted || cell.row.Deleted || cell.row.isDeleted || cell.row.IsDeleted }">
           {{ cell.row.familyStatusName || cell.row.FamilyStatusName || cell.row.name || cell.row.Name }}
-          <q-badge v-if="isDeleted(cell.row)" color="negative" class="q-ml-sm" dense>
-            Deleted
-          </q-badge>
         </q-td>
       </template>
 
@@ -75,16 +72,13 @@
               @update:model-value="(val) => updateStatus(cell.row, val)"
               dense
               color="positive"
-              :disable="isDeleted(cell.row)"
+              :disable="cell.row.deleted || cell.row.Deleted || cell.row.isDeleted || cell.row.IsDeleted"
             />
-            <!-- <span :class="(cell.row.active ?? cell.row.Active ?? cell.row.isActive ?? cell.row.IsActive ?? true) ? 'text-positive' : 'text-grey'">
-              {{ (cell.row.active ?? cell.row.Active ?? cell.row.isActive ?? cell.row.IsActive ?? true) ? "Active" : "Inactive" }}
-            </span> -->
           </div>
         </q-td>
       </template>
 
-      <!-- Row Actions Slot -->
+      <!-- Row Actions Slot with Disabled check for deleted records -->
       <template #body-cell-actions="cell">
         <q-td :props="cell">
           <q-btn
@@ -104,7 +98,7 @@
             color="primary"
             icon="o_edit"
             @click="openEdit(cell.row)"
-            :disabled="isDeleted(cell.row)"
+            :disabled="cell.row.deleted || cell.row.Deleted || cell.row.isDeleted || cell.row.IsDeleted"
           >
             <q-tooltip>Edit</q-tooltip>
           </q-btn>
@@ -116,7 +110,7 @@
             color="negative"
             icon="o_delete"
             @click="removeFamilyStatus(cell.row)"
-            v-if="!isDeleted(cell.row)"
+            v-if="!(cell.row.deleted || cell.row.Deleted || cell.row.isDeleted || cell.row.IsDeleted)"
           >
             <q-tooltip>Delete</q-tooltip>
           </q-btn>
@@ -168,7 +162,8 @@ const { confirm } = useConfirm();
 const formatDate = (value) => {
   if (!value) return "—";
   const date = new Date(value);
-  return isNaN(date.getTime()) ? String(value) : date.toLocaleString();
+  if (isNaN(date.getTime()) || date.getFullYear() <= 1) return "—";
+  return date.toLocaleString();
 };
 
 const columns = [
@@ -181,7 +176,15 @@ const columns = [
     default: true,
     filterable: true
   },
- 
+  {
+    name: "createdBy",
+    label: "Created By",
+    field: (r) => r.createdBy || r.CreatedBy || r.created_by || "—",
+    align: "left",
+    sortable: true,
+    default: true,
+    filterable: false
+  },
   {
     name: "createdOnUtc",
     label: "Created On",
@@ -191,15 +194,6 @@ const columns = [
     default: true,
     filterable: false,
     format: (val) => formatDate(val)
-  },
-  {
-    name: "createdBy",
-    label: "Created By",
-    field: (r) => r.createdBy || r.CreatedBy || r.created_by || "—",
-    align: "left",
-    sortable: true,
-    default: true,
-    filterable: false
   },
   {
     name: "updatedBy",
@@ -220,16 +214,17 @@ const columns = [
     filterable: false,
     format: (val) => formatDate(val)
   },
-   {
+  {
     name: "active",
     label: "Status",
     field: (r) => r.active ?? r.Active ?? r.isActive ?? r.IsActive ?? true,
     align: "center",
     sortable: true,
     default: true,
+    filterable: true,
     filterOptions: [
-      { label: "", value: true },
-      { label: "", value: false }
+      { label: "Active", value: true },
+      { label: "Inactive", value: false }
     ]
   },
   {
@@ -252,37 +247,42 @@ const {
   pageKey: "family-statuses",
   defaultSortBy: "createdOnUtc",
   defaultDescending: true,
-  fetcher: ({ sortBy, descending }) =>
-    familyStatusApi.list({
+  fetcher: ({ sortBy, descending }) => {
+    let mappedSortBy = sortBy;
+    if (sortBy === "active") mappedSortBy = "Active";
+    else if (sortBy === "familyStatusName") mappedSortBy = "Name";
+
+    return familyStatusApi.list({
       search: search.value || undefined,
       showDeleted: showDeleted.value,
       includeDeleted: showDeleted.value,
-      sortBy: sortBy || 'createdOnUtc',
+      sortBy: mappedSortBy || 'createdOnUtc',
       descending: descending ?? true,
       includeInactive: true
     }).then((response) => {
       let items = response?.data?.items || response?.items || response?.data || [];
 
-      
-      items.sort((a, b) => {
-        const valA = new Date(a.createdOnUtc || a.CreatedOnUtc || a.created_on_utc || a.createdOn || 0).getTime();
-        const valB = new Date(b.createdOnUtc || b.CreatedOnUtc || b.created_on_utc || b.createdOn || 0).getTime();
-        
-        if (valA !== valB) {
-          return valB - valA; 
-        }
-        
-     
-        const idA = a.familyStatusId || a.FamilyStatusId || a.id || a.Id || 0;
-        const idB = b.familyStatusId || b.FamilyStatusId || b.id || b.Id || 0;
-        return idB - idA;
-      });
+      if (!sortBy || sortBy === 'createdOnUtc') {
+        items.sort((a, b) => {
+          const valA = new Date(a.createdOnUtc || a.CreatedOnUtc || a.created_on_utc || a.createdOn || 0).getTime();
+          const valB = new Date(b.createdOnUtc || b.CreatedOnUtc || b.created_on_utc || b.createdOn || 0).getTime();
+
+          if (valA !== valB) {
+            return descending !== false ? valB - valA : valA - valB;
+          }
+
+          const idA = a.familyStatusId || a.FamilyStatusId || a.id || a.Id || 0;
+          const idB = b.familyStatusId || b.FamilyStatusId || b.id || b.Id || 0;
+          return idB - idA;
+        });
+      }
 
       return {
         data: items,
         total: response?.data?.totalCount || items.length
       };
-    }),
+    });
+  },
   onError: (err) => notify.error(getApiErrorMessage(err))
 });
 
@@ -326,6 +326,7 @@ const openCreate = () => {
   formOpen.value = true;
 };
 
+
 const openEdit = (row) => {
   const id = row.familyStatusId || row.FamilyStatusId || row.id || row.Id;
   if (!id) {
@@ -342,7 +343,7 @@ const updateStatus = async (row, newStatus) => {
   if (!id) return;
 
   const originalStatus = row.active ?? row.Active ?? row.isActive ?? row.IsActive ?? true;
-  
+
   if (row.active !== undefined) row.active = newStatus;
   if (row.Active !== undefined) row.Active = newStatus;
   if (row.isActive !== undefined) row.isActive = newStatus;
@@ -386,6 +387,7 @@ const openView = (row) => {
   viewOpen.value = true;
 };
 
+//Remove Family status
 const removeFamilyStatus = async (row) => {
   const id = row.familyStatusId || row.FamilyStatusId || row.id || row.Id;
   if (!id) return;

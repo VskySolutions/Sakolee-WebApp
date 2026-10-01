@@ -38,7 +38,7 @@
       @request="onRequest"
       @refresh="load"
     >
-      <!-- Name Cell with Deleted Indicator -->
+      Name Cell with Deleted Indicator
       <template #body-cell-name="cell">
         <q-td :props="cell" :class="{ 'text-strike text-grey': cell.row.deleted || cell.row.Deleted }">
           {{ cell.row.name || cell.row.Name || cell.row.billingMethodName || cell.row.BillingMethodName }}

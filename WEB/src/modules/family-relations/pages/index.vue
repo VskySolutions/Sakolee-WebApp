@@ -176,7 +176,9 @@ const columns = [
     field: "name",
     align: "left",
     sortable: true,
-    default: true
+    default: true,
+    filterable: true
+    
   },
   
   //...auditColumns(),
@@ -186,7 +188,8 @@ const columns = [
     field: (row) => row.createdBy || row.CreatedBy || "—",
     align: "left",
     sortable: true,
-    default: true
+    default: true,
+    filterable: false
   },
   {
     name: "createdOnUtc",
@@ -195,7 +198,8 @@ const columns = [
     format: (val) => val ? new Date(val).toLocaleString() : "—",
     align: "left",
     sortable: true,
-    default: true
+    default: true,
+    filterable: false
   },
   {
     name: "updatedBy",
@@ -203,7 +207,8 @@ const columns = [
     field: (row) => row.updatedBy || row.UpdatedBy || "—",
     align: "left",
     sortable: true,
-    default: true
+    default: true,
+    filterable: false
   },
   {
     name: "updatedOnUtc",
@@ -220,7 +225,8 @@ const columns = [
     },
     align: "left",
     sortable: true,
-    default: true
+    default: true,
+    filterable: false
   },
   {
     name: "active",

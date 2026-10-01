@@ -1,15 +1,16 @@
 <template>
-  <!-- Drawer used for creating or editing a Class Category -->
-  <app-form-drawer
+  <!-- Dialog used for creating and editing a Class Category -->
+  <app-form-dialog
     v-model="formOpen"
     :title="editing ? 'Edit Class Category' : 'Create Class Category'"
     :saving="saving"
+    :save-label="editing ? 'Save' : 'Create'"
+    size="sm"
     @submit="submit"
     @cancel="reset"
   >
-    <!-- Form container with validation -->
     <q-form ref="formRef" greedy>
-      <!-- Class Category name field -->
+      <!-- Class Category name -->
       <app-text-field
         v-model="form.name"
         label="Name"
@@ -22,7 +23,7 @@
         ]"
         @update:model-value="clearNameError"
       />
-      <!-- Class Category type dropdown -->
+      <!-- Category Type -->
       <app-select
         v-model="form.categoryType"
         label="Category Type"
@@ -32,45 +33,59 @@
         option-value="value"
         emit-value
         map-options
+        class="q-mb-md"
         :rules="[
           (v) => !!v || 'Category type is required'
         ]"
       />
+      <!-- Active status -->
+      <q-toggle
+        v-model="form.active"
+        label="Active"
+      />
     </q-form>
-  </app-form-drawer>
+  </app-form-dialog>
 </template>
+
 <script setup>
 import { reactive, ref, watch } from "vue";
-import { classCategoryApi, getApiErrorMessage } from "services/api";
+import {
+  classCategoryApi,
+  getApiErrorMessage
+} from "services/api";
 import { useNotify } from "composables/useNotify";
-import AppFormDrawer from "components/common/AppFormDrawer.vue";
+import AppFormDialog from "components/common/AppFormDialog.vue";
 import AppTextField from "components/common/AppTextField.vue";
 import AppSelect from "components/common/AppSelect.vue";
-// Component props received from the parent component.
+
 const props = defineProps({
   modelValue: { type: Boolean, default: false },
   editing: { type: Boolean, default: false },
   category: { type: Object, default: null }
 });
-// Events emitted to the parent component.
+
 const emit = defineEmits(["update:modelValue", "saved"]);
-// Notification helper used to show success and error messages.
 const notify = useNotify();
 const formOpen = ref(props.modelValue);
 const formRef = ref(null);
 const saving = ref(false);
-// Stores duplicate name validation errors.
 const nameError = ref("");
-// Form data for Class Category.
-const form = reactive({ name: "", categoryType: "" });
-// Available options for the Category Type dropdown.
+const form = reactive({ name: "", categoryType: "", active: true });
 const categoryTypeOptions = [
-  { label: "Category 1", value: "Category 1" },
-  { label: "Category 2", value: "Category 2" },
-  { label: "Category 3", value: "Category 3" }
+  {
+    label: "Category 1",
+    value: "Category 1"
+  },
+  {
+    label: "Category 2",
+    value: "Category 2"
+  },
+  {
+    label: "Category 3",
+    value: "Category 3"
+  }
 ];
-
-// Watch for changes to the drawer state from the parent.
+// Watch for changes in the modelValue prop to open/close the form dialog
 watch(
   () => props.modelValue,
   (value) => {
@@ -80,39 +95,34 @@ watch(
     }
   }
 );
-
-// Emit the drawer state changes back to the parent.
+// Watch for changes in the formOpen ref to emit updates to the parent component
 watch(formOpen, (value) => {
   emit("update:modelValue", value);
 });
-
-// Load existing category data when editing.
-// Reset the fields when creating a new category.
+// Load the form with existing category data when editing
 const loadForm = () => {
   form.name = props.category?.name || "";
   form.categoryType = props.category?.categoryType || "";
+  form.active = props.category?.active ?? true;
   nameError.value = "";
 };
-
-// Clear the duplicate name error when the user changes the name.
+// Clear the name error when the user starts typing
 const clearNameError = () => {
   if (nameError.value) {
     nameError.value = "";
   }
 };
-
-// Reset the form fields and validation.
+// Reset the form to its initial state
 const reset = () => {
   form.name = "";
   form.categoryType = "";
+  form.active = true;
   nameError.value = "";
   formRef.value?.resetValidation();
 };
-
-// Validate and save the Class Category.
+// Submit the form to create or update a class category
 const submit = async ({ clearDraft } = {}) => {
   nameError.value = "";
-  // Validate all form fields before submitting.
   const valid = await formRef.value?.validate();
   if (!valid) {
     return;
@@ -120,9 +130,13 @@ const submit = async ({ clearDraft } = {}) => {
   saving.value = true;
   try {
     const payload = {
-      name: form.name.trim(), categoryType: form.categoryType
+      name: form.name.trim(),
+      categoryType: form.categoryType,
+      active: form.active
     };
-    if (props.editing && props.category?.classCategoryId) {
+    if (
+      props.editing && props.category?.classCategoryId
+    ) {
       await classCategoryApi.update(props.category.classCategoryId, payload);
       notify.success("Class category updated.");
     } else {

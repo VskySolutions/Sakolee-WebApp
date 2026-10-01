@@ -248,6 +248,8 @@ public sealed class FamilyRelationsController : ControllerBase
 
         //_familyRelationRepository.Remove(familyRelation);
         familyRelation.Deleted = true;
+
+        familyRelation.DeletedOnUtc = DateTime.UtcNow;
         _familyRelationRepository.Update(familyRelation);
 
         await _audit.AddAsync(nameof(FamilyRelation), familyRelation.Id.ToString(), "Deleted",

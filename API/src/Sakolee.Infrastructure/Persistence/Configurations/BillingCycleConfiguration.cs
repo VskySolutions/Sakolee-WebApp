@@ -17,6 +17,7 @@ internal sealed class BillingCycleConfiguration : IEntityTypeConfiguration<Billi
         builder.Property(c => c.CreatedById).HasConversion<string>().HasMaxLength(450);
         builder.Property(c => c.UpdatedById).HasConversion<string>().HasMaxLength(450);
         builder.Property(c => c.Name).IsRequired().HasMaxLength(50);
+        builder.Property(c => c.Active).IsRequired().HasDefaultValue(true);
         builder.Property(c => c.CreatedOnUtc).HasDefaultValueSql("sysutcdatetime()");
         builder.Property(c => c.Deleted).HasDefaultValue(false);
         // A tenant may not have the same billing cycle name more than once.

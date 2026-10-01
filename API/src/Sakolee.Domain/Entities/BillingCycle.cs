@@ -1,6 +1,6 @@
 ﻿namespace Sakolee.Domain.Entities;
 
-public class BillingCycle
+public class BillingCycle : AuditableEntity
 {
     #region Properties
 
@@ -13,16 +13,10 @@ public class BillingCycle
 
     public string Name { get; set; } = string.Empty;
 
-    public DateTime CreatedOnUtc { get; set; }
-
-    public Guid? CreatedById { get; set; }
-
-    public DateTime? UpdatedOnUtc { get; set; }
-
-    public Guid? UpdatedById { get; set; }
-
-    public bool Deleted { get; set; }
-
+    /// <summary>
+    /// Gets or sets whether the Billing Cycle is active.
+    /// </summary>
+    public bool Active { get; set; } = true;
     /// <summary>
     /// Navigation property for the owning tenant.
     /// </summary>

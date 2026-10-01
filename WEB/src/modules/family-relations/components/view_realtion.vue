@@ -94,9 +94,17 @@ const viewRelation = reactive({
 });
 
 // Handles date formatting for createdOnUtc and updatedOnUtc fields
+// const formatDate = (value) => {
+//   if (!value) return "—";
+//   return new Date(value).toLocaleString();
+// };
+
 const formatDate = (value) => {
   if (!value) return "—";
-  return new Date(value).toLocaleString();
+  const date = new Date(value);
+  // Check if date is invalid or the default .NET MinValue (0001-01-01)
+  if (isNaN(date.getTime()) || date.getFullYear() <= 1) return "—";
+  return date.toLocaleString();
 };
 
 // Function to reset the viewRelation object to its initial state

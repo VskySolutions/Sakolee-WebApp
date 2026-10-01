@@ -1,10 +1,9 @@
+using Microsoft.AspNetCore.DataProtection.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Sakolee.Application.Abstractions.Security;
 using Sakolee.Application.Abstractions.Tenancy;
 using Sakolee.Domain.Entities;
-using Microsoft.AspNetCore.DataProtection.EntityFrameworkCore;
-
-
-using Microsoft.EntityFrameworkCore;
+using System;
 
 namespace Sakolee.Infrastructure.Persistence;
 
@@ -47,6 +46,7 @@ public class SakoleeDbContext : DbContext, IDataProtectionKeyContext
     public DbSet<ClassRooms> ClassRooms { get; set; }
     public DbSet<FamilyRelation> FamilyRelations { get; set; }
     public DbSet<MembershipType> MembershipType { get; set; }
+    public DbSet<StudentGradeLevel> StudentGradeLevel { get; set; }
 
 
 
@@ -129,6 +129,9 @@ public class SakoleeDbContext : DbContext, IDataProtectionKeyContext
     public DbSet<TShirtSize> TShirtSizes => Set<TShirtSize>();
 
 
+    public DbSet<HearAboutUs> HearAboutUs => Set<HearAboutUs>();
+    public DbSet<EPaymentSchedule> EPaymentSchedules => Set<EPaymentSchedule>();
+    public DbSet<AccountType> AccountTypes => Set<AccountType>();
     /// <summary>Data Protection key ring storage (Multi-Tenancy ADR-002).</summary>
     public DbSet<DataProtectionKey> DataProtectionKeys => Set<DataProtectionKey>();
 
@@ -219,6 +222,7 @@ public class SakoleeDbContext : DbContext, IDataProtectionKeyContext
 
         modelBuilder.Entity<MembershipType>().HasQueryFilter(e => (!_tenantContext.IsResolved || e.TenantId == _tenantContext.TenantId) && !e.Deleted);
         modelBuilder.Entity<Location>().HasQueryFilter(e => (!_tenantContext.IsResolved || e.TenantId == _tenantContext.TenantId) && !e.Deleted);
+        modelBuilder.Entity<StudentGradeLevel>().HasQueryFilter(e => (!_tenantContext.IsResolved || e.TenantId == _tenantContext.TenantId) && !e.Deleted);
 
 
 
@@ -415,6 +419,10 @@ public class SakoleeDbContext : DbContext, IDataProtectionKeyContext
 
                 case MembershipType membershipType when membershipType.TenantId is null || membershipType.TenantId == Guid.Empty:
                     membershipType.TenantId = _tenantContext.TenantId;
+                    break;
+
+                case StudentGradeLevel studentGradeLevel when studentGradeLevel.TenantId is null || studentGradeLevel.TenantId == Guid.Empty:
+                    studentGradeLevel.TenantId = _tenantContext.TenantId;
                     break;
             }
         }

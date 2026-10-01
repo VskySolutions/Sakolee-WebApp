@@ -41,7 +41,27 @@
 
       </div>
 
+     
       <!-- =====================================================
+           SEARCH
+           Always below Description
+           ===================================================== -->
+      <q-input
+        v-if="showSearch"
+        :model-value="search"
+        dense
+        outlined
+        debounce="300"
+        :placeholder="searchPlaceholder"
+        class="app-list-header__search"
+        @update:model-value="$emit('update:search', $event)"
+      >
+        <template #prepend>
+          <q-icon name="o_search" />
+        </template>
+      </q-input>
+
+       <!-- =====================================================
            RIGHT SIDE ACTIONS
            Centered against Breadcrumb + Title + Description
            ===================================================== -->
@@ -98,24 +118,6 @@
 
       </div>
 
-      <!-- =====================================================
-           SEARCH
-           Always below Description
-           ===================================================== -->
-      <q-input
-        v-if="showSearch"
-        :model-value="search"
-        dense
-        outlined
-        debounce="300"
-        :placeholder="searchPlaceholder"
-        class="app-list-header__search"
-        @update:model-value="$emit('update:search', $event)"
-      >
-        <template #prepend>
-          <q-icon name="o_search" />
-        </template>
-      </q-input>
 
     </div>
 
@@ -242,7 +244,8 @@ defineEmits([
    ============================================================ */
 
 .app-list-header__top {
-  grid-column: 1;
+  grid-column: 1 / -1;
+  /* grid-column: 1; */
   grid-row: 1;
 
   min-width: 0;
@@ -292,8 +295,8 @@ defineEmits([
 
 .app-list-header__actions {
   grid-column: 2;
-  grid-row: 1;
-
+  /* grid-row: 1; */
+grid-row: 2;
   align-self: center;
 
   display: flex;

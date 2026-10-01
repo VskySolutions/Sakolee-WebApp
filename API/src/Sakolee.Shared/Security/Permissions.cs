@@ -42,6 +42,11 @@ public static class Permissions
     public const string MembershipTypesWrite = "membershipTypes.write";
     public const string MembershipTypesDelete = "membershipTypes.delete";
 
+    // StudentGradeLevel
+    public const string StudentGradeLevelsRead = "studentGradeLevels.read";
+    public const string StudentGradeLevelsWrite = "studentGradeLevels.write";
+    public const string StudentGradeLevelsDelete = "studentGradeLevels.delete";
+
     // Families (household records — contacts + students, see Family entity)
     public const string FamiliesRead = "families.read";
     public const string FamiliesWrite = "families.write";
@@ -75,6 +80,20 @@ public static class Permissions
     public const string TShirtSizesWrite = "tShirtSizes.write";
     public const string TShirtSizesDelete = "tShirtSizes.delete";
 
+    // Hear About Us
+    public const string HearAboutUsRead = "hearAboutUs.read";
+    public const string HearAboutUsWrite = "hearAboutUs.write";
+    public const string HearAboutUsDelete = "hearAboutUs.delete";
+
+    // E-Payment Schedule
+    public const string EPaymentSchedulesRead = "ePaymentSchedules.read";
+    public const string EPaymentSchedulesWrite = "ePaymentSchedules.write";
+    public const string EPaymentSchedulesDelete = "ePaymentSchedules.delete";
+
+    // Account Type
+    public const string AccountTypesRead = "accountTypes.read";
+    public const string AccountTypesWrite = "accountTypes.write";
+    public const string AccountTypesDelete = "accountTypes.delete";
     // Users
     public const string UsersRead = "users.read";
     public const string UsersWrite = "users.write";
@@ -126,12 +145,16 @@ public static class Permissions
         ClassRoomsRead,ClassRoomsWrite,ClassRoomsDelete,
         BillingMethodsRead, BillingMethodsWrite, BillingMethodsDelete,
         MembershipTypesRead, MembershipTypesWrite, MembershipTypesDelete,
+        StudentGradeLevelsRead,StudentGradeLevelsWrite,StudentGradeLevelsDelete,
 
         StudentsRead, StudentsWrite, StudentsDelete,
         ClassesRead, ClassesWrite, ClassesDelete,
         ClassCategoriesRead, ClassCategoriesWrite, ClassCategoriesDelete, 
         BillingCyclesRead, BillingCyclesWrite, BillingCyclesDelete,
         TShirtSizesRead,TShirtSizesWrite,TShirtSizesDelete,
+        HearAboutUsRead,HearAboutUsWrite,HearAboutUsDelete,
+        EPaymentSchedulesRead, EPaymentSchedulesWrite, EPaymentSchedulesDelete,
+        AccountTypesRead,AccountTypesWrite,AccountTypesDelete,
         LocationsRead, LocationsWrite, LocationsDelete,
         UsersRead, UsersWrite, UsersResetPassword, UsersGroupManagement,
         RolesRead, RolesWrite, RolesAssign,
@@ -156,6 +179,7 @@ public static class Permissions
         FamiliesRead, FamiliesWrite, FamiliesDelete,
 
         MembershipTypesRead,MembershipTypesRead, MembershipTypesWrite,
+        StudentGradeLevelsRead,StudentGradeLevelsWrite,StudentGradeLevelsDelete,
 
         ClassSessionsRead, ClassSessionsWrite, ClassSessionsDelete,
         ClassRoomsRead,ClassRoomsWrite,ClassRoomsDelete,
@@ -175,6 +199,12 @@ public static class Permissions
         BillingCyclesRead, BillingCyclesWrite, BillingCyclesDelete,
         //T-Shirt Sizes
         TShirtSizesRead,TShirtSizesWrite,TShirtSizesDelete,
+        // Hear About Us
+        HearAboutUsRead,HearAboutUsWrite,HearAboutUsDelete,
+        // E-Payment Schedule
+        EPaymentSchedulesRead, EPaymentSchedulesWrite, EPaymentSchedulesDelete,
+        // Account Type
+        AccountTypesRead, AccountTypesWrite, AccountTypesDelete,
         // Location
         LocationsRead, LocationsWrite, LocationsDelete,
         // Users
