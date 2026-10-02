@@ -45,6 +45,37 @@ public sealed record PlatformDashboardDto(
     IReadOnlyList<SystemAlert> SystemAlerts,
     PlatformUserAnalyticsDto UserAnalytics);
 
+// ---- Studio (Enrollment & Studio Metrics) ----
+
+/// <summary>
+/// The studio dashboard's KPI band. A null metric has no data source yet (no online-registration,
+/// portal-enrollment or request tables exist) — the card shows "—" rather than a made-up 0.
+/// </summary>
+public sealed record StudioMetricsDto(
+    int TotalEnrollments,
+    int RecentlyDropped,
+    int ActiveFamilies,
+    int ActiveStudents,
+    int ActiveClasses,
+    int ActiveStaff,
+    int? NewOnlineRegistrations,
+    int? PortalEnrollments,
+    int? PendingRequests);
+
+/// <summary>
+/// One row of the studio dashboard's "Enrollment &amp; Student Activity" feed. <c>Id</c> is the
+/// student's id; <c>Status</c> is "Confirmed" (active) or "Dropped" (deactivated).
+/// </summary>
+public sealed record EnrollmentActivityDto(
+    Guid Id,
+    string Student,
+    string? Family,
+    Guid? FamilyId,
+    string? ClassName,
+    Guid? ClassId,
+    string Status,
+    DateTime ChangedOnUtc);
+
 // ---- Layout ----
 
 public sealed record DashboardLayoutResponse(

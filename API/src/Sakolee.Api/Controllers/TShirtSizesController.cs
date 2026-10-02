@@ -44,12 +44,16 @@ public sealed class TShirtSizesController : ControllerBase
     /// <summary>
     /// Gets all non-deleted T-Shirt Sizes for the caller's active tenant.
     /// Supports searching by T-Shirt Size name.
+    /// Also readable by anyone who can view, add, or edit students, since it feeds the student form's
+    /// T-Shirt Size dropdown; those callers only ever get the non-deleted records.
     /// </summary>
     [HttpGet]
-    [RequirePermission(Permissions.TShirtSizesRead)]
+    [RequireAnyPermission(Permissions.TShirtSizesRead, Permissions.StudentsRead, Permissions.StudentsWrite, Permissions.FamiliesWrite)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<IActionResult> List([FromQuery] string? name = null,[FromQuery] bool showDeleted = false,[FromQuery] bool? active = null, [FromQuery] string? search = null,[FromQuery] string? sortBy = null,[FromQuery] bool descending = false,[FromQuery] int page = 1,[FromQuery] int limit = 20, CancellationToken cancellationToken = default)
     {
+        // Deleted records are for the master's own admin page only.
+        showDeleted = showDeleted && User.HasPermission(Permissions.TShirtSizesRead);
         // Get the active tenant ID from the currently logged-in user's claims.
         if (User.GetActiveTenantId() is not { } tenantId)
         {

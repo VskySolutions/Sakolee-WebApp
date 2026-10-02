@@ -43,6 +43,11 @@ internal sealed class StudentRepository : IStudentRepository
             .OrderByDescending(s => s.UpdatedOnUtc ?? s.CreatedOnUtc)
             .ToListAsync(cancellationToken);
 
+    public async Task<IReadOnlyList<Student>> ListByPersonIdAsync(Guid personId, CancellationToken cancellationToken = default)
+        => await _dbContext.Students
+            .Where(s => !s.Deleted && s.PersonId == personId)
+            .ToListAsync(cancellationToken);
+
     public async Task<IReadOnlyDictionary<Guid, int>> CountByFamilyIdsAsync(IEnumerable<Guid> familyIds, CancellationToken cancellationToken = default)
     {
         var idSet = new HashSet<Guid>(familyIds.Distinct());

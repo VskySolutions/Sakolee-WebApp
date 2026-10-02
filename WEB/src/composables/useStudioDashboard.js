@@ -1,9 +1,11 @@
 import { ref, unref, watch, onMounted } from "vue";
+import { dashboardApi, getApiErrorMessage } from "services/api";
 
 // Studio dashboard data (Dashboard Overview).
 //
-// The studio aggregate has no endpoint yet — there is no `GET /api/dashboard/studio` on
-// DashboardController. Until there is, this composable resolves the placeholder payload below.
+// The Enrollment & Studio Metrics band (`GET /api/dashboard/studio-metrics`) and the Enrollment &
+// Student Activity feed (`GET /api/dashboard/enrollment-activity`) are live. The rest of the studio
+// aggregate has no endpoint yet, so it still resolves the placeholder payload below.
 // It is shaped exactly as the endpoint's response is expected to be, so wiring it up is a
 // one-line swap:
 //
@@ -47,28 +49,7 @@ const PLACEHOLDER = {
   // since the strip shows only the three most pressing.
   activeAlertCount: 5,
 
-  metrics: {
-    totalEnrollments: 3842,
-    recentlyDropped: 18,
-    activeFamilies: 1120,
-    activeStudents: 1402,
-    activeClasses: 84,
-    activeStaff: 36,
-    newOnlineRegistrations: 52,
-    portalEnrollments: 348,
-    pendingRequests: 9
-  },
-
-  termLabel: "Current Term 2026",
   updatedAt: "Updated 4 mins ago",
-
-  recentActivity: [
-    { id: "e1", student: "Emma Miller", studentId: null, family: "Miller (David)", familyId: null, className: "Pre-Ballet Beg", status: "Confirmed" },
-    { id: "e2", student: "Liam Carter", studentId: null, family: "Carter (Anna)", familyId: null, className: "Jazz Level 1", status: "Confirmed" },
-    { id: "e3", student: "Sofia Rossi", studentId: null, family: "Rossi (Marco)", familyId: null, className: "Tap Intermediate", status: "Pending" },
-    { id: "e4", student: "Noah Patel", studentId: null, family: "Patel (Priya)", familyId: null, className: "Hip Hop Level 2", status: "Waitlist" },
-    { id: "e5", student: "Ava Thompson", studentId: null, family: "Thompson (Grace)", familyId: null, className: "Contemporary Adv", status: "Confirmed" }
-  ],
 
   // Priority drives the label on the right: "urgent" | "medium" | "low".
   tasks: [
@@ -150,19 +131,23 @@ export function useStudioDashboard (dateRange) {
     loading.value = true;
     error.value = null;
     try {
-      const data = await resolvePlaceholder();
+      const [data, liveMetrics, liveActivity] = await Promise.all([
+        resolvePlaceholder(),
+        dashboardApi.studioMetrics(),
+        dashboardApi.enrollmentActivity({ limit: 5 })
+      ]);
       alerts.value = data?.alerts ?? [];
       activeAlertCount.value = data?.activeAlertCount ?? (data?.alerts?.length ?? 0);
-      metrics.value = data?.metrics ?? null;
-      termLabel.value = data?.termLabel ?? "";
+      metrics.value = liveMetrics ?? null;
+      termLabel.value = `As of ${new Date().toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}`;
       updatedAt.value = data?.updatedAt ?? "";
-      recentActivity.value = data?.recentActivity ?? [];
+      recentActivity.value = liveActivity ?? [];
       tasks.value = data?.tasks ?? [];
       receivables.value = data?.receivables ?? null;
       revenue.value = data?.revenue ?? null;
       announcements.value = data?.announcements ?? [];
     } catch (err) {
-      error.value = err?.message ?? "Unable to load the dashboard.";
+      error.value = getApiErrorMessage(err, "Unable to load the dashboard.");
     } finally {
       loading.value = false;
     }

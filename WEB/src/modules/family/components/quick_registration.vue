@@ -42,7 +42,7 @@
       <q-form v-show="currentStep === 1" :ref="(el) => (stepForms[1] = el)" greedy>
         <div class="row q-col-gutter-md">
           <div class="col-12 col-md-6">
-            <app-select v-model="form.heardAbout" label="How Did You Hear About Us?" :options="HEARD_ABOUT_OPTIONS" />
+            <app-select v-model="form.heardAbout" label="How Did You Hear About Us?" :options="hearAboutUsOptions" />
           </div>
           <div class="col-12 col-md-6">
             <app-text-field v-model="form.referralName" label="Referral Name" placeholder="Friend or student name (optional)" />
@@ -164,7 +164,7 @@
               <app-select v-model="student.gender" label="Gender" :options="GENDER_OPTIONS" />
             </div>
             <div class="col-12 col-md-4">
-              <app-select v-model="student.tshirtSize" label="T-Shirt Size" :options="TSHIRT_SIZE_OPTIONS" />
+              <app-select v-model="student.tshirtSize" label="T-Shirt Size" :options="tShirtSizeOptions" />
             </div>
             <div class="col-12 col-md-4">
               <app-text-field v-model="student.gradeLevel" label="Grade Level" placeholder="e.g. 3rd Grade" />
@@ -187,11 +187,18 @@
         <div class="enrollment-band">
           <div class="row items-center justify-between q-mb-sm">
             <span class="text-weight-bold">Class Selection</span>
+            <span class="text-caption text-grey-7">Choose a class for each student of this family to enroll. Leave it empty to skip that student.</span>
+          </div>
+          <div v-for="(student, index) in form.students" :key="student.key" class="row q-col-gutter-md items-center q-mb-sm">
+            <div class="col-12 col-md-4">
+              <app-field-label label="Student" />
+              <div class="text-body2 text-weight-medium">{{ studentDisplayName(student) || `Student #${index + 1}` }}</div>
+            </div>
+            <div class="col-12 col-md-6">
+              <app-select v-model="student.classId" label="Choose Class" :options="classOptions" />
+            </div>
           </div>
           <div class="row q-col-gutter-md">
-            <div class="col-12 col-md-6">
-              <app-select v-model="selectedClassId" label="Choose Class" required :options="classOptions" :rules="[required]" />
-            </div>
             <div class="col-12 col-md-4">
               <app-date-field v-model="form.enrollmentDate" label="Enrollment Date" />
             </div>
@@ -298,14 +305,16 @@ import {
   blankStudent,
   toCreateFamilyRequest,
   toCreateStudentRequest,
-  HEARD_ABOUT_OPTIONS,
   RELATION_OPTIONS,
   GENDER_OPTIONS,
-  TSHIRT_SIZE_OPTIONS,
   PAYMENT_METHOD_OPTIONS
 } from "composables/quickRegistrationForm";
+import { useTShirtSizeOptions } from "composables/useTShirtSizeOptions";
+import { useHearAboutUsOptions } from "composables/useHearAboutUsOptions";
 
 const notify = useNotify();
+const { options: tShirtSizeOptions } = useTShirtSizeOptions();
+const { options: hearAboutUsOptions } = useHearAboutUsOptions();
 const router = useRouter();
 
 // Six steps, one visible at a time — the tracker card above mirrors the prototype's step badges
@@ -316,7 +325,7 @@ const STEPS = [
   { number: 2, label: "Contacts", title: "Step 2: Contact Information", subtitle: "Enter primary and secondary guardian contact details." },
   { number: 3, label: "Address", title: "Step 3: Address & Emergency Details", subtitle: "Physical residence address and medical emergency contact." },
   { number: 4, label: "Student(s)", title: "Step 4: Student Profile", subtitle: "Provide dancer information, medical considerations, and apparel sizes. Add more than one to enrol siblings together." },
-  { number: 5, label: "Enrollment", title: "Step 5: Class Enrollment", subtitle: "Assign a class schedule to every student added above." },
+  { number: 5, label: "Enrollment", title: "Step 5: Class Enrollment", subtitle: "Select which of this family's students to enroll, and the class for each." },
   { number: 6, label: "Payment", title: "Step 6: Payment Schedule & Verification", subtitle: "Secure payment setup and registration finalization." }
 ];
 
@@ -346,7 +355,7 @@ const contactSlots = computed(() => [
   { key: "secondary", heading: "Contact #2 (Secondary / Optional)", model: form.secondaryContact, required: false }
 ]);
 
-// Step 4 — one or more students, sharing the one family/class enrollment being registered.
+// Step 4 — one or more students of the family being registered; Step 5 picks each one's class.
 const addStudent = () => { form.students.push(blankStudent()); };
 const removeStudent = (index) => { form.students.splice(index, 1); };
 const studentDisplayName = (student) => `${student.firstName || ""} ${student.lastName || ""}`.trim();
@@ -354,7 +363,6 @@ const studentDisplayName = (student) => `${student.firstName || ""} ${student.la
 // Real classes and studio locations, fetched the same way Class's own Category dropdowns load — the
 // composable's CLASS_OPTIONS were prototype demo labels, not ids a real enrollment could use.
 const classes = ref([]);
-const selectedClassId = ref(null);
 const classOptions = computed(() => classes.value.map((c) => ({ label: c.className, value: c.classId })));
 const locations = ref([]);
 const locationOptions = computed(() => locations.value.map((l) => ({ label: l.name, value: l.id })));
@@ -427,6 +435,13 @@ const nextStep = async () => {
     return;
   }
 
+  // Step 5 — each student has their own (optional) class, but the registration has to enroll at least
+  // one of them.
+  if (currentStep.value === 5 && !form.students.some((s) => s.classId)) {
+    notify.warning("Choose a class for at least one student.");
+    return;
+  }
+
   if (!isLastStep) {
     currentStep.value += 1;
     return;
@@ -488,7 +503,7 @@ const nextStep = async () => {
   try {
     // One call, one transaction (StudentsController.CreateBulk) — every student is created together
     // or, on any failure, none of them are; there's no partial-batch state to reconcile client-side.
-    const payload = form.students.map((student) => toCreateStudentRequest(student, form, selectedClassId.value, family.familyId));
+    const payload = form.students.map((student) => toCreateStudentRequest(student, form, family.familyId));
     const result = await studentApi.createBulk(payload);
     (result?.students || []).forEach((created, i) => {
       if (created?.temporaryPassword) {

@@ -42,7 +42,6 @@ import hearAboutUsRoutes from "modules/hear-about-us/routes";
 import ePaymentScheduleRoutes from "modules/e-payment-schedule/routes";
 import accountTypeRoutes from "modules/account-type/routes";
 import classRoomRoutes from "modules/class-room/routes";
-import billingMethodRoutes from "modules/billing-method/routes";
 import membershipTypeRoutes from "modules/membership-type/routes";
 import studentGradeLevelRoutes from "modules/student-grade-level/routes";
 
@@ -67,7 +66,6 @@ routes.push(...locationRoutes);
 routes.push(...classCategoryRoutes);
 routes.push(...sessionRoutes);
 routes.push(...familyrelationRoutes);
-routes.push(...billingCycleRoutes);
 routes.push(...tShirtSizeRoutes);
 routes.push(...hearAboutUsRoutes);
 routes.push(...ePaymentScheduleRoutes);

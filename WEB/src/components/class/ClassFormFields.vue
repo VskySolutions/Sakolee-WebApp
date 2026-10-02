@@ -3,7 +3,7 @@
     <div class="form-section-title">Class Information</div>
     <div class="row q-col-gutter-md q-mb-md">
       <app-text-field
-        v-model="form.className" label="Class Name *" placeholder="e.g. Advanced Ballet" class="col-12 col-sm-6"
+        v-model="form.className" label="Class Name *" placeholder="e.g. Advanced Ballet" class="col-12"
         :disable="disable" :rules="[(v) => !!v || 'Class name is required']"
       />
 

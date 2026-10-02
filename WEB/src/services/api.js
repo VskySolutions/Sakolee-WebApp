@@ -540,6 +540,10 @@ export const ufModifiedLogApi = {
 // Dashboard (WO-73).
 export const dashboardApi = {
   users: (params) => api.get("/api/dashboard/users", { params }).then(unwrap),
+  // Studio dashboard "Enrollment & Studio Metrics" KPI band, scoped to the caller's active tenant.
+  studioMetrics: (params) => api.get("/api/dashboard/studio-metrics", { params }).then(unwrap),
+  // Studio dashboard "Enrollment & Student Activity" feed — latest enrollment changes, newest first.
+  enrollmentActivity: (params) => api.get("/api/dashboard/enrollment-activity", { params }).then(unwrap),
   // Super Admin platform overview. `forceRefresh` bypasses the server cache via a request header.
   platform: (params, forceRefresh = false) =>
     api.get("/api/dashboard/platform", {

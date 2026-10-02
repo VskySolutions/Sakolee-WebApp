@@ -38,6 +38,21 @@ public static class ClaimsPrincipalExtensions
     }
 
     /// <summary>
+    /// True when every role the caller holds in the active tenant is a self-service role — a family-contact
+    /// role (see <see cref="IsFamilyContactOnly"/>) or <see cref="Roles.Student"/>. Such a caller only ever
+    /// sees records tied to themselves or their own family; a caller who also holds any other role is not
+    /// limited this way.
+    /// </summary>
+    public static bool IsSelfServiceOnly(this ClaimsPrincipal principal)
+    {
+        var roles = principal.GetRoles().ToList();
+        return roles.Count > 0 && roles.All(role =>
+            string.Equals(role, Roles.Parent, StringComparison.Ordinal)
+            || string.Equals(role, Roles.Guardian, StringComparison.Ordinal)
+            || string.Equals(role, Roles.Student, StringComparison.Ordinal));
+    }
+
+    /// <summary>
     /// True when the caller holds the given permission — either via an explicit permission claim or,
     /// as a fallback (API-key/pre-RBAC callers).
     /// </summary>

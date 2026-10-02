@@ -8,6 +8,16 @@
           <div class="text-subtitle1 text-weight-medium">Update your password</div>
         </q-card-section>
         <q-separator />
+        <!-- Shown only on the forced change (first sign-in / after a reset), so the user knows why they landed here. -->
+        <q-card-section v-if="authStore.mustChangePassword" class="q-pb-none">
+          <q-banner dense class="bg-orange-1 text-orange-10 forced-change-note">
+            <template #avatar><q-icon name="o_shield" color="warning" /></template>
+            <div class="text-weight-medium">Note: For security purposes, please change your password.</div>
+            <div class="text-caption">
+              You signed in with a temporary password. Set a new password of your own to continue using the application.
+            </div>
+          </q-banner>
+        </q-card-section>
         <change-password-form
           :cancel-to="{ name: 'account' }" autofocus @changed="submitted = true"
         />
@@ -45,5 +55,8 @@ onBeforeRouteLeave((to) => {
 <style scoped>
 .account-card {
   border-radius: 16px;
+}
+.forced-change-note {
+  border-radius: 8px;
 }
 </style>
