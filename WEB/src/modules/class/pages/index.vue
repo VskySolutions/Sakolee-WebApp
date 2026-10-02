@@ -42,12 +42,9 @@
 
       <template #body-cell-actions="cell">
         <q-td :props="cell">
-          <q-btn flat round dense color="primary" icon="o_visibility" :to="{ name: 'class_detail', params: { id: cell.row.classId } }">
+          <q-btn flat round dense color="primary" icon="o_visibility" @click="openView(cell.row)">
             <q-tooltip>View</q-tooltip>
           </q-btn>
-          <!-- <q-btn flat round dense color="primary" icon="o_visibility" @click="openView(cell.row.studentId)">
-            <q-tooltip>View</q-tooltip>
-          </q-btn> -->
           <q-btn v-if="canWrite" flat round dense color="primary" icon="o_edit" @click="openEdit(cell.row.classId)">
             <q-tooltip>Edit</q-tooltip>
           </q-btn>
@@ -57,8 +54,8 @@
         </q-td>
       </template>
     </app-data-table>
-    <view-class :id="viewingId" v-model="viewOpen" />
     <create-edit v-model="formOpen" :class-id="editingId" @saved="load" />
+    <view-class v-model="viewOpen" :record-id="viewRecordId" />
   </q-page>
 </template>
 
@@ -77,8 +74,8 @@ import AppDataTable from "components/common/AppDataTable.vue";
 import AppFilterDrawer from "components/common/AppFilterDrawer.vue";
 import AppListHeader from "components/common/AppListHeader.vue";
 import AppSelect from "components/common/AppSelect.vue";
-import ViewClass from "modules/class/components/view_class.vue";
 import CreateEdit from "modules/class/components/CreateEdit.vue";
+import ViewClass from "modules/class/components/view_class.vue";
 
 const notify = useNotify();
 const { confirm } = useConfirm();
@@ -168,15 +165,11 @@ const openEdit = (classId) => {
   formOpen.value = true;
 };
 
-/*
- * ------------------------------------------------------------
- * View Class
- * ------------------------------------------------------------
- */
 const viewOpen = ref(false);
-const viewingId = ref(null);
-// const openView = (classId) => {
-//   viewingId.value = classId;
-//   viewOpen.value = true;
-// };
+const viewRecordId = ref(null);
+
+const openView = (row) => {
+  viewRecordId.value = row.classId;
+  viewOpen.value = true;
+};
 </script>

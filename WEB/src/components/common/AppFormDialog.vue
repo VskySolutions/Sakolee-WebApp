@@ -12,8 +12,20 @@
       <!-- Header -->
       <q-card-section class="app-form-dialog__header">
         <div class="app-form-dialog__header-content">
-          <div v-if="avatarText" class="app-form-dialog__avatar">
-            {{ avatarText }}
+          <div
+            v-if="avatarUrl || avatarText"
+            class="app-form-dialog__avatar"
+          >
+            <img
+              v-if="avatarUrl"
+              :src="avatarUrl"
+              alt="Avatar"
+              class="app-form-dialog__avatar-image"
+            >
+
+            <span v-else>
+              {{ avatarText }}
+            </span>
           </div>
 
           <div class="app-form-dialog__title-content">
@@ -103,6 +115,11 @@ const props = defineProps({
     default: ""
   },
 
+  avatarUrl: {
+    type: String,
+    default: ""
+  },
+
   saving: {
     type: Boolean,
     default: false
@@ -149,5 +166,10 @@ const cancel = () => {
 };
 </script>
 <style scoped lang="scss">
-
+.app-form-dialog__avatar-image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border-radius: inherit;
+}
 </style>

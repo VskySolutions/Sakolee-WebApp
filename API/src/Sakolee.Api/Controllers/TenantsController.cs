@@ -289,11 +289,35 @@ public sealed class TenantsController : ControllerBase
         {
             return NotFound(ApiResponseFactory.Error(ApiErrorCodes.TenantNotFound, "Tenant not found.", id.ToString()));
         }
+        var administrator = (TenantAdministratorDetail?)null;
 
+        if (tenant.PersonId is { } personId)
+        {
+            var person = await _persons.GetByIdUnscopedAsync(
+                personId,
+                cancellationToken);
+
+            if (person?.UserId is { } userId)
+            {
+                var user = await _users.GetByIdAsync(
+                    userId,
+                    cancellationToken);
+
+                if (user is not null)
+                {
+                    administrator = new TenantAdministratorDetail(
+                        person.FirstName,
+                        person.LastName,
+                        user.Email,
+                        person.MobileNumber
+                        );
+                }
+            }
+        }
         var detail = new TenantDetail(
             tenant.Id, tenant.TenantLogoMediaId, logoPublicUrl, tenant.Name, tenant.Identifier, tenant.Status.ToString(), tenant.TimeZoneId,
             tenant.Address is null ? null : PersonProfileMapper.MapAddress(tenant.Address),
-            await RecordAudit.ForAsync(_users, tenant, cancellationToken));
+            await RecordAudit.ForAsync(_users, tenant, cancellationToken), administrator);
 
         return Ok(ApiResponseFactory.Success(detail, "Tenant retrieved."));
     }

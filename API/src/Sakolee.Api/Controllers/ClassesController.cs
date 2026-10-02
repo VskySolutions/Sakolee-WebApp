@@ -154,29 +154,6 @@ public sealed class ClassesController : ControllerBase
         return Ok(ApiResponseFactory.Paginated(pageItems, "Classes retrieved.", page, limit, filtered.Count));
     }
 
-    /// <summary>
-    /// The Primary Instructor picker's options: the active tenant's active users holding the "Staff" role
-    /// (the same people the Staff list shows). Readable with Classes permissions alone, so the class form
-    /// does not need users.read.
-    /// </summary>
-    [HttpGet("instructors")]
-    [RequireAnyPermission(Permissions.ClassesRead, Permissions.ClassesWrite)]
-    [ProducesResponseType<ApiResponse<IReadOnlyList<ClassInstructorOption>>>(StatusCodes.Status200OK)]
-    public async Task<IActionResult> ListInstructors(CancellationToken cancellationToken)
-    {
-        if (User.GetActiveTenantId() is not { } tenantId)
-        {
-            return StatusCode(StatusCodes.Status403Forbidden, ApiResponseFactory.Forbidden("No active tenant for the caller."));
-        }
-
-        var staff = await _users.ListByTenantRolesAsync(tenantId, new[] { StaffRole }, cancellationToken);
-        var options = staff
-            .Select(u => new ClassInstructorOption(u.Id, u.Person?.FullName ?? u.DisplayName))
-            .OrderBy(o => o.Name, StringComparer.OrdinalIgnoreCase)
-            .ToList();
-        return Ok(ApiResponseFactory.Success(options, "Instructors retrieved."));
-    }
-
     [HttpGet("{id:guid}")]
     [RequirePermission(Permissions.ClassesRead)]
     [ProducesResponseType<ApiResponse<ClassSummary>>(StatusCodes.Status200OK)]
@@ -215,6 +192,29 @@ public sealed class ClassesController : ControllerBase
                 PrimaryInstructorName = NameOf(instructorNames, entity.PrimaryInstructorId),
             },
             "Class retrieved."));
+    }
+
+    /// <summary>
+    /// The Primary Instructor picker's options: the active tenant's active users holding the "Staff" role
+    /// (the same people the Staff list shows). Readable with Classes permissions alone, so the class form
+    /// does not need users.read.
+    /// </summary>
+    [HttpGet("instructors")]
+    [RequireAnyPermission(Permissions.ClassesRead, Permissions.ClassesWrite)]
+    [ProducesResponseType<ApiResponse<IReadOnlyList<ClassInstructorOption>>>(StatusCodes.Status200OK)]
+    public async Task<IActionResult> ListInstructors(CancellationToken cancellationToken)
+    {
+        if (User.GetActiveTenantId() is not { } tenantId)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, ApiResponseFactory.Forbidden("No active tenant for the caller."));
+        }
+
+        var staff = await _users.ListByTenantRolesAsync(tenantId, new[] { StaffRole }, cancellationToken);
+        var options = staff
+            .Select(u => new ClassInstructorOption(u.Id, u.Person?.FullName ?? u.DisplayName))
+            .OrderBy(o => o.Name, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        return Ok(ApiResponseFactory.Success(options, "Instructors retrieved."));
     }
 
     [HttpPut("{id:guid}")]
