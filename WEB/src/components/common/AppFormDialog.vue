@@ -56,6 +56,12 @@
             @click="cancel"
           />
 
+          <!-- Optional extra actions (e.g. "Save as Draft"): Cancel moves to the left, these sit beside Save. -->
+          <template v-if="$slots['footer-actions']">
+            <q-space />
+            <slot name="footer-actions" />
+          </template>
+
           <q-btn
             v-if="!hideSave"
             unelevated

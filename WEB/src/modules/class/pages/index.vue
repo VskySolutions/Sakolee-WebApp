@@ -14,7 +14,7 @@
       show-back
       @update:search="search = $event"
       @filters="filterOpen = true"
-      @add="$router.push({ name: 'class_create' })"
+      @add="openCreate"
       @back="$router.back()"
     />
 
@@ -48,7 +48,7 @@
           <!-- <q-btn flat round dense color="primary" icon="o_visibility" @click="openView(cell.row.studentId)">
             <q-tooltip>View</q-tooltip>
           </q-btn> -->
-          <q-btn v-if="canWrite" flat round dense color="primary" icon="o_edit" :to="{ name: 'class_edit', params: { id: cell.row.classId } }">
+          <q-btn v-if="canWrite" flat round dense color="primary" icon="o_edit" @click="openEdit(cell.row.classId)">
             <q-tooltip>Edit</q-tooltip>
           </q-btn>
           <q-btn v-if="canDelete" flat round dense color="negative" icon="o_delete" @click="remove(cell.row)">
@@ -58,6 +58,7 @@
       </template>
     </app-data-table>
     <view-class :id="viewingId" v-model="viewOpen" />
+    <create-edit v-model="formOpen" :class-id="editingId" @saved="load" />
   </q-page>
 </template>
 
@@ -77,6 +78,7 @@ import AppFilterDrawer from "components/common/AppFilterDrawer.vue";
 import AppListHeader from "components/common/AppListHeader.vue";
 import AppSelect from "components/common/AppSelect.vue";
 import ViewClass from "modules/class/components/view_class.vue";
+import CreateEdit from "modules/class/components/CreateEdit.vue";
 
 const notify = useNotify();
 const { confirm } = useConfirm();
@@ -148,6 +150,22 @@ const remove = async (row) => {
   } catch (err) {
     notify.error(getApiErrorMessage(err));
   }
+};
+
+/*
+ * ------------------------------------------------------------
+ * Add / Edit Class (popup)
+ * ------------------------------------------------------------
+ */
+const formOpen = ref(false);
+const editingId = ref(null);
+const openCreate = () => {
+  editingId.value = null;
+  formOpen.value = true;
+};
+const openEdit = (classId) => {
+  editingId.value = classId;
+  formOpen.value = true;
 };
 
 /*

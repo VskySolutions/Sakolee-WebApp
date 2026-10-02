@@ -135,7 +135,9 @@
           />
           <q-card v-else flat bordered class="role-card q-mb-md">
             <q-card-section class="text-grey-6">
-              You do not have permission to manage who holds this role.
+              {{ isSuperAdminRole
+                ? "Super Admin is granted with the account itself, on the user's own page."
+                : "You do not have permission to manage who holds this role." }}
             </q-card-section>
           </q-card>
         </div>
@@ -200,8 +202,11 @@ const isSuperAdmin = computed(() => authStore.roles.includes("SuperAdmin"));
 // Managing who holds a role is a narrower right than changing what it grants, and it only means anything
 // in the tenant the caller is working in — another tenant's role has no membership to show here.
 const canAssign = computed(() => has(Permissions.RolesAssign));
+// Super Admin is granted on the user's own page, never from the role's side (RoleMembersController refuses it).
+const isSuperAdminRole = computed(() => !!role.value?.isSystem && role.value?.name === "SuperAdmin");
 const canManageMembers = computed(() =>
-  canAssign.value && (!role.value?.tenantId || role.value.tenantId === tenantStore.activeTenantId));
+  canAssign.value && !isSuperAdminRole.value
+  && (!role.value?.tenantId || role.value.tenantId === tenantStore.activeTenantId));
 
 // The "Administrator" and "Parent" roles are platform-level custom roles, not flagged System, but the
 // server looks them up by name (RolesController.FixedNameRoles), so they can never be

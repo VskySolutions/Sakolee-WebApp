@@ -10,18 +10,6 @@ export default [
         meta: { requiresAuth: true, permissions: ["classes.read"], title: "Classes" }
       },
       {
-        path: "create",
-        name: "class_create",
-        component: () => import("modules/class/components/CreateEdit.vue"),
-        meta: { requiresAuth: true, permissions: ["classes.read"], title: "Add Class" }
-      },
-      {
-        path: ":id/edit",
-        name: "class_edit",
-        component: () => import("modules/class/components/CreateEdit.vue"),
-        meta: { requiresAuth: true, permissions: ["classes.read"], title: "Edit Class" }
-      },
-      {
         path: ":id",
         name: "class_detail",
         component: () => import("modules/class/components/detail.vue"),
