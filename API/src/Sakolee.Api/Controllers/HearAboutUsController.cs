@@ -54,12 +54,16 @@ public sealed class HearAboutUsController : ControllerBase
     /// <summary>
     /// Gets all non-deleted Hear About Us records for the caller's active tenant.
     /// Supports searching and sorting by name and audit dates.
+    /// Also readable by anyone who can view, create, or edit families, since it feeds the family form's
+    /// "How Did You Hear About Us?" dropdown; those callers only ever get the non-deleted records.
     /// </summary>
     [HttpGet]
-    [RequirePermission(Permissions.HearAboutUsRead)]
+    [RequireAnyPermission(Permissions.HearAboutUsRead, Permissions.FamiliesRead, Permissions.FamiliesWrite)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<IActionResult> List([FromQuery] string? name = null,[FromQuery] bool showDeleted = false, [FromQuery] bool? active = null, [FromQuery] string? search = null,[FromQuery] string? sortBy = null,[FromQuery] bool descending = false,[FromQuery] int page = 1,[FromQuery] int limit = 20, CancellationToken cancellationToken = default)
     {
+        // Deleted records are for the master's own admin page only.
+        showDeleted = showDeleted && User.HasPermission(Permissions.HearAboutUsRead);
         // Get the active tenant ID of the currently logged-in user.
         if (User.GetActiveTenantId() is not { } tenantId)
         {

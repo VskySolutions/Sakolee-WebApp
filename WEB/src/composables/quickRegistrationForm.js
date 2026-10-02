@@ -10,13 +10,6 @@
 // The prototype's option lists, kept here rather than in the template so the page stays readable.
 // Studio Location and Class are real lookups, fetched by the page itself (locationApi/classApi) —
 // these two stay free text (Family.Source/Family.Type or FamilyContact.Relation on the backend).
-export const HEARD_ABOUT_OPTIONS = [
-  { label: "Google Search", value: "Google Search" },
-  { label: "Instagram / Facebook", value: "Social Media" },
-  { label: "Word of Mouth", value: "Word of Mouth" },
-  { label: "Flyer / Banner", value: "Print Flyer" }
-];
-
 export const RELATION_OPTIONS = [
   { label: "Mother", value: "Mother" },
   { label: "Father", value: "Father" },
@@ -27,14 +20,6 @@ export const GENDER_OPTIONS = [
   { label: "Female", value: "Female" },
   { label: "Male", value: "Male" },
   { label: "Non-Binary / Other", value: "Non-Binary / Other" }
-];
-
-export const TSHIRT_SIZE_OPTIONS = [
-  { label: "Child S", value: "Child S" },
-  { label: "Child M", value: "Child M" },
-  { label: "Child L", value: "Child L" },
-  { label: "Adult S", value: "Adult S" },
-  { label: "Adult M", value: "Adult M" }
 ];
 
 export const CLASS_OPTIONS = [
@@ -74,7 +59,9 @@ export const blankStudent = () => ({
   gender: "",
   tshirtSize: "",
   gradeLevel: "",
-  medicalNotes: ""
+  medicalNotes: "",
+  // Step 5 — the class this student is enrolled in (a real Class.Id), or null for none.
+  classId: null
 });
 
 export const blankQuickRegistrationForm = () => ({
@@ -170,9 +157,9 @@ export const toCreateFamilyRequest = (form) => {
 // kept distinct from the contacts' emails AND from every other student's, since a family contact
 // now gets its own real login too (FamiliesController) and Users.Email is unique.
 // `familyId` is the id returned by the toCreateFamilyRequest() call this page makes first;
-// `classId` is the real Class.Id selected in the page (fetched from classApi — the composable's
-// own CLASS_OPTIONS are demo labels, not real ids), shared by every student in this registration.
-export const toCreateStudentRequest = (student, form, classId, familyId) => ({
+// `student.classId` is the real Class.Id picked for this student in Step 5 (fetched from classApi — the
+// composable's own CLASS_OPTIONS are demo labels, not real ids); each student has their own.
+export const toCreateStudentRequest = (student, form, familyId) => ({
   familyId: familyId || null,
   firstName: student.firstName,
   lastName: student.lastName,
@@ -184,7 +171,7 @@ export const toCreateStudentRequest = (student, form, classId, familyId) => ({
   specialNeeds: student.medicalNotes || null,
   email: student.email,
   cellPhone: form.primaryContact.phone || null,
-  classId: classId || null,
+  classId: student.classId || null,
   admissionDate: form.enrollmentDate || null,
   healthInsuranceCarrier: form.insuranceCarrier || null,
   emergencyContactName: form.emergencyContactName || null,

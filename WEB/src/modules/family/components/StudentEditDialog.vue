@@ -1,72 +1,68 @@
 <template>
-  <q-dialog v-model="open" position="right">
-    <q-card class="column no-wrap" style="width: 640px; max-width: 100vw; height: 100vh;">
-      <q-card-section class="row items-center q-pb-none bg-primary text-white">
-        <div class="text-h6">Edit Student</div>
-        <q-space />
-        <q-btn v-close-popup icon="o_close" flat round dense />
-      </q-card-section>
+  <app-form-dialog
+    v-model="open"
+    title="Edit Student"
+    subtitle="Update the student's identity, school, fee, medical, and notes."
+    :saving="saving"
+    save-label="Update Student"
+    size="lg"
+    @submit="save"
+  >
+    <div class="relative-position" :style="loading ? 'min-height: 200px;' : ''">
+      <q-inner-loading :showing="loading" />
+      <q-form v-if="!loading" ref="formRef" greedy>
+        <div class="row q-col-gutter-md">
+          <div class="col-12 text-subtitle2 text-grey-8">Identity</div>
+          <app-text-field v-model="form.firstName" label="First Name" required class="col-12 col-sm-6" :rules="[(v) => !!v || 'First name is required']" />
+          <app-text-field v-model="form.lastName" label="Last Name" required class="col-12 col-sm-6" :rules="[(v) => !!v || 'Last name is required']" />
+          <app-text-field v-model="form.familyName" label="Family Name" class="col-12 col-sm-6" />
+          <app-text-field v-model="form.studentNumber" label="Student Number" class="col-12 col-sm-6" />
+          <app-select v-model="form.gender" label="Gender" :options="GENDER_OPTIONS" class="col-12 col-sm-6" />
+          <app-date-field v-model="form.birthDate" label="Date of Birth" required class="col-12 col-sm-6" :rules="[(v) => !!v || 'Date of birth is required']" />
+          <app-select v-model="form.classId" label="Class" :options="classOptions" class="col-12 col-sm-6" />
+          <app-date-field v-model="form.admissionDate" label="Admission Date" class="col-12 col-sm-6" />
+          <div class="col-12 col-sm-6 toggle-row-inline"><q-toggle v-model="form.allowTextMessaging" color="primary" /><span class="q-ml-sm">Allow text messaging</span></div>
+          <app-text-field
+            v-model="form.email" label="Email" required class="col-12 col-sm-6"
+            :error="!!emailError" :error-message="emailError"
+            :rules="[(v) => !!v || 'Email is required']"
+            hint="This student's own login email."
+          />
+          <app-text-field v-model="form.cellPhone" label="Cell Phone" class="col-12 col-sm-6" />
 
-      <q-card-section class="col q-pa-md scroll">
-        <q-inner-loading :showing="loading" />
-        <q-form v-if="!loading" ref="formRef" greedy>
-          <div class="row q-col-gutter-md">
-            <div class="col-12 text-subtitle2 text-grey-8">Identity</div>
-            <app-text-field v-model="form.firstName" label="First Name" required class="col-12 col-sm-6" :rules="[(v) => !!v || 'First name is required']" />
-            <app-text-field v-model="form.lastName" label="Last Name" required class="col-12 col-sm-6" :rules="[(v) => !!v || 'Last name is required']" />
-            <app-text-field v-model="form.familyName" label="Family Name" class="col-12 col-sm-6" />
-            <app-text-field v-model="form.studentNumber" label="Student Number" class="col-12 col-sm-6" />
-            <app-select v-model="form.gender" label="Gender" :options="GENDER_OPTIONS" class="col-12 col-sm-6" />
-            <app-date-field v-model="form.birthDate" label="Date of Birth" required class="col-12 col-sm-6" :rules="[(v) => !!v || 'Date of birth is required']" />
-            <app-date-field v-model="form.admissionDate" label="Admission Date" class="col-12 col-sm-6" />
-            <div class="col-12 col-sm-6 toggle-row-inline"><q-toggle v-model="form.allowTextMessaging" color="primary" /><span class="q-ml-sm">Allow text messaging</span></div>
-            <app-text-field
-              v-model="form.email" label="Email" required class="col-12 col-sm-6"
-              :error="!!emailError" :error-message="emailError"
-              :rules="[(v) => !!v || 'Email is required']"
-              hint="This student's own login email."
-            />
-            <app-text-field v-model="form.cellPhone" label="Cell Phone" class="col-12 col-sm-6" />
+          <div class="col-12 text-subtitle2 text-grey-8 q-mt-sm">School</div>
+          <app-text-field v-model="form.school" label="School" class="col-12 col-sm-6" />
+          <app-text-field v-model="form.gradeLevel" label="Grade Level" class="col-12 col-sm-6" />
+          <app-text-field v-model="form.transportation" label="Transportation" placeholder="e.g. School Bus" class="col-12 col-sm-6" />
+          <app-select v-model="form.tShirtSize" label="T-Shirt Size" :options="tShirtSizeOptions" class="col-12 col-sm-6" />
 
-            <div class="col-12 text-subtitle2 text-grey-8 q-mt-sm">School</div>
-            <app-text-field v-model="form.school" label="School" class="col-12 col-sm-6" />
-            <app-text-field v-model="form.gradeLevel" label="Grade Level" class="col-12 col-sm-6" />
-            <app-text-field v-model="form.transportation" label="Transportation" placeholder="e.g. School Bus" class="col-12 col-sm-6" />
-            <app-select v-model="form.tShirtSize" label="T-Shirt Size" :options="TSHIRT_SIZE_OPTIONS" class="col-12 col-sm-6" />
+          <div class="col-12 text-subtitle2 text-grey-8 q-mt-sm">Fee</div>
+          <app-text-field v-model.number="form.feeAmount" label="Fee Amount" type="number" class="col-12 col-sm-6" />
+          <app-date-field v-model="form.feeExpiryDate" label="Fee Expiry Date" class="col-12 col-sm-6" />
+          <app-text-field v-model="form.feeNote" label="Fee Note" class="col-12" />
 
-            <div class="col-12 text-subtitle2 text-grey-8 q-mt-sm">Fee</div>
-            <app-text-field v-model.number="form.feeAmount" label="Fee Amount" type="number" class="col-12 col-sm-6" />
-            <app-date-field v-model="form.feeExpiryDate" label="Fee Expiry Date" class="col-12 col-sm-6" />
-            <app-text-field v-model="form.feeNote" label="Fee Note" class="col-12" />
+          <div class="col-12 text-subtitle2 text-grey-8 q-mt-sm">Medical</div>
+          <app-text-field v-model="form.primaryDoctor" label="Primary Doctor" class="col-12 col-sm-6" />
+          <app-text-field v-model="form.healthInsuranceCarrier" label="Health Insurance Carrier" class="col-12 col-sm-6" />
+          <app-select v-model="form.hasImmunizations" label="Has Immunizations?" :options="['Yes', 'No', 'Exempt']" class="col-12 col-sm-6" />
+          <app-text-field v-model="form.immunizationNotes" label="Immunizations" class="col-12 col-sm-6" />
+          <app-text-field v-model="form.medications" label="Medications" type="textarea" class="col-12" />
+          <app-text-field v-model="form.disabilitiesNotes" label="Disabilities" class="col-12 col-sm-6" />
+          <app-text-field v-model="form.allergiesNotes" label="Allergies" class="col-12 col-sm-6" />
+          <app-text-field v-model="form.specialNeeds" label="Special Needs" type="textarea" class="col-12" />
 
-            <div class="col-12 text-subtitle2 text-grey-8 q-mt-sm">Medical</div>
-            <app-text-field v-model="form.primaryDoctor" label="Primary Doctor" class="col-12 col-sm-6" />
-            <app-text-field v-model="form.healthInsuranceCarrier" label="Health Insurance Carrier" class="col-12 col-sm-6" />
-            <app-select v-model="form.hasImmunizations" label="Has Immunizations?" :options="['Yes', 'No', 'Exempt']" class="col-12 col-sm-6" />
-            <app-text-field v-model="form.immunizationNotes" label="Immunizations" class="col-12 col-sm-6" />
-            <app-text-field v-model="form.medications" label="Medications" type="textarea" class="col-12" />
-            <app-text-field v-model="form.disabilitiesNotes" label="Disabilities" class="col-12 col-sm-6" />
-            <app-text-field v-model="form.allergiesNotes" label="Allergies" class="col-12 col-sm-6" />
-            <app-text-field v-model="form.specialNeeds" label="Special Needs" type="textarea" class="col-12" />
+          <div class="col-12 text-subtitle2 text-grey-8 q-mt-sm">Notes</div>
+          <app-text-field v-model="form.skillNotes" label="Skill Notes" type="textarea" class="col-12" />
+          <app-text-field v-model="form.textOptIn" label="Text Opt-In" class="col-12 col-sm-6" />
+          <app-text-field v-model="form.massEmailOptOut" label="Mass Email Opt-Out" class="col-12 col-sm-6" />
 
-            <div class="col-12 text-subtitle2 text-grey-8 q-mt-sm">Notes</div>
-            <app-text-field v-model="form.skillNotes" label="Skill Notes" type="textarea" class="col-12" />
-            <app-text-field v-model="form.textOptIn" label="Text Opt-In" class="col-12 col-sm-6" />
-            <app-text-field v-model="form.massEmailOptOut" label="Mass Email Opt-Out" class="col-12 col-sm-6" />
-
-            <div class="col-12">
-              <q-toggle v-model="form.active" label="Active" />
-            </div>
+          <div class="col-12">
+            <q-toggle v-model="form.active" label="Active" />
           </div>
-        </q-form>
-      </q-card-section>
-
-      <q-card-actions align="right" class="q-pa-md bg-grey-2">
-        <q-btn v-close-popup flat no-caps label="Cancel" color="grey" />
-        <q-btn unelevated no-caps color="primary" label="Save" :loading="saving" :disable="loading" @click="save" />
-      </q-card-actions>
-    </q-card>
-  </q-dialog>
+        </div>
+      </q-form>
+    </div>
+  </app-form-dialog>
 </template>
 
 <script setup>
@@ -74,10 +70,12 @@
 // the Students page itself is read-only (see StudentsController.Update and the Family page's
 // "Enrolled Students" list, which opens this per row).
 import { computed, reactive, ref, watch } from "vue";
-import { studentApi, getApiErrorMessage, getApiErrorCode, ApiErrorCodes } from "services/api";
+import { classApi, studentApi, getApiErrorMessage, getApiErrorCode, ApiErrorCodes } from "services/api";
 import { useNotify } from "composables/useNotify";
-import { GENDER_OPTIONS, TSHIRT_SIZE_OPTIONS } from "composables/quickRegistrationForm";
+import { GENDER_OPTIONS } from "composables/quickRegistrationForm";
+import { useTShirtSizeOptions } from "composables/useTShirtSizeOptions";
 
+import AppFormDialog from "components/common/AppFormDialog.vue";
 import AppTextField from "components/common/AppTextField.vue";
 import AppSelect from "components/common/AppSelect.vue";
 import AppDateField from "components/common/AppDateField.vue";
@@ -104,6 +102,7 @@ const blankForm = () => ({
   lastName: "",
   familyName: "",
   studentNumber: "",
+  classId: null,
   admissionDate: "",
   birthDate: "",
   gender: "",
@@ -131,13 +130,33 @@ const blankForm = () => ({
   active: true
 });
 const form = reactive(blankForm());
+const { options: tShirtSizeOptions } = useTShirtSizeOptions(() => form.tShirtSize);
+
+// Active classes for the Class select. A student whose saved class has since been deactivated keeps
+// it as an option (labelled as such) rather than showing a raw id or silently losing it on save.
+const classes = ref([]);
+const loadedClassId = ref(null);
+const classOptions = computed(() => {
+  const options = classes.value.map((c) => ({ label: c.className, value: c.classId }));
+  if (loadedClassId.value && !options.some((o) => o.value === loadedClassId.value)) {
+    options.unshift({ label: "Current class (inactive)", value: loadedClassId.value });
+  }
+  return options;
+});
+const loadClasses = async () => {
+  try {
+    const res = await classApi.list({ limit: 100, active: true });
+    classes.value = res?.data || [];
+  } catch (err) {
+    notify.error(getApiErrorMessage(err));
+  }
+};
 
 // Fields this dialog does not edit. StudentsController.Update writes every field it is sent, so a
 // missing one is saved as null — a missing familyId drops the student out of their family. They are
 // carried over from the loaded record and sent back unchanged.
 const blankPreserved = () => ({
   familyId: null,
-  classId: null,
   feeCategoryId: null,
   disabilities: null,
   allergies: null,
@@ -155,11 +174,12 @@ watch(() => props.modelValue, async (isOpen) => {
   Object.assign(preserved, blankPreserved());
   emailError.value = "";
   loading.value = true;
+  loadedClassId.value = null;
   try {
-    const row = await studentApi.get(props.studentId);
+    const [row] = await Promise.all([studentApi.get(props.studentId), loadClasses()]);
+    loadedClassId.value = row.classId ?? null;
     Object.assign(preserved, {
       familyId: row.familyId ?? null,
-      classId: row.classId ?? null,
       feeCategoryId: row.feeCategoryId ?? null,
       disabilities: row.disabilities ?? null,
       allergies: row.allergies ?? null,
@@ -171,6 +191,7 @@ watch(() => props.modelValue, async (isOpen) => {
       lastName: row.lastName || "",
       familyName: row.familyName || "",
       studentNumber: row.studentNumber || "",
+      classId: row.classId ?? null,
       admissionDate: row.admissionDate ? row.admissionDate.substring(0, 10) : "",
       birthDate: row.birthDate ? row.birthDate.substring(0, 10) : "",
       gender: row.gender || "",
@@ -206,6 +227,7 @@ watch(() => props.modelValue, async (isOpen) => {
 });
 
 const save = async () => {
+  if (loading.value) return;
   emailError.value = "";
   const valid = await formRef.value?.validate();
   if (!valid) return;
@@ -216,6 +238,7 @@ const save = async () => {
     lastName: form.lastName,
     familyName: form.familyName || null,
     studentNumber: form.studentNumber || null,
+    classId: form.classId || null,
     admissionDate: form.admissionDate || null,
     birthDate: form.birthDate || null,
     gender: form.gender || null,

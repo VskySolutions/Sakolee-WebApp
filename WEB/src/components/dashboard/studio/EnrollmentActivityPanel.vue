@@ -28,14 +28,14 @@
         <tbody>
           <tr v-for="row in rows" :key="row.id">
             <td class="text-left">
-              <router-link v-if="row.studentId" class="activity-table__link" :to="{ path: `/students/${row.studentId}` }">{{ row.student }}</router-link>
-              <span v-else class="activity-table__link">{{ row.student }}</span>
+              <!-- Students and families have list pages only (no detail route), so names link to those lists. -->
+              <router-link class="activity-table__link" :to="{ path: '/students' }">{{ row.student }}</router-link>
             </td>
             <td class="text-left">
-              <router-link v-if="row.familyId" class="activity-table__link" :to="{ path: `/persons/${row.familyId}` }">{{ row.family }}</router-link>
-              <span v-else class="activity-table__link">{{ row.family }}</span>
+              <router-link v-if="row.familyId" class="activity-table__link" :to="{ path: '/families' }">{{ row.family || "—" }}</router-link>
+              <span v-else class="activity-table__muted">{{ row.family || "—" }}</span>
             </td>
-            <td class="text-left activity-table__muted">{{ row.className }}</td>
+            <td class="text-left activity-table__muted">{{ row.className || "—" }}</td>
             <td class="text-right">
               <span class="status-chip" :style="statusStyle(row.status)">{{ row.status }}</span>
             </td>
@@ -50,7 +50,8 @@
 import { computed } from "vue";
 
 const props = defineProps({
-  // [{ id, student, studentId, family, familyId, className, status }]
+  // From GET /api/dashboard/enrollment-activity:
+  // [{ id (student id), student, family, familyId, className, classId, status, changedOnUtc }]
   activity: { type: Array, default: () => [] }
 });
 

@@ -17,6 +17,10 @@ let sessionGeneration = 0;
 // Only the server saying so ends a session; a network blip or a 5xx must not.
 const isAuthFailure = (error) => error?.response?.status === 401 || error?.response?.status === 403;
 
+// The login page's "Remember me" entry (email only). It belongs to the device, not the session, so
+// clearSession must keep it.
+export const REMEMBER_ME_STORAGE_KEY = "Login";
+
 export const useAuthStore = defineStore("auth", {
   state: () => ({
     token: LocalStorage.getItem("token"),
@@ -224,7 +228,9 @@ export const useAuthStore = defineStore("auth", {
       this.permissions = [];
       this.mustChangePassword = false;
       this.sessionExpiresAt = null;
+      const rememberMe = LocalStorage.getItem(REMEMBER_ME_STORAGE_KEY);
       LocalStorage.clear();
+      if (rememberMe) LocalStorage.set(REMEMBER_ME_STORAGE_KEY, rememberMe);
       useTenantStore().clear();
       // Signing out is a router navigation, not a page load, so anything a module cached at import time
       // survives it and is inherited by whoever signs in next.

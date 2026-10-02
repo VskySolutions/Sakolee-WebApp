@@ -1,9 +1,14 @@
 <template>
-  <!-- Create / Edit drawer (read-only View lives in FamilyViewDrawer) -->
-  <app-form-drawer
+  <!-- Create / Edit popup (read-only View lives in FamilyViewDrawer) -->
+  <app-form-dialog
     v-model="isOpen"
     :title="editing ? 'Edit Family' : 'Create Family'"
+    :subtitle="editing
+      ? 'Update the family details, contacts, address, and students.'
+      : 'Create a new family with its contacts, address, and students.'"
     :saving="saving"
+    :save-label="editing ? 'Update Family' : 'Save Family'"
+    size="lg"
     @submit="submitForm"
     @cancel="resetForm"
   >
@@ -12,6 +17,7 @@
       <q-tab name="contacts" label="Contacts" />
       <q-tab name="address" label="Address & Emergency" />
       <q-tab name="students" label="Students" />
+      <q-tab v-if="editing" name="enrollment" label="Class Enrollment" />
     </q-tabs>
     <q-separator class="q-mb-md" />
 
@@ -143,8 +149,49 @@
           No students enrolled yet.
         </div>
       </div>
+
+      <!-- Class enrollment for this family's students — the Edit Family counterpart of Quick
+           Registration's Step 5. An existing student's class is changed through Edit Student; a student
+           added on the Students tab is enrolled here and sent with the same createBulk() call. -->
+      <div v-if="editing" v-show="activeTab === 'enrollment'" class="row q-col-gutter-md">
+        <template v-if="students.length">
+          <div class="col-12 text-subtitle2 text-grey-8">Current Enrollments</div>
+          <div class="col-12">
+            <q-list bordered separator>
+              <q-item v-for="s in students" :key="s.studentId">
+                <q-item-section>
+                  <q-item-label>{{ s.firstName || s.lastName ? `${s.firstName || ''} ${s.lastName || ''}`.trim() : (s.studentNumber || 'Student') }}</q-item-label>
+                  <q-item-label caption>{{ s.classId ? (className(s.classId) || 'Enrolled (inactive class)') : 'Not enrolled in a class' }}</q-item-label>
+                </q-item-section>
+                <q-item-section side>
+                  <q-btn flat round dense color="primary" icon="o_edit" @click="openStudentEdit(s.studentId)">
+                    <q-tooltip>Change class</q-tooltip>
+                  </q-btn>
+                </q-item-section>
+              </q-item>
+            </q-list>
+          </div>
+        </template>
+
+        <template v-if="form.newStudents.length">
+          <div class="col-12 text-subtitle2 text-grey-8 q-mt-sm">New Student Enrollment</div>
+          <div v-for="(student, index) in form.newStudents" :key="student.key" class="col-12">
+            <div class="text-caption text-weight-bold text-primary q-mb-xs">
+              Student #{{ index + 1 }}{{ studentDisplayName(student) ? ` — ${studentDisplayName(student)}` : "" }}
+            </div>
+            <div class="row q-col-gutter-md q-mb-sm">
+              <app-select v-model="student.classId" label="Choose Class" :options="classOptions" class="col-12 col-sm-6" />
+              <app-date-field v-model="student.enrollmentDate" label="Enrollment Date" class="col-12 col-sm-6" />
+            </div>
+          </div>
+        </template>
+
+        <div v-if="!students.length && !form.newStudents.length" class="col-12 text-grey-6 text-caption">
+          No students to enroll yet. Add a student on the Students tab first.
+        </div>
+      </div>
     </q-form>
-  </app-form-drawer>
+  </app-form-dialog>
 
   <student-edit-dialog v-model="studentEditOpen" :student-id="studentEditId" @saved="onStudentSaved" />
 
@@ -177,12 +224,14 @@
 
 <script setup>
 import { ref, reactive, computed, watch, onMounted } from "vue";
-import { familyApi, locationApi, studentApi, getApiErrorMessage } from "services/api";
+import { familyApi, locationApi, classApi, studentApi, getApiErrorMessage } from "services/api";
 import { useNotify } from "composables/useNotify";
 import { blankFamilyForm, blankSecondaryContact, familyFormFromDetail } from "composables/familyForm";
-import { RELATION_OPTIONS, HEARD_ABOUT_OPTIONS, GENDER_OPTIONS, TSHIRT_SIZE_OPTIONS, blankStudent } from "composables/quickRegistrationForm";
+import { RELATION_OPTIONS, GENDER_OPTIONS, blankStudent } from "composables/quickRegistrationForm";
+import { useTShirtSizeOptions } from "composables/useTShirtSizeOptions";
+import { useHearAboutUsOptions } from "composables/useHearAboutUsOptions";
 
-import AppFormDrawer from "components/common/AppFormDrawer.vue";
+import AppFormDialog from "components/common/AppFormDialog.vue";
 import AppSelect from "components/common/AppSelect.vue";
 import AppTextField from "components/common/AppTextField.vue";
 import AppDateField from "components/common/AppDateField.vue";
@@ -218,15 +267,23 @@ const locationOptions = computed(() => {
   }
   return options;
 });
+// Real classes for enrolling a newly-added student, loaded the same way Quick Registration's Step 5 does.
+const classes = ref([]);
+const classOptions = computed(() => classes.value.map((c) => ({ label: c.className, value: c.classId })));
+const className = (classId) => classes.value.find((c) => c.classId === classId)?.className || "";
 const relationOptions = RELATION_OPTIONS;
-const sourceOptions = HEARD_ABOUT_OPTIONS;
+const { options: sourceOptions } = useHearAboutUsOptions(() => form.source);
 const genderOptions = GENDER_OPTIONS;
-const tshirtSizeOptions = TSHIRT_SIZE_OPTIONS;
+const { options: tshirtSizeOptions } = useTShirtSizeOptions();
 
 onMounted(async () => {
   try {
-    const locRes = await locationApi.list({ limit: 100, active: true });
+    const [locRes, classRes] = await Promise.all([
+      locationApi.list({ limit: 100, active: true }),
+      classApi.list({ limit: 100, active: true })
+    ]);
     locations.value = locRes?.data || [];
+    classes.value = classRes?.data || [];
   } catch (err) {
     notify.error(getApiErrorMessage(err));
   }
@@ -263,7 +320,7 @@ const form = reactive(blankFamilyForm());
 const hasSecondaryContact = computed(() => !!form.secondaryContact);
 const addSecondaryContact = () => { form.secondaryContact = blankSecondaryContact(); };
 const removeSecondaryContact = () => { form.secondaryContact = null; };
-const addNewStudent = () => { form.newStudents.push(blankStudent()); };
+const addNewStudent = () => { form.newStudents.push({ ...blankStudent(), enrollmentDate: "" }); };
 const removeNewStudent = (index) => { form.newStudents.splice(index, 1); };
 const studentDisplayName = (student) => `${student.firstName || ""} ${student.lastName || ""}`.trim();
 
@@ -281,7 +338,7 @@ const populateFrom = (detail) => {
   students.value = detail.students || [];
 };
 
-// Each time the drawer opens, start from a clean form and (for Edit) load the family.
+// Each time the popup opens, start from a clean form and (for Edit) load the family.
 watch(
   () => props.modelValue,
   async (val) => {
@@ -422,6 +479,8 @@ const submitForm = async () => {
         tShirtSize: student.tshirtSize || null,
         gradeLevel: student.gradeLevel || null,
         specialNeeds: student.medicalNotes || null,
+        classId: student.classId || null,
+        admissionDate: student.enrollmentDate || null,
         healthInsuranceCarrier: form.healthInsuranceCarrier || null,
         emergencyContactName: form.emergencyContactPerson || null,
         emergencyContactNumber: form.emergencyPhone || null

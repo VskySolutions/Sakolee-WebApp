@@ -58,7 +58,7 @@ import { ref } from "vue";
 import useVuelidate from "@vuelidate/core";
 import { required, helpers, email } from "@vuelidate/validators";
 import { useRoute, useRouter } from "vue-router";
-import { useAuthStore } from "stores/auth";
+import { useAuthStore, REMEMBER_ME_STORAGE_KEY } from "stores/auth";
 import { getApiErrorMessage, getApiErrorCode, ApiErrorCodes } from "services/api";
 import { setLocalStorage, getLocalStorage, clearLocalStorage } from "assets/utils";
 import AppTextField from "components/common/AppTextField.vue";
@@ -72,7 +72,7 @@ const loading = ref(false);
 const errorMessage = ref("");
 
 // Remember-me persistence (email only; never persist the password).
-const localStorageKey = "Login";
+const localStorageKey = REMEMBER_ME_STORAGE_KEY;
 const filterLocalStorage = getLocalStorage(localStorageKey);
 
 const model = ref({

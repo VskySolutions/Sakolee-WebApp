@@ -154,13 +154,13 @@ const {
   announcements
 } = useStudioDashboard();
 
-// The KPI band, in the reference's reading order. `field` maps onto the metrics payload, `tone` is
+// The KPI band, in the reference's reading order. `field` maps onto the studio-metrics payload, `tone` is
 // the tile hue the prototype gives that card, and `to` is set only where the app already has a list
 // page to land on.
 const METRIC_CARDS = [
   { key: "totalEnrollments", label: "Total Enrollments", field: "totalEnrollments", icon: "o_assignment_turned_in", tone: "purple", to: { path: "/students" } },
   { key: "recentlyDropped", label: "Recently Dropped", field: "recentlyDropped", icon: "o_person_remove", tone: "red", to: { path: "/students" } },
-  { key: "activeFamilies", label: "Active Families", field: "activeFamilies", icon: "o_family_restroom", tone: "indigo", to: { path: "/persons" } },
+  { key: "activeFamilies", label: "Active Families", field: "activeFamilies", icon: "o_family_restroom", tone: "indigo", to: { path: "/families" } },
   { key: "activeStudents", label: "Active Students", field: "activeStudents", icon: "o_group", tone: "blue", to: { path: "/students" } },
   { key: "activeClasses", label: "Active Classes", field: "activeClasses", icon: "o_school", tone: "emerald", to: { path: "/classes" } },
   { key: "activeStaff", label: "Active Staff", field: "activeStaff", icon: "o_badge", tone: "cyan", to: { path: "/persons" } },
@@ -170,7 +170,8 @@ const METRIC_CARDS = [
 ];
 
 const metricCards = computed(() =>
-  METRIC_CARDS.map((card) => ({ ...card, value: metrics.value?.[card.field] ?? 0 })));
+  // A null metric has no data source yet; the card renders it as "—" rather than a misleading 0.
+  METRIC_CARDS.map((card) => ({ ...card, value: metrics.value?.[card.field] ?? null })));
 
 // Tasks, receivables and announcements have no CRUD endpoints yet, so these acknowledge rather
 // than opening a form or navigating somewhere that does not exist.

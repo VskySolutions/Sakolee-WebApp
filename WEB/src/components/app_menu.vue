@@ -199,7 +199,7 @@
       <!-- =====================================================
      SETTINGS - NORMAL MODE
      ===================================================== -->
-      <template v-if="!mini">
+      <template v-if="showSettings && !mini">
 
         <q-expansion-item
           dense
@@ -301,7 +301,7 @@
            MINI SETTINGS
            ================================================= -->
       <q-item
-        v-else
+        v-else-if="showSettings"
         v-ripple
         dense
         clickable
@@ -781,7 +781,7 @@ const sections = [
   // }
 ];
 
-const settingsSection = {
+const settingsMenu = {
   key: "settings",
   label: "Settings",
   icon: "o_settings",
@@ -900,6 +900,19 @@ const settingsSection = {
 
 const canSee = (permissions) => !permissions || authStore.hasAnyPermission(permissions);
 console.log("Can See Permissionis:", canSee());
+
+// Settings is gated by its permission-bound entries (Masters). The personal pages it also carries
+// (My Account, Profile, Change Password) stay reachable from the avatar menu, so a role holding none
+// of the Settings permissions — e.g. Student — doesn't get the Settings menu at all.
+const filterItems = (items) =>
+  items
+    .map((item) => (item.items ? { ...item, items: filterItems(item.items) } : item))
+    .filter((item) => (item.items ? item.items.length : canSee(item.permissions)));
+
+const settingsSection = computed(() => ({ ...settingsMenu, items: filterItems(settingsMenu.items) }));
+
+const showSettings = computed(() =>
+  settingsSection.value.items.some((item) => item.items || item.permissions));
 
 const visibleSections = computed(() =>
   sections
