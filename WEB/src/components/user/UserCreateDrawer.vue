@@ -1,7 +1,7 @@
 <template>
   <div>
     <!-- Create user (creates its own Person master record from the name/email below) -->
-    <app-form-drawer v-model="open" title="Create Staff" :saving="saving" @submit="submitForm" @cancel="resetForm">
+    <app-form-dialog v-model="open" title="Create Staff" size="md" :saving="saving" @submit="submitForm" @cancel="resetForm">
       <q-form ref="formRef" greedy>
         <!-- There is no existing Person to promote — one is created inline from these fields. -->
         <div class="row q-col-gutter-md q-mb-md">
@@ -56,7 +56,7 @@
         </div>
         -->
       </q-form>
-    </app-form-drawer>
+    </app-form-dialog>
 
     <temp-password-dialog v-model="tempPwOpen" :password="tempPassword" />
   </div>
@@ -74,8 +74,7 @@ import { useRoleOptions } from "composables/useRoleOptions";
 import { useNotify } from "composables/useNotify";
 import { useConfirm } from "composables/useConfirm";
 import { nameRules } from "utils/personName";
-
-import AppFormDrawer from "components/common/AppFormDrawer.vue";
+import AppFormDialog from "components/common/AppFormDialog.vue";
 import AppSelect from "components/common/AppSelect.vue";
 import AppTextField from "components/common/AppTextField.vue";
 import TempPasswordDialog from "components/temp_password_dialog.vue";

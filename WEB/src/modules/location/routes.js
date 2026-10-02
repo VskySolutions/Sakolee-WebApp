@@ -13,8 +13,6 @@
 //   }
 // ];
 
-
-
 export default [
   {
     path: "/locations",
