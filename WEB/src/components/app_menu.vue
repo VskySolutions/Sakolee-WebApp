@@ -810,6 +810,37 @@ const settingsSection = {
           permissions: [Permissions.ClassRoomsRead]
        },
         {
+          label: "Class Sessions",
+          icon: "o_date_range",
+          to: "/sessions",
+          permissions: [Permissions.SessionsRead]
+        },
+         {
+          label: "Billing Methods",
+          icon: "o_account_balance",
+          to: "/billing-methods",
+          permissions: [Permissions.BillingMethodsRead]
+        },
+        {
+          label: "Membership Types",
+          icon: "o_card_membership",
+          to: "/membership-types",
+          permissions: [Permissions.MembershipTypesRead]
+        },
+         {
+          label: "Student Grade Levels",
+          icon: "o_school",
+          to: "/student-grade-levels",
+          permissions: [Permissions.StudentGradeLevelsRead]
+        },
+
+        {
+          label: "Family Relations",
+          icon: "o_supervised_user_circle",
+          to: "/family-relations",
+          permissions: [Permissions.FamilyRelationsRead]
+        },
+        {
           label: "Class Categories",
           icon: "o_category",
           to: "/class-categories",
@@ -845,36 +876,11 @@ const settingsSection = {
           to: "/account-type",
           permissions: [Permissions.AccountTypesRead]
         },
-        {
-          label: "Class Sessions",
-          icon: "o_date_range",
-          to: "/sessions",
-          permissions: [Permissions.SessionsRead]
-        },
-        {
-          label: "Billing Methods",
-          icon: "o_account_balance",
-          to: "/billing-methods",
-          permissions: [Permissions.BillingMethodsRead]
-        },
-        {
-          label: "Family Relations",
-          icon: "o_supervised_user_circle",
-          to: "/family-relations",
-          permissions: [Permissions.FamilyRelationsRead]
-        },
-        {
-  label: "Membership Types",
-  icon: "o_card_membership",
-  to: "/membership-types",
-  permissions: [Permissions.MembershipTypesRead]
-},
-{
-          label: "Student Grade Levels",
-          icon: "o_school",
-          to: "/student-grade-levels",
-          permissions: [Permissions.StudentGradeLevelsRead]
-        },
+       
+       
+        
+        
+       
       ]
     },
     {

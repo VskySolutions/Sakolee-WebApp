@@ -19,6 +19,7 @@ internal sealed class UserRepository : IUserRepository
         // Group memberships are tenant-filtered, so they naturally scope to the active tenant here.
         var user = await _dbContext.Users.Include(u => u.TenantRoles).ThenInclude(r => r.RoleEntity)
             .Include(u => u.GroupMemberships).ThenInclude(m => m.UserGroup)
+            .AsSplitQuery()
             .FirstOrDefaultAsync(u => u.Id == id, cancellationToken);
 
         await LoadPersonAsync(user, cancellationToken);

@@ -1,10 +1,10 @@
 <template>
   <q-page padding>
     <app-list-header
+      v-model:search="search"
       :breadcrumbs="[{ label: 'Home', to: '/' }, { label: 'Roles' }]"
       title="Roles"
       description="Manage roles and their permissions."
-      :search="search"
       show-search
       search-placeholder="Search roles"
       show-filters
@@ -12,7 +12,6 @@
       show-add
       add-label="Create Role"
       show-back
-      @update:search="search = $event"
       @filters="filterOpen = true"
       @add="openCreate"
       @back="$router.back()"
@@ -43,17 +42,27 @@
         </q-td>
       </template>
 
-      <!-- The row opens the role's own page. -->
+      <!-- Actions: View, Edit & Delete -->
       <template #body-cell-actions="cell">
         <q-td :props="cell">
-          <!-- A LINK, not a click handler: the role detail is a place, so this renders as a real <a href>
-               and middle-click / "open in new tab" work on it. -->
+          <!-- View Button -->
           <q-btn
-            flat round dense color="primary" :icon="cell.row.canManage ? 'o_edit' : 'o_visibility'"
-            :to="roleRoute(cell.row)"
+            flat round dense color="primary" icon="o_visibility"
+            @click="openView(cell.row)"
           >
-            <q-tooltip>{{ actionTooltip(cell.row) }}</q-tooltip>
+            <q-tooltip>View Details</q-tooltip>
           </q-btn>
+
+          <!-- Edit Button (Only if canManage is true) -->
+          <q-btn
+            v-if="cell.row.canManage"
+            flat round dense color="primary" icon="o_edit"
+            @click="openEdit(cell.row)"
+          >
+            <q-tooltip>Edit Role</q-tooltip>
+          </q-btn>
+
+          <!-- Delete Button -->
           <q-btn
             v-if="cell.row.canManage && !cell.row.isSystem && !isFixedNameRole(cell.row)"
             type="a" flat round dense color="negative"
@@ -69,12 +78,21 @@
       v-if="canManageDeleted" :entity-type="EntityType.Role" :show="showDeleted" @restored="load"
     />
 
-    <!-- Create. -->
-    <app-form-drawer
-      v-model="formOpen" title="Create Role" :saving="saving" save-label="Create"
-      @submit="submitForm" @cancel="resetForm"
+    <!-- Create / Edit Role Dialog -->
+    <app-form-dialog
+      v-model="formOpen"
+      :title="isEditing ? 'Edit Role' : 'Create Role'"
+      :saving="saving"
+      :save-label="isEditing ? 'Save Changes' : 'Create Role'"
+      size="md"
+      @submit="submitForm"
+      @cancel="resetForm"
     >
-      <q-form ref="formRef" greedy>
+      <div v-if="loadingForm" class="row flex-center q-pa-xl">
+        <q-spinner color="primary" size="40px" />
+      </div>
+
+      <q-form v-else ref="formRef" greedy>
         <app-text-field
           v-model="form.name" label="Name" required class="q-mb-md"
           :rules="[(v) => !!v || 'Name is required']"
@@ -87,7 +105,13 @@
           :info="isSuperAdmin ? '' : 'The list stops at what your own tenant can hand out.'"
         />
       </q-form>
-    </app-form-drawer>
+    </app-form-dialog>
+
+    <!-- Role View Dialog (Inside q-page root) -->
+    <role-view-dialog
+      v-model="viewOpen"
+      :role-id="selectedRoleId"
+    />
   </q-page>
 </template>
 
@@ -107,13 +131,14 @@ import { useAuditColumns } from "composables/useAuditColumns";
 import AppDataTable from "components/common/AppDataTable.vue";
 import DeletedRecordsPanel from "components/universal/DeletedRecordsPanel.vue";
 import { stripHtml } from "utils/richText";
-import AppFormDrawer from "components/common/AppFormDrawer.vue";
+import AppFormDialog from "components/common/AppFormDialog.vue";
 import AppListHeader from "components/common/AppListHeader.vue";
 import AppFilterDrawer from "components/common/AppFilterDrawer.vue";
 import AppColumnFilters from "components/common/AppColumnFilters.vue";
 import AppSelect from "components/common/AppSelect.vue";
 import AppTextField from "components/common/AppTextField.vue";
 import AppRichTextField from "components/common/AppRichTextField.vue";
+import RoleViewDialog from "modules/role/pages/detail.vue"; 
 
 const auditColumns = useAuditColumns();
 const { showDeleted, canManageDeleted } = useDeletedRecords();
@@ -122,15 +147,21 @@ const { confirm } = useConfirm();
 const authStore = useAuthStore();
 const router = useRouter();
 
-// The list shows every role this caller may see: the platform ones (theirs to read, a Super Admin's to
-// change) and the ones their own tenant created.
 const isSuperAdmin = computed(() => authStore.roles.includes("SuperAdmin"));
+
+// View Dialog State
+const viewOpen = ref(false);
+const selectedRoleId = ref(null);
+
+const openView = (row) => {
+  selectedRoleId.value = row.id;
+  viewOpen.value = true;
+};
 
 const columns = [
   { name: "name", label: "Name", field: "name", align: "left", sortable: true, default: true },
   { name: "displayName", label: "Display Name", field: (r) => r.displayName || "—", align: "left", sortable: true, default: true },
-  // Descriptions are rich text; the cell shows the text without its markup (see utils/richText).
-  { name: "description", label: "Description", field: (r) => stripHtml(r.description), align: "left", default: true },
+  { name: "description", label: "Description", field: (r) => stripHtml(r.description), align: "left", default: true,filterable: false },
   {
     name: "isSystem",
     label: "Type",
@@ -140,8 +171,6 @@ const columns = [
     default: true,
     filterOptions: [{ label: "System", value: true }, { label: "Custom", value: false }]
   },
-  // Who the role belongs to. A platform role is offered in every tenant and only a Super Admin may
-  // change it; the rest were created by a tenant for itself and are its own to maintain.
   {
     name: "scope",
     label: "Scope",
@@ -155,6 +184,7 @@ const columns = [
   { name: "actions", label: "Actions", field: "actions", align: "left" }
 ];
 
+// Table state and data fetching
 const { rows, loading, search, pagination, load, onRequest } = useListTable({
   pageKey: "roles",
   fetcher: ({ sortBy, descending }) =>
@@ -163,11 +193,10 @@ const { rows, loading, search, pagination, load, onRequest } = useListTable({
   onError: (err) => notify.error(getApiErrorMessage(err))
 });
 
-// Client-side column filters (the list loads all roles); badge/count standard via AppListHeader.
+// Filters
 const filterOpen = ref(false);
 const { filters, filterableColumns, filteredRows, filterChips, removeFilter, clearFilters } = useColumnFilters(columns, rows, { server: false });
 
-// Server-side search: reload (debounced, first page) when it changes.
 const reload = debounce(() => { pagination.value.page = 1; load(); }, 300);
 watch(search, reload);
 
@@ -189,29 +218,26 @@ const loadPermissions = async () => {
   }
 };
 
-// The "Administrator" and "Parent" roles are platform-level custom roles, not flagged System, but the
-// server looks them up by name (RolesController.FixedNameRoles), so they can never be
-// deleted.
 const FIXED_NAME_ROLES = ["administrator", "parent"];
 const isFixedNameRole = (row) => FIXED_NAME_ROLES.includes((row.name || "").trim().toLowerCase());
 
-// ---- Open ----
-// Editing a role happens on the role's own page.
-const roleRoute = (row) => ({ name: "role_detail", params: { id: row.id } });
-
-const actionTooltip = (row) => (row.canManage ? "Open" : "View");
-
-// ---- Create ----
+// ---- Create / Edit Dialog State ----
 const formOpen = ref(false);
 const saving = ref(false);
+const loadingForm = ref(false);
 const formRef = ref(null);
+const editingId = ref(null);
+const isEditing = computed(() => !!editingId.value);
+
 const form = reactive({ name: "", displayName: "", description: "", permissions: [] });
 
 const resetForm = () => {
+  editingId.value = null;
   form.name = "";
   form.displayName = "";
   form.description = "";
   form.permissions = [];
+  formOpen.value, (formOpen.value = false);
 };
 
 const openCreate = async () => {
@@ -220,25 +246,51 @@ const openCreate = async () => {
   formOpen.value = true;
 };
 
-// Straight onto the new role's page: creating one is the start of setting it up, not the end.
+const openEdit = async (row) => {
+  editingId.value = row.id;
+  await loadPermissions();
+  formOpen.value = true;
+  loadingForm.value = true;
+  try {
+    const detail = await roleApi.get(row.id);
+    form.name = detail.name || "";
+    form.displayName = detail.displayName || "";
+    form.description = detail.description || "";
+    form.permissions = detail.permissions || [];
+  } catch (err) {
+    notify.error(getApiErrorMessage(err));
+  } finally {
+    loadingForm.value = false;
+  }
+};
+
+// Watchers to handle prop changes and open/close state
 const submitForm = async ({ clearDraft } = {}) => {
   if (!(await formRef.value?.validate())) return;
   saving.value = true;
   try {
-    const created = await roleApi.create({
+    const payload = {
       name: form.name,
       displayName: form.displayName || undefined,
       description: form.description,
       permissions: form.permissions
-    });
+    };
+
+    if (isEditing.value) {
+      await roleApi.update(editingId.value, payload);
+      notify.success("Role updated successfully.");
+      load();
+    } else {
+      const created = await roleApi.create(payload);
+      notify.success("Role created.");
+      if (created?.id) {
+        router.push({ name: "role_detail", params: { id: created.id } });
+      } else {
+        load();
+      }
+    }
     clearDraft?.();
     formOpen.value = false;
-    notify.success("Role created.");
-    if (created?.id) {
-      router.push({ name: "role_detail", params: { id: created.id } });
-    } else {
-      load();
-    }
   } catch (err) {
     if (getApiErrorCode(err) === ApiErrorCodes.DuplicateIdentifier) {
       notify.error("A role with that name already exists.");
@@ -250,6 +302,7 @@ const submitForm = async ({ clearDraft } = {}) => {
   }
 };
 
+// Function to remove a role with confirmation
 const removeRole = async (row) => {
   const ok = await confirm({
     title: "Delete role",
