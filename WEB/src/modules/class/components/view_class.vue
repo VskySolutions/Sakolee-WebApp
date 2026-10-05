@@ -77,7 +77,7 @@
               <div class="col-6">
                 <div class="cv-label">Room</div>
                 <div class="cv-value">
-                  {{ classData?.roomName || classData?.roomId || "—" }}
+                  {{ classData?.roomName || classData?.roomId || classData?.name ||"—" }}
                 </div>
               </div>
 

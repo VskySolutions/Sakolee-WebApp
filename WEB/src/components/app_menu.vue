@@ -813,7 +813,7 @@ const settingsMenu = {
           label: "Class Sessions",
           icon: "o_date_range",
           to: "/sessions",
-          permissions: [Permissions.SessionsRead]
+          permissions: [Permissions.ClassSessionsRead]
         },
         {
           label: "Billing Methods",
