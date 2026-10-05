@@ -69,7 +69,7 @@
         <q-card flat bordered class="account-card full-height">
           <q-card-section class="row items-center q-gutter-sm">
             <q-icon name="o_apartment" color="primary" size="sm" />
-            <div class="text-subtitle1 text-weight-medium">Tenants &amp; roles</div>
+            <div class="text-subtitle1 text-weight-medium">User Roles</div>
             <q-space />
             <q-badge color="teal-1" text-color="primary">{{ assignments.length }}</q-badge>
           </q-card-section>

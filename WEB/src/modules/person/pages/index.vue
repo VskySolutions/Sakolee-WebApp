@@ -1,4 +1,3 @@
-
 <template>
   <q-page padding>
     <app-list-header
@@ -22,7 +21,6 @@
       @back="$router.back()"
     />
 
-    
     <app-filter-drawer v-model="filterOpen" :chips="filterChips" @remove="removeFilter" @clear="clearFilters">
       <app-column-filters v-model="filters" :columns="filterableColumns" />
       <q-toggle
@@ -73,7 +71,6 @@
           <q-btn flat round dense color="primary" icon="o_edit" @click="openEdit(cell.row)">
             <q-tooltip>Edit Person</q-tooltip>
           </q-btn>
-          
           <q-btn
             v-if="canCreateUser" type="a"
             flat round dense
@@ -110,15 +107,15 @@
       @saved="load"
     /> -->
     <person-form-dialog
-  v-model="formOpen"
-  :editing-id="editingId"
-  @saved="load"
+      v-model="formOpen"
+      :editing-id="editingId"
+      @saved="load"
 />
   </q-page>
 </template>
 
 <script setup>
-import { ref, reactive, computed, watch, onMounted } from "vue";
+import { ref, computed, watch, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import { personApi, getApiErrorMessage, EntityType } from "services/api";
 import { usePermissions, Permissions } from "composables/usePermissions";
@@ -146,7 +143,7 @@ const notify = useNotify();
 const { confirm } = useConfirm();
 const { has } = usePermissions();
 const auditColumns = useAuditColumns();
-const { canChooseTenant, activeTenantId, tenantOptions, loadTenants } = useTenantOptions();
+const { canChooseTenant, tenantOptions, loadTenants } = useTenantOptions();
 const canWrite = computed(() => has(Permissions.PersonsWrite));
 const canDelete = computed(() => has(Permissions.PersonsDelete));
 const canCreateUser = computed(() => has(Permissions.UsersWrite));
@@ -159,7 +156,7 @@ const initialData = ref(null);
 const tenantFilterOptions = computed(() =>
   (canChooseTenant.value && tenantOptions.value.length ? tenantOptions.value : null));
 
-  // Computed property for search and filters
+// Computed property for search and filters
 const SOURCE_LABELS = {
   Person: "Added manually",
   User: "User account",

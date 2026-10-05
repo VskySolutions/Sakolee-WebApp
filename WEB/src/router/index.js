@@ -36,7 +36,6 @@ import locationRoutes from "modules/location/routes";
 import classCategoryRoutes from "modules/class-category/routes";
 import sessionRoutes from "modules/session/routes";
 import familyrelationRoutes from "modules/family-relations/routes";
-import billingCycleRoutes from "modules/billing-cycle/routes";
 import tShirtSizeRoutes from "modules/t-shirt-size/routes";
 import hearAboutUsRoutes from "modules/hear-about-us/routes";
 import ePaymentScheduleRoutes from "modules/e-payment-schedule/routes";
@@ -71,12 +70,8 @@ routes.push(...tShirtSizeRoutes);
 routes.push(...hearAboutUsRoutes);
 routes.push(...ePaymentScheduleRoutes);
 routes.push(...accountTypeRoutes);
-
-//routes.push(...familyrelationRoutes);
-// routes.push(...billingCycleRoutes);
 routes.push(...tShirtSizeRoutes);
 routes.push(...classRoomRoutes);
-routes.push(...billingMethodRoutes);
 routes.push(...membershipTypeRoutes);
 routes.push(...studentGradeLevelRoutes);
 

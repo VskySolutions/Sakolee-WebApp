@@ -2,7 +2,7 @@
   <q-page padding>
     <app-list-header
       :breadcrumbs="[{ label: 'Home', to: '/' }, { label: 'Staff' }]"
-      title="Staff"
+      title="Staffs"
       description="Manage active and inactive staff members, instructors, assignments, schedules, qualifications and staff information."
       :search="search"
       show-search
