@@ -55,6 +55,7 @@
 </template>
 
 <script setup>
+// Import necessary modules and components
 import { ref, reactive, watch, computed } from "vue";
 import { classRoomApi, getApiErrorMessage, getApiErrorCode, ApiErrorCodes } from "services/api";
 import { useNotify } from "composables/useNotify";
@@ -146,13 +147,16 @@ const submitForm = async ({ clearDraft } = {}) => {
 
   saving.value = true;
 
+  // Prepare the payload and call the appropriate API method based on whether we are editing or creating a new class room
   try {
+    // Prepare the payload for the API request
     const payload = {
       locationId: form.locationId,
       name: form.name.trim(),
       active: form.active
     };
 
+    // Call the appropriate API method based on whether we are editing or creating a new class room
     if (props.editingId) {
       await classRoomApi.update(props.editingId, payload);
       notify.success("Class room updated successfully.");
@@ -161,6 +165,7 @@ const submitForm = async ({ clearDraft } = {}) => {
       notify.success("Class room created successfully.");
     }
 
+    // Clear any draft data if applicable, close the dialog, reset the form, and emit a saved event
     clearDraft?.();
     isOpen.value = false;
     resetFormValues();
@@ -169,6 +174,7 @@ const submitForm = async ({ clearDraft } = {}) => {
     const errCode = getApiErrorCode(err);
     const errMsg = getApiErrorMessage(err)?.toLowerCase() || '';
 
+    // Handle specific API error codes for duplicate identifiers and provide user-friendly error messages
     if (errCode === ApiErrorCodes.DuplicateIdentifier || errMsg.includes('already exists')) {
       formErrors.name.hasError = true;
       formErrors.name.message = "A class room with this name already exists in the selected location.";

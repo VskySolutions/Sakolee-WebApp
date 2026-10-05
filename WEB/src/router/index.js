@@ -44,6 +44,7 @@ import accountTypeRoutes from "modules/account-type/routes";
 import classRoomRoutes from "modules/class-room/routes";
 import membershipTypeRoutes from "modules/membership-type/routes";
 import studentGradeLevelRoutes from "modules/student-grade-level/routes";
+import billingMethodRoutes from "modules/billing-method/routes";
 
 routes.push(...accountRoutes);
 routes.push(...authRoutes);
