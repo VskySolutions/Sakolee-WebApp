@@ -161,11 +161,11 @@
               <q-item v-for="s in students" :key="s.studentId">
                 <q-item-section>
                   <q-item-label>{{ s.firstName || s.lastName ? `${s.firstName || ''} ${s.lastName || ''}`.trim() : (s.studentNumber || 'Student') }}</q-item-label>
-                  <q-item-label caption>{{ s.classId ? (className(s.classId) || 'Enrolled (inactive class)') : 'Not enrolled in a class' }}</q-item-label>
+                  <q-item-label caption>{{ studentClassesLabel(s) }}</q-item-label>
                 </q-item-section>
                 <q-item-section side>
-                  <q-btn flat round dense color="primary" icon="o_edit" @click="openStudentEdit(s.studentId)">
-                    <q-tooltip>Change class</q-tooltip>
+                  <q-btn flat round dense color="primary" icon="o_edit" @click="openStudentEdit(s.studentId, true)">
+                    <q-tooltip>Change classes</q-tooltip>
                   </q-btn>
                 </q-item-section>
               </q-item>
@@ -180,7 +180,7 @@
               Student #{{ index + 1 }}{{ studentDisplayName(student) ? ` — ${studentDisplayName(student)}` : "" }}
             </div>
             <div class="row q-col-gutter-md q-mb-sm">
-              <app-select v-model="student.classId" label="Choose Class" :options="classOptions" class="col-12 col-sm-6" />
+              <app-select v-model="student.classIds" label="Choose Classes" :options="classOptions" multiple class="col-12 col-sm-6" />
               <app-date-field v-model="student.enrollmentDate" label="Enrollment Date" class="col-12 col-sm-6" />
             </div>
           </div>
@@ -193,7 +193,7 @@
     </q-form>
   </app-form-dialog>
 
-  <student-edit-dialog v-model="studentEditOpen" :student-id="studentEditId" @saved="onStudentSaved" />
+  <student-edit-dialog v-model="studentEditOpen" :student-id="studentEditId" :enrollment-only="studentEditEnrollmentOnly" @saved="onStudentSaved" />
 
   <!-- Temporary passwords for newly-created contact logins -->
   <q-dialog v-model="tempPwOpen" persistent>
@@ -271,6 +271,12 @@ const locationOptions = computed(() => {
 const classes = ref([]);
 const classOptions = computed(() => classes.value.map((c) => ({ label: c.className, value: c.classId })));
 const className = (classId) => classes.value.find((c) => c.classId === classId)?.className || "";
+// Every class a student is in (a student may be in several); falls back to the legacy single classId.
+const studentClassesLabel = (s) => {
+  const ids = s.classIds?.length ? s.classIds : s.classId ? [s.classId] : [];
+  if (!ids.length) return "Not enrolled in a class";
+  return ids.map((id) => className(id) || "Enrolled (inactive class)").join(", ");
+};
 const relationOptions = RELATION_OPTIONS;
 const { options: sourceOptions } = useHearAboutUsOptions(() => form.source);
 const genderOptions = GENDER_OPTIONS;
@@ -301,8 +307,11 @@ const activeTab = ref("family");
 // StudentEditDialog's remarks) ----
 const studentEditOpen = ref(false);
 const studentEditId = ref(null);
-const openStudentEdit = (studentId) => {
+// Class Enrollment tab opens the dialog with only the class selection; the Students tab, the full form.
+const studentEditEnrollmentOnly = ref(false);
+const openStudentEdit = (studentId, enrollmentOnly = false) => {
   studentEditId.value = studentId;
+  studentEditEnrollmentOnly.value = enrollmentOnly;
   studentEditOpen.value = true;
 };
 const onStudentSaved = async () => {
@@ -479,7 +488,7 @@ const submitForm = async () => {
         tShirtSize: student.tshirtSize || null,
         gradeLevel: student.gradeLevel || null,
         specialNeeds: student.medicalNotes || null,
-        classId: student.classId || null,
+        classIds: student.classIds || [],
         admissionDate: student.enrollmentDate || null,
         healthInsuranceCarrier: form.healthInsuranceCarrier || null,
         emergencyContactName: form.emergencyContactPerson || null,

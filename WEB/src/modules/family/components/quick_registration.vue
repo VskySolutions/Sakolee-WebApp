@@ -187,7 +187,7 @@
         <div class="enrollment-band">
           <div class="row items-center justify-between q-mb-sm">
             <span class="text-weight-bold">Class Selection</span>
-            <span class="text-caption text-grey-7">Choose a class for each student of this family to enroll. Leave it empty to skip that student.</span>
+            <span class="text-caption text-grey-7">Choose one or more classes for each student of this family. Leave it empty to skip that student.</span>
           </div>
           <div v-for="(student, index) in form.students" :key="student.key" class="row q-col-gutter-md items-center q-mb-sm">
             <div class="col-12 col-md-4">
@@ -195,7 +195,7 @@
               <div class="text-body2 text-weight-medium">{{ studentDisplayName(student) || `Student #${index + 1}` }}</div>
             </div>
             <div class="col-12 col-md-6">
-              <app-select v-model="student.classId" label="Choose Class" :options="classOptions" />
+              <app-select v-model="student.classIds" label="Choose Classes" :options="classOptions" multiple />
             </div>
           </div>
           <div class="row q-col-gutter-md">
@@ -325,7 +325,7 @@ const STEPS = [
   { number: 2, label: "Contacts", title: "Step 2: Contact Information", subtitle: "Enter primary and secondary guardian contact details." },
   { number: 3, label: "Address", title: "Step 3: Address & Emergency Details", subtitle: "Physical residence address and medical emergency contact." },
   { number: 4, label: "Student(s)", title: "Step 4: Student Profile", subtitle: "Provide dancer information, medical considerations, and apparel sizes. Add more than one to enrol siblings together." },
-  { number: 5, label: "Enrollment", title: "Step 5: Class Enrollment", subtitle: "Select which of this family's students to enroll, and the class for each." },
+  { number: 5, label: "Enrollment", title: "Step 5: Class Enrollment", subtitle: "Select which of this family's students to enroll, and one or more classes for each." },
   { number: 6, label: "Payment", title: "Step 6: Payment Schedule & Verification", subtitle: "Secure payment setup and registration finalization." }
 ];
 
@@ -435,9 +435,9 @@ const nextStep = async () => {
     return;
   }
 
-  // Step 5 — each student has their own (optional) class, but the registration has to enroll at least
+  // Step 5 — each student has their own (optional) classes, but the registration has to enroll at least
   // one of them.
-  if (currentStep.value === 5 && !form.students.some((s) => s.classId)) {
+  if (currentStep.value === 5 && !form.students.some((s) => s.classIds?.length)) {
     notify.warning("Choose a class for at least one student.");
     return;
   }

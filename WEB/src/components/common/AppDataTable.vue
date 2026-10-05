@@ -1,5 +1,6 @@
 <template>
   <q-table
+    ref="tableRef"
     v-model:pagination="innerPagination"
     v-model:selected="innerSelected"
     :rows="displayedRows"
@@ -73,6 +74,48 @@
       <div class="full-width column flex-center q-pa-lg text-grey-6">
         <q-icon name="o_inbox" size="32px" class="q-mb-sm" />
         No Data Available
+      </div>
+    </template>
+
+    <!-- Footer: "Showing x to y of z entries" on the left, prev / numbered pages / next on the right. -->
+    <template #bottom="scope">
+      <div class="app-pager row full-width items-center no-wrap">
+        <div class="app-pager__summary">{{ pageSummary }}</div>
+        <q-space />
+        <div class="app-pager__size row items-center no-wrap">
+          <span>Records per page:</span>
+          <q-select
+            :model-value="innerPagination.rowsPerPage" :options="rowsPerPageOptions"
+            dense outlined options-dense emit-value map-options
+            class="app-pager__size-select"
+            @update:model-value="setRowsPerPage"
+          />
+        </div>
+        <div class="app-pager__nav row items-center no-wrap">
+          <button
+            type="button" class="app-pager__btn app-pager__btn--arrow" aria-label="Previous page"
+            :disabled="scope.isFirstPage" @click="scope.prevPage"
+          >
+            <q-icon name="o_chevron_left" size="16px" />
+          </button>
+          <template v-for="item in pageItems(scope.pagesNumber)" :key="item.key">
+            <span v-if="item.ellipsis" class="app-pager__ellipsis">…</span>
+            <button
+              v-else type="button"
+              :class="['app-pager__btn', { 'app-pager__btn--active': item.page === innerPagination.page }]"
+              :aria-current="item.page === innerPagination.page ? 'page' : undefined"
+              @click="goToPage(item.page)"
+            >
+              {{ item.page }}
+            </button>
+          </template>
+          <button
+            type="button" class="app-pager__btn app-pager__btn--arrow" aria-label="Next page"
+            :disabled="scope.isLastPage" @click="scope.nextPage"
+          >
+            <q-icon name="o_chevron_right" size="16px" />
+          </button>
+        </div>
       </div>
     </template>
 
@@ -216,6 +259,49 @@ const onRequest = (requestProps) => {
   if (!props.clientSort) emit("request", innerPagination.value);
 };
 
+// ---- Footer pager ----
+const tableRef = ref(null);
+
+// Server-paged lists report their total; client-side ones are counted from the rows themselves.
+const totalEntries = computed(() => innerPagination.value.rowsNumber || displayedRows.value.length);
+
+const pageSummary = computed(() => {
+  const total = totalEntries.value;
+  if (!total) return "Showing 0 to 0 of 0 entries";
+  const { page, rowsPerPage } = innerPagination.value;
+  // rowsPerPage 0 means "all rows on one page".
+  const from = rowsPerPage ? (page - 1) * rowsPerPage + 1 : 1;
+  const to = rowsPerPage ? Math.min(page * rowsPerPage, total) : total;
+  return `Showing ${from} to ${to} of ${total} entries`;
+});
+
+// Every page when there are few; otherwise first, last, and the current page's neighbours with gaps.
+const pageItems = (pagesNumber) => {
+  const current = innerPagination.value.page;
+  const pages = pagesNumber <= 7
+    ? Array.from({ length: pagesNumber }, (_, i) => i + 1)
+    : [...new Set([1, current - 1, current, current + 1, pagesNumber])]
+      .filter((p) => p >= 1 && p <= pagesNumber)
+      .sort((a, b) => a - b);
+
+  const items = [];
+  pages.forEach((page, i) => {
+    if (i > 0 && page - pages[i - 1] > 1) items.push({ key: `gap-${page}`, ellipsis: true });
+    items.push({ key: page, page });
+  });
+  return items;
+};
+
+// Through QTable so a server-paged list still gets its @request.
+const goToPage = (page) => {
+  if (page !== innerPagination.value.page) tableRef.value?.setPagination({ page });
+};
+
+// A new page size starts again from page 1; onRequest remembers it as the user's preference.
+const setRowsPerPage = (rowsPerPage) => {
+  if (rowsPerPage !== innerPagination.value.rowsPerPage) tableRef.value?.setPagination({ rowsPerPage, page: 1 });
+};
+
 // ---- Column visibility (persisted) ----
 // The menu lists ALL data columns; only those flagged `default: true` are shown initially (falling back to
 // all when none are flagged).
@@ -294,7 +380,7 @@ const effectiveColumns = computed(() => {
 
 // Slots other than the ones defined here are forwarded straight to QTable.
 const slots = useSlots();
-const reserved = ["top", "no-data", "actions", "bulk-actions", "header-cell"];
+const reserved = ["top", "bottom", "no-data", "actions", "bulk-actions", "header-cell"];
 const forwardedSlots = computed(() =>
   Object.fromEntries(Object.entries(slots).filter(([name]) => !reserved.includes(name))));
 </script>
@@ -408,6 +494,99 @@ const forwardedSlots = computed(() =>
       width: 1%;
       white-space: nowrap;
       text-align: left;
+    }
+  }
+
+  /* ---- Footer pager ---- */
+  :deep(.q-table__bottom) {
+    padding: 12px 24px;
+    min-height: 0;
+  }
+
+  .app-pager {
+    &__summary {
+      font-size: 13px;
+      color: #6b6b80;
+    }
+
+    &__nav {
+      gap: 6px;
+    }
+
+    &__size {
+      gap: 8px;
+      margin-right: 16px;
+      font-size: 13px;
+      color: #6b6b80;
+    }
+
+    &__size-select {
+      min-width: 64px;
+      font-size: 13px;
+
+      :deep(.q-field__control) {
+        min-height: 28px;
+        height: 28px;
+        padding: 0 4px 0 8px;
+        border-radius: 6px;
+      }
+
+      :deep(.q-field__control:before) {
+        border-color: #e5e5eb;
+      }
+
+      :deep(.q-field__native),
+      :deep(.q-field__marginal) {
+        min-height: 28px;
+        height: 28px;
+        color: #3b3b4f;
+      }
+    }
+
+    &__btn {
+      min-width: 28px;
+      height: 28px;
+      padding: 0 6px;
+      border: 1px solid #e5e5eb;
+      border-radius: 6px;
+      background: #fff;
+      color: #3b3b4f;
+      font: inherit;
+      font-size: 13px;
+      line-height: 1;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: background-color 0.15s, border-color 0.15s;
+
+      &:hover:not(:disabled):not(.app-pager__btn--active) {
+        background: #f5f5f8;
+      }
+
+      &:disabled {
+        cursor: default;
+        color: #c4c4d0;
+      }
+
+      &--arrow {
+        color: #8a8a9c;
+      }
+
+      &--active {
+        background: var(--q-primary);
+        border-color: var(--q-primary);
+        color: #fff;
+        font-weight: 700;
+        cursor: default;
+      }
+    }
+
+    &__ellipsis {
+      min-width: 16px;
+      text-align: center;
+      color: #8a8a9c;
+      font-size: 13px;
     }
   }
 

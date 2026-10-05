@@ -269,7 +269,7 @@ public sealed class StudentsController : ControllerBase
             FamilyName = request.FamilyName?.Trim(),
             StudentNumber = request.StudentNumber?.Trim(),
             AdmissionDate = request.AdmissionDate,
-            ClassId = request.ClassId,
+            // ClassId is set by SetClassesAsync below, from the full class list.
             Active = true,
             FeeAmount = request.FeeAmount,
             FeeExpiryDate = request.FeeExpiryDate,
@@ -301,6 +301,7 @@ public sealed class StudentsController : ControllerBase
             UpdatedById = actorId,
         };
         await _students.AddAsync(student, cancellationToken);
+        await _students.SetClassesAsync(student, RequestedClassIds(request.ClassIds, request.ClassId), cancellationToken);
 
         // 3. The login account, promoted from the Person just created, carrying the Student role in the
         // active tenant — the same shape UsersController.Create builds for a promoted Person.
@@ -377,7 +378,8 @@ public sealed class StudentsController : ControllerBase
         var filtered = Sorts.Apply(filteredSet, sortBy, descending).ToList();
         var pageStudents = filtered.Skip((page - 1) * limit).Take(limit).ToList();
         var names = await ResolveActorNamesAsync(pageStudents.SelectMany(s => new[] { s.CreatedById, s.UpdatedById }), cancellationToken);
-        var pageItems = pageStudents.Select(s => ToSummary(s, PersonFor(persons, s), names));
+        var classIds = await _students.GetClassIdsAsync(pageStudents, cancellationToken);
+        var pageItems = pageStudents.Select(s => ToSummary(s, PersonFor(persons, s), names, classIds));
 
         return Ok(ApiResponseFactory.Paginated(pageItems, "Students retrieved.", page, limit, filtered.Count));
     }
@@ -395,7 +397,8 @@ public sealed class StudentsController : ControllerBase
 
         var person = student.PersonId is { } personId ? await _persons.GetByIdAsync(personId, cancellationToken) : null;
         var names = await ResolveActorNamesAsync(new[] { student.CreatedById, student.UpdatedById }, cancellationToken);
-        return Ok(ApiResponseFactory.Success(ToSummary(student, person, names), "Student retrieved."));
+        var classIds = await _students.GetClassIdsAsync(new[] { student }, cancellationToken);
+        return Ok(ApiResponseFactory.Success(ToSummary(student, person, names, classIds), "Student retrieved."));
     }
 
     [HttpPut("{id:guid}")]
@@ -480,7 +483,7 @@ public sealed class StudentsController : ControllerBase
         student.FamilyName = request.FamilyName?.Trim();
         student.StudentNumber = request.StudentNumber?.Trim();
         student.AdmissionDate = request.AdmissionDate;
-        student.ClassId = request.ClassId;
+        await _students.SetClassesAsync(student, RequestedClassIds(request.ClassIds, request.ClassId), cancellationToken);
         student.Active = request.Active;
         student.FeeAmount = request.FeeAmount;
         student.FeeExpiryDate = request.FeeExpiryDate;
@@ -712,12 +715,25 @@ public sealed class StudentsController : ControllerBase
     private static string? NameOf(IReadOnlyDictionary<Guid, string> names, Guid? id)
         => id.HasValue && names.TryGetValue(id.Value, out var name) ? name : null;
 
-    private static StudentSummary ToSummary(Student s, Person? person, IReadOnlyDictionary<Guid, string> names) => new(
+    /// <summary>
+    /// The classes a create/update asks for: <paramref name="classIds"/> plus the legacy single
+    /// <paramref name="classId"/>, without duplicates or empty ids.
+    /// </summary>
+    private static List<Guid> RequestedClassIds(IEnumerable<Guid>? classIds, Guid? classId)
+        => (classIds ?? Enumerable.Empty<Guid>())
+            .Concat(classId is { } single ? new[] { single } : Enumerable.Empty<Guid>())
+            .Where(id => id != Guid.Empty)
+            .Distinct()
+            .ToList();
+
+    private static StudentSummary ToSummary(
+        Student s, Person? person, IReadOnlyDictionary<Guid, string> names, IReadOnlyDictionary<Guid, IReadOnlyList<Guid>> classIds) => new(
         s.Id, s.PersonId, s.FamilyId, person?.FirstName, person?.LastName, s.FamilyName, s.StudentNumber, s.AdmissionDate,
         s.ClassId, s.Active, s.FeeAmount, s.FeeExpiryDate, s.FeeNote, s.FeeCategoryId, person?.Gender, s.BirthDate,
         s.CellPhone, person?.PrimaryEmail, s.School, s.GradeLevel, s.Transportation, s.TShirtSize, s.Disabilities,
         s.SpecialNeeds, s.Allergies, s.Medications, s.PrimaryDoctor, s.HasImmunizations, s.ImmunizationNotes, s.SkillNotes,
         s.TextOptIn, s.MassEmailOptOut, s.HealthInsuranceCarrier, s.DisabilitiesNotes, s.AllergiesNotes, s.AllowTextMessaging,
         person?.EmergencyContactName, person?.EmergencyContactNumber,
-        NameOf(names, s.CreatedById), s.CreatedOnUtc, NameOf(names, s.UpdatedById), s.UpdatedOnUtc);
+        NameOf(names, s.CreatedById), s.CreatedOnUtc, NameOf(names, s.UpdatedById), s.UpdatedOnUtc,
+        classIds.TryGetValue(s.Id, out var ids) ? ids : Array.Empty<Guid>());
 }
