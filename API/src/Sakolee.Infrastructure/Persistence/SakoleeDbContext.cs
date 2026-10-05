@@ -71,6 +71,8 @@ public class SakoleeDbContext : DbContext, IDataProtectionKeyContext
 
     public DbSet<Student> Students => Set<Student>();
 
+    public DbSet<StudentClass> StudentClasses => Set<StudentClass>();
+
     public DbSet<Family> Families => Set<Family>();
 
     public DbSet<FamilyPersonMapping> FamilyPersonMappings => Set<FamilyPersonMapping>();
@@ -232,6 +234,7 @@ public class SakoleeDbContext : DbContext, IDataProtectionKeyContext
 
         modelBuilder.Entity<TenantRole>().HasQueryFilter(e => !e.Deleted);
         modelBuilder.Entity<TenantRoleOverride>().HasQueryFilter(e => !e.Deleted);
+        modelBuilder.Entity<StudentClass>().HasQueryFilter(e => !e.Deleted);
         modelBuilder.Entity<Address>().HasQueryFilter(e => !e.Deleted);
         modelBuilder.Entity<Media>().HasQueryFilter(e => !e.Deleted);
         modelBuilder.Entity<PermissionGroupTemplate>().HasQueryFilter(e => !e.Deleted);

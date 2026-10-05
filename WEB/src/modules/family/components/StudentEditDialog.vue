@@ -1,17 +1,21 @@
 <template>
   <app-form-dialog
     v-model="open"
-    title="Edit Student"
-    subtitle="Update the student's identity, school, fee, medical, and notes."
+    :title="enrollmentOnly ? 'Edit Class Enrollment' : 'Edit Student'"
+    :subtitle="enrollmentOnly ? `Choose the classes ${studentName || 'this student'} is enrolled in.` : 'Update the student\'s identity, school, fee, medical, and notes.'"
     :saving="saving"
-    save-label="Update Student"
-    size="lg"
+    :save-label="enrollmentOnly ? 'Update Enrollment' : 'Update Student'"
+    :size="enrollmentOnly ? 'md' : 'lg'"
     @submit="save"
   >
     <div class="relative-position" :style="loading ? 'min-height: 200px;' : ''">
       <q-inner-loading :showing="loading" />
       <q-form v-if="!loading" ref="formRef" greedy>
-        <div class="row q-col-gutter-md">
+        <!-- Enrollment only: just the classes. Every other field is still loaded and sent back unchanged. -->
+        <div v-if="enrollmentOnly" class="row q-col-gutter-md">
+          <app-select v-model="form.classIds" label="Classes" :options="classOptions" multiple class="col-12" />
+        </div>
+        <div v-else class="row q-col-gutter-md">
           <div class="col-12 text-subtitle2 text-grey-8">Identity</div>
           <app-text-field v-model="form.firstName" label="First Name" required class="col-12 col-sm-6" :rules="[(v) => !!v || 'First name is required']" />
           <app-text-field v-model="form.lastName" label="Last Name" required class="col-12 col-sm-6" :rules="[(v) => !!v || 'Last name is required']" />
@@ -19,7 +23,7 @@
           <app-text-field v-model="form.studentNumber" label="Student Number" class="col-12 col-sm-6" />
           <app-select v-model="form.gender" label="Gender" :options="GENDER_OPTIONS" class="col-12 col-sm-6" />
           <app-date-field v-model="form.birthDate" label="Date of Birth" required class="col-12 col-sm-6" :rules="[(v) => !!v || 'Date of birth is required']" />
-          <app-select v-model="form.classId" label="Class" :options="classOptions" class="col-12 col-sm-6" />
+          <app-select v-model="form.classIds" label="Classes" :options="classOptions" multiple class="col-12 col-sm-6" />
           <app-date-field v-model="form.admissionDate" label="Admission Date" class="col-12 col-sm-6" />
           <div class="col-12 col-sm-6 toggle-row-inline"><q-toggle v-model="form.allowTextMessaging" color="primary" /><span class="q-ml-sm">Allow text messaging</span></div>
           <app-text-field
@@ -82,7 +86,9 @@ import AppDateField from "components/common/AppDateField.vue";
 
 const props = defineProps({
   modelValue: { type: Boolean, default: false },
-  studentId: { type: String, default: null }
+  studentId: { type: String, default: null },
+  // Class Enrollment tab: show only the class selection.
+  enrollmentOnly: { type: Boolean, default: false }
 });
 const emit = defineEmits(["update:modelValue", "saved"]);
 
@@ -102,7 +108,7 @@ const blankForm = () => ({
   lastName: "",
   familyName: "",
   studentNumber: "",
-  classId: null,
+  classIds: [],
   admissionDate: "",
   birthDate: "",
   gender: "",
@@ -130,16 +136,17 @@ const blankForm = () => ({
   active: true
 });
 const form = reactive(blankForm());
+const studentName = computed(() => [form.firstName, form.lastName].filter(Boolean).join(" "));
 const { options: tShirtSizeOptions } = useTShirtSizeOptions(() => form.tShirtSize);
 
 // Active classes for the Class select. A student whose saved class has since been deactivated keeps
 // it as an option (labelled as such) rather than showing a raw id or silently losing it on save.
 const classes = ref([]);
-const loadedClassId = ref(null);
+const loadedClassIds = ref([]);
 const classOptions = computed(() => {
   const options = classes.value.map((c) => ({ label: c.className, value: c.classId }));
-  if (loadedClassId.value && !options.some((o) => o.value === loadedClassId.value)) {
-    options.unshift({ label: "Current class (inactive)", value: loadedClassId.value });
+  for (const id of loadedClassIds.value.filter((id) => !options.some((o) => o.value === id))) {
+    options.unshift({ label: "Current class (inactive)", value: id });
   }
   return options;
 });
@@ -166,7 +173,7 @@ const blankPreserved = () => ({
 const preserved = reactive(blankPreserved());
 
 // Loads the full student record fresh each time the dialog opens — the Family page's own student
-// rows carry only the minimal FamilyStudentSummary shape (name, number, active, classId), not enough
+// rows carry only the minimal FamilyStudentSummary shape (name, number, active, classIds), not enough
 // to populate a full edit form.
 watch(() => props.modelValue, async (isOpen) => {
   if (!isOpen || !props.studentId) return;
@@ -174,10 +181,10 @@ watch(() => props.modelValue, async (isOpen) => {
   Object.assign(preserved, blankPreserved());
   emailError.value = "";
   loading.value = true;
-  loadedClassId.value = null;
+  loadedClassIds.value = [];
   try {
     const [row] = await Promise.all([studentApi.get(props.studentId), loadClasses()]);
-    loadedClassId.value = row.classId ?? null;
+    loadedClassIds.value = row.classIds?.length ? [...row.classIds] : row.classId ? [row.classId] : [];
     Object.assign(preserved, {
       familyId: row.familyId ?? null,
       feeCategoryId: row.feeCategoryId ?? null,
@@ -191,7 +198,7 @@ watch(() => props.modelValue, async (isOpen) => {
       lastName: row.lastName || "",
       familyName: row.familyName || "",
       studentNumber: row.studentNumber || "",
-      classId: row.classId ?? null,
+      classIds: [...loadedClassIds.value],
       admissionDate: row.admissionDate ? row.admissionDate.substring(0, 10) : "",
       birthDate: row.birthDate ? row.birthDate.substring(0, 10) : "",
       gender: row.gender || "",
@@ -238,7 +245,7 @@ const save = async () => {
     lastName: form.lastName,
     familyName: form.familyName || null,
     studentNumber: form.studentNumber || null,
-    classId: form.classId || null,
+    classIds: form.classIds || [],
     admissionDate: form.admissionDate || null,
     birthDate: form.birthDate || null,
     gender: form.gender || null,
@@ -269,7 +276,7 @@ const save = async () => {
   saving.value = true;
   try {
     await studentApi.update(props.studentId, payload);
-    notify.success("Student updated.");
+    notify.success(props.enrollmentOnly ? "Class enrollment updated." : "Student updated.");
     open.value = false;
     emit("saved");
   } catch (err) {
