@@ -63,6 +63,8 @@ public class SakoleeDbContext : DbContext, IDataProtectionKeyContext
 
     public DbSet<TenantRole> TenantRoles => Set<TenantRole>();
 
+    public DbSet<TenantRoleOverride> TenantRoleOverrides => Set<TenantRoleOverride>();
+
     public DbSet<Person> Persons => Set<Person>();
 
     public DbSet<TenantPersonMapping> TenantPersonMappings => Set<TenantPersonMapping>();
@@ -229,6 +231,7 @@ public class SakoleeDbContext : DbContext, IDataProtectionKeyContext
         //modelBuilder.Entity<Role>().HasQueryFilter(e => (!_tenantContext.IsResolved || e.TenantId == _tenantContext.TenantId) && !e.Deleted);
 
         modelBuilder.Entity<TenantRole>().HasQueryFilter(e => !e.Deleted);
+        modelBuilder.Entity<TenantRoleOverride>().HasQueryFilter(e => !e.Deleted);
         modelBuilder.Entity<Address>().HasQueryFilter(e => !e.Deleted);
         modelBuilder.Entity<Media>().HasQueryFilter(e => !e.Deleted);
         modelBuilder.Entity<PermissionGroupTemplate>().HasQueryFilter(e => !e.Deleted);
