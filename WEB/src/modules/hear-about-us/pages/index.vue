@@ -11,18 +11,20 @@
       :search="search"
       show-search
       search-placeholder="Search Hear About Us name"
-      show-filters
-      :filter-count="filterChips.length"
+      
       :show-add="canWrite"
       add-label="Create Hear About Us"
       show-back
       @update:search="search = $event"
-      @filters="filterOpen = true"
       @add="openCreate"
       @back="$router.back()"
     />
+    <!--Hiding the filter attribute-->
+    <!-- show-filters
+      :filter-count="filterChips.length"
+      @filters="filterOpen = true" -->
     <!-- Filter drawer for filtering Hear About Us records -->
-    <app-filter-drawer
+    <!-- <app-filter-drawer
       v-model="filterOpen"
       :chips="filterChips"
       @remove="removeFilter"
@@ -39,7 +41,7 @@
         dense
         class="q-mt-md"
       />
-    </app-filter-drawer>
+    </app-filter-drawer> -->
     <!-- Table displaying all Hear About Us records -->
     <app-data-table
       page-key="hear-about-us"
