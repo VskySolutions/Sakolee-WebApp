@@ -701,7 +701,7 @@ const sections = [
   },
   {
     key: "class",
-    label: "Class",
+    label: "Classes",
     icon: "o_school",
     items: [
       { label: "All Classes", icon: "o_class", to: "/classes", permissions: [Permissions.ClassesRead] },
@@ -726,10 +726,10 @@ const sections = [
   // },
   {
     key: "staff",
-    label: "Staff",
+    label: "Staffs",
     icon: "o_assignment_ind",
     items: [
-      { label: "Staff", icon: "o_group", to: "/users", permissions: [Permissions.UsersRead] }
+      { label: "Staffs", icon: "o_group", to: "/users", permissions: [Permissions.UsersRead] }
     ]
   },
   {
@@ -815,7 +815,7 @@ const settingsMenu = {
           to: "/sessions",
           permissions: [Permissions.SessionsRead]
         },
-         {
+        {
           label: "Billing Methods",
           icon: "o_account_balance",
           to: "/billing-methods",
@@ -827,7 +827,7 @@ const settingsMenu = {
           to: "/membership-types",
           permissions: [Permissions.MembershipTypesRead]
         },
-         {
+        {
           label: "Student Grade Levels",
           icon: "o_school",
           to: "/student-grade-levels",
@@ -876,11 +876,6 @@ const settingsMenu = {
           to: "/account-type",
           permissions: [Permissions.AccountTypesRead]
         },
-       
-       
-        
-        
-       
       ]
     },
     {

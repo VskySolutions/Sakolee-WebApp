@@ -169,7 +169,7 @@
           <q-card v-if="canManageAssignments" flat bordered class="user-card q-mb-md">
             <q-card-section class="row items-center q-gutter-sm">
               <q-icon name="o_key" color="primary" size="sm" />
-              <div class="text-subtitle1 text-weight-medium">Tenants &amp; roles</div>
+              <div class="text-subtitle1 text-weight-medium">Roles</div>
               <q-space />
               <q-btn
                 unelevated no-caps dense color="primary" icon="o_add" label="Add"
