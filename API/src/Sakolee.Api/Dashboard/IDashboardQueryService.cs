@@ -7,5 +7,9 @@ public interface IDashboardQueryService
 {
     Task<UserDashboardDto> GetUsersAsync(Guid? tenantId, string dateRange, CancellationToken cancellationToken);
 
+    Task<StudioMetricsDto> GetStudioMetricsAsync(Guid? tenantId, CancellationToken cancellationToken);
+
+    Task<IReadOnlyList<EnrollmentActivityDto>> GetEnrollmentActivityAsync(Guid? tenantId, int limit, CancellationToken cancellationToken);
+
     Task<PlatformDashboardDto> GetPlatformAsync(string dateRange, bool forceRefresh, CancellationToken cancellationToken);
 }

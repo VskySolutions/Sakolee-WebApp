@@ -1,63 +1,5 @@
 <template>
   <q-page padding>
-    <!-- <app-list-header
-      :breadcrumbs="[{ label: 'Home', icon: 'o_home', to: '/' }, { label: 'Person' }]"
-      :search="search"
-      show-search
-      search-placeholder="Search name, email or code"
-      show-filters
-      :filter-count="filterChips.length"
-      :show-add="canWrite"
-      add-label="Create Person"
-      show-back
-      @update:search="search = $event"
-      @filters="filterOpen = true"
-      @add="openCreate"
-      @back="$router.back()"
-    /> -->
-
-    <!-- <app-list-header
-      :breadcrumbs="[
-        { label: 'Home', to: '/dashboard' },
-        { label: 'Person' }
-      ]"
-      title="All Persons"
-      description="Manage people, accounts, contact information and tenant assignments."
-      :search="search"
-      show-search
-      search-placeholder="Search name, email or code"
-      show-filters
-      :filter-count="filterChips.length"
-      :show-add="canWrite"
-      add-label="Create Person"
-      show-back
-      @update:search="search = $event"
-      @filters="filterOpen = true"
-      @add="openCreate"
-      @back="$router.back()"
-    /> -->
-
-    <!-- <app-list-header
-      :breadcrumbs="[
-        { label: 'Home', to: '/' },
-        { label: 'Person' }
-      ]"
-      title="Person"
-      description="Manage people, user accounts, and person records."
-      :search="search"
-      show-search
-      search-placeholder="Search name, email or code"
-      show-filters
-      :filter-count="filterChips.length"
-      :show-add="canWrite"
-      add-label="Create Person"
-      show-back
-      @update:search="search = $event"
-      @filters="filterOpen = true"
-      @add="openCreate"
-      @back="$router.back()"
-    /> -->
-
     <app-list-header
       :breadcrumbs="[
         { label: 'Home', to: '/' },
@@ -120,10 +62,15 @@
 
       <template #body-cell-actions="cell">
         <q-td :props="cell">
-          <q-btn flat round dense color="primary" icon="o_visibility" :to="{ name: 'person_detail', params: { id: cell.row.id } }">
-            <q-tooltip>View / Edit</q-tooltip>
+          <!-- View Dialog Trigger -->
+          <q-btn flat round dense color="primary" icon="o_visibility" @click="openView(cell.row)">
+            <q-tooltip>View Details</q-tooltip>
           </q-btn>
-          <!-- One button per action, all of them on the row. -->
+
+          <!-- Edit Dialog Trigger -->
+          <q-btn flat round dense color="primary" icon="o_edit" @click="openEdit(cell.row)">
+            <q-tooltip>Edit Person</q-tooltip>
+          </q-btn>
           <q-btn
             v-if="canCreateUser" type="a"
             flat round dense
@@ -149,17 +96,26 @@
       v-if="canManageDeleted" :entity-type="EntityType.Person" :show="showDeleted" @restored="load"
     />
 
-    <!-- Create person -->
-    <app-form-drawer v-model="formOpen" title="Create Person" :saving="saving" @submit="submitForm" @cancel="resetForm">
-      <q-form ref="formRef" greedy>
-        <person-form-fields v-model="form" :tenant-options="tenantOptions" :loading-tenants="loadingTenants" />
-      </q-form>
-    </app-form-drawer>
+    <!-- Person View Dialog integration -->
+    <person-view-dialog v-model="viewOpen" :person-id="selectedPersonId" />
+
+    <!-- Person Create / Edit Form Dialog integration -->
+    <!-- <person-form-dialog
+      v-model="formOpen"
+      :editing-id="editingId"
+      :initial-data="initialData"
+      @saved="load"
+    /> -->
+    <person-form-dialog
+      v-model="formOpen"
+      :editing-id="editingId"
+      @saved="load"
+/>
   </q-page>
 </template>
 
 <script setup>
-import { ref, reactive, computed, watch, onMounted } from "vue";
+import { ref, computed, watch, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import { personApi, getApiErrorMessage, EntityType } from "services/api";
 import { usePermissions, Permissions } from "composables/usePermissions";
@@ -173,30 +129,34 @@ import { debounce } from "quasar";
 
 import AppDataTable from "components/common/AppDataTable.vue";
 import DeletedRecordsPanel from "components/universal/DeletedRecordsPanel.vue";
-import AppFormDrawer from "components/common/AppFormDrawer.vue";
 import AppFilterDrawer from "components/common/AppFilterDrawer.vue";
 import AppColumnFilters from "components/common/AppColumnFilters.vue";
 import AppListHeader from "components/common/AppListHeader.vue";
-import PersonFormFields from "components/person/PersonFormFields.vue";
-import { blankPersonForm } from "composables/personForm";
+import PersonViewDialog from "src/modules/person/pages/detail.vue";
+import PersonFormDialog from "components/person/PersonFormDialog.vue";
 import { useTenantOptions } from "composables/useTenantOptions";
 
+// State and reactive variables
 const router = useRouter();
 const { showDeleted, canManageDeleted } = useDeletedRecords();
 const notify = useNotify();
 const { confirm } = useConfirm();
 const { has } = usePermissions();
 const auditColumns = useAuditColumns();
-const { canChooseTenant, activeTenantId, tenantOptions, loadingTenants, loadTenants } = useTenantOptions();
+const { canChooseTenant, tenantOptions, loadTenants } = useTenantOptions();
 const canWrite = computed(() => has(Permissions.PersonsWrite));
 const canDelete = computed(() => has(Permissions.PersonsDelete));
 const canCreateUser = computed(() => has(Permissions.UsersWrite));
 
-// Tenant dropdown filter for platform/super admins (option value is the tenant id, sent to the API).
+const formOpen = ref(false);
+const editingId = ref(null);
+const initialData = ref(null);
+
+// Computed property for tenant filter options
 const tenantFilterOptions = computed(() =>
   (canChooseTenant.value && tenantOptions.value.length ? tenantOptions.value : null));
 
-// Filterable columns are server-side; text/date columns are covered by the search box.
+// Computed property for search and filters
 const SOURCE_LABELS = {
   Person: "Added manually",
   User: "User account",
@@ -204,6 +164,7 @@ const SOURCE_LABELS = {
 };
 const sourceLabel = (value) => (value ? (SOURCE_LABELS[value] || value) : "—");
 
+// Table columns definition
 const columns = computed(() => [
   {
     name: "tenantName",
@@ -220,13 +181,12 @@ const columns = computed(() => [
   { name: "mobileNumber", label: "Phone", field: "mobileNumber", align: "left", filterable: false },
   { name: "isUser", label: "Account", field: "isUser", align: "left", sortable: true, default: true, filterOptions: [{ label: "User", value: true }, { label: "Not a user", value: false }] },
   { name: "isActive", label: "Status", field: "isActive", align: "left", sortable: true, filterOptions: [{ label: "Active", value: true }, { label: "Inactive", value: false }] },
-  // Where the record came from. Filtering is client-side over the loaded page (this list is not
-  // server-filtered on it), so it stays a plain column rather than claiming a server filter it lacks.
   { name: "sourceEntityType", label: "Source", field: (r) => sourceLabel(r.sourceEntityType), align: "left", default: true, filterable: false },
   ...auditColumns(),
   { name: "actions", label: "Actions", field: "actions", align: "left" }
 ]);
 
+// Table state and data fetching
 const { rows, loading, totalRecords, selected, search, filterOpen, pagination, load, onRequest } = useListTable({
   pageKey: "persons",
   fetcher: ({ page, limit, sortBy, descending }) =>
@@ -243,49 +203,41 @@ const { rows, loading, totalRecords, selected, search, filterOpen, pagination, l
   onError: (err) => notify.error(getApiErrorMessage(err))
 });
 
-// Server-side per-column filters + search box: reload (debounced, first page) on any change.
 const { filters, filterableColumns, filterChips, removeFilter, clearFilters } = useColumnFilters(columns, rows, { server: true });
 const reload = debounce(() => { pagination.value.page = 1; load(); }, 300);
 watch([search, filters], reload, { deep: true });
 
-// Load tenant options so the Tenant dropdown filter is available to platform/super admins.
-onMounted(() => { if (canChooseTenant.value) loadTenants(); console.log(canChooseTenant.value); });
+onMounted(() => { if (canChooseTenant.value) loadTenants(); });
 
-// ---- Create ----
-const formOpen = ref(false);
-const saving = ref(false);
-const formRef = ref(null);
-const form = reactive(blankPersonForm());
+// View Dialog State
+const viewOpen = ref(false);
+const selectedPersonId = ref(null);
 
-const resetForm = () => Object.assign(form, blankPersonForm());
+const openView = (row) => {
+  selectedPersonId.value = row.id;
+  viewOpen.value = true;
+};
 
+// Create Action
 const openCreate = async () => {
-  resetForm();
-  // Super/platform admins pick a tenant; everyone else is auto-scoped to their active tenant.
-  if (canChooseTenant.value) {
-    await loadTenants();
-  } else {
-    form.tenantIds = [activeTenantId.value];
-  }
+  editingId.value = null;
+  initialData.value = null;
+  if (canChooseTenant.value) await loadTenants();
   formOpen.value = true;
 };
 
-const submitForm = async ({ clearDraft } = {}) => {
-  if (!(await formRef.value?.validate())) return;
-  saving.value = true;
-  try {
-    const payload = { ...form, dateOfBirth: form.dateOfBirth || null };
-    await personApi.create(payload);
-    clearDraft?.();
-    formOpen.value = false;
-    resetForm();
-    notify.success("Person created.");
-    load();
-  } catch (err) {
-    notify.error(getApiErrorMessage(err));
-  } finally {
-    saving.value = false;
-  }
+// // Edit Action
+// const openEdit = async (row) => {
+//   editingId.value = row.id;
+//   initialData.value = row;
+//   if (canChooseTenant.value) await loadTenants();
+//   formOpen.value = true;
+// };
+
+// Edit Action
+const openEdit = (row) => {
+  editingId.value = row.id;
+  formOpen.value = true;
 };
 
 const convertToUser = (row) => {
@@ -310,7 +262,6 @@ const removePerson = async (row) => {
 };
 
 const bulkDelete = async (sel) => {
-  // Persons linked to a user can't be deleted (the API rejects them) — skip and warn.
   const deletable = sel.filter((r) => !r.isUser);
   const skipped = sel.length - deletable.length;
   if (!deletable.length) {

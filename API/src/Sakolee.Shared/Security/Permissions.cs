@@ -226,10 +226,16 @@ public static class Permissions
         OptionSetsRead, OptionSetsManage
     };
 
-    /// <summary>A student holds no platform permissions — access to their own record is by ownership.</summary>
-    public static IReadOnlyList<string> ForStudent() => Array.Empty<string>();
+    /// <summary>A student's access to their own record is by ownership; the only platform permission is
+    /// reading classes, which is itself scoped to their own enrollment.</summary>
+    public static IReadOnlyList<string> ForStudent() => new[]
+    {
+        // Lets a student open the Classes page; ClassesController limits a Student login to the class(es)
+        // they are enrolled in (see ClaimsPrincipalExtensions.IsSelfServiceOnly), never the full list.
+        ClassesRead,
+    };
 
-    /// <summary>A family contact (Guardian) holds no platform permissions — same reasoning as <see cref="ForStudent"/>.</summary>
+    /// <summary>A family contact (Guardian) holds no platform permissions — access to their family's records is by ownership.</summary>
     public static IReadOnlyList<string> ForGuardian() => Array.Empty<string>();
 
     /// <summary>

@@ -35,6 +35,8 @@ public sealed class ClassesController : ControllerBase
     private readonly ILocationRepository _locations;
     private readonly IClassSessionRepository _sessions;
     private readonly IUserRepository _users;
+    private readonly IFamilyRepository _families;
+    private readonly IStudentRepository _students;
     private readonly IActorAccessor _actorAccessor;
     private readonly IUnitOfWork _unitOfWork;
     private readonly IAuditTrailService _audit;
@@ -45,6 +47,8 @@ public sealed class ClassesController : ControllerBase
         ILocationRepository locations,
         IClassSessionRepository sessions,
         IUserRepository users,
+        IFamilyRepository families,
+        IStudentRepository students,
         IActorAccessor actorAccessor,
         IUnitOfWork unitOfWork,
         IAuditTrailService audit)
@@ -54,6 +58,8 @@ public sealed class ClassesController : ControllerBase
         _locations = locations;
         _sessions = sessions;
         _users = users;
+        _families = families;
+        _students = students;
         _actorAccessor = actorAccessor;
         _unitOfWork = unitOfWork;
         _audit = audit;
@@ -104,8 +110,13 @@ public sealed class ClassesController : ControllerBase
             ApiResponseFactory.Success(ToSummary(entity, names), "Class created."));
     }
 
+    /// <summary>
+    /// Lists classes. Also readable by anyone who can view, add, or edit students, since it feeds the
+    /// class dropdowns on the student and family forms (Quick Registration, Edit Family, Edit Student).
+    /// A self-service caller still only gets their own enrolled classes (see EnrolledClassIdsAsync).
+    /// </summary>
     [HttpGet]
-    [RequirePermission(Permissions.ClassesRead)]
+    [RequireAnyPermission(Permissions.ClassesRead, Permissions.StudentsRead, Permissions.StudentsWrite, Permissions.FamiliesWrite)]
     public async Task<IActionResult> List(
         [FromQuery] int page = 1,
         [FromQuery] int limit = 20,
@@ -121,6 +132,10 @@ public sealed class ClassesController : ControllerBase
         var all = await _classes.ListAsync(cancellationToken);
         IEnumerable<Class> filteredSet = all;
 
+        if (await EnrolledClassIdsAsync(cancellationToken) is { } enrolledClassIds)
+        {
+            filteredSet = filteredSet.Where(c => enrolledClassIds.Contains(c.Id));
+        }
         if (active.HasValue)
         {
             filteredSet = filteredSet.Where(c => c.Active == active.Value);
@@ -139,36 +154,15 @@ public sealed class ClassesController : ControllerBase
         return Ok(ApiResponseFactory.Paginated(pageItems, "Classes retrieved.", page, limit, filtered.Count));
     }
 
-    /// <summary>
-    /// The Primary Instructor picker's options: the active tenant's active users holding the "Staff" role
-    /// (the same people the Staff list shows). Readable with Classes permissions alone, so the class form
-    /// does not need users.read.
-    /// </summary>
-    [HttpGet("instructors")]
-    [RequireAnyPermission(Permissions.ClassesRead, Permissions.ClassesWrite)]
-    [ProducesResponseType<ApiResponse<IReadOnlyList<ClassInstructorOption>>>(StatusCodes.Status200OK)]
-    public async Task<IActionResult> ListInstructors(CancellationToken cancellationToken)
-    {
-        if (User.GetActiveTenantId() is not { } tenantId)
-        {
-            return StatusCode(StatusCodes.Status403Forbidden, ApiResponseFactory.Forbidden("No active tenant for the caller."));
-        }
-
-        var staff = await _users.ListByTenantRolesAsync(tenantId, new[] { StaffRole }, cancellationToken);
-        var options = staff
-            .Select(u => new ClassInstructorOption(u.Id, u.Person?.FullName ?? u.DisplayName))
-            .OrderBy(o => o.Name, StringComparer.OrdinalIgnoreCase)
-            .ToList();
-        return Ok(ApiResponseFactory.Success(options, "Instructors retrieved."));
-    }
-
     [HttpGet("{id:guid}")]
     [RequirePermission(Permissions.ClassesRead)]
     [ProducesResponseType<ApiResponse<ClassSummary>>(StatusCodes.Status200OK)]
     public async Task<IActionResult> GetById(Guid id, CancellationToken cancellationToken)
     {
         var entity = await _classes.GetByIdAsync(id, cancellationToken);
-        if (entity is null)
+        // A parent only ever reaches their own children's classes — any other reads as not found.
+        if (entity is null
+            || (await EnrolledClassIdsAsync(cancellationToken) is { } enrolledClassIds && !enrolledClassIds.Contains(entity.Id)))
         {
             return NotFound(ApiResponseFactory.NotFound("Class not found."));
         }
@@ -198,6 +192,29 @@ public sealed class ClassesController : ControllerBase
                 PrimaryInstructorName = NameOf(instructorNames, entity.PrimaryInstructorId),
             },
             "Class retrieved."));
+    }
+
+    /// <summary>
+    /// The Primary Instructor picker's options: the active tenant's active users holding the "Staff" role
+    /// (the same people the Staff list shows). Readable with Classes permissions alone, so the class form
+    /// does not need users.read.
+    /// </summary>
+    [HttpGet("instructors")]
+    [RequireAnyPermission(Permissions.ClassesRead, Permissions.ClassesWrite)]
+    [ProducesResponseType<ApiResponse<IReadOnlyList<ClassInstructorOption>>>(StatusCodes.Status200OK)]
+    public async Task<IActionResult> ListInstructors(CancellationToken cancellationToken)
+    {
+        if (User.GetActiveTenantId() is not { } tenantId)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, ApiResponseFactory.Forbidden("No active tenant for the caller."));
+        }
+
+        var staff = await _users.ListByTenantRolesAsync(tenantId, new[] { StaffRole }, cancellationToken);
+        var options = staff
+            .Select(u => new ClassInstructorOption(u.Id, u.Person?.FullName ?? u.DisplayName))
+            .OrderBy(o => o.Name, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        return Ok(ApiResponseFactory.Success(options, "Instructors retrieved."));
     }
 
     [HttpPut("{id:guid}")]
@@ -327,6 +344,49 @@ public sealed class ClassesController : ControllerBase
 
     private Guid? CurrentActorId()
         => Guid.TryParse(_actorAccessor.GetCurrentActor(), out var id) ? id : null;
+
+    /// <summary>
+    /// The classes the caller is limited to, or <c>null</c> when the caller is not limited. A caller whose
+    /// only roles are self-service roles (Parent/Guardian/Student — see
+    /// <see cref="ClaimsPrincipalExtensions.IsSelfServiceOnly"/>) sees only the classes they are enrolled
+    /// in (<see cref="Student.ClassId"/>): a Student their own, a family contact any student of one of
+    /// their families'. An empty set when there are none. Mirrors StudentsController's family scoping.
+    /// </summary>
+    private async Task<IReadOnlySet<Guid>?> EnrolledClassIdsAsync(CancellationToken cancellationToken)
+    {
+        if (!User.IsSelfServiceOnly())
+        {
+            return null;
+        }
+
+        var classIds = new HashSet<Guid>();
+        var user = User.GetUserId() is { } userId ? await _users.GetByIdAsync(userId, cancellationToken) : null;
+        if (user?.PersonId is not { } personId)
+        {
+            return classIds;
+        }
+
+        void AddClassesOf(IEnumerable<Student> students)
+        {
+            foreach (var student in students)
+            {
+                if (student.ClassId is { } classId)
+                {
+                    classIds.Add(classId);
+                }
+            }
+        }
+
+        // A Student login's own enrollment(s).
+        AddClassesOf(await _students.ListByPersonIdAsync(personId, cancellationToken));
+
+        // A family contact's children's enrollments.
+        foreach (var familyId in await _families.ListFamilyIdsForContactAsync(personId, cancellationToken))
+        {
+            AddClassesOf(await _students.ListByFamilyIdAsync(familyId, cancellationToken));
+        }
+        return classIds;
+    }
 
     private async Task<IReadOnlyDictionary<Guid, string>> ResolveActorNamesAsync(IEnumerable<Guid?> ids, CancellationToken cancellationToken)
         => await _users.GetFullNamesAsync(ids.Where(id => id.HasValue).Select(id => id!.Value), cancellationToken);

@@ -85,5 +85,38 @@ export function useDateFormat () {
     return new Date(wall - tzOffsetMs(wall)).toISOString();
   };
 
-  return { formatDateTime, formatDate, formatTime, tenantTimeZone, zonedDayBoundaryUtc };
+  const formatLongDate = (value) => {
+    if (!value) return "—";
+    const s = String(value);
+    const normalized =
+    /[zZ]$|[+-]\d{2}:?\d{2}$/.test(s)
+      ? s
+      : `${s}Z`;
+    const date = new Date(normalized);
+    if (Number.isNaN(date.getTime())) {
+      return "—";
+    }
+    return new Intl.DateTimeFormat("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric"
+    }).format(date);
+  };
+
+  const formatLongDateTime = (value) => {
+    if (!value) return "—";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) {
+      return "—";
+    }
+    return new Intl.DateTimeFormat("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      hour: "numeric",
+      minute: "2-digit"
+    }).format(date);
+  };
+
+  return { formatDateTime, formatDate, formatTime, tenantTimeZone, zonedDayBoundaryUtc, formatLongDate, formatLongDateTime };
 }

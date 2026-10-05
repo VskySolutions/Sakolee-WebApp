@@ -199,7 +199,7 @@
       <!-- =====================================================
      SETTINGS - NORMAL MODE
      ===================================================== -->
-      <template v-if="!mini">
+      <template v-if="showSettings && !mini">
 
         <q-expansion-item
           dense
@@ -301,7 +301,7 @@
            MINI SETTINGS
            ================================================= -->
       <q-item
-        v-else
+        v-else-if="showSettings"
         v-ripple
         dense
         clickable
@@ -701,7 +701,7 @@ const sections = [
   },
   {
     key: "class",
-    label: "Class",
+    label: "Classes",
     icon: "o_school",
     items: [
       { label: "All Classes", icon: "o_class", to: "/classes", permissions: [Permissions.ClassesRead] },
@@ -726,10 +726,10 @@ const sections = [
   // },
   {
     key: "staff",
-    label: "Staff",
+    label: "Staffs",
     icon: "o_assignment_ind",
     items: [
-      { label: "Staff", icon: "o_group", to: "/users", permissions: [Permissions.UsersRead] }
+      { label: "Staffs", icon: "o_group", to: "/users", permissions: [Permissions.UsersRead] }
     ]
   },
   {
@@ -781,7 +781,7 @@ const sections = [
   // }
 ];
 
-const settingsSection = {
+const settingsMenu = {
   key: "settings",
   label: "Settings",
   icon: "o_settings",
@@ -808,6 +808,37 @@ const settingsSection = {
           icon: "o_class",
           to: "/class-rooms",
           permissions: [Permissions.ClassRoomsRead]
+        },
+        {
+          label: "Class Sessions",
+          icon: "o_date_range",
+          to: "/sessions",
+          permissions: [Permissions.ClassSessionsRead]
+        },
+        {
+          label: "Billing Methods",
+          icon: "o_account_balance",
+          to: "/billing-methods",
+          permissions: [Permissions.BillingMethodsRead]
+        },
+        {
+          label: "Membership Types",
+          icon: "o_card_membership",
+          to: "/membership-types",
+          permissions: [Permissions.MembershipTypesRead]
+        },
+        {
+          label: "Student Grade Levels",
+          icon: "o_school",
+          to: "/student-grade-levels",
+          permissions: [Permissions.StudentGradeLevelsRead]
+        },
+
+        {
+          label: "Family Relations",
+          icon: "o_supervised_user_circle",
+          to: "/family-relations",
+          permissions: [Permissions.FamilyRelationsRead]
         },
         {
           label: "Class Categories",
@@ -845,36 +876,6 @@ const settingsSection = {
           to: "/account-type",
           permissions: [Permissions.AccountTypesRead]
         },
-        {
-          label: "Class Sessions",
-          icon: "o_date_range",
-          to: "/sessions",
-          permissions: [Permissions.SessionsRead]
-        },
-        {
-          label: "Billing Methods",
-          icon: "o_account_balance",
-          to: "/billing-methods",
-          permissions: [Permissions.BillingMethodsRead]
-        },
-        {
-          label: "Family Relations",
-          icon: "o_supervised_user_circle",
-          to: "/family-relations",
-          permissions: [Permissions.FamilyRelationsRead]
-        },
-        {
-  label: "Membership Types",
-  icon: "o_card_membership",
-  to: "/membership-types",
-  permissions: [Permissions.MembershipTypesRead]
-},
-{
-          label: "Student Grade Levels",
-          icon: "o_school",
-          to: "/student-grade-levels",
-          permissions: [Permissions.StudentGradeLevelsRead]
-        },
       ]
     },
     {
@@ -900,6 +901,19 @@ const settingsSection = {
 
 const canSee = (permissions) => !permissions || authStore.hasAnyPermission(permissions);
 console.log("Can See Permissionis:", canSee());
+
+// Settings is gated by its permission-bound entries (Masters). The personal pages it also carries
+// (My Account, Profile, Change Password) stay reachable from the avatar menu, so a role holding none
+// of the Settings permissions — e.g. Student — doesn't get the Settings menu at all.
+const filterItems = (items) =>
+  items
+    .map((item) => (item.items ? { ...item, items: filterItems(item.items) } : item))
+    .filter((item) => (item.items ? item.items.length : canSee(item.permissions)));
+
+const settingsSection = computed(() => ({ ...settingsMenu, items: filterItems(settingsMenu.items) }));
+
+const showSettings = computed(() =>
+  settingsSection.value.items.some((item) => item.items || item.permissions));
 
 const visibleSections = computed(() =>
   sections

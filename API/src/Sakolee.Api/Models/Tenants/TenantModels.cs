@@ -84,4 +84,12 @@ public sealed record TenantDetail(
     string Status,
     string TimeZoneId,
     AddressResponse? Address,
-    RecordAudit Audit);
+    RecordAudit Audit,
+    TenantAdministratorDetail? Administrator
+    );
+
+public sealed record TenantAdministratorDetail(
+    string? FirstName,
+    string? LastName,
+    string? Email,
+    string? MobileNumber);

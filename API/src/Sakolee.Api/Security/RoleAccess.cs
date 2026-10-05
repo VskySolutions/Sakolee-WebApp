@@ -26,6 +26,14 @@ internal static class RoleAccess
     public static bool CanManage(ClaimsPrincipal user, Role role)
         => user.IsSuperAdmin() || Owns(user, role);
 
+    /// <summary>
+    /// May give the role a permission set of their own tenant's (<see cref="TenantRoleOverride"/>): a
+    /// tenant user looking at a platform role. The role itself — name, description, the platform default
+    /// every other tenant gets — stays the Super Admin's.
+    /// </summary>
+    public static bool CanCustomize(ClaimsPrincipal user, Role role)
+        => !user.IsSuperAdmin() && role.TenantId is null && user.GetActiveTenantId() is not null && CanSee(user, role);
+
     private static bool Owns(ClaimsPrincipal user, Role role)
         => role.TenantId is { } owner && user.GetActiveTenantId() is { } active && owner == active;
 

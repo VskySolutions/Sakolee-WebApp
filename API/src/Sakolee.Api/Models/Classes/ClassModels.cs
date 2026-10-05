@@ -146,6 +146,7 @@ public sealed record ClassSummary(
     string? Category3Name = null,
     string? LocationName = null,
     string? SessionName = null,
+    string? RoomName = null,
     string? PrimaryInstructorName = null,
     // The additional instructors with their names, in saved order — single-class read only, like the names above.
     IReadOnlyList<ClassInstructorOption>? AdditionalInstructors = null);

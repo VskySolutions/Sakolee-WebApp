@@ -57,7 +57,8 @@
 
       <template #body-cell-actions="cell">
         <q-td :props="cell">
-          <q-btn flat round dense color="primary" icon="o_visibility" :to="{ name: 'tenant_detail', params: { id: cell.row.tenantId } }">
+          <!-- :to="{ name: 'tenant_detail', params: { id: cell.row.tenantId } }" -->
+          <q-btn flat round dense color="primary" icon="o_visibility" @click="openView(cell.row)">
             <q-tooltip>View / Manage</q-tooltip>
           </q-btn>
           <!-- One button per action, all of them on the row. -->
@@ -187,7 +188,7 @@
         </q-card>
       </q-form>
     </app-form-dialog>
-
+    <view-tenant :id="viewTenantId" v-model="viewOpen" />
     <temp-password-dialog v-model="tempPwOpen" :password="tempPassword" />
   </q-page>
 </template>
@@ -216,6 +217,7 @@ import AppAddressFields from "components/common/AppAddressFields.vue";
 import TempPasswordDialog from "components/temp_password_dialog.vue";
 import AppImageUpload from "components/common/AppImageUpload.vue";
 import AppFormDialog from "components/common/AppFormDialog.vue";
+import ViewTenant from "modules/tenant/components/view_tenant.vue";
 
 const { showDeleted, canManageDeleted } = useDeletedRecords();
 const notify = useNotify();
@@ -687,5 +689,13 @@ const revokePreviewUrl = () => {
   if (previewUrl.value?.startsWith("blob:")) {
     URL.revokeObjectURL(previewUrl.value);
   }
+};
+
+const viewOpen = ref(false);
+const viewTenantId = ref(null);
+
+const openView = (row) => {
+  viewTenantId.value = row.tenantId;
+  viewOpen.value = true;
 };
 </script>

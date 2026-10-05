@@ -53,4 +53,14 @@ public interface IRoleRepository
     Task AddTenantRoleAsync(TenantRole tenantRole, CancellationToken cancellationToken = default);
 
     void RemoveTenantRole(TenantRole tenantRole);
+
+    /// <summary>The tenant's own permission set for a platform role, if it has customised it.</summary>
+    Task<TenantRoleOverride?> GetTenantOverrideAsync(Guid tenantId, Guid roleId, CancellationToken cancellationToken = default);
+
+    /// <summary>Every role a tenant has customised, keyed by role id.</summary>
+    Task<IReadOnlyDictionary<Guid, TenantRoleOverride>> ListTenantOverridesAsync(Guid tenantId, CancellationToken cancellationToken = default);
+
+    Task AddTenantOverrideAsync(TenantRoleOverride tenantOverride, CancellationToken cancellationToken = default);
+
+    void RemoveTenantOverride(TenantRoleOverride tenantOverride);
 }

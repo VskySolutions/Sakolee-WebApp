@@ -1,250 +1,598 @@
 <template>
-  <!-- Read-only View Family dialog (same app-form-dialog pattern as the Studio Locations view) -->
   <app-form-dialog
     v-model="isOpen"
-    :title="form.className ? `View ${form.className}` : 'View Family'"
+    :title="classData?.className ? `View ${classData.className}` : 'View Class'"
     size="xl"
     hide-footer
     @cancel="resetView"
   >
-    <div class="view-family-scss row q-col-gutter-lg">
+    <div class="view-class-scss row q-col-gutter-lg">
       <q-inner-loading :showing="loading" />
 
-      <!-- ================= Left column ================= -->
+      <!-- =========================================================
+           LEFT COLUMN
+           ========================================================= -->
       <div class="col-12 col-md-7">
-        <div class="fv-stack">
-          <!-- Family Information -->
-          <div class="fv-card">
-            <div class="fv-card__title">
-              <span class="material-symbols-outlined fs-18 text-d4">family_restroom</span>
-              <span class="fw-700 fs-11 text-86">Family Information</span>
+        <div class="cv-stack">
+
+          <!-- ================= CLASS INFORMATION ================= -->
+          <div class="cv-card">
+            <div class="cv-card__title">
+              <q-icon name="o_info" size="18px" color="primary" />
+              <span class="fw-700 fs-11 text-86">
+                CLASS INFORMATION
+              </span>
             </div>
 
-            <div class="fw-500 fs-11 text-86  mb-4">Family Name</div>
-            <div class="fw-700 fs-16 text-2e">{{ form.familyName || "—" }}</div>
-
-            <q-separator class="q-my-md view-separator" />
-
             <div class="row q-col-gutter-md">
+
               <div class="col-6">
-                <div class="fw-500 fs-11 text-86  mb-4">Location</div>
-                <span v-if="form.studioLocationName" class="fv-pill fw-600 fs-12">{{ form.studioLocationName }}</span>
-                <div v-else class="fv-value">—</div>
+                <div class="cv-label">Class Name</div>
+                <div class="cv-value">
+                  {{ classData?.className || "—" }}
+                </div>
               </div>
 
               <div class="col-6">
-                <div class="fw-500 fs-11 text-86  mb-4">Status</div>
-                <span :class="form.active ? 'fv-pill' : 'fv-pill fv-pill--grey'">
-                  {{ form.active ? "Active" : "Inactive" }}
+                <div class="cv-label">Status</div>
+                <span
+                  :class="classData?.active ? 'cv-pill' : 'cv-pill cv-pill--grey'"
+                >
+                  {{ classData?.active ? "Active" : "Inactive" }}
                 </span>
               </div>
 
               <div class="col-6">
-                <div class="fw-500 fs-11 text-86  mb-4">Registration Date</div>
-                <div class="fw-600 fs-12 text-2e">{{ formatLongDate(meta.createdOnUtc) }}</div>
+                <div class="cv-label">Category 1</div>
+                <div class="cv-value">
+                  {{ classData?.category1Name || "—" }}
+                </div>
+              </div>
+
+              <div class="col-6">
+                <div class="cv-label">Category 2</div>
+                <div class="cv-value">
+                  {{ classData?.category2Name || "—" }}
+                </div>
+              </div>
+
+              <div class="col-6">
+                <div class="cv-label">Category 3</div>
+                <div class="cv-value">
+                  {{ classData?.category3Name || "—" }}
+                </div>
+              </div>
+
+              <div class="col-6">
+                <div class="cv-label">Location</div>
+                <span
+                  v-if="classData?.locationName"
+                  class="cv-pill"
+                >
+                  {{ classData.locationName }}
+                </span>
+                <div v-else class="cv-value">—</div>
+              </div>
+
+              <div class="col-6">
+                <div class="cv-label">Room</div>
+                <div class="cv-value">
+                  {{ classData?.roomName || classData?.roomId || classData?.name ||"—" }}
+                </div>
+              </div>
+
+              <div class="col-6">
+                <div class="cv-label">Session</div>
+                <span
+                  v-if="classData?.sessionName"
+                  class="cv-pill"
+                >
+                  {{ classData.sessionName }}
+                </span>
+                <div v-else class="cv-value">—</div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- =============== CLASS DETAILS & ENROLLMENTS =============== -->
+          <div class="cv-card">
+            <div class="cv-card__title">
+              <!-- <q-icon name="o_school" size="18px" color="primary" /> -->
+              <span class="material-symbols-outlined text-18 text-d4">badge</span>
+              <span class="fw-700 fs-11 text-86">
+                CLASS DETAILS & ENROLLMENTS
+              </span>
+            </div>
+
+            <q-separator class="view-separator q-mb-md" />
+
+            <div class="row q-col-gutter-md">
+
+              <div class="col-6">
+                <div class="cv-label">Start Date</div>
+                <div class="cv-value">
+                  {{ formatLongDate(classData?.startDate) }}
+                </div>
+              </div>
+
+              <div class="col-6">
+                <div class="cv-label">End Date</div>
+                <div class="cv-value">
+                  {{ formatLongDate(classData?.endDate) }}
+                </div>
+              </div>
+
+              <div class="col-6">
+                <div class="cv-label">Registration Start Date</div>
+                <div class="cv-value">
+                  {{ formatLongDate(classData?.registrationOpenDate) }}
+                </div>
+              </div>
+
+              <div class="col-6">
+                <div class="cv-label">Cutoff Date</div>
+                <div class="cv-value">
+                  {{ formatLongDate(classData?.cutoffDate) }}
+                </div>
+              </div>
+
+              <div class="col-6">
+                <div class="cv-label">Gender</div>
+                <div class="cv-value">
+                  {{ classData?.gender || "—" }}
+                </div>
+              </div>
+
+              <div class="col-6">
+                <div class="cv-label">Age Range</div>
+                <div class="cv-value">
+                  {{ formatAgeRange(classData?.minAge, classData?.maxAge) }}
+                </div>
+              </div>
+
+              <div class="col-6">
+                <div class="cv-label">Min Age</div>
+                <div class="cv-value">
+                  {{ classData?.minAge || "—" }}
+                </div>
+              </div>
+
+              <div class="col-6">
+                <div class="cv-label">Max Age</div>
+                <div class="cv-value">
+                  {{ classData?.maxAge || "—" }}
+                </div>
+              </div>
+
+              <div class="col-6">
+                <div class="cv-label">Max Class Size</div>
+                <span class="cv-pill">
+                  {{ classData?.maxClassSize || "—" }}
+                </span>
+              </div>
+
+              <div class="col-6">
+                <div class="cv-label">Max Waitlist</div>
+                <span class="cv-pill">
+                  {{ classData?.maxWaitlistSize || "—" }}
+                </span>
               </div>
 
               <!-- <div class="col-6">
-                <div class="fw-500 fs-11 text-86 mb-4">Family Status</div>
-                <div class="fv-value">{{ familyStatusLabel }}</div>
+                <div class="cv-label">Active Days</div>
+                <div class="cv-value">
+                  {{ classData?.activeDays || "—" }}
+                </div>
               </div> -->
+
+              <div class="col-6">
+                <div class="cv-label">Duration</div>
+                <div class="cv-value">
+                  {{ classData?.duration || "—" }}
+                </div>
+              </div>
+
+              <!-- <div class="col-12">
+                <div class="cv-label">Additional Instructors</div>
+                <div class="cv-value">
+                  {{ additionalInstructorNames }}
+                </div>
+              </div> -->
+
+              <div class="col-12">
+                <div class="cv-label">Description</div>
+                <div class="cv-value cv-value--multiline">
+                  {{ classData?.description || "—" }}
+                </div>
+              </div>
+
+              <div class="col-12">
+                <div class="cv-label">Policy Groups</div>
+                <div class="cv-value cv-value--multiline">
+                  {{ classData?.policyGroups || "—" }}
+                </div>
+              </div>
+
             </div>
           </div>
 
-          <!-- Enrolled Students -->
-          <div class="fv-card">
-            <div class="fv-card__title">
-              <q-icon name="o_school" size="18px" color="primary" />
-              <span class="fw-700 fs-11 text-86">Enrolled Students</span>
-              <q-space />
-              <span class="fv-count">{{ activeStudentCount }} Active</span>
+          <!-- =========================== URLs =========================== -->
+          <div class="cv-card">
+            <div class="cv-card__title">
+              <q-icon name="o_link" size="18px" color="primary" />
+              <span class="fw-700 fs-11 text-86">
+                URLS
+              </span>
             </div>
-            <q-separator class="view-separator" />
-            <template v-if="students.length">
-              <div class="fv-table">
-                <div class="fv-table__row fv-table__head">
-                  <div>Student Name</div>
-                  <div>DOB</div>
-                  <div>Status</div>
-                </div>
 
-                <div
-                  v-for="student in students"
-                  :key="student.studentId"
-                  class="fv-table__row"
-                >
-                  <div class="row items-center no-wrap q-gutter-x-sm">
-                    <span class="fv-avatar">{{ initials(student.firstName, student.lastName) }}</span>
-                    <span class="fw-600 text-2e fs-12 ellipsis">{{ student.firstName }}</span>
-                  </div>
-                  <div class="text-86 fs-12">{{ formatLongDate(student.birthDate) || "—" }}</div>
-                  <div>
-                    <span class="fw-600 fs-12 text-d4" :class="student.active ? 'fv-dot' : 'fv-dot fv-dot--grey'">
-                      {{ student.active ? "Active" : "Inactive" }}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </template>
-
-            <div v-else class="fv-empty">No students enrolled yet.</div>
-          </div>
-
-          <!-- Secondary Contact + Referral Details -->
-          <div class="fv-pair">
-            <div>
-              <div class="fv-card full-height">
-                <div class="fv-card__title">
-                  <span class="material-symbols-outlined text-primary fs-18 text-d4">credit_card</span>
-                  <span class="fs-11 fw-700 text-86">Billing Details</span>
-                </div>
-
-                <div class="fv-row">
-                  <span class="fs-12 text-86">Method</span>
-                  <span class="fs-12 fw-700 text-23 text-right">{{ form.method || "—" }}</span>
-                </div>
-                <div class="fv-row">
-                  <span class="fs-12 text-86">Auto Pay</span>
-                  <span class="fs-12 fw-700 text-23 text-right">{{ form.autoPay || "—" }}</span>
-                </div>
-
-                <q-separator class="q-my-sm view-separator" />
-
-                <div class="fs-10 text-86">Billing Note</div>
-                <div class="fs-11 text-54 q-mt-xs">{{ form.billingNote || "" }}</div>
-              </div>
+            <div class="cv-label">
+              Virtual Class / Video Link URL
             </div>
-            <div>
-              <div class="fv-card full-height">
-                <div class="fv-card__title">
-                  <span class="material-symbols-outlined text-primary fs-18 text-d4">verified</span>
-                  <span class="fs-11 fw-700 text-86">AGREEMENTS</span>
-                </div>
 
-                <template v-if="form.secondaryContact">
-                  <div class="fv-value fw-700">
-                    {{ fullName(form.secondaryContact.firstName, form.secondaryContact.lastName) }}
-                  </div>
-                  <div class="fv-label q-mb-sm">{{ form.secondaryContact.relation || "—" }}</div>
+            <a
+              v-if="classData?.virtualClassUrl"
+              :href="classData.virtualClassUrl"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="cv-link"
+            >
+              {{ classData.virtualClassUrl }}
+            </a>
 
-                  <div class="fv-line">
-                    <q-icon name="o_mail" size="16px" color="primary" />
-                    <span class="ellipsis" :title="form.secondaryContact.email">
-                      {{ form.secondaryContact.email || "—" }}
-                    </span>
-                  </div>
-                  <div class="fv-line">
-                    <q-icon name="o_smartphone" size="16px" color="primary" />
-                    {{ form.secondaryContact.phone || "—" }}
-                  </div>
+            <div v-else class="cv-value">—</div>
 
-                  <div class="q-mt-sm column q-gutter-y-xs items-start">
-                    <span v-if="form.secondaryContact.isBillingContact" class="fv-chip">
-                      <q-icon name="o_check_circle" size="13px" /> Billing Contact
-                    </span>
-                    <span v-if="form.secondaryContact.isAuthorizedToPickUpStudent" class="fv-chip">
-                      <q-icon name="o_check_circle" size="13px" /> Authorized Pick Up
-                    </span>
-                  </div>
-                </template>
+            <div class="cv-label q-mt-md">
+              Virtual Class / Video Link Text
+            </div>
 
-                <div v-else class="fv-empty">No Agreement yet.</div>
-              </div>
+            <div class="cv-value">
+              {{ classData?.linkDisplayText || "—" }}
             </div>
           </div>
+
+          <!-- ====================== AUDIT INFORMATION ====================== -->
+          <div class="cv-card">
+            <div class="cv-card__title">
+              <q-icon name="o_history" size="18px" color="primary" />
+              <span class="fw-700 fs-11 text-86">
+                AUDIT INFORMATION
+              </span>
+            </div>
+
+            <div class="row q-col-gutter-md">
+
+              <div class="col-6">
+                <div class="cv-label">Created By</div>
+                <div class="cv-value">
+                  {{ classData?.createdBy || "—" }}
+                </div>
+              </div>
+
+              <div class="col-6">
+                <div class="cv-label">Created On</div>
+                <div class="cv-value">
+                  {{ formatLongDateTime(classData?.createdOnUtc) }}
+                </div>
+              </div>
+
+              <div class="col-6">
+                <div class="cv-label">Updated By</div>
+                <div class="cv-value">
+                  {{ classData?.updatedBy || "—" }}
+                </div>
+              </div>
+
+              <div class="col-6">
+                <div class="cv-label">Updated On</div>
+                <div class="cv-value">
+                  {{ formatLongDateTime(classData?.updatedOnUtc) }}
+                </div>
+              </div>
+
+            </div>
+          </div>
+
         </div>
       </div>
 
-      <!-- ================= Right column ================= -->
+      <!-- =========================================================
+           RIGHT COLUMN
+           ========================================================= -->
       <div class="col-12 col-md-5">
-        <div class="fv-stack">
-          <!-- Primary Contact -->
-          <div class="fv-card">
-            <div class="fv-card__title">
-              <q-icon name="o_person" size="18px" color="primary" />
-              <span class="fw-700 fs-11 text-86">Primary Contact</span>
-            </div>
+        <div class="cv-stack">
 
-            <div class="row q-col-gutter-sm">
-              <div class="col-6">
-                <div class="fw-500 fs-11 text-86  mb-4">First Name</div>
-                <div class="fw-600 fs-12 text-2e">{{ form.firstName || "—" }}</div>
-              </div>
-              <div class="col-6">
-                <div class="fw-500 fs-11 text-86  mb-4">Last Name</div>
-                <div class="fw-600 fs-12 text-2e">{{ form.lastName || "—" }}</div>
-              </div>
-              <div class="col-12">
-                <div class="fw-500 fs-11 text-86  mb-4">Relationship</div>
-                <div class="fw-600 fs-12 text-2e">{{ form.relation || "—" }}</div>
-              </div>
-              <div class="col-6">
-                <div class="fw-500 fs-11 text-86  mb-4">Preferred Name</div>
-                <div class="fw-600 fs-12 text-2e">{{ form.referralName || "—" }}</div>
-              </div>
-              <div class="col-6">
-                <div class="fw-500 fs-11 text-86  mb-4">DOB</div>
-                <div class="fw-600 fs-12 text-2e">{{ form.birthDate || "—" }}</div>
-              </div>
-            </div>
-
-            <q-separator class="q-my-md" />
-
-            <div class="fv-card__title q-mb-sm fw-700 fs-11 text-86">
-              Contact Info
-              <q-space />
-              <span v-if="form.isBillingContact" class="fv-count">Prefers Email</span>
-            </div>
-
-            <div class="fv-line">
-              <q-icon name="o_mail" size="16px" color="primary" />
-              <span class="ellipsis fs-12 text-54" :title="form.email">{{ form.email || "—" }}</span>
-            </div>
-            <div v-for="phone in primaryPhones" :key="phone.label" class="fv-line">
-              <q-icon :name="phone.icon" size="16px" color="primary" />
-              <span class="fs-12 text-54">{{ phone.value }}</span>
-              <span class="fs-12 text-54">({{ phone.label }})</span>
-            </div>
-            <div class="fv-line items-start">
-              <q-icon name="o_place" size="16px" color="primary" class="q-mt-xs" />
-              <div class="fs-13">
-                <template v-if="addressLines.length">
-                  <div v-for="line in addressLines" :key="line" class="fs-12 text-54">{{ line }}</div>
-                </template>
-                <template v-else>—</template>
-              </div>
-            </div>
-
-            <!-- <div v-if="form.isAuthorizedToPickUpStudent" class="q-mt-sm">
-              <span class="fv-chip">
-                <q-icon name="o_check_circle" size="13px" /> Authorized Pick Up
+          <!-- ========================== SCHEDULE ========================== -->
+          <div class="cv-card">
+            <div class="cv-card__title">
+              <!-- <q-icon name="o_calendar_month" size="18px" color="primary" /> -->
+              <span class="material-symbols-outlined text-18 text-d4">calendar_today</span>
+              <span class="fw-700 fs-11 text-86">
+                SCHEDULE
               </span>
-            </div> -->
-          </div>
-
-          <!-- Emergency Contact -->
-          <div class="fv-card fv-card--danger">
-            <div class="fv-card__title text-negative">
-              <span class="material-symbols-outlined fs-18 text-48">emergency</span>
-              <span class="fs-11 text-48">Emergency Contact</span>
             </div>
 
-            <div class="fw-700 fs-12 text-2e">{{ form.emergencyContactPerson || "—" }}</div>
+            <div class="cv-schedule">
+              <div class="cv-schedule__days">
+                {{ classData?.activeDays || "—" }}
+              </div>
 
-            <div class="fv-line q-mt-xs">
-              <q-icon name="o_call" size="16px" color="primary" />
-              <span class="fw-500 fs-12 text-2e">{{ form.emergencyPhone || "—" }}</span>
+              <div class="cv-schedule__time">
+                {{ classData?.startTime || "—" }}
+                <span
+                  v-if="classData?.startTime && classData?.endTime"
+                >
+                  -
+                </span>
+                {{ classData?.endTime || "" }}
+
+                <span
+                  v-if="classData?.duration"
+                  class="q-ml-xs"
+                >
+                  ({{ classData.duration }})
+                </span>
+              </div>
             </div>
           </div>
 
-          <!-- Preferences -->
-          <div class="fv-card">
-            <div class="fv-card__title">
-              <span class="material-symbols-outlined fs-18 text-d4">tune</span>
-              <span class="fs-11 text-86">PREFERENCES</span>
+          <!-- ==================== INSTRUCTOR INFORMATION ==================== -->
+          <div class="cv-card">
+            <div class="cv-card__title">
+              <q-icon name="o_person" size="18px" color="primary" />
+              <span class="fw-700 fs-11 text-86">
+                INSTRUCTOR INFORMATION
+              </span>
             </div>
-            <span class="fs-12 text-86 text-right">No Preferences yet.</span>
+
+            <div class="cv-label">Primary Instructor</div>
+
+            <div class="cv-instructor">
+              <span class="cv-avatar">
+                {{ instructorInitials }}
+              </span>
+
+              <span class="cv-value">
+                {{ classData?.primaryInstructorName || "—" }}
+              </span>
+            </div>
+
+            <q-separator class="q-my-md view-separator" />
+
+            <div class="cv-label">Additional Instructors</div>
+
+            <div class="cv-value">
+              {{ additionalInstructorNames }}
+            </div>
           </div>
+
+          <!-- =========================== PRICING =========================== -->
+          <div class="cv-card">
+            <div class="cv-card__title">
+              <!-- <q-icon name="o_payments" size="18px" color="primary" /> -->
+              <span class="material-symbols-outlined text-18 text-d4">payments</span>
+              <span class="fw-700 fs-11 text-86">
+                PRICING
+              </span>
+            </div>
+
+            <div class="row q-col-gutter-md">
+
+              <div class="col-6">
+                <div class="cv-label">Tuition Fee</div>
+                <div class="cv-value font-mono">
+                  {{ formatCurrency(classData?.tuitionFee) }}
+                </div>
+              </div>
+
+              <div class="col-6">
+                <div class="cv-label">Billing Cycle</div>
+
+                <span
+                  v-if="classData?.billingCycle"
+                  class="cv-pill"
+                >
+                  {{ classData.billingCycle }}
+                </span>
+
+                <div v-else class="cv-value">—</div>
+              </div>
+
+              <div class="col-6">
+                <div class="cv-label">Billing Method</div>
+                <div class="cv-value">
+                  {{ classData?.billingMethod || "—" }}
+                </div>
+              </div>
+
+              <div class="col-6">
+                <div class="cv-label">Registration Fee</div>
+                <span class="cv-pill">
+                  {{ yesNo(classData?.registrationFee) }}
+                </span>
+              </div>
+
+              <div class="col-6">
+                <div class="cv-label">Drop-In Fee</div>
+                <span class="cv-pill">
+                  {{ yesNo(classData?.dropInFee) }}
+                </span>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- ====================== PORTAL & REGISTRATION ====================== -->
+          <div class="cv-card">
+
+            <div class="cv-card__title">
+              <!-- <q-icon name="o_tune" size="18px" color="primary" /> -->
+              <span class="material-symbols-outlined text-18 text-d4">devices</span>
+              <span class="fw-700 fs-11 text-86">
+                PORTAL & REGISTRATION
+              </span>
+            </div>
+
+            <div class="row q-col-gutter-x-lg">
+
+              <!-- Left -->
+              <div class="col-12 col-sm-6">
+
+                <div class="cv-setting-row">
+                  <span>Display in Listings</span>
+                  <span
+                    class="cv-switch"
+                    :class="{ 'cv-switch--on': classData?.onlineListings }"
+                  >
+                    <span class="cv-switch__dot" />
+                  </span>
+                </div>
+
+                <div class="cv-setting-row">
+                  <span>Parent Portal Schedule</span>
+                  <span
+                    class="cv-switch"
+                    :class="{ 'cv-switch--on': classData?.parentPortalSchedule }"
+                  >
+                    <span class="cv-switch__dot" />
+                  </span>
+                </div>
+
+                <div class="cv-setting-row">
+                  <span>Makeups In Class</span>
+                  <span
+                    class="cv-switch"
+                    :class="{ 'cv-switch--on': classData?.makeupsInClass }"
+                  >
+                    <span class="cv-switch__dot" />
+                  </span>
+                </div>
+
+                <div class="cv-setting-row">
+                  <span>Allow Waitlist In Roll</span>
+                  <span
+                    class="cv-switch"
+                    :class="{ 'cv-switch--on': classData?.allowWaitlistInRoll }"
+                  >
+                    <span class="cv-switch__dot" />
+                  </span>
+                </div>
+
+                <div class="cv-setting-row">
+                  <span>Allow Drop-Ins</span>
+                  <span
+                    class="cv-switch"
+                    :class="{ 'cv-switch--on': classData?.allowDropIns }"
+                  >
+                    <span class="cv-switch__dot" />
+                  </span>
+                </div>
+
+              </div>
+
+              <!-- Right -->
+              <div class="col-12 col-sm-6">
+
+                <div class="cv-setting-row">
+                  <span>Online Registration</span>
+                  <span
+                    class="cv-switch"
+                    :class="{ 'cv-switch--on': classData?.onlineRegistration }"
+                  >
+                    <span class="cv-switch__dot" />
+                  </span>
+                </div>
+
+                <div class="cv-setting-row">
+                  <span>Portal Enrollment</span>
+                  <span
+                    class="cv-switch"
+                    :class="{ 'cv-switch--on': classData?.allowPortalEnrollment }"
+                  >
+                    <span class="cv-switch__dot" />
+                  </span>
+                </div>
+
+                <div class="cv-setting-row">
+                  <span>Allow Waitlist Enrollment</span>
+                  <span
+                    class="cv-switch"
+                    :class="{ 'cv-switch--on': classData?.allowWaitlistEnrollment }"
+                  >
+                    <span class="cv-switch__dot" />
+                  </span>
+                </div>
+
+                <div class="cv-setting-row">
+                  <span>Allow Portal Drop Requests</span>
+                  <span
+                    class="cv-switch"
+                    :class="{ 'cv-switch--on': classData?.allowPortalDropRequests }"
+                  >
+                    <span class="cv-switch__dot" />
+                  </span>
+                </div>
+
+                <div class="cv-setting-row">
+                  <span>Drop-In Fee</span>
+                  <span
+                    class="cv-switch"
+                    :class="{ 'cv-switch--on': classData?.dropInFee }"
+                  >
+                    <span class="cv-switch__dot" />
+                  </span>
+                </div>
+
+              </div>
+
+            </div>
+
+          </div>
+
+          <!-- ====================== ADDITIONAL SETTINGS ====================== -->
+          <!-- <div class="cv-card">
+
+            <div class="cv-card__title">
+              <q-icon name="o_settings" size="18px" color="primary" />
+              <span class="fw-700 fs-11 text-86">
+                ADDITIONAL SETTINGS
+              </span>
+            </div>
+
+            <div class="row q-col-gutter-md">
+
+              <div class="col-6">
+                <div class="cv-label">Online Listings</div>
+                <div class="cv-value">
+                  {{ yesNo(classData?.onlineListings) }}
+                </div>
+              </div>
+
+              <div class="col-6">
+                <div class="cv-label">Online Registration</div>
+                <div class="cv-value">
+                  {{ yesNo(classData?.onlineRegistration) }}
+                </div>
+              </div>
+
+              <div class="col-6">
+                <div class="cv-label">Portal Enrollment</div>
+                <div class="cv-value">
+                  {{ yesNo(classData?.allowPortalEnrollment) }}
+                </div>
+              </div>
+
+              <div class="col-6">
+                <div class="cv-label">Parent Portal Schedule</div>
+                <div class="cv-value">
+                  {{ yesNo(classData?.parentPortalSchedule) }}
+                </div>
+              </div>
+
+            </div>
+
+          </div> -->
+
         </div>
       </div>
     </div>
@@ -252,114 +600,128 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, watch } from "vue";
-import { familyApi, getApiErrorMessage } from "services/api";
+import { computed, ref, watch } from "vue";
+import { classApi, getApiErrorMessage } from "services/api";
 import { useNotify } from "composables/useNotify";
 import { useDateFormat } from "composables/useDateFormat";
-import { blankFamilyForm, familyFormFromDetail } from "composables/familyForm";
 
 import AppFormDialog from "components/common/AppFormDialog.vue";
 
 const props = defineProps({
-  modelValue: { type: Boolean, required: true },
-  familyId: { type: [String, Number], default: null },
-  // Owned by the list page (it also drives the Family Status filter there).
-  familyStatusOptions: { type: Array, default: () => [] }
+  modelValue: {
+    type: Boolean,
+    required: true
+  },
+
+  recordId: {
+    type: [String, Number],
+    default: null
+  }
 });
 
 const emit = defineEmits(["update:modelValue"]);
-
+const { formatLongDate, formatLongDateTime } = useDateFormat();
 const notify = useNotify();
-const { tenantTimeZone } = useDateFormat();
-
-// "Oct 24, 2023" in the tenant's time zone (UTC assumed when the value has no designator).
-const formatLongDate = (value) => {
-  if (!value) return "—";
-  let s = String(value);
-  if (!/[zZ]$|[+-]\d{2}:?\d{2}$/.test(s)) s += "Z";
-  const d = new Date(s);
-  if (Number.isNaN(d.getTime())) return "—";
-  return new Intl.DateTimeFormat("en-US", {
-    timeZone: tenantTimeZone(),
-    month: "short",
-    day: "numeric",
-    year: "numeric"
-  }).format(d);
-};
 
 const isOpen = computed({
   get: () => props.modelValue,
-  set: (val) => emit("update:modelValue", val)
+  set: (value) => emit("update:modelValue", value)
 });
 
-const form = reactive(blankFamilyForm());
-const students = ref([]);
+const classData = ref(null);
 const loading = ref(false);
-// Detail-only fields that aren't part of the shared form shape.
-const meta = reactive({ createdOnUtc: null, familyStatusName: "" });
-
-// const familyStatusLabel = computed(() =>
-//   meta.familyStatusName ||
-//   props.familyStatusOptions.find((x) => x.value === form.familyStatusId)?.label ||
-//   "—"
-// );
-
-const activeStudentCount = computed(() => students.value.filter((s) => s.active).length);
-
-const primaryPhones = computed(() =>
-  [
-    { label: "Cell", icon: "o_smartphone", value: form.cellPhone },
-    { label: "Home", icon: "o_call", value: form.homePhone },
-    { label: "Work", icon: "o_call", value: form.workPhone },
-    { label: "Other", icon: "o_call", value: form.otherPhone },
-    { label: "Fax", icon: "o_fax", value: form.fax }
-  ].filter((p) => p.value)
-);
-
-const addressLines = computed(() => {
-  const cityLine = [form.city, [form.state, form.zipCode].filter(Boolean).join(" ")]
-    .filter(Boolean)
-    .join(", ");
-  return [form.address1, form.address2, cityLine].filter(Boolean);
-});
-
-const fullName = (first, last) => `${first || ""} ${last || ""}`.trim() || "—";
-
-// const studentName = (s) =>
-//   s.firstName || s.lastName ? fullName(s.firstName, s.lastName) : s.studentNumber || "Student";
-
-const initials = (first, last) =>
-  `${(first || "").charAt(0)}${(last || "").charAt(0)}`.toUpperCase() || "?";
 
 const resetView = () => {
-  Object.assign(form, blankFamilyForm());
-  students.value = [];
-  meta.createdOnUtc = null;
-  meta.familyStatusName = "";
+  classData.value = null;
 };
 
-// Each time the dialog opens, load the family fresh; close again if it can't be loaded.
+const load = async () => {
+  if (!props.recordId) {
+    return;
+  }
+
+  loading.value = true;
+
+  try {
+    classData.value = await classApi.get(props.recordId);
+  } catch (err) {
+    classData.value = null;
+    isOpen.value = false;
+    notify.error(getApiErrorMessage(err));
+  } finally {
+    loading.value = false;
+  }
+};
+
 watch(
   () => props.modelValue,
-  async (val) => {
-    if (!val) return;
-    resetView();
-    if (!props.familyId) return;
-    loading.value = true;
-    try {
-      const detail = await familyApi.get(props.familyId);
-      console.log("Family Details:", detail);
-      Object.assign(form, familyFormFromDetail(detail));
-      students.value = detail.students || [];
-      console.log("Family Student Details:", detail.students);
-      meta.createdOnUtc = detail.createdOnUtc || null;
-      meta.familyStatusName = detail.familyStatusName || "";
-    } catch (err) {
-      isOpen.value = false;
-      notify.error(getApiErrorMessage(err));
-    } finally {
-      loading.value = false;
+  async (value) => {
+    if (!value) {
+      resetView();
+      return;
     }
+
+    await load();
   }
 );
+
+const formatCurrency = (value) => {
+  if (value === null || value === undefined || value === "") {
+    return "—";
+  }
+
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD"
+  }).format(value);
+};
+
+const formatAgeRange = (min, max) => {
+  if (min == null && max == null) return "—";
+  if (min == null) return `${max}+ yrs`;
+  if (max == null) return `${min}+ yrs`;
+
+  return `${min} – ${max} yrs`;
+};
+
+const yesNo = (value) => {
+  return value ? "Yes" : "No";
+};
+
+const additionalInstructorNames = computed(() => {
+  const instructors =
+    classData.value?.additionalInstructors || [];
+
+  if (!instructors.length) {
+    return "—";
+  }
+
+  return instructors
+    .map((item) => item?.name)
+    .filter(Boolean)
+    .join(", ") || "—";
+});
+
+const instructorInitials = computed(() => {
+  const name =
+    classData.value?.primaryInstructorName || "";
+
+  const parts = name
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+
+  if (!parts.length) {
+    return "?";
+  }
+
+  if (parts.length === 1) {
+    return parts[0].charAt(0).toUpperCase();
+  }
+
+  return (
+    parts[0].charAt(0) +
+    parts[parts.length - 1].charAt(0)
+  ).toUpperCase();
+});
 </script>

@@ -78,6 +78,142 @@ public sealed class DashboardQueryService : IDashboardQueryService
         return counts.Select(kv => new RoleCount(kv.Key, kv.Value)).OrderByDescending(r => r.Count).ToList();
     }
 
+    // ---- Studio (Enrollment & Studio Metrics) ----
+
+    /// <summary>The role whose active holders count as staff (the same role the Staff list and instructor picker use).</summary>
+    private const string StaffRole = "Staff";
+
+    /// <summary>How far back a deactivated student still counts as "recently dropped".</summary>
+    private const int RecentlyDroppedDays = 30;
+
+    public async Task<StudioMetricsDto> GetStudioMetricsAsync(Guid? tenantId, CancellationToken cancellationToken)
+    {
+        var students = await StudentsScopedAsync(tenantId, cancellationToken);
+
+        // A student's enrollment is its ClassId (one class per student today); dropped = deactivated
+        // within the window, the closest signal there is without an enrollment history table.
+        var droppedSince = DateTime.UtcNow.AddDays(-RecentlyDroppedDays);
+        var totalEnrollments = students.Count(s => s.Active && s.ClassId.HasValue);
+        var recentlyDropped = students.Count(s => !s.Active && s.UpdatedOnUtc >= droppedSince);
+        var activeStudents = students.Count(s => s.Active);
+
+        var activeFamilies = await _db.Families.IgnoreQueryFilters()
+            .Where(f => !f.Deleted && f.Active)
+            .Where(f => tenantId == null || f.TenantId == tenantId)
+            .CountAsync(cancellationToken);
+
+        // Classes carry no TenantId yet and are listed platform-wide (see Class remarks), so this
+        // matches what the Classes list shows.
+        var activeClasses = await _db.Classes.IgnoreQueryFilters()
+            .CountAsync(c => !c.Deleted && c.Active, cancellationToken);
+
+        var activeStaff = await UsersScoped(tenantId)
+            .Where(u => u.IsActive)
+            .CountAsync(u => u.TenantRoles.Any(r =>
+                !r.Deleted
+                && (tenantId == null || r.TenantId == tenantId)
+                && r.RoleEntity != null && r.RoleEntity.Name == StaffRole), cancellationToken);
+
+        return new StudioMetricsDto(
+            totalEnrollments,
+            recentlyDropped,
+            activeFamilies,
+            activeStudents,
+            activeClasses,
+            activeStaff,
+            NewOnlineRegistrations: null,
+            PortalEnrollments: null,
+            PendingRequests: null);
+    }
+
+    /// <summary>
+    /// The most recent enrollment status changes: students assigned to a class, newest change first.
+    /// An active student reads as "Confirmed" and a deactivated one as "Dropped" — there is no
+    /// enrollment history table, so the student row's own last change stands in for the event.
+    /// </summary>
+    public async Task<IReadOnlyList<EnrollmentActivityDto>> GetEnrollmentActivityAsync(Guid? tenantId, int limit, CancellationToken cancellationToken)
+    {
+        var recent = (await StudentsScopedAsync(tenantId, cancellationToken))
+            .Where(s => s.ClassId.HasValue)
+            .OrderByDescending(s => s.UpdatedOnUtc ?? s.CreatedOnUtc)
+            .Take(limit)
+            .ToList();
+        if (recent.Count == 0)
+        {
+            return Array.Empty<EnrollmentActivityDto>();
+        }
+
+        // Names live on the linked Person, Family and Class rows; look up only the ones on show.
+        var personIds = recent.Where(s => s.PersonId.HasValue).Select(s => s.PersonId!.Value).Distinct().ToList();
+        var familyIds = recent.Where(s => s.FamilyId.HasValue).Select(s => s.FamilyId!.Value).Distinct().ToList();
+        var classIds = recent.Select(s => s.ClassId!.Value).Distinct().ToList();
+
+        var people = await _db.Persons.IgnoreQueryFilters()
+            .Where(p => personIds.Contains(p.Id))
+            .Select(p => new { p.Id, p.DisplayName, p.FirstName, p.LastName })
+            .ToDictionaryAsync(p => p.Id, cancellationToken);
+        var families = await _db.Families.IgnoreQueryFilters()
+            .Where(f => familyIds.Contains(f.Id))
+            .Select(f => new { f.Id, f.FamilyName, f.FirstName })
+            .ToDictionaryAsync(f => f.Id, cancellationToken);
+        var classes = await _db.Classes.IgnoreQueryFilters()
+            .Where(c => classIds.Contains(c.Id))
+            .Select(c => new { c.Id, c.ClassName })
+            .ToDictionaryAsync(c => c.Id, cancellationToken);
+
+        return recent.Select(s =>
+        {
+            var person = s.PersonId is { } pid ? people.GetValueOrDefault(pid) : null;
+            var studentName = person is null
+                ? "Unknown student"
+                : !string.IsNullOrWhiteSpace(person.DisplayName)
+                    ? person.DisplayName
+                    : $"{person.FirstName} {person.LastName}".Trim();
+
+            // "Miller (David)": the family name with its primary contact's first name, when known.
+            var family = s.FamilyId is { } fid ? families.GetValueOrDefault(fid) : null;
+            var familyName = family is null
+                ? null
+                : string.IsNullOrWhiteSpace(family.FirstName)
+                    ? family.FamilyName
+                    : $"{family.FamilyName} ({family.FirstName})";
+
+            return new EnrollmentActivityDto(
+                s.Id,
+                studentName,
+                familyName,
+                s.FamilyId,
+                classes.GetValueOrDefault(s.ClassId!.Value)?.ClassName,
+                s.ClassId,
+                s.Active ? "Confirmed" : "Dropped",
+                s.UpdatedOnUtc ?? s.CreatedOnUtc);
+        }).ToList();
+    }
+
+    /// <summary>
+    /// The tenant's non-deleted students (all tenants when <paramref name="tenantId"/> is null).
+    /// Students carry no TenantId — they are scoped through their Person's TenantPersonMapping, and
+    /// PersonId is nvarchar on that legacy table, so (as StudentRepository does) the tenant's person
+    /// ids are resolved first and students filtered in memory.
+    /// </summary>
+    private async Task<List<Student>> StudentsScopedAsync(Guid? tenantId, CancellationToken cancellationToken)
+    {
+        var students = await _db.Students.IgnoreQueryFilters()
+            .AsNoTracking()
+            .Where(s => !s.Deleted)
+            .ToListAsync(cancellationToken);
+        if (tenantId is not { } tid)
+        {
+            return students;
+        }
+
+        var personIds = new HashSet<Guid>(await _db.TenantPersonMappings.IgnoreQueryFilters()
+            .Where(m => !m.Deleted && m.TenantId == tid)
+            .Select(m => m.PersonId)
+            .ToListAsync(cancellationToken));
+        return students.Where(s => s.PersonId.HasValue && personIds.Contains(s.PersonId.Value)).ToList();
+    }
+
     // ---- Platform (Super Admin) ----
 
     public async Task<PlatformDashboardDto> GetPlatformAsync(string dateRange, bool forceRefresh, CancellationToken cancellationToken)

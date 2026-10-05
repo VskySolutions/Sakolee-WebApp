@@ -263,6 +263,8 @@ export const roleApi = {
   create: (payload) => api.post("/api/admin/roles", payload).then(unwrap),
   update: (id, payload) => api.put(`/api/admin/roles/${id}`, payload).then(unwrap),
   remove: (id) => api.delete(`/api/admin/roles/${id}`).then(envelope),
+  // Drops the caller's tenant's own permission set for a platform role, back to the platform default.
+  resetTenantOverride: (id) => api.delete(`/api/admin/roles/${id}/tenant-override`).then(unwrap),
   // Full permission catalogue, for the role permission picker.
   permissions: () => api.get("/api/admin/permissions").then(unwrap),
   // Roles assignable within a tenant (system roles + the tenant's custom roles) — drives user role pickers.
@@ -540,6 +542,10 @@ export const ufModifiedLogApi = {
 // Dashboard (WO-73).
 export const dashboardApi = {
   users: (params) => api.get("/api/dashboard/users", { params }).then(unwrap),
+  // Studio dashboard "Enrollment & Studio Metrics" KPI band, scoped to the caller's active tenant.
+  studioMetrics: (params) => api.get("/api/dashboard/studio-metrics", { params }).then(unwrap),
+  // Studio dashboard "Enrollment & Student Activity" feed — latest enrollment changes, newest first.
+  enrollmentActivity: (params) => api.get("/api/dashboard/enrollment-activity", { params }).then(unwrap),
   // Super Admin platform overview. `forceRefresh` bypasses the server cache via a request header.
   platform: (params, forceRefresh = false) =>
     api.get("/api/dashboard/platform", {

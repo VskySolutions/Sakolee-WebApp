@@ -63,6 +63,8 @@ public class SakoleeDbContext : DbContext, IDataProtectionKeyContext
 
     public DbSet<TenantRole> TenantRoles => Set<TenantRole>();
 
+    public DbSet<TenantRoleOverride> TenantRoleOverrides => Set<TenantRoleOverride>();
+
     public DbSet<Person> Persons => Set<Person>();
 
     public DbSet<TenantPersonMapping> TenantPersonMappings => Set<TenantPersonMapping>();
@@ -225,8 +227,11 @@ public class SakoleeDbContext : DbContext, IDataProtectionKeyContext
         modelBuilder.Entity<StudentGradeLevel>().HasQueryFilter(e => (!_tenantContext.IsResolved || e.TenantId == _tenantContext.TenantId) && !e.Deleted);
 
 
+       
+        //modelBuilder.Entity<Role>().HasQueryFilter(e => (!_tenantContext.IsResolved || e.TenantId == _tenantContext.TenantId) && !e.Deleted);
 
         modelBuilder.Entity<TenantRole>().HasQueryFilter(e => !e.Deleted);
+        modelBuilder.Entity<TenantRoleOverride>().HasQueryFilter(e => !e.Deleted);
         modelBuilder.Entity<Address>().HasQueryFilter(e => !e.Deleted);
         modelBuilder.Entity<Media>().HasQueryFilter(e => !e.Deleted);
         modelBuilder.Entity<PermissionGroupTemplate>().HasQueryFilter(e => !e.Deleted);
@@ -312,6 +317,11 @@ public class SakoleeDbContext : DbContext, IDataProtectionKeyContext
                 case AuditTrailEntry audit when audit.TenantId == Guid.Empty:
                     audit.TenantId = _tenantContext.TenantId;
                     break;
+
+                //case Role role when role.TenantId == Guid.Empty:
+                //    role.TenantId = _tenantContext.TenantId;
+                //    break;
+
                 case PermissionGroup permissionGroup when permissionGroup.TenantId == Guid.Empty:
                     permissionGroup.TenantId = _tenantContext.TenantId;
                     break;

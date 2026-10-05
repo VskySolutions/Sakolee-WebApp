@@ -63,7 +63,7 @@ public sealed class EffectivePermissionsController : ControllerBase
             foreach (var assignment in user.TenantRoles.Where(r => r.TenantId == activeTenantId && r.RoleEntity is not null))
             {
                 var role = assignment.RoleEntity!;
-                var direct = role.Permissions.Distinct(StringComparer.Ordinal).OrderBy(k => k, StringComparer.Ordinal).ToList();
+                var direct = role.PermissionsFor(activeTenantId).Distinct(StringComparer.Ordinal).OrderBy(k => k, StringComparer.Ordinal).ToList();
                 foreach (var key in direct)
                 {
                     effective.Add(key);

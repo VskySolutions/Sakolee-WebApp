@@ -126,8 +126,9 @@ internal sealed class JwtTokenService : IJwtTokenService
     {
         if (assignment.RoleEntity is { } roleEntity)
         {
-            // Direct role permissions ∪ permissions contributed by composed Permission Groups.
-            var effective = roleEntity.Permissions
+            // Direct role permissions (this tenant's own set, for a platform role it has customised) ∪
+            // permissions contributed by composed Permission Groups.
+            var effective = roleEntity.PermissionsFor(assignment.TenantId)
                 .Concat(roleEntity.EffectivePermissions)
                 .Distinct(StringComparer.Ordinal)
                 .ToList();

@@ -17,8 +17,11 @@ internal sealed class UserRepository : IUserRepository
     public async Task<User?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         // Group memberships are tenant-filtered, so they naturally scope to the active tenant here.
-        var user = await _dbContext.Users.Include(u => u.TenantRoles).ThenInclude(r => r.RoleEntity)
+        // Role overrides come along so the token and effective-permission views see each tenant's own
+        // permission set for a customised platform role (TenantRoleOverride).
+        var user = await _dbContext.Users.Include(u => u.TenantRoles).ThenInclude(r => r.RoleEntity!).ThenInclude(re => re.TenantOverrides)
             .Include(u => u.GroupMemberships).ThenInclude(m => m.UserGroup)
+            .AsSplitQuery()
             .FirstOrDefaultAsync(u => u.Id == id, cancellationToken);
 
         await LoadPersonAsync(user, cancellationToken);
@@ -42,7 +45,7 @@ internal sealed class UserRepository : IUserRepository
     }
 
     public Task<User?> GetByEmailAsync(string email, CancellationToken cancellationToken = default)
-        => _dbContext.Users.Include(u => u.TenantRoles).ThenInclude(r => r.RoleEntity)
+        => _dbContext.Users.Include(u => u.TenantRoles).ThenInclude(r => r.RoleEntity!).ThenInclude(re => re.TenantOverrides)
             .FirstOrDefaultAsync(u => u.Email == email, cancellationToken);
 
     public Task<bool> EmailExistsAsync(string email, CancellationToken cancellationToken = default)

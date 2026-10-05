@@ -67,7 +67,7 @@
       </template>
     </app-data-table>
 
-    <!-- Create / Edit drawer -->
+    <!-- Create / Edit popup -->
     <family-form-drawer
       v-model="formOpen"
       :mode="formMode"

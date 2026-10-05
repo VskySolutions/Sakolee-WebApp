@@ -16,6 +16,10 @@ public interface IStudentRepository
     /// view.</summary>
     Task<IReadOnlyList<Student>> ListByFamilyIdAsync(Guid familyId, CancellationToken cancellationToken = default);
 
+    /// <summary>Every (non-deleted) student record of a person, via <see cref="Student.PersonId"/> — a
+    /// Student login's own record(s). Scopes what a Student login may see to their own classes.</summary>
+    Task<IReadOnlyList<Student>> ListByPersonIdAsync(Guid personId, CancellationToken cancellationToken = default);
+
     /// <summary>Batch count of (non-deleted) students per family id — feeds the Families list's student
     /// count column without an N+1 query per row.</summary>
     Task<IReadOnlyDictionary<Guid, int>> CountByFamilyIdsAsync(IEnumerable<Guid> familyIds, CancellationToken cancellationToken = default);
