@@ -79,6 +79,26 @@ public sealed class ClassesController : ControllerBase
     [ProducesResponseType<ApiResponse<ClassSummary>>(StatusCodes.Status201Created)]
     public async Task<IActionResult> Create([FromBody] CreateClassRequest request, CancellationToken cancellationToken)
     {
+        // Check if existing class schedule for instructor and additional instructor.
+        var conflict = await _classes.ValidateInstructorScheduleAsync(
+                                                                        null,
+                                                                        request.PrimaryInstructorId,
+                                                                        request.AdditionalInstructorIds,
+                                                                        request.StartDate,
+                                                                        request.EndDate,
+                                                                        request.StartTime,
+                                                                        request.EndTime,
+                                                                        request.ActiveDays,
+                                                                        cancellationToken);
+
+        if (conflict != null)
+        {
+            return Conflict(new
+            {
+                message = conflict
+            });
+        }
+
         var now = DateTime.UtcNow;
         var actorId = CurrentActorId();
         var entity = new Class

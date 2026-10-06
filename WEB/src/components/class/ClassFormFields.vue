@@ -4,32 +4,31 @@
     <div class="row q-col-gutter-md q-mb-md">
       <app-text-field
         v-model="form.className" label="Class Name *" placeholder="e.g. Advanced Ballet" class="col-12"
-        :disable="disable" :rules="[(v) => !!v || 'Class name is required']"
+        :disable="disable" :rules="[requiredRule]"
       />
 
       <!-- Category 1/2/3, Location, Session and Primary/Additional Instructors save to the Class record (backed by
            ClassCategory/Locations/ClassSessions/the tenant's Staff users). Room is still a placeholder option list —
            there is no management feature for it yet, so it doesn't save to the class record. -->
-      <app-select :key="`category1-${categoriesLoaded}`" v-model="form.category1" label="Category 1 *" :options="category1Options" class="col-12 col-sm-6" :disable="disable" />
+      <app-select :key="`category1-${categoriesLoaded}`" v-model="form.category1" label="Category 1 *" :options="category1Options" class="col-12 col-sm-6" :disable="disable" :rules="[requiredRule]" />
       <app-select :key="`category2-${categoriesLoaded}`" v-model="form.category2" label="Category 2" :options="category2Options" class="col-12 col-sm-6" :disable="disable" />
       <app-select :key="`category3-${categoriesLoaded}`" v-model="form.category3" label="Category 3" :options="category3Options" class="col-12 col-sm-6" :disable="disable" />
-      <app-select :key="`location-${categoriesLoaded}`" v-model="form.location" label="Location *" :options="locationOptions" class="col-12 col-sm-6" :disable="disable" />
-      <app-select v-model="form.room" label="Room *" :options="roomOptions" class="col-12 col-sm-6" :disable="disable" />
-      <app-select :key="`session-${categoriesLoaded}`" v-model="form.session" label="Session *" :options="sessionOptions" class="col-12 col-sm-6" :disable="disable" />
-      <app-select :key="`instructor-${categoriesLoaded}`" v-model="form.primaryInstructor" label="Primary Instructor *" :options="instructorOptions" class="col-12 col-sm-6" :disable="disable" />
+      <app-select :key="`location-${categoriesLoaded}`" v-model="form.location" label="Location *" :options="locationOptions" class="col-12 col-sm-6" :disable="disable" :rules="[requiredRule]" />
+      <app-select v-model="form.room" label="Room *" :options="roomOptions" class="col-12 col-sm-6" :disable="disable" :rules="[requiredRule]" />
+      <app-select :key="`session-${categoriesLoaded}`" v-model="form.session" label="Session *" :options="sessionOptions" class="col-12 col-sm-6" :disable="disable" :rules="[requiredRule]" />
+      <app-select :key="`instructor-${categoriesLoaded}`" v-model="form.primaryInstructor" label="Primary Instructor *" :options="instructorOptions" class="col-12 col-sm-6" :disable="disable" :rules="[requiredRule]" />
       <app-select
         :key="`additional-instructors-${categoriesLoaded}`" v-model="form.additionalInstructors" label="Additional Instructors (Max 2)"
         :options="additionalInstructorOptions" multiple class="col-12 col-sm-6" :disable="disable"
-        :rules="[(v) => !v || v.length <= 2 || 'Select at most 2 additional instructors']"
       />
     </div>
 
     <q-separator class="q-my-sm" />
     <div class="form-section-title">Timeframe</div>
     <div class="row q-col-gutter-md q-mb-md">
-      <app-date-field v-model="form.startDate" label="Start Date *" class="col-12 col-sm-6" :disable="disable" />
-      <app-date-field v-model="form.endDate" label="End Date *" class="col-12 col-sm-6" :disable="disable" />
-      <app-date-field v-model="form.registrationOpenDate" label="Registration Open Date *" class="col-12 col-sm-6" :disable="disable" />
+      <app-date-field v-model="form.startDate" label="Start Date *" class="col-12 col-sm-6" :disable="disable" :rules="[requiredRule]" />
+      <app-date-field v-model="form.endDate" label="End Date *" class="col-12 col-sm-6" :disable="disable" :rules="[requiredRule]" />
+      <app-date-field v-model="form.registrationOpenDate" label="Registration Open Date *" class="col-12 col-sm-6" :disable="disable" :rules="[requiredRule]" />
 
       <div class="col-12">
         <app-field-label label="Active Days" />
@@ -46,8 +45,8 @@
         </div>
       </div>
 
-      <app-time-field v-model="form.startTime" label="Start Time *" class="col-12 col-sm-6" :disable="disable" />
-      <app-time-field v-model="form.endTime" label="End Time *" class="col-12 col-sm-6" :disable="disable" />
+      <app-time-field v-model="form.startTime" label="Start Time *" class="col-12 col-sm-6" :disable="disable" :rules="[requiredRule]" />
+      <app-time-field v-model="form.endTime" label="End Time *" class="col-12 col-sm-6" :disable="disable" :rules="[requiredRule]" />
       <app-text-field v-model="form.duration" label="Duration" placeholder="—" hint="Calculated from Start Time and End Time" class="col-12 col-sm-6" disable />
     </div>
 
@@ -56,7 +55,7 @@
     <div class="row q-col-gutter-md q-mb-md">
       <app-text-field
         v-model.number="form.tuitionFee" label="Tuition Fee *" type="number" placeholder="0.00" class="col-12 col-sm-6"
-        :disable="disable" :rules="[(v) => (v !== null && v !== '') || 'Tuition fee is required']"
+        :disable="disable" :rules="[requiredRule]"
       >
         <template #prepend><span class="text-grey-7">$</span></template>
       </app-text-field>
@@ -138,7 +137,7 @@ const form = defineModel({ type: Object, required: true });
 const props = defineProps({
   disable: { type: Boolean, default: false },
   // Only the Edit/View pages show this — a new class is always active on create.
-  showActiveToggle: { type: Boolean, default: false }
+  showActiveToggle: { type: Boolean, default: false },
 });
 
 const notify = useNotify();
@@ -268,6 +267,15 @@ const toggleDay = (day) => {
   if (props.disable) return;
   const days = isDaySelected(day) ? selectedDays.value.filter((d) => d !== day) : [...selectedDays.value, day];
   form.value.activeDays = dayOptions.map((d) => d.value).filter((d) => days.includes(d)).join(", ");
+};
+
+// Validations
+const requiredRule = (v) => {
+  if (Array.isArray(v)) {
+    return v.length > 0 || "This field is required";
+  }
+
+  return (v !== null && v !== undefined && String(v).trim() !== "") || "This field is required";
 };
 </script>
 
