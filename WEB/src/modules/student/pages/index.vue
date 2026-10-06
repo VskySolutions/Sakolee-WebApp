@@ -41,11 +41,24 @@
         />
       </template>
 
-      <template #body-cell-active="cell">
+      <!-- <template #body-cell-active="cell">
         <q-td :props="cell">
           <q-badge :color="cell.value ? 'positive' : 'grey'">{{ cell.value ? "Active" : "Inactive" }}</q-badge>
         </q-td>
-      </template>
+      </template> -->
+      <template #body-cell-active="cell">
+  <q-td :props="cell">
+    <div class="flex flex-center">
+      <q-toggle
+        :model-value="cell.row.active ?? cell.row.Active ?? cell.row.isActive ?? cell.row.IsActive ?? true"
+        @update:model-value="(val) => updateStatus(cell.row, val)"
+        dense
+        color="positive"
+        :disable="!canWrite"
+      />
+    </div>
+  </q-td>
+</template>
 
       <template #body-cell-actions="cell">
         <q-td :props="cell">
@@ -128,8 +141,9 @@ const columns = [
   { name: "school", label: "School", field: (row) => row.school || "—", align: "left", sortable: true },
   { name: "gradeLevel", label: "Grade", field: (row) => row.gradeLevel || "—", align: "left" },
   { name: "admissionDate", label: "Admission Date", field: (row) => formatDate(row.admissionDate), sort: (row) => row.admissionDate || "", align: "left", sortable: true },
-  { name: "active", label: "Status", field: "active", align: "left", sortable: true, default: true },
+ 
   ...auditColumns(),
+   { name: "active", label: "Status", field: "active", align: "center", sortable: true, default: true },
   { name: "actions", label: "Actions", field: "actions", align: "left" }
 ];
 
@@ -279,6 +293,23 @@ const remove = async (row) => {
     notify.success("Student deleted.");
     load();
   } catch (err) {
+    notify.error(getApiErrorMessage(err));
+  }
+};
+
+const updateStatus = async (row, newStatus) => {
+  const id = row.studentId;
+  if (!id) return;
+
+  const originalStatus = row.active;
+  row.active = newStatus;
+
+  try {
+    await studentApi.update(id, { ...row, active: newStatus });
+    notify.success("Student active status updated successfully.");
+    await load();
+  } catch (err) {
+    row.active = originalStatus;
     notify.error(getApiErrorMessage(err));
   }
 };

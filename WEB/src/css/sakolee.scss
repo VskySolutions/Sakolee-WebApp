@@ -2056,6 +2056,7 @@ svg { fill: none; stroke: currentColor; stroke-width: 1.8px; stroke-linecap: rou
 .lh-16{ line-height: 16px !important; }
 
 .bg-f5{ background-color: #ecfdf5 !important; }
+.bg-fb{ background-color: #fbfbfe !important; }
 
 .border-66{ border: 1px solid #c7c4d766 !important; }
 .border-80{ border: 1px solid #c7c4d780 !important; }
@@ -2104,6 +2105,10 @@ svg { fill: none; stroke: currentColor; stroke-width: 1.8px; stroke-linecap: rou
 
     &--xl {
       max-width: 960px;
+    }
+
+     &--xxl {
+      max-width: 1200px;
     }
 
     &__header {
@@ -2796,6 +2801,20 @@ svg { fill: none; stroke: currentColor; stroke-width: 1.8px; stroke-linecap: rou
   @media (max-width: 700px) {
     .cv-card {
       padding: 15px;
+    }
+  }
+}
+
+.view-class-scss{
+  .q-tabs__content--align-justify .q-tab {
+    flex: 0 0 auto !important; 
+  }
+  .view-class-enrollment-list-scss{
+    .app-data-table[data-v-6a37967c] .q-table__top {
+      display: none !important;
+    }
+    .q-table__card .q-table__middle {
+      border-radius: 12px !important;
     }
   }
 }
