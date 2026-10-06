@@ -55,22 +55,19 @@
       </template> -->
 
       <template #body-cell-isActive="cell">
-  <q-td :props="cell">
-    <div class="flex flex-center">
-      <q-toggle
-        :model-value="cell.row.isActive ?? cell.row.Active ?? cell.row.is_active ?? true"
-        @update:model-value="(val) => updateStatus(cell.row, val)"
-        dense
-        color="positive"
-        :disable="!has(Permissions.UsersWrite) || (cell.row.isActive && cell.row.isProtected)"
-      >
-        <q-tooltip v-if="cell.row.isActive && cell.row.isProtected">
-          The tenant's default Administrator cannot be deactivated
-        </q-tooltip>
-      </q-toggle>
-    </div>
-  </q-td>
-</template>
+        <q-td :props="cell">
+          <div class="flex flex-center">
+            <q-toggle
+              :model-value="cell.row.isActive ?? cell.row.Active ?? cell.row.is_active ?? true"
+              @update:model-value="(val) => updateStatus(cell.row, val)"
+              dense
+              color="positive"
+              :disable="!has(Permissions.UsersWrite) || (cell.row.isActive && cell.row.isProtected)">
+              <q-tooltip v-if="cell.row.isActive && cell.row.isProtected"> The tenant's default Administrator cannot be deactivated </q-tooltip>
+            </q-toggle>
+          </div>
+        </q-td>
+      </template>
 
       <!-- Department, badged when this user heads it. -->
       <template #body-cell-department="cell">
@@ -121,37 +118,35 @@
       </template> -->
 
       <template #body-cell-actions="cell">
-  <q-td :props="cell">
-    <!-- Yahan :to ki jagah @click="openView(cell.row.userId)" lagayein -->
-    <q-btn flat round dense color="primary" icon="o_visibility" @click="openView(cell.row.userId)">
-      <q-tooltip>View / Manage</q-tooltip>
-    </q-btn>
-
-    <!-- Baaki buttons waise hi rahenge -->
-    <q-btn
-      v-if="has(Permissions.UsersWrite)" type="a"
-      flat round dense
-      :color="cell.row.isActive ? 'grey-8' : 'positive'"
-      :icon="cell.row.isActive ? 'o_block' : 'o_check_circle'"
-      :disable="cell.row.isActive && cell.row.isProtected"
-      @click="setStatus(cell.row, !cell.row.isActive)"
-    >
-      <q-tooltip>
+        <q-td :props="cell">
+          <q-btn flat round dense color="primary" icon="o_visibility" @click="openView(cell.row.userId)">
+            <q-tooltip>View / Manage</q-tooltip>
+          </q-btn>
+          <q-btn v-if="has(Permissions.UsersWrite)" flat round dense color="primary" icon="o_edit" @click="openEdit(cell.row.userId)">
+            <q-tooltip>Edit Staff</q-tooltip></q-btn>
+          <q-btn
+            v-if="has(Permissions.UsersWrite)" type="a"
+            flat round dense
+            :color="cell.row.isActive ? 'grey-8' : 'positive'"
+            :icon="cell.row.isActive ? 'o_block' : 'o_check_circle'"
+            :disable="cell.row.isActive && cell.row.isProtected"
+            @click="setStatus(cell.row, !cell.row.isActive)">
+            <q-tooltip>
         {{ cell.row.isActive && cell.row.isProtected
           ? "The tenant's default Administrator cannot be deactivated"
           : (cell.row.isActive ? "Deactivate" : "Activate") }}
-      </q-tooltip>
-    </q-btn>
-    <q-btn
-      v-if="has(Permissions.UsersResetPassword)" type="a"
-      flat round dense color="primary" icon="o_lock_reset" @click="resetPassword(cell.row)"
-    >
-      <q-tooltip>Reset Password</q-tooltip>
-    </q-btn>
-    <q-btn
-      v-if="has(Permissions.UsersResetPassword)" type="a"
-      flat round dense color="primary" icon="o_forward_to_inbox" @click="sendCredentials(cell.row)"
-    >
+            </q-tooltip>
+          </q-btn>
+          <q-btn
+            v-if="has(Permissions.UsersResetPassword)" type="a"
+            flat round dense color="primary" icon="o_lock_reset" @click="resetPassword(cell.row)"
+          >
+            <q-tooltip>Reset Password</q-tooltip>
+          </q-btn>
+          <q-btn
+            v-if="has(Permissions.UsersResetPassword)" type="a"
+            flat round dense color="primary" icon="o_forward_to_inbox" @click="sendCredentials(cell.row)"
+          >
       <q-tooltip>Send Credentials</q-tooltip>
     </q-btn>
   </q-td>
@@ -201,6 +196,8 @@
   </q-page>
   <!-- Staff View Dialog Component -->
     <staff-view-dialog v-model="viewOpen" :user-id="selectedUserId" />
+
+    <user-edit-drawer v-model="editFormOpen" :user-id="selectedEditUserId" @updated="load" />
 </template>
 
 <script setup>
@@ -225,6 +222,8 @@ import AppListHeader from "components/common/AppListHeader.vue";
 import UserCreateDrawer from "components/user/UserCreateDrawer.vue";
 import TempPasswordDialog from "components/temp_password_dialog.vue";
 
+import UserEditDrawer from "components/user/UserEditDrawer.vue";
+
 //mport StaffViewDialog from "components/user/pages/detail.vue"; 
 import StaffViewDialog from "./detail.vue";
 const route = useRoute();
@@ -236,6 +235,14 @@ const { confirm } = useConfirm();
 const { has } = usePermissions();
 const canCreate = computed(() => has(Permissions.UsersWrite));
 const auditColumns = useAuditColumns();
+
+const editFormOpen = ref(false);
+const selectedEditUserId = ref(null);
+
+const openEdit = (userId) => {
+  selectedEditUserId.value = userId;
+  editFormOpen.value = true;
+};
 
 // Filterable columns are server-side; text/computed/audit/date columns are covered by the search box.
 const columns = computed(() => [

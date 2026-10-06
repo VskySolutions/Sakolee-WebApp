@@ -75,7 +75,7 @@
 // the Students page itself is read-only (see StudentsController.Update and the Family page's
 // "Enrolled Students" list, which opens this per row).
 import { computed, reactive, ref, watch } from "vue";
-import { classApi, studentApi, getApiErrorMessage, getApiErrorCode,studentGradeLevelApi, familyStatusApi,ApiErrorCodes } from "services/api";
+import { classApi, studentApi, getApiErrorMessage, getApiErrorCode,studentGradeLevelApi,ApiErrorCodes } from "services/api";
 import { useNotify } from "composables/useNotify";
 import { GENDER_OPTIONS } from "composables/quickRegistrationForm";
 import { useTShirtSizeOptions } from "composables/useTShirtSizeOptions";
@@ -217,7 +217,7 @@ watch(() => props.modelValue, async (isOpen) => {
   loading.value = true;
   loadedClassIds.value = [];
   try {
-    const [row] = await Promise.all([studentApi.get(props.studentId), loadClasses(),loadGradeLevels(),loadFamilyStatuses()]);
+    const [row] = await Promise.all([studentApi.get(props.studentId), loadClasses(),loadGradeLevels()]);
     loadedClassIds.value = row.classIds?.length ? [...row.classIds] : row.classId ? [row.classId] : [];
     Object.assign(preserved, {
       familyId: row.familyId ?? null,
