@@ -545,6 +545,30 @@ public sealed class FamiliesController : ControllerBase
     /// Soft-deletes a family record. Contact Persons and any enrolled Students are independent records
     /// and are left alone, the same way deleting a Student never deletes its Person.
     /// </summary>
+    //[HttpDelete("{id:guid}")]
+    //[RequirePermission(Permissions.FamiliesDelete)]
+    //[ProducesResponseType<ApiResponse<object>>(StatusCodes.Status200OK)]
+    //public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
+    //{
+    //    var family = await LoadAsync(id, cancellationToken);
+    //    if (family is null)
+    //    {
+    //        return NotFound(ApiResponseFactory.NotFound("Family not found."));
+    //    }
+
+    //    // Soft delete: flag the row rather than physically removing it.
+    //    family.Deleted = true;
+    //    family.UpdatedOnUtc = DateTime.UtcNow;
+    //    family.UpdatedById = CurrentActorId();
+    //    _families.Update(family);
+    //    await _audit.AddAsync(nameof(Family), family.Id.ToString(), "Deleted", cancellationToken: cancellationToken);
+    //    await _unitOfWork.SaveChangesAsync(cancellationToken);
+    //    return Ok(ApiResponseFactory.Success(new { familyId = id }, "Family deleted."));
+    //}
+    /// <summary>
+    /// Soft-deletes a family record and cascades the soft delete to its enrolled Students and its
+    /// contact mapping rows. Contact Persons and login accounts are independent records and are left alone.
+    /// </summary>
     [HttpDelete("{id:guid}")]
     [RequirePermission(Permissions.FamiliesDelete)]
     [ProducesResponseType<ApiResponse<object>>(StatusCodes.Status200OK)]
@@ -555,22 +579,84 @@ public sealed class FamiliesController : ControllerBase
         {
             return NotFound(ApiResponseFactory.NotFound("Family not found."));
         }
-
-        // Soft delete: flag the row rather than physically removing it.
+        var now = DateTime.UtcNow;
+        var actorId = CurrentActorId();
+        // 1. Students of this family: remove class enrollments, block their login, soft-delete them.
+        var students = await _students.ListByFamilyIdAsync(family.Id, cancellationToken);
+        var classIdsByStudent = await _students.GetClassIdsAsync(students, cancellationToken);
+        var classesRemoved = classIdsByStudent.Values.Sum(c => c.Count);
+        var studentLoginsDisabled = 0;
+        foreach (var student in students)
+        {
+            await _students.SetClassesAsync(student, Array.Empty<Guid>(), cancellationToken);
+            if (await DisableLoginAsync(student.PersonId, cancellationToken))
+            {
+                studentLoginsDisabled++;
+            }
+            student.Deleted = true;
+            student.UpdatedOnUtc = now;
+            student.UpdatedById = actorId;
+            _students.Update(student);
+            await _audit.AddAsync(nameof(Student), student.Id.ToString(), "Deleted",details: $"Cascaded from family {family.FamilyName}", cancellationToken: cancellationToken);
+        }
+        // 2. Parents of this family (primary + secondary): block their login, unless they are
+        //    also a contact on another family.
+        var parentPersonIds = family.Contacts.Where(c => c.PersonId.HasValue).Select(c => c.PersonId!.Value).Prepend(family.PersonId ?? Guid.Empty).Where(pid => pid != Guid.Empty).Distinct().ToList();
+        var parentLoginsDisabled = 0;
+        foreach (var personId in parentPersonIds)
+        {
+            if (await IsContactOnOtherFamilyAsync(personId, family.Id, cancellationToken))
+            {
+                continue;
+            }
+            if (await DisableLoginAsync(personId, cancellationToken))
+            {
+                parentLoginsDisabled++;
+            }
+        }
+        // 3. Contact mapping rows belong to the family, so they go with it.
+        foreach (var contact in family.Contacts.Where(c => !c.Deleted))
+        {
+            contact.Deleted = true;
+            contact.UpdatedOnUtc = now;
+            contact.UpdatedById = actorId;
+            _families.UpdateContact(contact);
+        }
+        // 4. The family itself.
         family.Deleted = true;
-        family.UpdatedOnUtc = DateTime.UtcNow;
-        family.UpdatedById = CurrentActorId();
+        family.UpdatedOnUtc = now;
+        family.UpdatedById = actorId;
         _families.Update(family);
         await _audit.AddAsync(nameof(Family), family.Id.ToString(), "Deleted", cancellationToken: cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
-        return Ok(ApiResponseFactory.Success(new { familyId = id }, "Family deleted."));
+        var loginsDisabled = studentLoginsDisabled + parentLoginsDisabled;
+        var message = students.Count > 0 ? $"Family \"{family.FamilyName}\" deleted along with {students.Count} student(s) and {classesRemoved} class enrollment(s). {loginsDisabled} login(s) disabled." : $"Family \"{family.FamilyName}\" deleted. {loginsDisabled} login(s) disabled.";
+        return Ok(ApiResponseFactory.Success(new { familyId = id, studentsDeleted = students.Count, classesRemoved, loginsDisabled }, message));
     }
-
     #endregion
 
     #endregion
 
     #region Private Helper Methods
+    #region DisableLogin
+    /// <summary>Deactivates the login linked to a Person and logs out any active sessions.</summary>
+    private async Task<bool> DisableLoginAsync(Guid? personId, CancellationToken cancellationToken)
+    {
+        if (personId is not { } pid) return false;
+        var person = await _persons.GetByIdAsync(pid, cancellationToken);
+        if (person?.UserId is not { } userId) return false;
+        var user = await _users.GetByIdAsync(userId, cancellationToken);
+        if (user is null || !user.IsActive) return false;
+        user.IsActive = false;
+        user.TokenVersion++;
+        _users.Update(user);
+        return true;
+    }
+
+    /// <summary>True when this person is also a contact on another family, so their login must stay.</summary>
+    private async Task<bool> IsContactOnOtherFamilyAsync(Guid personId, Guid deletingFamilyId, CancellationToken cancellationToken)
+        => (await _families.ListFamilyIdsForContactAsync(personId, cancellationToken)).Any(fid => fid != deletingFamilyId);
+    #endregion
 
     #region LoadAsync Helper
 

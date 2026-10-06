@@ -11,7 +11,7 @@ internal sealed class StudentRepository : IStudentRepository
     public StudentRepository(SakoleeDbContext dbContext) => _dbContext = dbContext;
 
     public Task<Student?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
-        => _dbContext.Students.FirstOrDefaultAsync(s => s.Id == id, cancellationToken);
+        => _dbContext.Students.FirstOrDefaultAsync(s => s.Id == id && !s.Deleted, cancellationToken);
 
     public async Task<bool> IsOwnedByTenantAsync(Guid? personId, Guid tenantId, CancellationToken cancellationToken = default)
         => personId.HasValue && await _dbContext.TenantPersonMappings.AnyAsync(
@@ -23,7 +23,7 @@ internal sealed class StudentRepository : IStudentRepository
         // stored as nvarchar rather than uniqueidentifier on this table, so a SQL-side join against
         // TenantPersonMapping's native Guid column would need a cross-type comparison; resolving the
         // tenant's person ids first and filtering client-side sidesteps that entirely.
-        var all = await _dbContext.Students.OrderByDescending(s => s.UpdatedOnUtc ?? s.CreatedOnUtc).ToListAsync(cancellationToken);
+        var all = await _dbContext.Students.Where(s => !s.Deleted).OrderByDescending(s => s.UpdatedOnUtc ?? s.CreatedOnUtc).ToListAsync(cancellationToken);
         if (!tenantId.HasValue)
         {
             return all;
