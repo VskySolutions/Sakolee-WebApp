@@ -75,7 +75,7 @@
 // the Students page itself is read-only (see StudentsController.Update and the Family page's
 // "Enrolled Students" list, which opens this per row).
 import { computed, reactive, ref, watch } from "vue";
-import { classApi, studentApi, getApiErrorMessage, getApiErrorCode,studentGradeLevelApi, familyStatusApi,ApiErrorCodes } from "services/api";
+import { classApi, studentApi, getApiErrorMessage, getApiErrorCode,studentGradeLevelApi,ApiErrorCodes } from "services/api";
 import { useNotify } from "composables/useNotify";
 import { GENDER_OPTIONS } from "composables/quickRegistrationForm";
 import { useTShirtSizeOptions } from "composables/useTShirtSizeOptions";
@@ -100,10 +100,10 @@ const loadGradeLevels = async () => {
 
 // // Family Status options state
 // const familyStatuses = ref([]);
-// const familyStatusOptions = computed(() => 
-//   familyStatuses.value.map((fs) => ({ 
-//     label: fs.name || fs.statusName || fs.Name, 
-//     value: fs.id || fs.familyStatusId || fs.Id 
+// const familyStatusOptions = computed(() =>
+//   familyStatuses.value.map((fs) => ({
+//     label: fs.name || fs.statusName || fs.Name,
+//     value: fs.id || fs.familyStatusId || fs.Id
 //   }))
 // );
 

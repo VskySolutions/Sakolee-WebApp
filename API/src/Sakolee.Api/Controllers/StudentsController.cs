@@ -559,6 +559,26 @@ public sealed class StudentsController : ControllerBase
             "Credentials sent."));
     }
 
+    //[HttpDelete("{id:guid}")]
+    //[RequirePermission(Permissions.StudentsDelete)]
+    //[ProducesResponseType<ApiResponse<object>>(StatusCodes.Status200OK)]
+    //public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
+    //{
+    //    var student = await LoadOwnedAsync(id, cancellationToken);
+    //    if (student is null)
+    //    {
+    //        return NotFound(ApiResponseFactory.NotFound("Student not found."));
+    //    }
+
+    //    student.Deleted = true;
+    //    student.UpdatedOnUtc = DateTime.UtcNow;
+    //    student.UpdatedById = CurrentActorId();
+    //    _students.Update(student);
+    //    await _audit.AddAsync(nameof(Student), student.Id.ToString(), "Deleted", cancellationToken: cancellationToken);
+    //    await _unitOfWork.SaveChangesAsync(cancellationToken);
+    //    return Ok(ApiResponseFactory.Success(new { studentId = id }, "Student deleted."));
+    //}
+
     [HttpDelete("{id:guid}")]
     [RequirePermission(Permissions.StudentsDelete)]
     [ProducesResponseType<ApiResponse<object>>(StatusCodes.Status200OK)]
@@ -570,17 +590,39 @@ public sealed class StudentsController : ControllerBase
             return NotFound(ApiResponseFactory.NotFound("Student not found."));
         }
 
+        // Count class enrollments first, then remove them (soft-deletes the StudentClass rows).
+        var classIds = await _students.GetClassIdsAsync(new[] { student }, cancellationToken);
+        var classesRemoved = classIds.TryGetValue(student.Id, out var ids) ? ids.Count : 0;
+        await _students.SetClassesAsync(student, Array.Empty<Guid>(), cancellationToken);
+        var loginDisabled = await DisableLoginAsync(student, cancellationToken);
         student.Deleted = true;
         student.UpdatedOnUtc = DateTime.UtcNow;
         student.UpdatedById = CurrentActorId();
         _students.Update(student);
         await _audit.AddAsync(nameof(Student), student.Id.ToString(), "Deleted", cancellationToken: cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
-        return Ok(ApiResponseFactory.Success(new { studentId = id }, "Student deleted."));
+        var message = classesRemoved > 0 ? $"Student deleted and removed from {classesRemoved} class enrollment(s). Login disabled." : "Student deleted. Login disabled.";
+        return Ok(ApiResponseFactory.Success(new { studentId = id, classesRemoved, loginDisabled }, message));
     }
 
     // ---- helpers ----
 
+    /// <summary>Blocks the student's login: deactivates the User and invalidates existing sessions.</summary>
+    private async Task<bool> DisableLoginAsync(Student student, CancellationToken cancellationToken)
+    {
+        if (student.PersonId is not { } personId) return false;
+
+        var person = await _persons.GetByIdAsync(personId, cancellationToken);
+        if (person?.UserId is not { } userId) return false;
+
+        var user = await _users.GetByIdAsync(userId, cancellationToken);
+        if (user is null || !user.IsActive) return false;
+
+        user.IsActive = false;
+        user.TokenVersion++;
+        _users.Update(user);
+        return true;
+    }
     /// <summary>Loads a student and confirms it belongs to the caller's resolved tenant (via PersonId),
     /// returning null — the same as "not found" — for a foreign-tenant record.</summary>
     private async Task<Student?> LoadOwnedAsync(Guid id, CancellationToken cancellationToken)

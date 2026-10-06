@@ -31,9 +31,13 @@
       :loading="loading"
       :total-records="totalRecords"
       :pagination="pagination"
+      selectable
       @request="onRequest"
       @refresh="load"
     >
+    <template v-if="canDelete" #bulk-actions="{ selected: sel }">
+    <q-btn flat dense no-caps color="negative" label="Delete" @click="bulkDelete(sel)" />
+  </template>
       <!-- <template #body-cell-active="cell">
         <q-td :props="cell">
           <q-badge :color="cell.value ? 'positive' : 'grey'">{{ cell.value ? "Active" : "Inactive" }}</q-badge>
@@ -114,7 +118,7 @@ const columns = [
 ];
 
 const filters = reactive({ active: null });
-const { rows, loading, totalRecords, search, filterOpen, pagination, load, onRequest } = useListTable({
+const { rows, loading, totalRecords,selected, search, filterOpen, pagination, load, onRequest } = useListTable({
   pageKey: "classes",
   fetcher: ({ page, limit, sortBy, descending }) =>
     classApi.list({
@@ -201,6 +205,24 @@ const updateStatus = async (row, newStatus) => {
     await load();
   } catch (err) {
     row.active = originalStatus;
+    notify.error(getApiErrorMessage(err));
+  }
+};
+const bulkDelete = async (sel) => {
+  if (!sel.length) return;
+  const ok = await confirm({
+    title: "Delete classes",
+    message: `Delete ${sel.length} class(es)? This cannot be undone.`,
+    confirmLabel: "Delete",
+    type: "danger"
+  });
+  if (!ok) return;
+  try {
+    await Promise.all(sel.map((r) => classApi.remove(r.classId)));
+    notify.success("Classes deleted successfully.");
+    selected.value = [];
+    load();
+  } catch (err) {
     notify.error(getApiErrorMessage(err));
   }
 };

@@ -86,7 +86,8 @@
               />
             </div>
             <div class="col-12 col-md-4">
-              <app-select v-model="contact.model.relation" label="Type / Relation" :options="RELATION_OPTIONS" />
+              <!-- <app-select v-model="contact.model.relation" label="Type / Relation" :options="RELATION_OPTIONS" /> -->
+               <app-select v-model="contact.model.relation" label="Type / Relation" :options="relationOptions" />
             </div>
             <div class="col-12 col-md-6">
               <app-text-field
@@ -304,7 +305,7 @@ import AppPhoneInput from "components/common/AppPhoneInput.vue";
 import AppFieldLabel from "components/common/AppFieldLabel.vue";
 
 import { useNotify } from "composables/useNotify";
-import { classApi, locationApi, familyApi, studentApi,studentGradeLevelApi,familyStatusApi,  getApiErrorMessage } from "services/api";
+import { classApi, locationApi, familyApi, studentApi,studentGradeLevelApi,familyStatusApi,familyRelationApi,  getApiErrorMessage } from "services/api";
 import {
   blankQuickRegistrationForm,
   blankStudent,
@@ -321,7 +322,8 @@ import { useHearAboutUsOptions } from "composables/useHearAboutUsOptions";
 
 const gradeLevels = ref([]);
 const gradeLevelOptions = computed(() => 
-  gradeLevels.value.map((g) => ({ 
+  (gradeLevels.value || [])
+    .filter((g) => g.active ?? g.Active ?? true).map((g) => ({ 
     label: g.name || g.gradeName || g.Name, 
     value: g.id || g.gradeLevelId || g.Id 
   }))
@@ -336,6 +338,25 @@ const loadGradeLevels = async () => {
   }
 };
 
+// Family relation options state
+const familyRelations = ref([]);
+const relationOptions = computed(() => 
+  (familyRelations.value || [])
+    .filter((fr) => fr.active ?? fr.Active ?? true).map((fr) => ({ 
+      label: fr.name || fr.relationName || fr.Name, 
+      value: fr.id || fr.familyRelationId || fr.Id 
+    }))
+);
+
+const loadFamilyRelations = async () => {
+  try {
+    const res = await familyRelationApi.list({ limit: 100 });
+    familyRelations.value = res?.data || [];
+  } catch (err) {
+    notify.error(getApiErrorMessage(err));
+  }
+};
+
 const notify = useNotify();
 const { options: tShirtSizeOptions } = useTShirtSizeOptions();
 const { options: hearAboutUsOptions } = useHearAboutUsOptions();
@@ -344,7 +365,8 @@ const router = useRouter();
 // Family status options state
 const familyStatuses = ref([]);
 const familyStatusOptions = computed(() => 
-  familyStatuses.value.map((fs) => ({ 
+  (familyStatuses.value || [])
+    .filter((fs) => fs.active ?? fs.Active ?? true).map((fs) => ({ 
     label: fs.name || fs.statusName || fs.Name, 
     value: fs.id || fs.familyStatusId || fs.Id 
   }))
@@ -405,16 +427,19 @@ const studentDisplayName = (student) => `${student.firstName || ""} ${student.la
 // Real classes and studio locations, fetched the same way Class's own Category dropdowns load — the
 // composable's CLASS_OPTIONS were prototype demo labels, not ids a real enrollment could use.
 const classes = ref([]);
-const classOptions = computed(() => classes.value.map((c) => ({ label: c.className, value: c.classId })));
+const classOptions = computed(() => (classes.value || [])
+    .filter((c) => c.active ?? c.Active ?? true).map((c) => ({ label: c.className, value: c.classId })));
 const locations = ref([]);
-const locationOptions = computed(() => locations.value.map((l) => ({ label: l.name, value: l.id })));
+const locationOptions = computed(() => (locations.value || [])
+    .filter((l) => l.active ?? l.Active ?? true).map((l) => ({ label: l.name, value: l.id })));
 onMounted(async () => {
   try {
     const [classResult, locationResult] = await Promise.all([
       classApi.list({ limit: 100, active: true }),
       locationApi.list({ limit: 100, active: true }),
       loadGradeLevels(),
-      loadFamilyStatuses()
+      loadFamilyStatuses(),
+      loadFamilyRelations()
     ]);
     classes.value = classResult?.data || [];
     locations.value = locationResult?.data || [];

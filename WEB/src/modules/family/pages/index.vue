@@ -49,18 +49,18 @@
         </q-td>
       </template> -->
       <template #body-cell-active="cell">
-  <q-td :props="cell">
-    <div class="flex flex-center">
-      <q-toggle
-        :model-value="cell.row.active ?? cell.row.Active ?? cell.row.isActive ?? cell.row.IsActive ?? true"
-        @update:model-value="(val) => updateStatus(cell.row, val)"
-        dense
-        color="positive"
-        :disable="!canWrite"
-      />
-    </div>
-  </q-td>
-</template>
+        <q-td :props="cell">
+          <div class="flex flex-center">
+            <q-toggle
+              :model-value="cell.row.active ?? cell.row.Active ?? cell.row.isActive ?? cell.row.IsActive ?? true"
+              @update:model-value="(val) => updateStatus(cell.row, val)"
+              dense
+              color="positive"
+              :disable="!canWrite"
+            />
+          </div>
+        </q-td>
+      </template>
 
       <template #body-cell-actions="cell">
         <q-td :props="cell">
@@ -171,7 +171,7 @@ const columns = [
   { name: "studioLocationName", label: "Studio Location", field: (row) => row.studioLocationName || "—", align: "left" },
   { name: "studentCount", label: "Students", field: "studentCount", align: "left" },
   ...auditColumns(),
-   { name: "active", label: "Active", field: "active", align: "center", default: true },
+  { name: "active", label: "Active", field: "active", align: "center", default: true },
   { name: "actions", label: "Actions", field: "actions", align: "left" }
 ];
 
@@ -193,10 +193,10 @@ onMounted(async () => {
     // Only active statuses are offered for selection (inactive ones stay on the Family Status page).
     const [statusRes, gradeRes] = await Promise.all([
       familyStatusApi.list({ limit: 100, active: true }),
-      studentGradeLevelApi.list({ limit: 100 })
+      studentGradeLevelApi.list({ limit: 100,active: true })
     ]);
-    familyStatuses.value = statusRes?.data || [];
-    gradeLevels.value = gradeRes?.data || [];
+    familyStatuses.value = (statusRes?.data || []).filter(s => s.active ?? s.Active ?? true);  //statusRes?.data || [];
+    gradeLevels.value = (gradeRes?.data || []).filter(g => g.active ?? g.Active ?? true);//gradeRes?.data || [];
   } catch (err) {
     notify.error(getApiErrorMessage(err));
   }
@@ -314,18 +314,42 @@ const sendCredentials = async (families) => {
   }
   selected.value = [];
 };
-
+// ---- Delete ----
+// const remove = async (row) => {
+//   const ok = await confirm({
+//     title: "Delete family",
+//     message: `Delete "${row.familyName}"?`,
+//     confirmLabel: "Delete",
+//     type: "danger"
+//   });
+//   if (!ok) return;
+//   try {
+//     await familyApi.remove(row.familyId);
+//     notify.success("Family deleted.");
+//     load();
+//   } catch (err) {
+//     notify.error(getApiErrorMessage(err));
+//   }
+// };
 const remove = async (row) => {
+  const count = row.studentCount || 0;
   const ok = await confirm({
     title: "Delete family",
-    message: `Delete "${row.familyName}"?`,
+    message: count > 0
+      ? `Delete "${row.familyName}"? Its ${count} student(s) will also be deleted and removed from their classes.`
+      : `Delete "${row.familyName}"?`,
     confirmLabel: "Delete",
     type: "danger"
   });
   if (!ok) return;
   try {
-    await familyApi.remove(row.familyId);
-    notify.success("Family deleted.");
+    const result = await familyApi.remove(row.familyId);
+    const n = result?.studentsDeleted ?? count;
+    notify.success(
+      n > 0
+        ? `Family "${row.familyName}" deleted along with ${n} student(s).`
+        : `Family "${row.familyName}" deleted.`
+    );
     load();
   } catch (err) {
     notify.error(getApiErrorMessage(err));

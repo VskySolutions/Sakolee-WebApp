@@ -372,12 +372,12 @@ const filterOpen = ref(false);
 const { rows, loading, totalRecords, search, pagination, load, onRequest } = useListTable({
   pageKey: "t-shirt-sizes",
   // Fetch T-Shirt Sizes from the API.
-  fetcher: ({ page, limit, sortBy, descending }) => tShirtSizeApi.list({ page, limit, search: search.value || undefined, sortBy, descending, name:filters.name || undefined, active: filters.active ?? undefined, showDeleted: showDeleted.value })
+  fetcher: ({ page, limit, sortBy, descending }) => tShirtSizeApi.list({ page, limit, search: search.value || undefined, sortBy, descending, name: filters.name || undefined, active: filters.active ?? undefined, showDeleted: showDeleted.value })
     .then((response) => ({ data: response?.data || [], total: response?.meta?.totalRecords || 0 })),
   // Handle API errors.
   onError: (error) => {
     notify.error(
-      getApiErrorMessage(error,"Unable to load T-Shirt sizes.")
+      getApiErrorMessage(error, "Unable to load T-Shirt sizes.")
     );
   }
 });
@@ -493,7 +493,8 @@ const openEdit = async (row) => {
 /* ---------------------------------
  * Toggle Active
  * --------------------------------- */
-const toggleActive = async (row, active) => { const previousValue = row.active;
+const toggleActive = async (row, active) => {
+  const previousValue = row.active;
   // Update UI immediately.
   row.active = active;
   try {

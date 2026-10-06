@@ -53,10 +53,10 @@ export const Permissions = Object.freeze({
   LocationsWrite: "locations.write",
   LocationsDelete: "locations.delete",
 
-  // Family Statuses Permissions
-  FamilyStatusesRead: "familyStatuses.read",
-  FamilyStatusesWrite: "familyStatuses.write",
-  FamilyStatusesDelete: "familyStatuses.delete",
+  // // Family Statuses Permissions
+  // FamilyStatusesRead: "familyStatuses.read",
+  // FamilyStatusesWrite: "familyStatuses.write",
+  // FamilyStatusesDelete: "familyStatuses.delete",
   // Class Sessions Permissions
   ClassSessionsRead: "classSessions.read",
   ClassSessionsWrite: "classSessions.write",
@@ -66,24 +66,24 @@ export const Permissions = Object.freeze({
   BillingMethodsWrite: "billingMethods.write",
   BillingMethodsDelete: "billingMethods.delete",
 
-  //Family Relations Permissions
-  FamilyRelationsRead : " familyRelations.read",
-  FamilyRelationsWrite : "familyRelations.write",
-  FamilyRelationsDelete : "familyRelations.delete",
+  // Family Relations Permissions
+  FamilyRelationsRead: " familyRelations.read",
+  FamilyRelationsWrite: "familyRelations.write",
+  FamilyRelationsDelete: "familyRelations.delete",
 
-  //Class Rooms Permissions
-  ClassRoomsRead : "classRooms.read",
-  ClassRoomsWrite :"classRooms.write",
-  ClassRoomsDelete : "classRooms.delete",
+  // Class Rooms Permissions
+  ClassRoomsRead: "classRooms.read",
+  ClassRoomsWrite: "classRooms.write",
+  ClassRoomsDelete: "classRooms.delete",
 
-   MembershipTypesRead : "membershipTypes.read",
- MembershipTypesWrite : "membershipTypes.write",
-  MembershipTypesDelete : "membershipTypes.delete",
+  MembershipTypesRead: "membershipTypes.read",
+  MembershipTypesWrite: "membershipTypes.write",
+  MembershipTypesDelete: "membershipTypes.delete",
 
-// StudentGradeLevel
-StudentGradeLevelsRead : "studentGradeLevels.read",
-StudentGradeLevelsWrite :"studentGradeLevels.write",
-StudentGradeLevelsDelete :"studentGradeLevels.delete",
+  // StudentGradeLevel
+  StudentGradeLevelsRead: "studentGradeLevels.read",
+  StudentGradeLevelsWrite: "studentGradeLevels.write",
+  StudentGradeLevelsDelete: "studentGradeLevels.delete",
 
   UsersRead: "users.read",
   UsersWrite: "users.write",
