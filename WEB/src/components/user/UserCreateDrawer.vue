@@ -20,7 +20,7 @@
           :error="!!emailError" :error-message="emailError"
           :rules="[(v) => !!v || 'Email is required', (v) => /.+@.+\..+/.test(v) || 'Enter a valid email']"
         />
-        <!-- Hidden when the caller fixes the role (the Staff page always creates "Staff" accounts). -->
+        <!-- Hidden when the caller fixes the role (the Staff page always creates "Instructor" accounts). -->
         <app-select
           v-if="!defaultRole" v-model="form.roleIds" :options="roleOptions" label="Roles *" multiple class="q-mb-md"
           :loading="loadingRoles" hint="Grouped by category. Assign one or more roles."

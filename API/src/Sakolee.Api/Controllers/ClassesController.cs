@@ -28,7 +28,7 @@ namespace Sakolee.Api.Controllers;
 public sealed class ClassesController : ControllerBase
 {
     /// <summary>The role whose holders are offered as class instructors (the same role the Staff list shows).</summary>
-    private const string StaffRole = "Staff";
+    private const string StaffRole = "Instructor";
 
     private readonly IClassRepository _classes;
     private readonly IClassCategoryRepository _categories;
@@ -200,7 +200,7 @@ public sealed class ClassesController : ControllerBase
     }
 
     /// <summary>
-    /// The Primary Instructor picker's options: the active tenant's active users holding the "Staff" role
+    /// The Primary Instructor picker's options: the active tenant's active users holding the "Instructor" role
     /// (the same people the Staff list shows). Readable with Classes permissions alone, so the class form
     /// does not need users.read.
     /// </summary>
