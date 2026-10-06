@@ -39,6 +39,7 @@ namespace Sakolee.Api.Controllers;
 public sealed class StudentsController : ControllerBase
 {
     private readonly IStudentRepository _students;
+    private readonly IClassRepository _classes;
     private readonly IFamilyRepository _families;
     private readonly IPersonRepository _persons;
     private readonly IAddressRepository _addresses;
@@ -53,6 +54,7 @@ public sealed class StudentsController : ControllerBase
 
     public StudentsController(
         IStudentRepository students,
+        IClassRepository classes,
         IFamilyRepository families,
         IPersonRepository persons,
         IAddressRepository addresses,
@@ -66,6 +68,7 @@ public sealed class StudentsController : ControllerBase
         ICredentialEncryptionService credentialEncryption)
     {
         _students = students;
+        _classes = classes;
         _families = families;
         _persons = persons;
         _addresses = addresses;
@@ -398,7 +401,8 @@ public sealed class StudentsController : ControllerBase
         var person = student.PersonId is { } personId ? await _persons.GetByIdAsync(personId, cancellationToken) : null;
         var names = await ResolveActorNamesAsync(new[] { student.CreatedById, student.UpdatedById }, cancellationToken);
         var classIds = await _students.GetClassIdsAsync(new[] { student }, cancellationToken);
-        return Ok(ApiResponseFactory.Success(ToSummary(student, person, names, classIds), "Student retrieved."));
+        var classes = await ResolveClassesAsync(classIds.TryGetValue(student.Id, out var ids) ? ids : Array.Empty<Guid>(), cancellationToken);
+        return Ok(ApiResponseFactory.Success(ToSummary(student, person, names, classIds) with { Classes = classes }, "Student retrieved."));
     }
 
     [HttpPut("{id:guid}")]
@@ -725,6 +729,26 @@ public sealed class StudentsController : ControllerBase
             .Where(id => id != Guid.Empty)
             .Distinct()
             .ToList();
+
+    /// <summary>
+    /// Resolves enrolled class ids to display rows (name plus a "days · start - end" schedule), in
+    /// enrollment order. Deleted classes are skipped.
+    /// </summary>
+    private async Task<IReadOnlyList<StudentClassItem>> ResolveClassesAsync(IReadOnlyList<Guid> classIds, CancellationToken cancellationToken)
+    {
+        var items = new List<StudentClassItem>();
+        foreach (var classId in classIds)
+        {
+            if (await _classes.GetByIdAsync(classId, cancellationToken) is not { } c)
+            {
+                continue;
+            }
+            var time = string.Join(" - ", new[] { c.StartTime, c.EndTime }.Where(t => !string.IsNullOrWhiteSpace(t)));
+            var schedule = string.Join(" · ", new[] { c.ActiveDays, time }.Where(t => !string.IsNullOrWhiteSpace(t)));
+            items.Add(new StudentClassItem(c.Id, c.ClassName, schedule.Length > 0 ? schedule : null, c.Active));
+        }
+        return items;
+    }
 
     private static StudentSummary ToSummary(
         Student s, Person? person, IReadOnlyDictionary<Guid, string> names, IReadOnlyDictionary<Guid, IReadOnlyList<Guid>> classIds) => new(

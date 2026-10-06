@@ -187,4 +187,8 @@ public sealed record StudentSummary(
     DateTime CreatedOnUtc,
     string? UpdatedBy,
     DateTime? UpdatedOnUtc,
-    IReadOnlyList<Guid> ClassIds);
+    IReadOnlyList<Guid> ClassIds,
+    IReadOnlyList<StudentClassItem>? Classes = null);
+
+/// <summary>One class a student is enrolled in, resolved for display (filled on the single-student read only).</summary>
+public sealed record StudentClassItem(Guid Id, string? Name, string? Schedule, bool Active);
