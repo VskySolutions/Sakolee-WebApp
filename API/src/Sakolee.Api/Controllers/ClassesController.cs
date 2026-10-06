@@ -397,6 +397,26 @@ public sealed class ClassesController : ControllerBase
             return NotFound(ApiResponseFactory.NotFound("Class not found."));
         }
 
+        // Check if existing class schedule for instructor and additional instructor.
+        var conflict = await _classes.ValidateInstructorScheduleAsync(
+                                                                        null,
+                                                                        request.PrimaryInstructorId,
+                                                                        request.AdditionalInstructorIds,
+                                                                        request.StartDate,
+                                                                        request.EndDate,
+                                                                        request.StartTime,
+                                                                        request.EndTime,
+                                                                        request.ActiveDays,
+                                                                        cancellationToken);
+
+        if (conflict != null)
+        {
+            return Conflict(new
+            {
+                message = conflict
+            });
+        }
+
         ApplyRequest(entity, request.LocationId, request.RoomId, request.SessionId, request.PrimaryInstructorId,
             request.Category1Id, request.Category2Id, request.Category3Id,
             request.ClassName, request.AdditionalInstructorIds, request.StartDate, request.EndDate,
