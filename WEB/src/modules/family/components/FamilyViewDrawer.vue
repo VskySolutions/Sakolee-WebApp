@@ -48,6 +48,11 @@
                 <div class="fw-500 fs-11 text-86 mb-4">Family Status</div>
                 <div class="fv-value">{{ familyStatusLabel }}</div>
               </div> -->
+
+              <div class="col-6">
+  <div class="fw-500 fs-11 text-86 mb-4">Family Status</div>
+  <div class="fv-value">{{ familyStatusLabel }}</div>
+</div>
             </div>
           </div>
 
@@ -304,6 +309,12 @@ const meta = reactive({ createdOnUtc: null, familyStatusName: "" });
 //   props.familyStatusOptions.find((x) => x.value === form.familyStatusId)?.label ||
 //   "—"
 // );
+
+const familyStatusLabel = computed(() =>
+  meta.familyStatusName ||
+  props.familyStatusOptions.find((x) => x.value === form.familyStatusId)?.label ||
+  "—"
+);
 
 const activeStudentCount = computed(() => students.value.filter((s) => s.active).length);
 

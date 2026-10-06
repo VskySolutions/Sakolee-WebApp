@@ -81,13 +81,22 @@
     </app-data-table>
 
     <!-- Create / Edit popup -->
-    <family-form-drawer
+    <!-- <family-form-drawer
       v-model="formOpen"
       :mode="formMode"
       :family-id="formFamilyId"
       :family-status-options="familyStatusOptions"
       @saved="load"
-    />
+    /> -->
+
+    <family-form-drawer
+  v-model="formOpen"
+  :mode="formMode"
+  :family-id="formFamilyId"
+  :family-status-options="familyStatusOptions"
+  :grade-level-options="gradeLevelOptions"
+  @saved="load"
+/>
 
     <!-- Read-only View drawer -->
     <family-view-drawer
@@ -131,7 +140,7 @@
 import { ref, reactive, computed, watch, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import { debounce } from "quasar";
-import { familyApi, familyStatusApi, getApiErrorMessage } from "services/api";
+import { familyApi, familyStatusApi,studentGradeLevelApi, getApiErrorMessage } from "services/api";
 import { useNotify } from "composables/useNotify";
 import { useConfirm } from "composables/useConfirm";
 import { useListTable } from "composables/useListTable";
@@ -172,11 +181,22 @@ const familyStatuses = ref([]);
 // familystatus module's own pages, which fall back through the same mismatch.
 const familyStatusOptions = computed(() => familyStatuses.value.map((s) => ({ label: s.name, value: s.id })));
 
+const gradeLevels = ref([]);
+const gradeLevelOptions = computed(() => 
+  gradeLevels.value.map((g) => ({ 
+    label: g.name || g.Name || g.gradeName || g.title, 
+    value: g.id || g.Id || g.gradeLevelId || g.gradeId 
+  }))
+);
 onMounted(async () => {
   try {
     // Only active statuses are offered for selection (inactive ones stay on the Family Status page).
-    const statusRes = await familyStatusApi.list({ limit: 100, active: true });
+    const [statusRes, gradeRes] = await Promise.all([
+      familyStatusApi.list({ limit: 100, active: true }),
+      studentGradeLevelApi.list({ limit: 100 })
+    ]);
     familyStatuses.value = statusRes?.data || [];
+    gradeLevels.value = gradeRes?.data || [];
   } catch (err) {
     notify.error(getApiErrorMessage(err));
   }

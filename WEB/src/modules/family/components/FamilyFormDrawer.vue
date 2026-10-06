@@ -28,7 +28,8 @@
       <div v-show="activeTab === 'family'" class="row q-col-gutter-md">
         <app-text-field v-model="form.familyName" label="Family Name" required class="col-12 col-sm-6" :rules="[(v) => !!v || 'Family name is required']" />
         <app-select v-model="form.studioLocationId" label="Studio Location" :options="locationOptions" class="col-12 col-sm-6" />
-        <app-select v-model="form.familyStatusId" label="Family Status" :options="familyStatusOptions" class="col-12 col-sm-6" />
+        <!-- <app-select v-model="form.familyStatusId" label="Family Status" :options="familyStatusOptions" class="col-12 col-sm-6" /> -->
+         <app-select v-model="form.familyStatusId" label="Family Status" :options="familyStatusOptions" class="col-12 col-sm-6" />
         <app-select v-model="form.source" label="How Did You Hear About Us?" :options="sourceOptions" class="col-12 col-sm-6" />
         <app-text-field v-model="form.referralName" label="Referral Name" class="col-12 col-sm-6" />
 
@@ -138,7 +139,8 @@
               <app-date-field v-model="student.birthDate" label="Birth Date" required class="col-12 col-sm-6" :rules="[(v) => !!v || 'Birth date is required']" />
               <app-select v-model="student.gender" label="Gender" :options="genderOptions" class="col-12 col-sm-6" />
               <app-select v-model="student.tshirtSize" label="T-Shirt Size" :options="tshirtSizeOptions" class="col-12 col-sm-6" />
-              <app-text-field v-model="student.gradeLevel" label="Grade Level" class="col-12 col-sm-6" />
+              <!-- <app-text-field v-model="student.gradeLevel" label="Grade Level" class="col-12 col-sm-6" /> -->
+               <app-select v-model="student.gradeLevel" label="Grade Level" :options="gradeLevelOptions" class="col-12 col-sm-6" />
               <app-text-field v-model="student.medicalNotes" label="Allergies, Special Needs &amp; Medical Notes" type="textarea" class="col-12" />
             </div>
             <q-separator v-if="index < form.newStudents.length - 1" />
@@ -224,7 +226,7 @@
 
 <script setup>
 import { ref, reactive, computed, watch, onMounted } from "vue";
-import { familyApi, locationApi, classApi, studentApi, getApiErrorMessage } from "services/api";
+import { familyApi, locationApi, classApi, studentApi, studentGradeLevelApi, getApiErrorMessage } from "services/api";
 import { useNotify } from "composables/useNotify";
 import { blankFamilyForm, blankSecondaryContact, familyFormFromDetail } from "composables/familyForm";
 import { RELATION_OPTIONS, GENDER_OPTIONS, blankStudent } from "composables/quickRegistrationForm";
@@ -244,6 +246,13 @@ const props = defineProps({
   familyId: { type: [String, Number], default: null },
   // Owned by the list page (it also drives the Family Status filter there).
   familyStatusOptions: { type: Array, default: () => [] }
+});
+
+// Grade level options state
+const gradeLevels = ref([]);
+const gradeLevelOptions = computed(() => {
+  const options = gradeLevels.value.map((g) => ({ label: g.Name || g.gradeName, value: g.Id || g.gradeLevelId }));
+  return options;
 });
 
 const emit = defineEmits(["update:modelValue", "saved"]);
@@ -284,12 +293,14 @@ const { options: tshirtSizeOptions } = useTShirtSizeOptions();
 
 onMounted(async () => {
   try {
-    const [locRes, classRes] = await Promise.all([
+    const [locRes, classRes, gradeRes] = await Promise.all([
       locationApi.list({ limit: 100, active: true }),
-      classApi.list({ limit: 100, active: true })
+      classApi.list({ limit: 100, active: true }),
+      studentGradeLevelApi.list({ limit: 100, active: true })
     ]);
     locations.value = locRes?.data || [];
     classes.value = classRes?.data || [];
+    gradeLevels.value = gradeRes?.data || [];
   } catch (err) {
     notify.error(getApiErrorMessage(err));
   }

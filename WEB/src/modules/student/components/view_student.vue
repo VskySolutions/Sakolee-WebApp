@@ -73,10 +73,15 @@
                 <span class="fs-11 fw-600 text-2e">{{ formatDate(form.birthDate) }}</span>
               </div>
 
-              <div class="info-row">
+              <!-- <div class="info-row">
                 <span class="fs-11 fw-400 text-86">School Grade</span>
                 <span class="fs-11 fw-600 text-2e">{{ form.gradeLevel || "—" }}</span>
-              </div>
+              </div> -->
+
+              <div class="info-row">
+  <span class="fs-11 fw-400 text-86">School Grade</span>
+  <span class="fs-11 fw-600 text-2e">{{ displayGradeLevel }}</span>
+</div>
 
               <div class="info-row">
                 <span class="fs-11 fw-400 text-86">Apparel Size</span>
@@ -233,12 +238,18 @@
               </div>
             </div>
 
-            <div class="col-12 col-sm-6">
+            <!-- <div class="col-12 col-sm-6">
               <div class="detail-item">
                 <div class="detail-item__label">Grade Level</div>
                 <div class="detail-item__value">{{ form.gradeLevel || "—" }}</div>
               </div>
-            </div>
+            </div> -->
+            <div class="col-12 col-sm-6">
+  <div class="detail-item">
+    <div class="detail-item__label">Grade Level</div>
+    <div class="detail-item__value">{{ displayGradeLevel }}</div>
+  </div>
+</div>
 
             <div class="col-12 col-sm-6">
               <div class="detail-item">
@@ -390,7 +401,7 @@
 
 <script setup>
 import { ref, reactive, computed, watch } from "vue";
-import { studentApi, getApiErrorMessage } from "services/api";
+import { studentApi, studentGradeLevelApi, getApiErrorMessage } from "services/api";
 import { useNotify } from "composables/useNotify";
 import { useDateFormat } from "composables/useDateFormat";
 
@@ -405,6 +416,18 @@ const emit = defineEmits(["update:modelValue"]);
 
 const notify = useNotify();
 const { formatDate } = useDateFormat();
+
+// Grade level options state
+const gradeLevels = ref([]);
+const loadGradeLevels = async () => {
+  try {
+    const res = await studentGradeLevelApi.list({ limit: 100 });
+    gradeLevels.value = res?.data || [];
+  } catch (err) {
+    notify.error(getApiErrorMessage(err));
+  }
+};
+
 
 const loading = ref(false);
 
@@ -505,7 +528,12 @@ const loadStudent = async () => {
   loading.value = true;
 
   try {
-    const response = await studentApi.get(props.id);
+   
+   // const response = await studentApi.get(props.id);
+   const [response] = await Promise.all([
+      studentApi.get(props.id),
+      loadGradeLevels()
+    ]);
 
     Object.assign(form, {
       firstName: response?.firstName || "",
@@ -541,7 +569,8 @@ const loadStudent = async () => {
       weeklyHours: response?.weeklyHours || "",
       primaryContact: response?.primaryContact || "",
       emergencyContact: response?.emergencyContact || "",
-      classes: response?.classes || []
+      classes: response?.classes || [],
+      gradeLevel: response?.gradeLevel || response?.gradeLevelId || "",
     });
   } catch (err) {
     notify.error(getApiErrorMessage(err));
@@ -558,6 +587,21 @@ const studentSubtitle = computed(() => {
   return `Student ID: ${studentId} • ${status} • Enrolled Student`;
 });
 
+// Display grade level with fallback to raw value if not found in gradeLevels
+const displayGradeLevel = computed(() => {
+  const val = form.gradeLevel;
+  if (!val) return "—";
+  if (isNaN(val) && typeof val === "string" && !gradeLevels.value.some(g => (g.id || g.gradeLevelId) === val)) {
+    return val;
+  }
+  const found = gradeLevels.value.find(
+    (g) => (g.id || g.gradeLevelId) === val || String(g.id || g.gradeLevelId) === String(val)
+  );
+
+  return found ? (found.name || found.gradeName) : val;
+});
+
+// Watchers
 watch(
   () => props.modelValue,
   (value) => {
