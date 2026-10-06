@@ -107,7 +107,7 @@
                   {{ section.label }}
                 </q-item-label>
 
-                <q-item
+                <!-- <q-item
                   v-for="item in section.items"
                   :key="item.label"
                   v-ripple
@@ -131,7 +131,124 @@
                     {{ item.label }}
                   </q-item-section>
 
-                </q-item>
+                </q-item> -->
+                <template
+                  v-for="item in section.items"
+                  :key="item.key || item.label"
+                >
+                  <!-- Direct menu item -->
+                  <q-item
+                    v-if="!item.items"
+                    v-ripple
+                    v-close-popup
+                    dense
+                    clickable
+                    :to="item.to"
+                    :exact="item.exact"
+                    active-class="active-menu-class"
+                    @click="onItem(item)"
+                  >
+                    <q-item-section avatar>
+                      <q-icon
+                        :name="item.icon"
+                        size="20px"
+                      />
+                    </q-item-section>
+
+                    <q-item-section>
+                      {{ item.label }}
+                    </q-item-section>
+                  </q-item>
+
+                  <!-- Nested Settings -->
+                  <q-item
+                    v-else
+                    v-ripple
+                    dense
+                    clickable
+                    class="app-menu__flyout-parent"
+                    @mouseenter="openNestedFlyout(section.key + '-' + item.key)"
+                    @mouseleave="scheduleNestedFlyoutClose"
+                    @click="openNestedFlyout(section.key + '-' + item.key)"
+                  >
+                    <q-item-section avatar>
+                      <q-icon
+                        :name="item.icon"
+                        size="20px"
+                      />
+                    </q-item-section>
+
+                    <q-item-section>
+                      {{ item.label }}
+                    </q-item-section>
+
+                    <q-item-section side>
+                      <q-icon
+                        name="o_chevron_right"
+                        size="18px"
+                      />
+                    </q-item-section>
+
+                    <q-menu
+                      :model-value="
+                        nestedFlyoutKey === section.key + '-' + item.key
+                      "
+                      anchor="top right"
+                      self="top left"
+                      :offset="[0, 0]"
+                      no-parent-event
+                      no-focus
+                      no-refocus
+                      transition-show="jump-right"
+                      transition-hide="jump-left"
+                      @update:model-value="
+                        (open) =>
+                          nestedFlyoutKey =
+                            open ? section.key + '-' + item.key : null
+                      "
+                    >
+                      <q-list
+                        dense
+                        class="app-menu__nested-flyout"
+                        @mouseenter="
+                          openNestedFlyout(section.key + '-' + item.key)
+                        "
+                        @mouseleave="scheduleNestedFlyoutClose"
+                      >
+                        <q-item-label
+                          header
+                          class="app-menu__flyout-head"
+                        >
+                          {{ item.label }}
+                        </q-item-label>
+
+                        <q-item
+                          v-for="child in item.items"
+                          :key="child.label"
+                          v-ripple
+                          v-close-popup
+                          dense
+                          clickable
+                          :to="child.to"
+                          :exact="child.exact"
+                          active-class="active-menu-class"
+                          @click="onItem(child)"
+                        >
+                          <q-item-section avatar>
+                            <q-icon
+                              :name="child.icon"
+                              size="20px"
+                            />
+                          </q-item-section>
+
+                          <q-item-section>
+                            {{ child.label }}
+                          </q-item-section>
+                        </q-item>
+                      </q-list>
+                    </q-menu>
+                  </q-item>
+                </template>
 
               </q-list>
 
@@ -155,32 +272,85 @@
             "
           >
 
-            <q-item
+            <template
               v-for="item in section.items"
-              :key="item.label"
-              v-ripple
-              dense
-              clickable
-              :to="item.to"
-              :exact="item.exact"
-              active-class="text-primary"
-              class="app-menu__nested"
-              @click="onItem(item)"
+              :key="item.key || item.label"
             >
+              <!-- ============================================
+                  NORMAL MENU ITEM
+                  ============================================ -->
+              <q-item
+                v-if="!item.items"
+                v-ripple
+                dense
+                clickable
+                :to="item.to"
+                :exact="item.exact"
+                active-class="text-primary"
+                class="app-menu__nested"
+                @click="onItem(item)"
+              >
+                <q-item-section avatar>
+                  <q-icon
+                    :name="item.icon"
+                    size="20px"
+                    class="fw-400"
+                  />
+                </q-item-section>
 
-              <q-item-section avatar>
-                <q-icon
-                  :name="item.icon"
-                  size="20px"
-                  class="fw-400"
-                />
-              </q-item-section>
+                <q-item-section>
+                  {{ item.label }}
+                </q-item-section>
+              </q-item>
 
-              <q-item-section>
-                {{ item.label }}
-              </q-item-section>
+              <!-- ============================================
+                  SETTINGS / NESTED GROUP
+                  ============================================ -->
+              <!-- <q-expansion-item
+                v-else
+                dense
+                :icon="item.icon"
+                :label="item.label"
+                :model-value="isOpen(item)"
+                header-class="app-menu__group"
+                class="app-menu__nested-settings"
+                @update:model-value="(v) => setOpen(item.key, v)"
+              > -->
+              <q-expansion-item
+                v-else
+                dense
+                :icon="item.icon"
+                :label="item.label"
+                :model-value="isOpen(item)"
+                header-class="app-menu__nested-group"
+                class="app-menu__nested-settings"
+                @update:model-value="(v) => setOpen(item.key, v)"
+              >
+                <q-item
+                  v-for="child in item.items"
+                  :key="child.label"
+                  v-ripple
+                  dense
+                  clickable
+                  :to="child.to"
+                  :exact="child.exact"
+                  active-class="text-primary"
+                  class="app-menu__nested app-menu__settings-child"
+                  @click="onItem(child)"
+                >
+                  <q-item-section avatar>
+                    <q-icon
+                      :name="child.icon"
+                      size="20px"
+                    />
+                  </q-item-section>
 
-            </q-item>
+                  <q-item-section>
+                    {{ child.label }}
+                  </q-item-section>
+                </q-item>
+              </q-expansion-item>
+            </template>
 
           </q-expansion-item>
 
@@ -637,13 +807,18 @@ const onItem = async (item) => {
 const nestedFlyoutKey = ref(null);
 let nestedFlyoutTimer = null;
 
+// const openNestedFlyout = (key) => {
+//   clearTimeout(nestedFlyoutTimer);
+//   clearTimeout(flyoutTimer);
+
+//   // Make sure parent Settings flyout stays open
+//   flyoutKey.value = "settings";
+
+//   nestedFlyoutKey.value = key;
+// };
 const openNestedFlyout = (key) => {
   clearTimeout(nestedFlyoutTimer);
   clearTimeout(flyoutTimer);
-
-  // Make sure parent Settings flyout stays open
-  flyoutKey.value = "settings";
-
   nestedFlyoutKey.value = key;
 };
 
@@ -675,7 +850,51 @@ const sections = [
     items: [
       { label: "All Families", icon: "o_groups", to: "/families", permissions: [Permissions.FamiliesRead] },
       // Gated like its route — part of the Families area.
-      { label: "Quick Registration", icon: "o_how_to_reg", to: { name: "family_quick_registration" }, permissions: [Permissions.FamiliesRead] }
+      { label: "Quick Registration", icon: "o_how_to_reg", to: { name: "family_quick_registration" }, permissions: [Permissions.FamiliesRead] },
+      // Families Settings
+      {
+        key: "families-settings",
+        label: "Settings",
+        icon: "o_settings",
+        items: [
+          {
+            label: "Family Statuses",
+            icon: "o_flag",
+            to: "/familystatus",
+            permissions: [Permissions.FamilyStatusesRead]
+          },
+          {
+            label: "Studio Locations",
+            icon: "o_location_on",
+            to: "/locations",
+            permissions: [Permissions.LocationsRead]
+          },
+          {
+            label: "Family Relations",
+            icon: "o_supervised_user_circle",
+            to: "/family-relations",
+            permissions: [Permissions.FamilyRelationsRead]
+          },
+          {
+            label: "Hear About Us",
+            icon: "o_campaign",
+            to: "/hear-about-us",
+            permissions: [Permissions.HearAboutUsRead]
+          },
+          {
+            label: "Billing Methods",
+            icon: "o_account_balance",
+            to: "/billing-methods",
+            permissions: [Permissions.BillingMethodsRead]
+          },
+          {
+            label: "Membership Types",
+            icon: "o_card_membership",
+            to: "/membership-types",
+            permissions: [Permissions.MembershipTypesRead]
+          }
+        ]
+      }
       // { label: "Email/Text Families", icon: "o_mail", to: "/families/email", permissions: null },
       // { label: "Drop Unpaid Families", icon: "o_money_off", to: "/families/drop-unpaid", permissions: null },
       // { label: "Lead Files", icon: "o_contact_page", to: "/families/leads", permissions: null },
@@ -687,7 +906,27 @@ const sections = [
     label: "Students",
     icon: "o_group",
     items: [
-      { label: "All Students", icon: "o_person", to: "/students", permissions: [Permissions.StudentsRead] }
+      { label: "All Students", icon: "o_person", to: "/students", permissions: [Permissions.StudentsRead] },
+      // Students Settings
+      {
+        key: "students-settings",
+        label: "Settings",
+        icon: "o_settings",
+        items: [
+          {
+            label: "T-Shirt Sizes",
+            icon: "o_checkroom",
+            to: "/t-shirt-sizes",
+            permissions: [Permissions.TShirtSizesRead]
+          },
+          {
+            label: "Student Grade Levels",
+            icon: "o_school",
+            to: "/student-grade-levels",
+            permissions: [Permissions.StudentGradeLevelsRead]
+          }
+        ]
+      }
     ]
   },
   {
@@ -705,6 +944,38 @@ const sections = [
     icon: "o_school",
     items: [
       { label: "All Classes", icon: "o_class", to: "/classes", permissions: [Permissions.ClassesRead] },
+      // Classes Settings
+      {
+        key: "classes-settings",
+        label: "Settings",
+        icon: "o_settings",
+        items: [
+          {
+            label: "Class Rooms",
+            icon: "o_class",
+            to: "/class-rooms",
+            permissions: [Permissions.ClassRoomsRead]
+          },
+          {
+            label: "Class Sessions",
+            icon: "o_date_range",
+            to: "/sessions",
+            permissions: [Permissions.ClassSessionsRead]
+          },
+          {
+            label: "Class Categories",
+            icon: "o_category",
+            to: "/class-categories",
+            permissions: [Permissions.ClassCategoriesRead]
+          },
+          {
+            label: "Billing Cycles",
+            icon: "o_autorenew",
+            to: "/billing-cycles",
+            permissions: [Permissions.BillingCyclesRead]
+          }
+        ]
+      }
     ]
   },
   // {
@@ -786,98 +1057,98 @@ const settingsMenu = {
   label: "Settings",
   icon: "o_settings",
   items: [
-    {
-      key: "settings-masters",
-      label: "Masters",
-      icon: "o_list_alt",
-      items: [
-        {
-          label: "Family Statuses",
-          icon: "o_flag",
-          to: "/familystatus",
-          permissions: [Permissions.FamilyStatusesRead]
-        },
-        {
-          label: "Studio Locations",
-          icon: "o_location_on",
-          to: "/locations",
-          permissions: [Permissions.LocationsRead]
-        },
-        {
-          label: "Class Rooms",
-          icon: "o_class",
-          to: "/class-rooms",
-          permissions: [Permissions.ClassRoomsRead]
-        },
-        {
-          label: "Class Sessions",
-          icon: "o_date_range",
-          to: "/sessions",
-          permissions: [Permissions.ClassSessionsRead]
-        },
-        {
-          label: "Billing Methods",
-          icon: "o_account_balance",
-          to: "/billing-methods",
-          permissions: [Permissions.BillingMethodsRead]
-        },
-        {
-          label: "Membership Types",
-          icon: "o_card_membership",
-          to: "/membership-types",
-          permissions: [Permissions.MembershipTypesRead]
-        },
-        {
-          label: "Student Grade Levels",
-          icon: "o_school",
-          to: "/student-grade-levels",
-          permissions: [Permissions.StudentGradeLevelsRead]
-        },
+    // {
+    //   key: "settings-masters",
+    //   label: "Masters",
+    //   icon: "o_list_alt",
+    //   items: [
+    //     {
+    //       label: "Family Statuses",
+    //       icon: "o_flag",
+    //       to: "/familystatus",
+    //       permissions: [Permissions.FamilyStatusesRead]
+    //     },
+    //     {
+    //       label: "Studio Locations",
+    //       icon: "o_location_on",
+    //       to: "/locations",
+    //       permissions: [Permissions.LocationsRead]
+    //     },
+    //     {
+    //       label: "Class Rooms",
+    //       icon: "o_class",
+    //       to: "/class-rooms",
+    //       permissions: [Permissions.ClassRoomsRead]
+    //     },
+    //     {
+    //       label: "Class Sessions",
+    //       icon: "o_date_range",
+    //       to: "/sessions",
+    //       permissions: [Permissions.ClassSessionsRead]
+    //     },
+    //     {
+    //       label: "Billing Methods",
+    //       icon: "o_account_balance",
+    //       to: "/billing-methods",
+    //       permissions: [Permissions.BillingMethodsRead]
+    //     },
+    //     {
+    //       label: "Membership Types",
+    //       icon: "o_card_membership",
+    //       to: "/membership-types",
+    //       permissions: [Permissions.MembershipTypesRead]
+    //     },
+    //     {
+    //       label: "Student Grade Levels",
+    //       icon: "o_school",
+    //       to: "/student-grade-levels",
+    //       permissions: [Permissions.StudentGradeLevelsRead]
+    //     },
 
-        {
-          label: "Family Relations",
-          icon: "o_supervised_user_circle",
-          to: "/family-relations",
-          permissions: [Permissions.FamilyRelationsRead]
-        },
-        {
-          label: "Class Categories",
-          icon: "o_category",
-          to: "/class-categories",
-          permissions: [Permissions.ClassCategoriesRead]
-        },
-        {
-          label: "T-Shirt Sizes",
-          icon: "o_checkroom",
-          to: "/t-shirt-sizes",
-          permissions: [Permissions.TShirtSizesRead]
-        },
-        {
-          label: "Billing Cycles",
-          icon: "o_autorenew",
-          to: "/billing-cycles",
-          permissions: [Permissions.BillingCyclesRead]
-        },
-        {
-          label: "Hear About Us",
-          icon: "o_campaign",
-          to: "/hear-about-us",
-          permissions: [Permissions.HearAboutUsRead]
-        },
-        {
-          label: "E-Payment Schedule",
-          icon: "o_payments",
-          to: "/e-payment-schedule",
-          permissions: [Permissions.EPaymentSchedulesRead]
-        },
-        {
-          label: "Account Types",
-          icon: "o_account_balance_wallet",
-          to: "/account-type",
-          permissions: [Permissions.AccountTypesRead]
-        },
-      ]
-    },
+    //     {
+    //       label: "Family Relations",
+    //       icon: "o_supervised_user_circle",
+    //       to: "/family-relations",
+    //       permissions: [Permissions.FamilyRelationsRead]
+    //     },
+    //     {
+    //       label: "Class Categories",
+    //       icon: "o_category",
+    //       to: "/class-categories",
+    //       permissions: [Permissions.ClassCategoriesRead]
+    //     },
+    //     {
+    //       label: "T-Shirt Sizes",
+    //       icon: "o_checkroom",
+    //       to: "/t-shirt-sizes",
+    //       permissions: [Permissions.TShirtSizesRead]
+    //     },
+    //     {
+    //       label: "Billing Cycles",
+    //       icon: "o_autorenew",
+    //       to: "/billing-cycles",
+    //       permissions: [Permissions.BillingCyclesRead]
+    //     },
+    //     {
+    //       label: "Hear About Us",
+    //       icon: "o_campaign",
+    //       to: "/hear-about-us",
+    //       permissions: [Permissions.HearAboutUsRead]
+    //     },
+    //     {
+    //       label: "E-Payment Schedule",
+    //       icon: "o_payments",
+    //       to: "/e-payment-schedule",
+    //       permissions: [Permissions.EPaymentSchedulesRead]
+    //     },
+    //     {
+    //       label: "Account Types",
+    //       icon: "o_account_balance_wallet",
+    //       to: "/account-type",
+    //       permissions: [Permissions.AccountTypesRead]
+    //     },
+    //   ]
+    // },
     {
       label: "My Account",
       icon: "o_manage_accounts",
@@ -912,13 +1183,43 @@ const filterItems = (items) =>
 
 const settingsSection = computed(() => ({ ...settingsMenu, items: filterItems(settingsMenu.items) }));
 
+// const showSettings = computed(() =>
+//   settingsSection.value.items.some((item) => item.items || item.permissions));
 const showSettings = computed(() =>
-  settingsSection.value.items.some((item) => item.items || item.permissions));
-
+  settingsSection.value.items.length > 0
+);
+// const visibleSections = computed(() =>
+//   sections
+//     .map((section) => ({ ...section, items: section.items.filter((item) => canSee(item.permissions)) }))
+//     .filter((section) => section.items.length));
+// The above is a simple filter, but it doesn't handle nested items. The below does, and also filters out
+// any section that has no visible items at all.
+const filterSectionItems = (items) => {
+  return items
+    .map((item) => {
+      if (item.items) {
+        return {
+          ...item,
+          items: filterSectionItems(item.items)
+        };
+      }
+      return item;
+    })
+    .filter((item) => {
+      if (item.items) {
+        return item.items.length > 0;
+      }
+      return canSee(item.permissions);
+    });
+};
 const visibleSections = computed(() =>
   sections
-    .map((section) => ({ ...section, items: section.items.filter((item) => canSee(item.permissions)) }))
-    .filter((section) => section.items.length));
+    .map((section) => ({
+      ...section,
+      items: filterSectionItems(section.items)
+    }))
+    .filter((section) => section.items.length > 0)
+);
 
 // Per-group collapse state, persisted to LocalStorage so the user's expand/collapse choices survive a
 // page refresh. The stored object holds only the collapsed groups ({ [sectionKey]: true }).
@@ -1144,7 +1445,7 @@ const setOpen = (key, open) => {
   padding-left: 8px;
 }
 
-.app-menu__nested-group {
+/* .app-menu__nested-group {
   min-height: 38px !important;
 
   padding: 4px 12px 4px 32px !important;
@@ -1153,6 +1454,25 @@ const setOpen = (key, open) => {
   font-weight: 500;
 
   color: var(--on-surface);
+} */
+
+/* Nested "Settings" header inside Families / Students / Classes.
+   Same left offset, icon size and weight as All Families / Quick Registration. */
+.app-menu :deep(.app-menu__nested-group) {
+  min-height: 40px;
+  padding: 4px 16px 4px 20px;
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--on-surface);
+}
+
+.app-menu :deep(.app-menu__nested-group .q-item__section--avatar) {
+  min-width: 32px;
+  padding-right: 8px;
+}
+
+.app-menu :deep(.app-menu__nested-group .q-icon) {
+  font-size: 20px;
 }
 
 .app-menu__settings-child {

@@ -103,41 +103,41 @@
       </template> -->
 
       <template #body-cell-actions="cell">
-  <q-td :props="cell">
-    <!-- Yahan :to ki jagah @click="openView(cell.row.userId)" lagayein -->
-    <q-btn flat round dense color="primary" icon="o_visibility" @click="openView(cell.row.userId)">
-      <q-tooltip>View / Manage</q-tooltip>
-    </q-btn>
+        <q-td :props="cell">
+          <!-- Yahan :to ki jagah @click="openView(cell.row.userId)" lagayein -->
+          <q-btn flat round dense color="primary" icon="o_visibility" @click="openView(cell.row.userId)">
+            <q-tooltip>View / Manage</q-tooltip>
+          </q-btn>
 
-    <!-- Baaki buttons waise hi rahenge -->
-    <q-btn
-      v-if="has(Permissions.UsersWrite)" type="a"
-      flat round dense
-      :color="cell.row.isActive ? 'grey-8' : 'positive'"
-      :icon="cell.row.isActive ? 'o_block' : 'o_check_circle'"
-      :disable="cell.row.isActive && cell.row.isProtected"
-      @click="setStatus(cell.row, !cell.row.isActive)"
-    >
-      <q-tooltip>
-        {{ cell.row.isActive && cell.row.isProtected
-          ? "The tenant's default Administrator cannot be deactivated"
-          : (cell.row.isActive ? "Deactivate" : "Activate") }}
-      </q-tooltip>
-    </q-btn>
-    <q-btn
-      v-if="has(Permissions.UsersResetPassword)" type="a"
-      flat round dense color="primary" icon="o_lock_reset" @click="resetPassword(cell.row)"
-    >
-      <q-tooltip>Reset Password</q-tooltip>
-    </q-btn>
-    <q-btn
-      v-if="has(Permissions.UsersResetPassword)" type="a"
-      flat round dense color="primary" icon="o_forward_to_inbox" @click="sendCredentials(cell.row)"
-    >
-      <q-tooltip>Send Credentials</q-tooltip>
-    </q-btn>
-  </q-td>
-</template>
+          <!-- Baaki buttons waise hi rahenge -->
+          <q-btn
+            v-if="has(Permissions.UsersWrite)" type="a"
+            flat round dense
+            :color="cell.row.isActive ? 'grey-8' : 'positive'"
+            :icon="cell.row.isActive ? 'o_block' : 'o_check_circle'"
+            :disable="cell.row.isActive && cell.row.isProtected"
+            @click="setStatus(cell.row, !cell.row.isActive)"
+          >
+            <q-tooltip>
+              {{ cell.row.isActive && cell.row.isProtected
+                ? "The tenant's default Administrator cannot be deactivated"
+                : (cell.row.isActive ? "Deactivate" : "Activate") }}
+            </q-tooltip>
+          </q-btn>
+          <q-btn
+            v-if="has(Permissions.UsersResetPassword)" type="a"
+            flat round dense color="primary" icon="o_lock_reset" @click="resetPassword(cell.row)"
+          >
+            <q-tooltip>Reset Password</q-tooltip>
+          </q-btn>
+          <q-btn
+            v-if="has(Permissions.UsersResetPassword)" type="a"
+            flat round dense color="primary" icon="o_forward_to_inbox" @click="sendCredentials(cell.row)"
+          >
+            <q-tooltip>Send Credentials</q-tooltip>
+          </q-btn>
+        </q-td>
+      </template>
     </app-data-table>
 
     <deleted-records-panel
@@ -175,14 +175,11 @@
         <q-card-actions align="right">
           <q-btn v-close-popup flat no-caps color="primary" label="Done" />
         </q-card-actions>
-
-        
       </q-card>
     </q-dialog>
-    
   </q-page>
   <!-- Staff View Dialog Component -->
-    <staff-view-dialog v-model="viewOpen" :user-id="selectedUserId" />
+  <staff-view-dialog v-model="viewOpen" :user-id="selectedUserId" />
 </template>
 
 <script setup>
@@ -206,8 +203,7 @@ import AppColumnFilters from "components/common/AppColumnFilters.vue";
 import AppListHeader from "components/common/AppListHeader.vue";
 import UserCreateDrawer from "components/user/UserCreateDrawer.vue";
 import TempPasswordDialog from "components/temp_password_dialog.vue";
-
-//mport StaffViewDialog from "components/user/pages/detail.vue"; 
+// mport StaffViewDialog from "components/user/pages/detail.vue";
 import StaffViewDialog from "./detail.vue";
 const route = useRoute();
 const router = useRouter();
@@ -227,9 +223,9 @@ const columns = computed(() => [
   { name: "email", label: "Email", field: "email", align: "left", sortable: true, default: true },
   { name: "phoneNumber", label: "Phone", field: "phoneNumber", align: "left", sortable: true },
   { name: "roles", label: "Role", field: (r) => (r.roles || []).join(", "), align: "left", sortable: false, default: true, filterable: false },
-  { name: "groups", label: "Groups", field: (r) => (r.groups || []).map((g) => g.name).join(", "), align: "left", sortable: false, default: true },
-  // Department placement in the active tenant.
-  { name: "department", label: "Department", field: "department", align: "left", default: true, filterable: false },
+  // { name: "groups", label: "Groups", field: (r) => (r.groups || []).map((g) => g.name).join(", "), align: "left", sortable: false, default: true },
+  // // Department placement in the active tenant.
+  // { name: "department", label: "Department", field: "department", align: "left", default: true, filterable: false },
   { name: "isActive", label: "Status", field: "isActive", align: "left", sortable: true, default: true, filterOptions: [{ label: "Active", value: true }, { label: "Inactive", value: false }] },
   ...auditColumns(),
   { name: "actions", label: "Actions", field: "actions", align: "left" }
@@ -377,8 +373,6 @@ const sendCredentials = async (row) => {
     notify.error(getApiErrorMessage(err));
   }
 };
-
-
 
 // ---- Bulk Send Credentials ----
 const bulkSending = ref(false);
