@@ -181,26 +181,26 @@ const openView = (row) => {
 
 const columns = [
   { name: "name", label: "Name", field: "name", align: "left", sortable: true, default: true },
-  { name: "displayName", label: "Display Name", field: (r) => r.displayName || "—", align: "left", sortable: true, default: true },
-  { name: "description", label: "Description", field: (r) => stripHtml(r.description), align: "left", default: true,filterable: false },
-  {
-    name: "isSystem",
-    label: "Type",
-    field: "isSystem",
-    align: "left",
-    sortable: true,
-    default: true,
-    filterOptions: [{ label: "System", value: true }, { label: "Custom", value: false }]
-  },
-  {
-    name: "scope",
-    label: "Scope",
-    field: (r) => r.tenantName || "Platform",
-    align: "left",
-    sortable: true,
-    default: true
-  },
-  { name: "permissionCount", label: "Permissions", field: "permissionCount", align: "left", sortable: true, default: true, filterable: false },
+  // { name: "displayName", label: "Display Name", field: (r) => r.displayName || "—", align: "left", sortable: true, default: true },
+  { name: "description", label: "Description", field: (r) => stripHtml(r.description), align: "left", default: true, filterable: false },
+  // {
+  //   name: "isSystem",
+  //   label: "Type",
+  //   field: "isSystem",
+  //   align: "left",
+  //   sortable: true,
+  //   default: true,
+  //   filterOptions: [{ label: "System", value: true }, { label: "Custom", value: false }]
+  // },
+  // {
+  //   name: "scope",
+  //   label: "Scope",
+  //   field: (r) => r.tenantName || "Platform",
+  //   align: "left",
+  //   sortable: true,
+  //   default: true
+  // },
+  // { name: "permissionCount", label: "Permissions", field: "permissionCount", align: "left", sortable: true, default: true, filterable: false },
   ...auditColumns(),
   { name: "actions", label: "Actions", field: "actions", align: "left" }
 ];

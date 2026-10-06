@@ -188,11 +188,8 @@
         <q-card-actions align="right">
           <q-btn v-close-popup flat no-caps color="primary" label="Done" />
         </q-card-actions>
-
-        
       </q-card>
     </q-dialog>
-    
   </q-page>
   <!-- Staff View Dialog Component -->
     <staff-view-dialog v-model="viewOpen" :user-id="selectedUserId" />
@@ -252,16 +249,16 @@ const columns = computed(() => [
   { name: "email", label: "Email", field: "email", align: "left", sortable: true, default: true },
   { name: "phoneNumber", label: "Phone", field: "phoneNumber", align: "left", sortable: true },
   { name: "roles", label: "Role", field: (r) => (r.roles || []).join(", "), align: "left", sortable: false, default: true, filterable: false },
-  { name: "groups", label: "Groups", field: (r) => (r.groups || []).map((g) => g.name).join(", "), align: "left", sortable: false, default: true },
-  // Department placement in the active tenant.
-  { name: "department", label: "Department", field: "department", align: "left", default: true, filterable: false },
-  
+  // { name: "groups", label: "Groups", field: (r) => (r.groups || []).map((g) => g.name).join(", "), align: "left", sortable: false, default: true },
+  // // Department placement in the active tenant.
+  // { name: "department", label: "Department", field: "department", align: "left", default: true, filterable: false },
+  { name: "isActive", label: "Status", field: "isActive", align: "left", sortable: true, default: true, filterOptions: [{ label: "Active", value: true }, { label: "Inactive", value: false }] },
   ...auditColumns(),
   { name: "isActive", label: "Status", field: "isActive", align: "center", sortable: true, default: true, filterOptions: [{ label: "Active", value: true }, { label: "Inactive", value: false }] },
   { name: "actions", label: "Actions", field: "actions", align: "left" }
 ]);
 
-const STAFF_ROLE = "Staff";
+const STAFF_ROLE = "Instructor";
 // The list only ever shows the tenant selected in the header (Super-Admin scope, else the active tenant).
 const { selectedTenantId } = useTenantScope();
 
@@ -280,7 +277,7 @@ const { rows, loading, totalRecords, selected, search, filterOpen, pagination, l
       name: filters.fullName || undefined,
       email: filters.email || undefined,
       phone: filters.phoneNumber || undefined,
-      // The Staff list only shows users holding the "Staff" role.
+      // The Staff list only shows users holding the "Instructor" role.
       role: STAFF_ROLE,
       tenantId: selectedTenantId.value,
       group: filters.groups || undefined
@@ -403,8 +400,6 @@ const sendCredentials = async (row) => {
     notify.error(getApiErrorMessage(err));
   }
 };
-
-
 
 // ---- Bulk Send Credentials ----
 const bulkSending = ref(false);

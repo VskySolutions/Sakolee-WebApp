@@ -47,18 +47,18 @@
         </q-td>
       </template> -->
       <template #body-cell-active="cell">
-  <q-td :props="cell">
-    <div class="flex flex-center">
-      <q-toggle
-        :model-value="cell.row.active ?? cell.row.Active ?? cell.row.isActive ?? cell.row.IsActive ?? true"
-        @update:model-value="(val) => updateStatus(cell.row, val)"
-        dense
-        color="positive"
-        :disable="!canWrite"
-      />
-    </div>
-  </q-td>
-</template>
+        <q-td :props="cell">
+          <div class="flex flex-center">
+            <q-toggle
+              :model-value="cell.row.active ?? cell.row.Active ?? cell.row.isActive ?? cell.row.IsActive ?? true"
+              @update:model-value="(val) => updateStatus(cell.row, val)"
+              dense
+              color="positive"
+              :disable="!canWrite"
+            />
+          </div>
+        </q-td>
+      </template>
 
       <template #body-cell-actions="cell">
         <q-td :props="cell">
@@ -276,21 +276,42 @@ const sendCredentials = async (students) => {
  * Delete
  * ------------------------------------------------------------
  */
+// const remove = async (row) => {
+//   const ok = await confirm({
+//     title: "Delete student",
+//     message: `Delete "${row.firstName} ${row.lastName}"?`,
+//     confirmLabel: "Delete",
+//     type: "danger"
+//   });
+
+//   if (!ok) {
+//     return;
+//   }
+
+//   try {
+//     await studentApi.remove(row.studentId);
+//     notify.success("Student deleted.");
+//     load();
+//   } catch (err) {
+//     notify.error(getApiErrorMessage(err));
+//   }
+// };
 const remove = async (row) => {
+  const name = `${row.firstName || ""} ${row.lastName || ""}`.trim();
   const ok = await confirm({
     title: "Delete student",
-    message: `Delete "${row.firstName} ${row.lastName}"?`,
+    message: `Delete "${name}"? They will be removed from their family and all class enrollments.`,
     confirmLabel: "Delete",
     type: "danger"
   });
-
-  if (!ok) {
-    return;
-  }
-
+  if (!ok) return;
   try {
-    await studentApi.remove(row.studentId);
-    notify.success("Student deleted.");
+    const result = await studentApi.remove(row.studentId);
+    const classes = result?.classesRemoved ?? 0;
+    const parts = [`Student "${name}" deleted`];
+    if (row.familyName) parts.push(`removed from family "${row.familyName}"`);
+    if (classes > 0) parts.push(`removed from ${classes} class(es)`);
+    notify.success(parts.join(", ") + ".");
     load();
   } catch (err) {
     notify.error(getApiErrorMessage(err));
