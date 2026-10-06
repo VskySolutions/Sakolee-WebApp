@@ -34,6 +34,7 @@ public sealed class ClassesController : ControllerBase
     private readonly IClassCategoryRepository _categories;
     private readonly ILocationRepository _locations;
     private readonly IClassSessionRepository _sessions;
+    private readonly IClassRoomRepository _rooms;
     private readonly IUserRepository _users;
     private readonly IFamilyRepository _families;
     private readonly IStudentRepository _students;
@@ -46,6 +47,7 @@ public sealed class ClassesController : ControllerBase
         IClassCategoryRepository categories,
         ILocationRepository locations,
         IClassSessionRepository sessions,
+        IClassRoomRepository rooms,
         IUserRepository users,
         IFamilyRepository families,
         IStudentRepository students,
@@ -57,6 +59,7 @@ public sealed class ClassesController : ControllerBase
         _categories = categories;
         _locations = locations;
         _sessions = sessions;
+        _rooms = rooms;
         _users = users;
         _families = families;
         _students = students;
@@ -174,6 +177,7 @@ public sealed class ClassesController : ControllerBase
         string? CategoryName(Guid? id) => id is { } categoryId && categoryNames.TryGetValue(categoryId, out var name) ? name : null;
         var location = entity.LocationId is { } locationId ? await _locations.GetByIdAsync(locationId, cancellationToken) : null;
         var session = entity.SessionId is { } sessionId ? await _sessions.GetByIdAsync(sessionId, cancellationToken) : null;
+        var room = entity.RoomId is { } roomId ? await _rooms.GetByIdUnscopedAsync(roomId, cancellationToken) : null;
         var additionalIds = ParseInstructorIds(entity.AdditionalInstructors);
         var instructorNames = await ResolveActorNamesAsync(
             additionalIds.Select(i => (Guid?)i).Append(entity.PrimaryInstructorId), cancellationToken);
@@ -189,6 +193,7 @@ public sealed class ClassesController : ControllerBase
                 Category3Name = CategoryName(entity.Category3Id),
                 LocationName = location?.Name,
                 SessionName = session?.Name,
+                RoomName = room?.Name,
                 PrimaryInstructorName = NameOf(instructorNames, entity.PrimaryInstructorId),
             },
             "Class retrieved."));

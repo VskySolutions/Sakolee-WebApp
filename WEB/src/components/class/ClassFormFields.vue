@@ -7,14 +7,16 @@
         :disable="disable" :rules="[(v) => !!v || 'Class name is required']"
       />
 
-      <!-- Category 1/2/3, Location, Session and Primary/Additional Instructors save to the Class record (backed by
-           ClassCategory/Locations/ClassSessions/the tenant's Staff users). Room is still a placeholder option list —
-           there is no management feature for it yet, so it doesn't save to the class record. -->
+      <!-- Category 1/2/3, Location, Room, Session and Primary/Additional Instructors save to the Class record (backed by
+           ClassCategory/Locations/ClassRooms/ClassSessions/the tenant's Staff users). -->
       <app-select :key="`category1-${categoriesLoaded}`" v-model="form.category1" label="Category 1 *" :options="category1Options" class="col-12 col-sm-6" :disable="disable" />
       <app-select :key="`category2-${categoriesLoaded}`" v-model="form.category2" label="Category 2" :options="category2Options" class="col-12 col-sm-6" :disable="disable" />
       <app-select :key="`category3-${categoriesLoaded}`" v-model="form.category3" label="Category 3" :options="category3Options" class="col-12 col-sm-6" :disable="disable" />
       <app-select :key="`location-${categoriesLoaded}`" v-model="form.location" label="Location *" :options="locationOptions" class="col-12 col-sm-6" :disable="disable" />
-      <app-select v-model="form.room" label="Room *" :options="roomOptions" class="col-12 col-sm-6" :disable="disable" />
+      <app-select
+        :key="`room-${roomsLoaded}`" v-model="form.room" label="Room *" :options="roomOptions" class="col-12 col-sm-6"
+        :disable="disable || !form.location" :hint="form.location ? '' : 'Select a location first'"
+      />
       <app-select :key="`session-${categoriesLoaded}`" v-model="form.session" label="Session *" :options="sessionOptions" class="col-12 col-sm-6" :disable="disable" />
       <app-select :key="`instructor-${categoriesLoaded}`" v-model="form.primaryInstructor" label="Primary Instructor *" :options="instructorOptions" class="col-12 col-sm-6" :disable="disable" />
       <app-select
@@ -122,7 +124,7 @@
 <script setup>
 // The Class create/edit/view field set, defined once and reused by the Add/Edit/View class pages.
 import { ref, computed, watch, onMounted } from "vue";
-import { classApi, classCategoryApi, classSessionApi, locationApi, getApiErrorMessage } from "services/api";
+import { classApi, classCategoryApi, classRoomApi, classSessionApi, locationApi, getApiErrorMessage } from "services/api";
 import { useNotify } from "composables/useNotify";
 import { formatDuration } from "composables/classForm";
 
@@ -147,8 +149,7 @@ const notify = useNotify();
 // flat list told apart by categoryType — selections save to Class.Category1Id/2Id/3Id (see
 // classForm.js's toClassPayload). Location/Session: the tenant's active Locations and ClassSessions,
 // saved to Class.LocationId/SessionId. Primary Instructor: the tenant's active Staff users, saved to
-// Class.PrimaryInstructorId. Room stays a demo option list standing in for the not-yet-built management
-// feature and is not sent on submit.
+// Class.PrimaryInstructorId. Room: the selected location's active ClassRooms, saved to Class.RoomId.
 const classCategories = ref([]);
 const locations = ref([]);
 const sessions = ref([]);
@@ -176,6 +177,35 @@ onMounted(async () => {
   else notify.error(getApiErrorMessage(instructorResult.reason));
   categoriesLoaded.value = true;
 });
+
+// Rooms belong to a location, so the Room list follows the selected Location. Bumping roomsLoaded remounts
+// the Room select for the same reason categoriesLoaded does (saved id → name mapping).
+const rooms = ref([]);
+const roomsLoaded = ref(0);
+const loadRooms = async (locationId) => {
+  if (!locationId) {
+    rooms.value = [];
+  } else {
+    try {
+      const res = await classRoomApi.list({ locationId, limit: 100 });
+      if (form.value.location !== locationId) return; // location changed again while loading
+      rooms.value = (res?.data || []).filter((r) => r.active);
+    } catch (err) {
+      rooms.value = [];
+      notify.error(getApiErrorMessage(err));
+    }
+  }
+  roomsLoaded.value++;
+};
+watch(
+  () => form.value.location,
+  (locationId, previous) => {
+    // Switching location drops a room picked under the old one (the edit page's initial fill comes from "").
+    if (previous && locationId !== previous) form.value.room = "";
+    loadRooms(locationId);
+  },
+  { immediate: true }
+);
 
 // The class's saved category is always offered under its name (from the class row itself), even when
 // the loaded list lacks it — the list failed to load, or the class belongs to another tenant than the
@@ -207,7 +237,7 @@ const lookupOptions = (list, field) => computed(() => {
 });
 const locationOptions = lookupOptions(locations, "location");
 const sessionOptions = lookupOptions(sessions, "session");
-const roomOptions = ["Studio A", "Studio B", "Main Gym"];
+const roomOptions = lookupOptions(rooms, "room");
 const instructorOptions = lookupOptions(instructors, "primaryInstructor");
 // Additional Instructors: the same Staff list, minus whoever is the primary instructor. Once 2 are
 // picked the rest are disabled so the Max 2 limit can't be exceeded. Saved picks missing from the list
