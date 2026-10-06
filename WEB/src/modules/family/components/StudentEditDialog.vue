@@ -217,7 +217,7 @@ watch(() => props.modelValue, async (isOpen) => {
   loading.value = true;
   loadedClassIds.value = [];
   try {
-    const [row] = await Promise.all([studentApi.get(props.studentId), loadClasses(),loadGradeLevels(),loadFamilyStatuses()]);
+    const [row] = await Promise.all([studentApi.get(props.studentId), loadClasses(), loadGradeLevels()]);
     loadedClassIds.value = row.classIds?.length ? [...row.classIds] : row.classId ? [row.classId] : [];
     Object.assign(preserved, {
       familyId: row.familyId ?? null,
