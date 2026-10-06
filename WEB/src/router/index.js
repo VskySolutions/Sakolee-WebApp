@@ -72,6 +72,10 @@ routes.push(...hearAboutUsRoutes);
 routes.push(...ePaymentScheduleRoutes);
 routes.push(...accountTypeRoutes);
 
+routes.push(...familyrelationRoutes);
+routes.push(...billingCycleRoutes);
+routes.push(...billingMethodRoutes);
+routes.push(...tShirtSizeRoutes);
 routes.push(...classRoomRoutes);
 routes.push(...membershipTypeRoutes);
 routes.push(...studentGradeLevelRoutes);
