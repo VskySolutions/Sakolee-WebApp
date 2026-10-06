@@ -81,7 +81,7 @@ public sealed class DashboardQueryService : IDashboardQueryService
     // ---- Studio (Enrollment & Studio Metrics) ----
 
     /// <summary>The role whose active holders count as staff (the same role the Staff list and instructor picker use).</summary>
-    private const string StaffRole = "Staff";
+    private const string StaffRole = "Instructor";
 
     /// <summary>How far back a deactivated student still counts as "recently dropped".</summary>
     private const int RecentlyDroppedDays = 30;

@@ -36,7 +36,8 @@
 
           <div class="col-12 text-subtitle2 text-grey-8 q-mt-sm">School</div>
           <app-text-field v-model="form.school" label="School" class="col-12 col-sm-6" />
-          <app-text-field v-model="form.gradeLevel" label="Grade Level" class="col-12 col-sm-6" />
+          <!-- <app-text-field v-model="form.gradeLevel" label="Grade Level" class="col-12 col-sm-6" /> -->
+           <app-select v-model="form.gradeLevel" label="Grade Level" :options="gradeLevelOptions" class="col-12 col-sm-6" />
           <app-text-field v-model="form.transportation" label="Transportation" placeholder="e.g. School Bus" class="col-12 col-sm-6" />
           <app-select v-model="form.tShirtSize" label="T-Shirt Size" :options="tShirtSizeOptions" class="col-12 col-sm-6" />
 
@@ -74,7 +75,7 @@
 // the Students page itself is read-only (see StudentsController.Update and the Family page's
 // "Enrolled Students" list, which opens this per row).
 import { computed, reactive, ref, watch } from "vue";
-import { classApi, studentApi, getApiErrorMessage, getApiErrorCode, ApiErrorCodes } from "services/api";
+import { classApi, studentApi, getApiErrorMessage, getApiErrorCode,studentGradeLevelApi, familyStatusApi,ApiErrorCodes } from "services/api";
 import { useNotify } from "composables/useNotify";
 import { GENDER_OPTIONS } from "composables/quickRegistrationForm";
 import { useTShirtSizeOptions } from "composables/useTShirtSizeOptions";
@@ -83,6 +84,37 @@ import AppFormDialog from "components/common/AppFormDialog.vue";
 import AppTextField from "components/common/AppTextField.vue";
 import AppSelect from "components/common/AppSelect.vue";
 import AppDateField from "components/common/AppDateField.vue";
+
+//Grade level options state
+const gradeLevels = ref([]);
+const gradeLevelOptions = computed(() => gradeLevels.value.map((g) => ({ label: g.Name || g.gradeName || g.name, value: g.Id ||g.id || g.gradeLevelId })));
+
+const loadGradeLevels = async () => {
+  try {
+    const res = await studentGradeLevelApi.list({ limit: 100 });
+    gradeLevels.value = res?.data || [];
+  } catch (err) {
+    notify.error(getApiErrorMessage(err));
+  }
+};
+
+// // Family Status options state
+// const familyStatuses = ref([]);
+// const familyStatusOptions = computed(() => 
+//   familyStatuses.value.map((fs) => ({ 
+//     label: fs.name || fs.statusName || fs.Name, 
+//     value: fs.id || fs.familyStatusId || fs.Id 
+//   }))
+// );
+
+// const loadFamilyStatuses = async () => {
+//   try {
+//     const res = await familyStatusApi.list({ limit: 100 });
+//     familyStatuses.value = res?.data || [];
+//   } catch (err) {
+//     notify.error(getApiErrorMessage(err));
+//   }
+// };
 
 const props = defineProps({
   modelValue: { type: Boolean, default: false },
@@ -107,6 +139,7 @@ const blankForm = () => ({
   firstName: "",
   lastName: "",
   familyName: "",
+ // familyStatusId: null,
   studentNumber: "",
   classIds: [],
   admissionDate: "",
@@ -177,13 +210,14 @@ const preserved = reactive(blankPreserved());
 // to populate a full edit form.
 watch(() => props.modelValue, async (isOpen) => {
   if (!isOpen || !props.studentId) return;
+  //await loadGradeLevels();
   Object.assign(form, blankForm());
   Object.assign(preserved, blankPreserved());
   emailError.value = "";
   loading.value = true;
   loadedClassIds.value = [];
   try {
-    const [row] = await Promise.all([studentApi.get(props.studentId), loadClasses()]);
+    const [row] = await Promise.all([studentApi.get(props.studentId), loadClasses(),loadGradeLevels(),loadFamilyStatuses()]);
     loadedClassIds.value = row.classIds?.length ? [...row.classIds] : row.classId ? [row.classId] : [];
     Object.assign(preserved, {
       familyId: row.familyId ?? null,
@@ -198,6 +232,7 @@ watch(() => props.modelValue, async (isOpen) => {
       lastName: row.lastName || "",
       familyName: row.familyName || "",
       studentNumber: row.studentNumber || "",
+      //familyStatusId: row.familyStatusId ?? null,
       classIds: [...loadedClassIds.value],
       admissionDate: row.admissionDate ? row.admissionDate.substring(0, 10) : "",
       birthDate: row.birthDate ? row.birthDate.substring(0, 10) : "",
@@ -244,6 +279,7 @@ const save = async () => {
     firstName: form.firstName,
     lastName: form.lastName,
     familyName: form.familyName || null,
+   // familyStatusId: form.familyStatusId || null,
     studentNumber: form.studentNumber || null,
     classIds: form.classIds || [],
     admissionDate: form.admissionDate || null,

@@ -250,7 +250,7 @@ const columns = computed(() => [
   { name: "actions", label: "Actions", field: "actions", align: "left" }
 ]);
 
-const STAFF_ROLE = "Staff";
+const STAFF_ROLE = "Instructor";
 // The list only ever shows the tenant selected in the header (Super-Admin scope, else the active tenant).
 const { selectedTenantId } = useTenantScope();
 
@@ -269,7 +269,7 @@ const { rows, loading, totalRecords, selected, search, filterOpen, pagination, l
       name: filters.fullName || undefined,
       email: filters.email || undefined,
       phone: filters.phoneNumber || undefined,
-      // The Staff list only shows users holding the "Staff" role.
+      // The Staff list only shows users holding the "Instructor" role.
       role: STAFF_ROLE,
       tenantId: selectedTenantId.value,
       group: filters.groups || undefined
@@ -458,6 +458,8 @@ const openView = (userId) => {
   selectedUserId.value = userId;
   viewOpen.value = true;
 };
+
+
 
 // ---- Update Status toggle in the table ----
 const updateStatus = async (row, newStatus) => {

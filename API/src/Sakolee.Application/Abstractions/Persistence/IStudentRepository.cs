@@ -44,4 +44,8 @@ public interface IStudentRepository
     /// <see cref="StudentClass"/> rows) and mirrors the first onto <see cref="Student.ClassId"/>. Not saved.
     /// </summary>
     Task SetClassesAsync(Student student, IReadOnlyList<Guid> classIds, CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<Student>> ListByClassIdAsync(Guid classId, Guid? tenantId, CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyDictionary<Guid, DateTime>> GetEnrollmentDatesAsync(Guid classId, CancellationToken cancellationToken = default);
 }

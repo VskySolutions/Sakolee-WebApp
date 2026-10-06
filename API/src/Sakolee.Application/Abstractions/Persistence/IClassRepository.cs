@@ -13,4 +13,15 @@ public interface IClassRepository
     Task AddAsync(Class @class, CancellationToken cancellationToken = default);
 
     void Update(Class @class);
+
+    Task<string?> ValidateInstructorScheduleAsync(
+                                                    Guid? classId,
+                                                    Guid? primaryInstructorId,
+                                                    IEnumerable<Guid>? additionalInstructorIds,
+                                                    DateTime? startDate,
+                                                    DateTime? endDate,
+                                                    string startTime,
+                                                    string endTime,
+                                                    string? activeDays,
+                                                    CancellationToken cancellationToken = default);
 }

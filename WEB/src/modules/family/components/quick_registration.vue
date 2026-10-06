@@ -53,6 +53,10 @@
           <div class="col-12 col-md-6">
             <app-text-field v-model="form.familyName" label="Family Name" required placeholder="e.g. Miller Family" :rules="[required]" />
           </div>
+
+          <div class="col-12 col-md-6">
+  <app-select v-model="form.familyStatusId" label="Family Status" :options="familyStatusOptions" />
+</div>
         </div>
 
         <div class="duplicate-check-band">
@@ -167,7 +171,8 @@
               <app-select v-model="student.tshirtSize" label="T-Shirt Size" :options="tShirtSizeOptions" />
             </div>
             <div class="col-12 col-md-4">
-              <app-text-field v-model="student.gradeLevel" label="Grade Level" placeholder="e.g. 3rd Grade" />
+              <!-- <app-text-field v-model="student.gradeLevel" label="Grade Level" placeholder="e.g. 3rd Grade" /> -->
+               <app-select v-model="student.gradeLevel" label="Grade Level" :options="gradeLevelOptions" class="col-12 col-md-4" />
             </div>
             <div class="col-12">
               <app-text-field
@@ -299,7 +304,7 @@ import AppPhoneInput from "components/common/AppPhoneInput.vue";
 import AppFieldLabel from "components/common/AppFieldLabel.vue";
 
 import { useNotify } from "composables/useNotify";
-import { classApi, locationApi, familyApi, studentApi, getApiErrorMessage } from "services/api";
+import { classApi, locationApi, familyApi, studentApi,studentGradeLevelApi,familyStatusApi,  getApiErrorMessage } from "services/api";
 import {
   blankQuickRegistrationForm,
   blankStudent,
@@ -312,10 +317,47 @@ import {
 import { useTShirtSizeOptions } from "composables/useTShirtSizeOptions";
 import { useHearAboutUsOptions } from "composables/useHearAboutUsOptions";
 
+//Grade level options state
+
+const gradeLevels = ref([]);
+const gradeLevelOptions = computed(() => 
+  gradeLevels.value.map((g) => ({ 
+    label: g.name || g.gradeName || g.Name, 
+    value: g.id || g.gradeLevelId || g.Id 
+  }))
+);
+
+const loadGradeLevels = async () => {
+  try {
+    const res = await studentGradeLevelApi.list({ limit: 100 });
+    gradeLevels.value = res?.data || [];
+  } catch (err) {
+    notify.error(getApiErrorMessage(err));
+  }
+};
+
 const notify = useNotify();
 const { options: tShirtSizeOptions } = useTShirtSizeOptions();
 const { options: hearAboutUsOptions } = useHearAboutUsOptions();
 const router = useRouter();
+
+// Family status options state
+const familyStatuses = ref([]);
+const familyStatusOptions = computed(() => 
+  familyStatuses.value.map((fs) => ({ 
+    label: fs.name || fs.statusName || fs.Name, 
+    value: fs.id || fs.familyStatusId || fs.Id 
+  }))
+);
+
+const loadFamilyStatuses = async () => {
+  try {
+    const res = await familyStatusApi.list({ limit: 100 });
+    familyStatuses.value = res?.data || [];
+  } catch (err) {
+    notify.error(getApiErrorMessage(err));
+  }
+};
 
 // Six steps, one visible at a time — the tracker card above mirrors the prototype's step badges
 // (done = check, current = filled, upcoming = outline), each wired to its own q-form so "Continue"
@@ -370,7 +412,9 @@ onMounted(async () => {
   try {
     const [classResult, locationResult] = await Promise.all([
       classApi.list({ limit: 100, active: true }),
-      locationApi.list({ limit: 100, active: true })
+      locationApi.list({ limit: 100, active: true }),
+      loadGradeLevels(),
+      loadFamilyStatuses()
     ]);
     classes.value = classResult?.data || [];
     locations.value = locationResult?.data || [];
