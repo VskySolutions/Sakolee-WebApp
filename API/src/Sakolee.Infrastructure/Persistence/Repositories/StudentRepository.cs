@@ -114,4 +114,58 @@ internal sealed class StudentRepository : IStudentRepository
 
         student.ClassId = wanted.Count > 0 ? wanted[0] : null;
     }
+
+    public async Task<IReadOnlyList<Student>> ListByClassIdAsync(Guid classId, Guid? tenantId, CancellationToken cancellationToken = default)
+    {
+        var mappedStudentIds = await _dbContext.StudentClasses
+            .Where(sc => !sc.Deleted && sc.ClassId == classId)
+            .Select(sc => sc.StudentId)
+            .Distinct()
+            .ToListAsync(cancellationToken);
+
+        var legacyStudents = await _dbContext.Students
+            .Where(s => !s.Deleted && s.ClassId == classId)
+            .ToListAsync(cancellationToken);
+
+        var mappedIds = mappedStudentIds.ToHashSet();
+
+        var students = await _dbContext.Students
+            .Where(s => !s.Deleted && mappedIds.Contains(s.Id))
+            .ToListAsync(cancellationToken);
+
+        foreach (var student in legacyStudents)
+        {
+            if (mappedIds.Add(student.Id))
+            {
+                students.Add(student);
+            }
+        }
+
+        if (!tenantId.HasValue)
+        {
+            return students
+                .OrderByDescending(s => s.UpdatedOnUtc ?? s.CreatedOnUtc)
+                .ToList();
+        }
+
+        var personIds = await _dbContext.TenantPersonMappings
+            .Where(m => !m.Deleted && m.TenantId == tenantId.Value)
+            .Select(m => m.PersonId)
+            .ToListAsync(cancellationToken);
+
+        var tenantPersonIds = personIds.ToHashSet();
+
+        return students
+            .Where(s => s.PersonId.HasValue && tenantPersonIds.Contains(s.PersonId.Value))
+            .OrderByDescending(s => s.UpdatedOnUtc ?? s.CreatedOnUtc)
+            .ToList();
+    }
+
+    public async Task<IReadOnlyDictionary<Guid, DateTime>> GetEnrollmentDatesAsync(Guid classId, CancellationToken cancellationToken = default)
+    {
+        return await _dbContext.StudentClasses.Where(sc => !sc.Deleted && sc.ClassId == classId).ToDictionaryAsync(
+                sc => sc.StudentId,
+                sc => sc.CreatedOnUtc,
+                cancellationToken);
+    }
 }

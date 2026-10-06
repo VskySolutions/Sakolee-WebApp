@@ -153,3 +153,15 @@ public sealed record ClassSummary(
 
 /// <summary>One option in the class form's Primary Instructor picker — a Staff user of the active tenant.</summary>
 public sealed record ClassInstructorOption(Guid Id, string Name);
+
+public sealed record ClassEnrollmentStudentSummary(
+    Guid StudentId,
+    string? FirstName,
+    string? LastName,
+    string? Gender,
+    DateTime? BirthDate,
+    DateTime? EnrollmentDate,
+    string Type,
+    DateTime? FutureDrop,
+    decimal? Balance
+);

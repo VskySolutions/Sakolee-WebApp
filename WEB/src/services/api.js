@@ -101,7 +101,8 @@ export const classApi = {
   update: (id, payload) => api.put(`/api/admin/classes/${id}`, payload).then(unwrap),
   remove: (id) => api.delete(`/api/admin/classes/${id}`).then(envelope),
   // Primary Instructor options: the active tenant's active Staff users, as [{ id, name }].
-  instructors: () => api.get("/api/admin/classes/instructors").then(envelope)
+  instructors: () => api.get("/api/admin/classes/instructors").then(envelope),
+  enrollments: (id, params) => api.get(`/api/admin/classes/${id}/enrollments`, { params }).then(envelope),
 };
 
 export const classCategoryApi = {

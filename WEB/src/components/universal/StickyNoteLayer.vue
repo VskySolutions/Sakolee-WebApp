@@ -274,7 +274,7 @@ onMounted(load);
 
 <style scoped>
 .uf-sticky-layer { position: fixed; inset: 0; pointer-events: none; z-index: 2000; }
-.uf-sticky-controls { position: fixed; right: 18px; bottom: 68px; display: flex; flex-direction: column; gap: 8px; pointer-events: all; z-index: 2100; }
+.uf-sticky-controls { position: fixed; right: 10px; bottom: 10px; display: flex; flex-direction: column; gap: 8px; pointer-events: all; z-index: 2100; }
 .uf-sticky-note {
   position: fixed;
   pointer-events: all;

@@ -1,3 +1,5 @@
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Sakolee.Api.Models.Classes;
 using Sakolee.Api.Security;
 using Sakolee.Application.Abstractions.Auditing;
@@ -7,8 +9,7 @@ using Sakolee.Application.Common;
 using Sakolee.Domain.Entities;
 using Sakolee.Shared.Contracts;
 using Sakolee.Shared.Security;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
+using System.Linq;
 
 namespace Sakolee.Api.Controllers;
 
@@ -38,6 +39,7 @@ public sealed class ClassesController : ControllerBase
     private readonly IUserRepository _users;
     private readonly IFamilyRepository _families;
     private readonly IStudentRepository _students;
+    private readonly IPersonRepository _persons;
     private readonly IActorAccessor _actorAccessor;
     private readonly IUnitOfWork _unitOfWork;
     private readonly IAuditTrailService _audit;
@@ -51,6 +53,7 @@ public sealed class ClassesController : ControllerBase
         IUserRepository users,
         IFamilyRepository families,
         IStudentRepository students,
+        IPersonRepository persons,
         IActorAccessor actorAccessor,
         IUnitOfWork unitOfWork,
         IAuditTrailService audit)
@@ -63,6 +66,7 @@ public sealed class ClassesController : ControllerBase
         _users = users;
         _families = families;
         _students = students;
+        _persons = persons;
         _actorAccessor = actorAccessor;
         _unitOfWork = unitOfWork;
         _audit = audit;
@@ -82,6 +86,26 @@ public sealed class ClassesController : ControllerBase
     [ProducesResponseType<ApiResponse<ClassSummary>>(StatusCodes.Status201Created)]
     public async Task<IActionResult> Create([FromBody] CreateClassRequest request, CancellationToken cancellationToken)
     {
+        // Check if existing class schedule for instructor and additional instructor.
+        var conflict = await _classes.ValidateInstructorScheduleAsync(
+                                                                        null,
+                                                                        request.PrimaryInstructorId,
+                                                                        request.AdditionalInstructorIds,
+                                                                        request.StartDate,
+                                                                        request.EndDate,
+                                                                        request.StartTime,
+                                                                        request.EndTime,
+                                                                        request.ActiveDays,
+                                                                        cancellationToken);
+
+        if (conflict != null)
+        {
+            return Conflict(new
+            {
+                message = conflict
+            });
+        }
+
         var now = DateTime.UtcNow;
         var actorId = CurrentActorId();
         var entity = new Class
@@ -199,6 +223,146 @@ public sealed class ClassesController : ControllerBase
             "Class retrieved."));
     }
 
+    [HttpGet("{id:guid}/enrollments")]
+    [RequirePermission(Permissions.ClassesRead)]
+    public async Task<IActionResult> EnrollmentList(
+    Guid id,
+    [FromQuery] int page = 1,
+    [FromQuery] int limit = 20,
+    [FromQuery] bool? active = null,
+    [FromQuery] string? search = null,
+    [FromQuery] string? sortBy = null,
+    [FromQuery] bool descending = true,
+    CancellationToken cancellationToken = default)
+    {
+        page = Math.Max(1, page);
+        limit = Math.Clamp(limit, 1, 100);
+
+        var @class = await _classes.GetByIdAsync(id, cancellationToken);
+
+        if (@class is null)
+        {
+            return NotFound(ApiResponseFactory.NotFound("Class not found."));
+        }
+
+        // Parent/Student callers can only access classes they are enrolled in.
+        if (await EnrolledClassIdsAsync(cancellationToken) is { } enrolledClassIds
+            && !enrolledClassIds.Contains(id))
+        {
+            return NotFound(ApiResponseFactory.NotFound("Class not found."));
+        }
+
+        var tenantId = User.GetActiveTenantId();
+
+        var students = await _students.ListByClassIdAsync(id, tenantId, cancellationToken);
+
+        var enrollmentDates = await _students.GetEnrollmentDatesAsync(id, cancellationToken);
+
+        var personIds = students.Where(s => s.PersonId.HasValue).Select(s => s.PersonId!.Value).Distinct().ToList();
+
+        var persons = await _persons.GetByIdsAsync(personIds,cancellationToken);
+
+        var personMap = persons.ToDictionary(p => p.Id);
+
+        IEnumerable<Student> filtered = students;
+
+        if (active.HasValue)
+        {
+            filtered = filtered.Where(s => s.Active == active.Value);
+        }
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var term = search.Trim();
+
+            filtered = filtered.Where(s =>
+            {
+                if (!personMap.TryGetValue(s.PersonId ?? Guid.Empty, out var person))
+                {
+                    return false;
+                }
+
+                return
+                    (person.FirstName?.Contains(term, StringComparison.OrdinalIgnoreCase) ?? false)
+                    || (person.LastName?.Contains(term, StringComparison.OrdinalIgnoreCase) ?? false)
+                    || (person.PrimaryEmail?.Contains(term, StringComparison.OrdinalIgnoreCase) ?? false)
+                    || (s.StudentNumber?.Contains(term, StringComparison.OrdinalIgnoreCase) ?? false);
+            });
+        }
+
+        filtered = sortBy switch
+        {
+            "firstName" =>
+                descending
+                    ? filtered.OrderByDescending(s => personMap.TryGetValue(s.PersonId ?? Guid.Empty, out var p) ? p.FirstName : null)
+                    : filtered.OrderBy(s => personMap.TryGetValue(s.PersonId ?? Guid.Empty, out var p) ? p.FirstName : null),
+
+            "lastName" =>
+                descending
+                    ? filtered.OrderByDescending(s => personMap.TryGetValue(s.PersonId ?? Guid.Empty, out var p) ? p.LastName : null)
+                    : filtered.OrderBy(s => personMap.TryGetValue(s.PersonId ?? Guid.Empty, out var p) ? p.LastName : null),
+
+            "email" =>
+                descending
+                    ? filtered.OrderByDescending(s => personMap.TryGetValue(s.PersonId ?? Guid.Empty, out var p) ? p.PrimaryEmail : null)
+                    : filtered.OrderBy(s => personMap.TryGetValue(s.PersonId ?? Guid.Empty, out var p) ? p.PrimaryEmail : null),
+
+            "studentNumber" =>
+                descending
+                    ? filtered.OrderByDescending(s => s.StudentNumber)
+                    : filtered.OrderBy(s => s.StudentNumber),
+
+            "admissionDate" =>
+                descending
+                    ? filtered.OrderByDescending(s => s.AdmissionDate)
+                    : filtered.OrderBy(s => s.AdmissionDate),
+
+            "active" =>
+                descending
+                    ? filtered.OrderByDescending(s => s.Active)
+                    : filtered.OrderBy(s => s.Active),
+
+            _ =>
+                descending
+                    ? filtered.OrderByDescending(s => s.UpdatedOnUtc ?? s.CreatedOnUtc)
+                    : filtered.OrderBy(s => s.UpdatedOnUtc ?? s.CreatedOnUtc)
+        };
+
+        var filteredList = filtered.ToList();
+
+        var total = filteredList.Count;
+
+        var pageItems = filteredList
+    .Skip((page - 1) * limit)
+    .Take(limit)
+    .Select(s =>
+    {
+        personMap.TryGetValue(s.PersonId ?? Guid.Empty, out var person);
+
+        enrollmentDates.TryGetValue(s.Id, out var enrollmentDate);
+
+        return new ClassEnrollmentStudentSummary(
+            s.Id,
+            person?.FirstName,
+            person?.LastName,
+            person?.Gender,
+            person?.DateOfBirth,
+            enrollmentDate,
+            "Enrolled",
+            null,
+            @class.TuitionFee);
+    })
+    .ToList();
+
+        return Ok(
+            ApiResponseFactory.Paginated(
+                pageItems,
+                "Enrolled students retrieved.",
+                page,
+                limit,
+                total));
+    }
+
     /// <summary>
     /// The Primary Instructor picker's options: the active tenant's active users holding the "Staff" role
     /// (the same people the Staff list shows). Readable with Classes permissions alone, so the class form
@@ -231,6 +395,26 @@ public sealed class ClassesController : ControllerBase
         if (entity is null)
         {
             return NotFound(ApiResponseFactory.NotFound("Class not found."));
+        }
+
+        // Check if existing class schedule for instructor and additional instructor.
+        var conflict = await _classes.ValidateInstructorScheduleAsync(
+                                                                        null,
+                                                                        request.PrimaryInstructorId,
+                                                                        request.AdditionalInstructorIds,
+                                                                        request.StartDate,
+                                                                        request.EndDate,
+                                                                        request.StartTime,
+                                                                        request.EndTime,
+                                                                        request.ActiveDays,
+                                                                        cancellationToken);
+
+        if (conflict != null)
+        {
+            return Conflict(new
+            {
+                message = conflict
+            });
         }
 
         ApplyRequest(entity, request.LocationId, request.RoomId, request.SessionId, request.PrimaryInstructorId,

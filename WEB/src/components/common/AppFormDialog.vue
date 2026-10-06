@@ -143,7 +143,7 @@ const props = defineProps({
   size: {
     type: String,
     default: "md",
-    validator: (value) => ["sm", "md", "lg", "xl"].includes(value)
+    validator: (value) => ["sm", "md", "lg", "xl", "xxl"].includes(value)
   }
 });
 
