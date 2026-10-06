@@ -60,8 +60,9 @@ export const blankStudent = () => ({
   tshirtSize: "",
   gradeLevel: "",
   medicalNotes: "",
-  // Step 5 — the class this student is enrolled in (a real Class.Id), or null for none.
-  classId: null
+  // Step 5 — the classes this student is enrolled in (real Class.Ids); empty for none. A student may
+  // be in several.
+  classIds: []
 });
 
 export const blankQuickRegistrationForm = () => ({
@@ -157,7 +158,7 @@ export const toCreateFamilyRequest = (form) => {
 // kept distinct from the contacts' emails AND from every other student's, since a family contact
 // now gets its own real login too (FamiliesController) and Users.Email is unique.
 // `familyId` is the id returned by the toCreateFamilyRequest() call this page makes first;
-// `student.classId` is the real Class.Id picked for this student in Step 5 (fetched from classApi — the
+// `student.classIds` are the real Class.Ids picked for this student in Step 5 (fetched from classApi — the
 // composable's own CLASS_OPTIONS are demo labels, not real ids); each student has their own.
 export const toCreateStudentRequest = (student, form, familyId) => ({
   familyId: familyId || null,
@@ -171,7 +172,7 @@ export const toCreateStudentRequest = (student, form, familyId) => ({
   specialNeeds: student.medicalNotes || null,
   email: student.email,
   cellPhone: form.primaryContact.phone || null,
-  classId: student.classId || null,
+  classIds: student.classIds || [],
   admissionDate: form.enrollmentDate || null,
   healthInsuranceCarrier: form.insuranceCarrier || null,
   emergencyContactName: form.emergencyContactName || null,

@@ -11,19 +11,24 @@
       :search="search"
       show-search
       search-placeholder="Search family status"
-      show-filters
-      :filter-count="filterChips.length"
+  
       show-add
       add-label="Create Family Status"
       show-back
       @update:search="search = $event"
-      @filters="filterOpen = true"
+     
       @add="openCreate"
       @back="$router.back()"
     />
 
+    <!--Hiding the filter attribute and function-->
+    <!-- show-filters
+      :filter-count="filterChips.length" 
+      @filters="filterOpen = true"-->
+
+    <!--  Hidden/Commented Filter Drawer Component -->
     <!-- Filter Drawer Component -->
-    <app-filter-drawer
+    <!-- <app-filter-drawer
       v-model="filterOpen"
       :chips="filterChips"
       @remove="removeFilter"
@@ -34,24 +39,18 @@
         :columns="filterableColumns"
       />
 
-      <q-toggle
-        v-if="canManageDeleted"
-        v-model="showDeleted"
-        label="Show deleted?"
-        dense
-        class="q-mt-md"
-      />
-    </app-filter-drawer>
+      <q-toggle v-if="canManageDeleted" v-model="showDeleted" label="Show deleted?" dense class="q-mt-md" />
+    </app-filter-drawer> -->
 
     <!-- Core Data Table Grid Component -->
     <app-data-table
       page-key="family-statuses"
       :row-key="(row) => row.familyStatusId || row.FamilyStatusId || row.id || row.Id"
       title="Family Status"
-      :rows="filteredRows"
+      :rows="rows"
       :columns="columns"
       :loading="loading"
-      :total-records="filteredRows.length"
+      :total-records="rows.length"
       :pagination="pagination"
       @request="onRequest"
       @refresh="load"
@@ -152,6 +151,9 @@ import AppColumnFilters from "components/common/AppColumnFilters.vue";
 
 import FamilyStatusForm from "src/modules/familystatus/components/create_edit_status.vue";
 import FamilyStatusView from "src/modules/familystatus/components/viewstatus.vue";
+
+// Commented filters are hidden in Master Module
+
 
 const { showDeleted, canManageDeleted } = useDeletedRecords();
 // The API's FamilyStatusSummary flags soft-deleted rows as `isDeleted` (only returned with "Show deleted?" on).
@@ -286,18 +288,19 @@ const {
   onError: (err) => notify.error(getApiErrorMessage(err))
 });
 
-const filterOpen = ref(false);
+// Commented filters are hidden in Master Module
+// const filterOpen = ref(false);
 
-const {
-  filters,
-  filterableColumns,
-  filteredRows,
-  filterChips,
-  removeFilter,
-  clearFilters
-} = useColumnFilters(columns, rows, {
-  server: false
-});
+// const {
+//   filters,
+//   filterableColumns,
+//   filteredRows,
+//   filterChips,
+//   removeFilter,
+//   clearFilters
+// } = useColumnFilters(columns, rows, {
+//   server: false
+// });
 
 const reload = debounce(() => {
   pagination.value.page = 1;

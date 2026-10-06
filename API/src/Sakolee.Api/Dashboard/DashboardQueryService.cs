@@ -90,10 +90,21 @@ public sealed class DashboardQueryService : IDashboardQueryService
     {
         var students = await StudentsScopedAsync(tenantId, cancellationToken);
 
-        // A student's enrollment is its ClassId (one class per student today); dropped = deactivated
-        // within the window, the closest signal there is without an enrollment history table.
+        // Enrollments are (active student, class) pairs — StudentClasses, falling back to Student.ClassId for
+        // a student with no rows there; dropped = deactivated within the window, the closest signal there
+        // is without an enrollment history table.
         var droppedSince = DateTime.UtcNow.AddDays(-RecentlyDroppedDays);
-        var totalEnrollments = students.Count(s => s.Active && s.ClassId.HasValue);
+        var activeIds = students.Where(s => s.Active).Select(s => s.Id).ToList();
+        var classCounts = (await _db.StudentClasses.IgnoreQueryFilters()
+                .Where(sc => !sc.Deleted && activeIds.Contains(sc.StudentId))
+                .Select(sc => new { sc.StudentId, sc.ClassId })
+                .Distinct()
+                .ToListAsync(cancellationToken))
+            .GroupBy(sc => sc.StudentId)
+            .ToDictionary(g => g.Key, g => g.Count());
+        var totalEnrollments = students
+            .Where(s => s.Active)
+            .Sum(s => classCounts.TryGetValue(s.Id, out var count) ? count : s.ClassId.HasValue ? 1 : 0);
         var recentlyDropped = students.Count(s => !s.Active && s.UpdatedOnUtc >= droppedSince);
         var activeStudents = students.Count(s => s.Active);
 

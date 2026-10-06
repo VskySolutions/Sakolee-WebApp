@@ -935,7 +935,7 @@ const sections = [
     icon: "o_corporate_fare",
     items: [
       { label: "Tenants", icon: "o_apartment", to: "/tenants", permissions: [Permissions.TenantsWrite] },
-      { label: "Person", icon: "o_badge", to: "/persons", permissions: [Permissions.PersonsRead] },
+      { label: "Person", icon: "o_group", to: "/persons", permissions: [Permissions.PersonsRead] },
     ]
   },
   {
@@ -998,9 +998,9 @@ const sections = [
   {
     key: "staff",
     label: "Staffs",
-    icon: "o_assignment_ind",
+    icon: "o_badge",
     items: [
-      { label: "Staffs", icon: "o_group", to: "/users", permissions: [Permissions.UsersRead] }
+      { label: "Staffs", icon: "o_assignment_ind", to: "/users", permissions: [Permissions.UsersRead] } 
     ]
   },
   {

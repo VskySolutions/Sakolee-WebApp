@@ -10,18 +10,22 @@
       :search="search"
       show-search
       search-placeholder="Search relations"
-      show-filters
-      :filter-count="filterChips.length"
+    
       :show-add="canWrite"
       add-label="Create Relation"
       show-back
       @update:search="search = $event"
-      @filters="filterOpen = true"
+    
       @add="openCreate"
       @back="$router.back()"
     />
+    <!--Hiding the filter attribute-->
+    <!-- show-filters
+      :filter-count="filterChips.length"
+      @filters="filterOpen = true" -->
 
-    <app-filter-drawer
+      <!-- Hiding Filter Drawer Component -->
+    <!-- <app-filter-drawer
       v-model="filterOpen"
       :chips="filterChips"
       @remove="removeFilter"
@@ -38,20 +42,24 @@
         dense
         class="q-mt-md"
       />
-    </app-filter-drawer>
+    </app-filter-drawer> -->
 
     <app-data-table
       page-key="family-relations"
       row-key="id"
       title="Relations"
-      :rows="filteredRows"
+      :rows="rows"
       :columns="columns"
       :loading="loading"
-      :total-records="filteredRows.length"
+      :total-records="rows.length"
       :pagination="pagination"
       @request="onRequest"
       @refresh="load"
     >
+    <!--Hiding the filter attribute-->
+     <!-- :rows="filteredRows"
+     :total-records="filteredRows.length" -->
+
       <!-- Status Column with Interactive Toggle
       <template #body-cell-active="cell">
         <q-td :props="cell">
@@ -334,18 +342,20 @@ onMounted(() => {
   load();
 });
 
-const filterOpen = ref(false);
+// Commented filters Funcationality
+// Filter Drawer State
+// const filterOpen = ref(false);
 
-const {
-  filters,
-  filterableColumns,
-  filteredRows,
-  filterChips,
-  removeFilter,
-  clearFilters
-} = useColumnFilters(columns, rows, {
-  server: false
-});
+// const {
+//   filters,
+//   filterableColumns,
+//   filteredRows,
+//   filterChips,
+//   removeFilter,
+//   clearFilters
+// } = useColumnFilters(columns, rows, {
+//   server: false
+// });
 
 const reload = debounce(() => {
   pagination.value.page = 1;

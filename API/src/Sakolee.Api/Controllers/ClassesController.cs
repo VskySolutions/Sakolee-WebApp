@@ -34,6 +34,7 @@ public sealed class ClassesController : ControllerBase
     private readonly IClassCategoryRepository _categories;
     private readonly ILocationRepository _locations;
     private readonly IClassSessionRepository _sessions;
+    private readonly IClassRoomRepository _rooms;
     private readonly IUserRepository _users;
     private readonly IFamilyRepository _families;
     private readonly IStudentRepository _students;
@@ -46,6 +47,7 @@ public sealed class ClassesController : ControllerBase
         IClassCategoryRepository categories,
         ILocationRepository locations,
         IClassSessionRepository sessions,
+        IClassRoomRepository rooms,
         IUserRepository users,
         IFamilyRepository families,
         IStudentRepository students,
@@ -57,6 +59,7 @@ public sealed class ClassesController : ControllerBase
         _categories = categories;
         _locations = locations;
         _sessions = sessions;
+        _rooms = rooms;
         _users = users;
         _families = families;
         _students = students;
@@ -174,6 +177,7 @@ public sealed class ClassesController : ControllerBase
         string? CategoryName(Guid? id) => id is { } categoryId && categoryNames.TryGetValue(categoryId, out var name) ? name : null;
         var location = entity.LocationId is { } locationId ? await _locations.GetByIdAsync(locationId, cancellationToken) : null;
         var session = entity.SessionId is { } sessionId ? await _sessions.GetByIdAsync(sessionId, cancellationToken) : null;
+        var room = entity.RoomId is { } roomId ? await _rooms.GetByIdUnscopedAsync(roomId, cancellationToken) : null;
         var additionalIds = ParseInstructorIds(entity.AdditionalInstructors);
         var instructorNames = await ResolveActorNamesAsync(
             additionalIds.Select(i => (Guid?)i).Append(entity.PrimaryInstructorId), cancellationToken);
@@ -189,6 +193,7 @@ public sealed class ClassesController : ControllerBase
                 Category3Name = CategoryName(entity.Category3Id),
                 LocationName = location?.Name,
                 SessionName = session?.Name,
+                RoomName = room?.Name,
                 PrimaryInstructorName = NameOf(instructorNames, entity.PrimaryInstructorId),
             },
             "Class retrieved."));
@@ -349,7 +354,7 @@ public sealed class ClassesController : ControllerBase
     /// The classes the caller is limited to, or <c>null</c> when the caller is not limited. A caller whose
     /// only roles are self-service roles (Parent/Guardian/Student — see
     /// <see cref="ClaimsPrincipalExtensions.IsSelfServiceOnly"/>) sees only the classes they are enrolled
-    /// in (<see cref="Student.ClassId"/>): a Student their own, a family contact any student of one of
+    /// in (<see cref="StudentClass"/>, falling back to <see cref="Student.ClassId"/>): a Student their own, a family contact any student of one of
     /// their families'. An empty set when there are none. Mirrors StudentsController's family scoping.
     /// </summary>
     private async Task<IReadOnlySet<Guid>?> EnrolledClassIdsAsync(CancellationToken cancellationToken)
@@ -366,24 +371,22 @@ public sealed class ClassesController : ControllerBase
             return classIds;
         }
 
-        void AddClassesOf(IEnumerable<Student> students)
+        // Every class of each student (StudentClasses, a student may be in several).
+        async Task AddClassesOfAsync(IReadOnlyList<Student> students)
         {
-            foreach (var student in students)
+            foreach (var ids in (await _students.GetClassIdsAsync(students, cancellationToken)).Values)
             {
-                if (student.ClassId is { } classId)
-                {
-                    classIds.Add(classId);
-                }
+                classIds.UnionWith(ids);
             }
         }
 
         // A Student login's own enrollment(s).
-        AddClassesOf(await _students.ListByPersonIdAsync(personId, cancellationToken));
+        await AddClassesOfAsync(await _students.ListByPersonIdAsync(personId, cancellationToken));
 
         // A family contact's children's enrollments.
         foreach (var familyId in await _families.ListFamilyIdsForContactAsync(personId, cancellationToken))
         {
-            AddClassesOf(await _students.ListByFamilyIdAsync(familyId, cancellationToken));
+            await AddClassesOfAsync(await _students.ListByFamilyIdAsync(familyId, cancellationToken));
         }
         return classIds;
     }

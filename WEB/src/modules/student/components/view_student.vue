@@ -154,7 +154,7 @@
             </div>
 
             <q-badge class="class-row__badge">
-              {{ item.status || "Enrolled" }}
+              {{ item.active === false ? "Class Inactive" : "Enrolled" }}
             </q-badge>
           </div>
         </div>

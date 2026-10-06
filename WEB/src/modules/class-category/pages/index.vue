@@ -8,18 +8,22 @@
       :search="search"
       show-search
       search-placeholder="Search name or category type"
-      show-filters
-      :filter-count="filterChips.length"
+      
       :show-add="canWrite"
       add-label="Create Class Category"
       show-back
       @update:search="search = $event"
-      @filters="filterOpen = true"
+     
       @add="openCreate"
       @back="$router.back()"
     />
+    <!--Hiding the filter attribute-->
+    <!-- show-filters
+      :filter-count="filterChips.length"
+      @filters="filterOpen = true" -->
+
     <!-- Filter drawer -->
-    <app-filter-drawer
+    <!-- <app-filter-drawer
       v-model="filterOpen"
       :chips="filterChips"
       @remove="removeFilter"
@@ -29,7 +33,7 @@
         v-model="filters"
         :columns="filterableColumns"
       />
-      <!-- Show deleted -->
+      <-- Show deleted ->
       <q-toggle
         v-if="canManageDeleted"
         v-model="showDeleted"
@@ -37,7 +41,7 @@
         dense
         class="q-mt-md"
       />
-    </app-filter-drawer>
+    </app-filter-drawer> -->
     <!-- Class Category table -->
     <app-data-table
       page-key="class-categories"

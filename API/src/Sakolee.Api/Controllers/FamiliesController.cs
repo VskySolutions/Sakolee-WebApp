@@ -301,7 +301,8 @@ public sealed class FamiliesController : ControllerBase
             : new Dictionary<Guid, Person>();
         var names = await ResolveActorNamesAsync(new[] { family.CreatedById, family.UpdatedById }, cancellationToken);
 
-        return Ok(ApiResponseFactory.Success(ToDetail(family, students, studentPersons, names), "Family retrieved."));
+        var studentClassIds = await _students.GetClassIdsAsync(students, cancellationToken);
+        return Ok(ApiResponseFactory.Success(ToDetail(family, students, studentPersons, names, studentClassIds), "Family retrieved."));
     }
 
     #endregion
@@ -862,7 +863,8 @@ public sealed class FamiliesController : ControllerBase
     /// <summary>Maps a Family entity (with its loaded contacts/students) to the full detail shape
     /// returned by <see cref="GetById"/>.</summary>
     private static FamilyDetail ToDetail(
-        Family f, IReadOnlyList<Student> students, IReadOnlyDictionary<Guid, Person> studentPersons, IReadOnlyDictionary<Guid, string> names)
+        Family f, IReadOnlyList<Student> students, IReadOnlyDictionary<Guid, Person> studentPersons, IReadOnlyDictionary<Guid, string> names,
+        IReadOnlyDictionary<Guid, IReadOnlyList<Guid>> studentClassIds)
     {
         // FamilyPersonMapping is the authoritative list of contacts (see its remarks) — both primary and
         // secondary now live there. The synthetic fallback below only fires for a family predating that
@@ -884,7 +886,8 @@ public sealed class FamiliesController : ControllerBase
             students.Select(s =>
             {
                 var person = s.PersonId is { } pid && studentPersons.TryGetValue(pid, out var p) ? p : null;
-                return new FamilyStudentSummary(s.Id, person?.FirstName, person?.LastName, s.StudentNumber, s.Active, s.ClassId, s.BirthDate);
+                return new FamilyStudentSummary(s.Id, person?.FirstName, person?.LastName, s.StudentNumber, s.Active, s.ClassId, s.BirthDate,
+                    studentClassIds.TryGetValue(s.Id, out var classIds) ? classIds : Array.Empty<Guid>());
             }).ToList(),
             NameOf(names, f.CreatedById), f.CreatedOnUtc, NameOf(names, f.UpdatedById), f.UpdatedOnUtc);
     }
