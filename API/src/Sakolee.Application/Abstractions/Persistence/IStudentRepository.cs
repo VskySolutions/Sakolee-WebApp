@@ -31,4 +31,21 @@ public interface IStudentRepository
     Task AddAsync(Student student, CancellationToken cancellationToken = default);
 
     void Update(Student student);
+
+    /// <summary>
+    /// Every class each of the given students is enrolled in (<see cref="StudentClass"/>), falling back to
+    /// <see cref="Student.ClassId"/> for a student with no rows there. Students in no class map to an
+    /// empty list.
+    /// </summary>
+    Task<IReadOnlyDictionary<Guid, IReadOnlyList<Guid>>> GetClassIdsAsync(IEnumerable<Student> students, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Stages the student's enrollments to exactly <paramref name="classIds"/> (adding and soft-deleting
+    /// <see cref="StudentClass"/> rows) and mirrors the first onto <see cref="Student.ClassId"/>. Not saved.
+    /// </summary>
+    Task SetClassesAsync(Student student, IReadOnlyList<Guid> classIds, CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<Student>> ListByClassIdAsync(Guid classId, Guid? tenantId, CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyDictionary<Guid, DateTime>> GetEnrollmentDatesAsync(Guid classId, CancellationToken cancellationToken = default);
 }

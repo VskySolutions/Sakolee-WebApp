@@ -131,7 +131,8 @@ public sealed class RolesController : ControllerBase
         var tenantNameOf = await TenantNamesAsync(page, cancellationToken);
         // Ordered after projecting, because two of the columns the list offers — Scope and Permissions —
         // only exist on the summary.
-        var summaries = ListSorts.Apply(page.Select(r => ToSummary(r, nameOf, tenantNameOf)), sortBy, descending);
+        var overrides = await CallerOverridesAsync(cancellationToken);
+        var summaries = ListSorts.Apply(page.Select(r => ToSummary(r, nameOf, tenantNameOf, overrides)), sortBy, descending);
         return Ok(ApiResponseFactory.Success(summaries, "Roles retrieved."));
     }
 
@@ -222,6 +223,12 @@ public sealed class RolesController : ControllerBase
     [RequirePermission(Permissions.RolesWrite)]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateRoleRequest request, CancellationToken cancellationToken)
     {
+        // A tenant user editing a platform role customises it for their own tenant only.
+        if (await _roles.GetByIdAsync(id, cancellationToken) is { } platformRole && RoleAccess.CanCustomize(User, platformRole))
+        {
+            return await CustomizeForTenantAsync(platformRole, request, cancellationToken);
+        }
+
         var (role, accessError) = await LoadForWriteAsync(id, cancellationToken);
         if (role is null)
         {
@@ -286,6 +293,86 @@ public sealed class RolesController : ControllerBase
         return Ok(ApiResponseFactory.Success(await ToResponseAsync(role, cancellationToken), "Role updated."));
     }
 
+    /// <summary>
+    /// Saves the caller's tenant's own permission set for a platform role (<see cref="TenantRoleOverride"/>).
+    /// Only the permissions are the tenant's to change — the name, label and description, like the platform
+    /// default every other tenant keeps, stay the Super Admin's.
+    /// </summary>
+    private async Task<IActionResult> CustomizeForTenantAsync(Role role, UpdateRoleRequest request, CancellationToken cancellationToken)
+    {
+        if (request.Permissions is null)
+        {
+            return Ok(ApiResponseFactory.Success(await ToResponseAsync(role, cancellationToken), "Role updated."));
+        }
+
+        var invalid = InvalidPermissions(request.Permissions);
+        if (invalid is not null)
+        {
+            return invalid;
+        }
+        var tenantId = User.GetActiveTenantId()!.Value;
+        var existing = await _roles.GetTenantOverrideAsync(tenantId, role.Id, cancellationToken);
+        var current = existing?.Permissions ?? role.Permissions;
+
+        // Only keys being ADDED are held to the tenant ceiling: what the role already grants here — the
+        // platform default may reach past the ceiling — can be kept or dropped, never widened.
+        var ceiling = await CheckCeilingAsync(tenantId, request.Permissions.Except(current, StringComparer.Ordinal), cancellationToken);
+        if (ceiling is not null)
+        {
+            return ceiling;
+        }
+
+        var permissions = Normalize(request.Permissions);
+        var permissionsChanged = !permissions.ToHashSet(StringComparer.Ordinal).SetEquals(current);
+        if (existing is null)
+        {
+            await _roles.AddTenantOverrideAsync(
+                new TenantRoleOverride { Id = Guid.NewGuid(), TenantId = tenantId, RoleId = role.Id, Permissions = permissions },
+                cancellationToken);
+        }
+        else
+        {
+            existing.Permissions = permissions;
+        }
+
+        await _audit.AddAsync(nameof(TenantRoleOverride), role.Id.ToString(), "Customized",
+            details: $"name={role.Name}; tenant={tenantId}", cancellationToken: cancellationToken);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+        if (permissionsChanged)
+        {
+            await _users.InvalidateSessionsForRoleAsync(role.Id, cancellationToken);
+        }
+        return Ok(ApiResponseFactory.Success(await ToResponseAsync(role, cancellationToken), "Role updated for your tenant."));
+    }
+
+    /// <summary>Drops the caller's tenant's own permission set for a platform role, back to the platform default.</summary>
+    [HttpDelete("/api/admin/roles/{id:guid}/tenant-override")]
+    [RequirePermission(Permissions.RolesWrite)]
+    public async Task<IActionResult> ResetTenantOverride(Guid id, CancellationToken cancellationToken)
+    {
+        var role = await _roles.GetByIdAsync(id, cancellationToken);
+        if (role is null || !RoleAccess.CanSee(User, role))
+        {
+            return NotFound(ApiResponseFactory.NotFound("Role not found."));
+        }
+        if (!RoleAccess.CanCustomize(User, role))
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, ApiResponseFactory.Forbidden(
+                "Only a platform role can be reset to its default, and only from within a tenant."));
+        }
+
+        var existing = await _roles.GetTenantOverrideAsync(User.GetActiveTenantId()!.Value, role.Id, cancellationToken);
+        if (existing is not null)
+        {
+            _roles.RemoveTenantOverride(existing); // soft delete via interceptor
+            await _audit.AddAsync(nameof(TenantRoleOverride), role.Id.ToString(), "Reset",
+                details: $"name={role.Name}; tenant={existing.TenantId}", cancellationToken: cancellationToken);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+            await _users.InvalidateSessionsForRoleAsync(role.Id, cancellationToken);
+        }
+        return Ok(ApiResponseFactory.Success(await ToResponseAsync(role, cancellationToken), "Role reset to the platform default."));
+    }
+
     [HttpDelete("/api/admin/roles/{id:guid}")]
     [RequirePermission(Permissions.RolesWrite)]
     public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
@@ -347,7 +434,8 @@ public sealed class RolesController : ControllerBase
 
         var nameOf = await AuditNamesAsync(rows, cancellationToken);
         var tenantNameOf = await TenantNamesAsync(rows, cancellationToken);
-        return Ok(ApiResponseFactory.Success(rows.Select(r => ToSummary(r, nameOf, tenantNameOf)), "Tenant roles retrieved."));
+        var overrides = await _roles.ListTenantOverridesAsync(tenantId, cancellationToken);
+        return Ok(ApiResponseFactory.Success(rows.Select(r => ToSummary(r, nameOf, tenantNameOf, overrides)), "Tenant roles retrieved."));
     }
 
     [HttpPost("/api/admin/tenants/{tenantId:guid}/roles")]
@@ -480,12 +568,33 @@ public sealed class RolesController : ControllerBase
         var tenantName = r.TenantId is { } owner
             ? (await _tenants.GetByIdAsync(owner, cancellationToken))?.Name
             : null;
+        // A tenant user sees their own tenant's permission set for a platform role it has customised.
+        var tenantOverride = RoleAccess.CanCustomize(User, r)
+            ? await _roles.GetTenantOverrideAsync(User.GetActiveTenantId()!.Value, r.Id, cancellationToken)
+            : null;
         return new RoleResponse(
             r.Id, r.Name, r.DisplayName, r.Description, r.IsSystem, r.TenantId, tenantName, RoleAccess.CanManage(User, r),
-            r.Permissions, await RecordAudit.ForAsync(_users, r, cancellationToken));
+            tenantOverride?.Permissions ?? r.Permissions, await RecordAudit.ForAsync(_users, r, cancellationToken),
+            RoleAccess.CanCustomize(User, r), tenantOverride is not null);
     }
 
-    private RoleSummary ToSummary(Role r, Func<Guid?, string?> nameOf, Func<Guid?, string?> tenantNameOf) => new(
-        r.Id, r.Name, r.DisplayName, r.Description, r.IsSystem, r.TenantId, tenantNameOf(r.TenantId), RoleAccess.CanManage(User, r),
-        r.Permissions.Count, nameOf(r.CreatedById), r.CreatedOnUtc, nameOf(r.UpdatedById), r.UpdatedOnUtc);
+    private RoleSummary ToSummary(
+        Role r, Func<Guid?, string?> nameOf, Func<Guid?, string?> tenantNameOf,
+        IReadOnlyDictionary<Guid, TenantRoleOverride> overrides)
+    {
+        var tenantOverride = overrides.GetValueOrDefault(r.Id);
+        return new(
+            r.Id, r.Name, r.DisplayName, r.Description, r.IsSystem, r.TenantId, tenantNameOf(r.TenantId), RoleAccess.CanManage(User, r),
+            (tenantOverride?.Permissions ?? r.Permissions).Count, nameOf(r.CreatedById), r.CreatedOnUtc, nameOf(r.UpdatedById), r.UpdatedOnUtc,
+            RoleAccess.CanCustomize(User, r), tenantOverride is not null);
+    }
+
+    /// <summary>
+    /// The caller's tenant's own permission sets for platform roles (<see cref="TenantRoleOverride"/>).
+    /// A Super Admin works on the platform defaults, so none apply to them.
+    /// </summary>
+    private async Task<IReadOnlyDictionary<Guid, TenantRoleOverride>> CallerOverridesAsync(CancellationToken cancellationToken)
+        => !User.IsSuperAdmin() && User.GetActiveTenantId() is { } tenantId
+            ? await _roles.ListTenantOverridesAsync(tenantId, cancellationToken)
+            : new Dictionary<Guid, TenantRoleOverride>();
 }

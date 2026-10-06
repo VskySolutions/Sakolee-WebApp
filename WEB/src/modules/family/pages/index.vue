@@ -43,11 +43,24 @@
         />
       </template>
 
-      <template #body-cell-active="cell">
+      <!-- <template #body-cell-active="cell">
         <q-td :props="cell">
           <q-badge :color="cell.value ? 'positive' : 'grey'">{{ cell.value ? "Active" : "Inactive" }}</q-badge>
         </q-td>
-      </template>
+      </template> -->
+      <template #body-cell-active="cell">
+  <q-td :props="cell">
+    <div class="flex flex-center">
+      <q-toggle
+        :model-value="cell.row.active ?? cell.row.Active ?? cell.row.isActive ?? cell.row.IsActive ?? true"
+        @update:model-value="(val) => updateStatus(cell.row, val)"
+        dense
+        color="positive"
+        :disable="!canWrite"
+      />
+    </div>
+  </q-td>
+</template>
 
       <template #body-cell-actions="cell">
         <q-td :props="cell">
@@ -148,8 +161,8 @@ const columns = [
   { name: "familyStatusName", label: "Status", field: (row) => row.familyStatusName || "—", align: "left" },
   { name: "studioLocationName", label: "Studio Location", field: (row) => row.studioLocationName || "—", align: "left" },
   { name: "studentCount", label: "Students", field: "studentCount", align: "left" },
-  { name: "active", label: "Active", field: "active", align: "left", default: true },
   ...auditColumns(),
+   { name: "active", label: "Active", field: "active", align: "center", default: true },
   { name: "actions", label: "Actions", field: "actions", align: "left" }
 ];
 
@@ -295,6 +308,23 @@ const remove = async (row) => {
     notify.success("Family deleted.");
     load();
   } catch (err) {
+    notify.error(getApiErrorMessage(err));
+  }
+};
+
+const updateStatus = async (row, newStatus) => {
+  const id = row.familyId;
+  if (!id) return;
+
+  const originalStatus = row.active;
+  row.active = newStatus;
+
+  try {
+    await familyApi.update(id, { ...row, active: newStatus });
+    notify.success("Family active status updated successfully.");
+    await load();
+  } catch (err) {
+    row.active = originalStatus;
     notify.error(getApiErrorMessage(err));
   }
 };

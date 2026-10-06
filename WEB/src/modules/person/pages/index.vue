@@ -54,9 +54,22 @@
         </q-td>
       </template>
 
-      <template #body-cell-isActive="cell">
+      <!-- <template #body-cell-isActive="cell">
         <q-td :props="cell">
           <q-badge :color="cell.value ? 'positive' : 'grey'">{{ cell.value ? "Active" : "Inactive" }}</q-badge>
+        </q-td>
+      </template> -->
+<template #body-cell-isActive="cell">
+        <q-td :props="cell">
+          <div class="flex flex-center">
+            <q-toggle
+              :model-value="cell.row.isActive ?? cell.row.IsActive ?? true"
+              @update:model-value="(val) => updateStatus(cell.row, val)"
+              dense
+              color="positive"
+              :disable="!canWrite"
+            />
+          </div>
         </q-td>
       </template>
 
@@ -180,9 +193,10 @@ const columns = computed(() => [
   { name: "primaryEmail", label: "Email", field: "primaryEmail", align: "left", sortable: true, default: true, filterable: false },
   { name: "mobileNumber", label: "Phone", field: "mobileNumber", align: "left", filterable: false },
   { name: "isUser", label: "Account", field: "isUser", align: "left", sortable: true, default: true, filterOptions: [{ label: "User", value: true }, { label: "Not a user", value: false }] },
-  { name: "isActive", label: "Status", field: "isActive", align: "left", sortable: true, filterOptions: [{ label: "Active", value: true }, { label: "Inactive", value: false }] },
+  
   { name: "sourceEntityType", label: "Source", field: (r) => sourceLabel(r.sourceEntityType), align: "left", default: true, filterable: false },
   ...auditColumns(),
+  { name: "isActive", label: "Status", field: "isActive", align: "center", sortable: true, filterOptions: [{ label: "Active", value: true }, { label: "Inactive", value: false }] },
   { name: "actions", label: "Actions", field: "actions", align: "left" }
 ]);
 
@@ -281,6 +295,23 @@ const bulkDelete = async (sel) => {
     selected.value = [];
     load();
   } catch (err) {
+    notify.error(getApiErrorMessage(err));
+  }
+};
+
+const updateStatus = async (row, newStatus) => {
+  const id = row.id;
+  if (!id) return;
+
+  const originalStatus = row.isActive;
+  row.isActive = newStatus;
+
+  try {
+    await personApi.update(id, { ...row, isActive: newStatus });
+    notify.success("Person status updated successfully.");
+    await load();
+  } catch (err) {
+    row.isActive = originalStatus;
     notify.error(getApiErrorMessage(err));
   }
 };

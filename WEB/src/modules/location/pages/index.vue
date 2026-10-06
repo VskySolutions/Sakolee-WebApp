@@ -8,36 +8,46 @@
       :search="search"
       show-search
       search-placeholder="Search locations"
-      show-filters
-      :filter-count="filterChips.length"
       show-add
       add-label="Create Location"
       show-back
       @update:search="search = $event"
-      @filters="filterOpen = true"
       @add="openCreate"
       @back="$router.back()"
     />
 
+    <!--Hiding the filter attribute and function-->
+    <!-- show-filters
+      :filter-count="filterChips.length" 
+      @filters="filterOpen = true"-->
+
+    <!-- Hidden/Commented Filter Drawer Component -->
+
     <!-- Filter Drawer Component -->
-    <app-filter-drawer v-model="filterOpen" :chips="filterChips" @remove="removeFilter" @clear="clearFilters">
+    <!-- <app-filter-drawer v-model="filterOpen" :chips="filterChips" @remove="removeFilter" @clear="clearFilters">
       <app-column-filters v-model="filters" :columns="filterableColumns" />
       <q-toggle v-if="canManageDeleted" v-model="showDeleted" label="Show deleted?" dense class="q-mt-md" />
-    </app-filter-drawer>
+    </app-filter-drawer> -->
 
     <!-- Core Data Table Grid Component -->
     <app-data-table
       page-key="locations"
       :row-key="(row) => row.locationId || row.LocationId || row.id || row.Id"
       title="Locations"
-      :rows="filteredRows"
+      :rows="rows"
       :columns="columns"
       :loading="loading"
-      :total-records="filteredRows.length"
+      :total-records="rows.length"
       :pagination="pagination"
       @request="onRequest"
       @refresh="load"
     >
+
+    <!-- Hiding the filter attribute and function -->
+     <!-- :rows="filteredRows"
+     :total-records="filteredRows.length" -->
+
+
       <!-- Name Cell with Deleted Indicator -->
       <template #body-cell-name="cell">
         <q-td :props="cell" :class="{ 'text-strike text-grey': cell.row.deleted || cell.row.Deleted }">
@@ -224,18 +234,19 @@ watch(showDeleted, () => {
   load();
 });
 
-const filterOpen = ref(false);
+// Commented filters are hidden in Master Module
+// const filterOpen = ref(false);
 
-const {
-  filters,
-  filterableColumns,
-  filteredRows,
-  filterChips,
-  removeFilter,
-  clearFilters
-} = useColumnFilters(columns, rows, {
-  server: false
-});
+// const {
+//   filters,
+//   filterableColumns,
+//   filteredRows,
+//   filterChips,
+//   removeFilter,
+//   clearFilters
+// } = useColumnFilters(columns, rows, {
+//   server: false
+// });
 
 const reload = debounce(() => {
   pagination.value.page = 1;

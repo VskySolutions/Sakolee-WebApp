@@ -101,7 +101,8 @@ export const classApi = {
   update: (id, payload) => api.put(`/api/admin/classes/${id}`, payload).then(unwrap),
   remove: (id) => api.delete(`/api/admin/classes/${id}`).then(envelope),
   // Primary Instructor options: the active tenant's active Staff users, as [{ id, name }].
-  instructors: () => api.get("/api/admin/classes/instructors").then(envelope)
+  instructors: () => api.get("/api/admin/classes/instructors").then(envelope),
+  enrollments: (id, params) => api.get(`/api/admin/classes/${id}/enrollments`, { params }).then(envelope),
 };
 
 export const classCategoryApi = {
@@ -263,6 +264,8 @@ export const roleApi = {
   create: (payload) => api.post("/api/admin/roles", payload).then(unwrap),
   update: (id, payload) => api.put(`/api/admin/roles/${id}`, payload).then(unwrap),
   remove: (id) => api.delete(`/api/admin/roles/${id}`).then(envelope),
+  // Drops the caller's tenant's own permission set for a platform role, back to the platform default.
+  resetTenantOverride: (id) => api.delete(`/api/admin/roles/${id}/tenant-override`).then(unwrap),
   // Full permission catalogue, for the role permission picker.
   permissions: () => api.get("/api/admin/permissions").then(unwrap),
   // Roles assignable within a tenant (system roles + the tenant's custom roles) — drives user role pickers.

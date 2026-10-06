@@ -71,4 +71,101 @@ internal sealed class StudentRepository : IStudentRepository
         => await _dbContext.Students.AddAsync(student, cancellationToken);
 
     public void Update(Student student) => _dbContext.Students.Update(student);
+
+    public async Task<IReadOnlyDictionary<Guid, IReadOnlyList<Guid>>> GetClassIdsAsync(IEnumerable<Student> students, CancellationToken cancellationToken = default)
+    {
+        var list = students.ToList();
+        var ids = list.Select(s => s.Id).Distinct().ToList();
+        var rows = ids.Count == 0
+            ? new List<StudentClass>()
+            : await _dbContext.StudentClasses
+                .Where(sc => ids.Contains(sc.StudentId))
+                .OrderBy(sc => sc.CreatedOnUtc)
+                .ToListAsync(cancellationToken);
+        var byStudent = rows.GroupBy(sc => sc.StudentId).ToDictionary(g => g.Key, g => g.Select(sc => sc.ClassId).Distinct().ToList());
+
+        var result = new Dictionary<Guid, IReadOnlyList<Guid>>();
+        foreach (var student in list)
+        {
+            // Students created before StudentClasses existed carry their one class on Student.ClassId only.
+            result[student.Id] = byStudent.TryGetValue(student.Id, out var classIds)
+                ? classIds
+                : student.ClassId is { } classId ? new[] { classId } : Array.Empty<Guid>();
+        }
+        return result;
+    }
+
+    public async Task SetClassesAsync(Student student, IReadOnlyList<Guid> classIds, CancellationToken cancellationToken = default)
+    {
+        var wanted = classIds.Distinct().ToList();
+        var existing = await _dbContext.StudentClasses
+            .Where(sc => sc.StudentId == student.Id)
+            .ToListAsync(cancellationToken);
+
+        foreach (var row in existing.Where(sc => !wanted.Contains(sc.ClassId)))
+        {
+            _dbContext.StudentClasses.Remove(row); // soft delete via interceptor
+        }
+        foreach (var classId in wanted.Where(id => existing.All(sc => sc.ClassId != id)))
+        {
+            await _dbContext.StudentClasses.AddAsync(
+                new StudentClass { Id = Guid.NewGuid(), StudentId = student.Id, ClassId = classId }, cancellationToken);
+        }
+
+        student.ClassId = wanted.Count > 0 ? wanted[0] : null;
+    }
+
+    public async Task<IReadOnlyList<Student>> ListByClassIdAsync(Guid classId, Guid? tenantId, CancellationToken cancellationToken = default)
+    {
+        var mappedStudentIds = await _dbContext.StudentClasses
+            .Where(sc => !sc.Deleted && sc.ClassId == classId)
+            .Select(sc => sc.StudentId)
+            .Distinct()
+            .ToListAsync(cancellationToken);
+
+        var legacyStudents = await _dbContext.Students
+            .Where(s => !s.Deleted && s.ClassId == classId)
+            .ToListAsync(cancellationToken);
+
+        var mappedIds = mappedStudentIds.ToHashSet();
+
+        var students = await _dbContext.Students
+            .Where(s => !s.Deleted && mappedIds.Contains(s.Id))
+            .ToListAsync(cancellationToken);
+
+        foreach (var student in legacyStudents)
+        {
+            if (mappedIds.Add(student.Id))
+            {
+                students.Add(student);
+            }
+        }
+
+        if (!tenantId.HasValue)
+        {
+            return students
+                .OrderByDescending(s => s.UpdatedOnUtc ?? s.CreatedOnUtc)
+                .ToList();
+        }
+
+        var personIds = await _dbContext.TenantPersonMappings
+            .Where(m => !m.Deleted && m.TenantId == tenantId.Value)
+            .Select(m => m.PersonId)
+            .ToListAsync(cancellationToken);
+
+        var tenantPersonIds = personIds.ToHashSet();
+
+        return students
+            .Where(s => s.PersonId.HasValue && tenantPersonIds.Contains(s.PersonId.Value))
+            .OrderByDescending(s => s.UpdatedOnUtc ?? s.CreatedOnUtc)
+            .ToList();
+    }
+
+    public async Task<IReadOnlyDictionary<Guid, DateTime>> GetEnrollmentDatesAsync(Guid classId, CancellationToken cancellationToken = default)
+    {
+        return await _dbContext.StudentClasses.Where(sc => !sc.Deleted && sc.ClassId == classId).ToDictionaryAsync(
+                sc => sc.StudentId,
+                sc => sc.CreatedOnUtc,
+                cancellationToken);
+    }
 }

@@ -43,6 +43,8 @@ import accountTypeRoutes from "modules/account-type/routes";
 import classRoomRoutes from "modules/class-room/routes";
 import membershipTypeRoutes from "modules/membership-type/routes";
 import studentGradeLevelRoutes from "modules/student-grade-level/routes";
+import billingMethodRoutes from "modules/billing-method/routes";
+import billingCycleRoutes from "modules/billing-cycle/routes";
 
 routes.push(...accountRoutes);
 routes.push(...authRoutes);
@@ -69,10 +71,17 @@ routes.push(...tShirtSizeRoutes);
 routes.push(...hearAboutUsRoutes);
 routes.push(...ePaymentScheduleRoutes);
 routes.push(...accountTypeRoutes);
+
+routes.push(...familyrelationRoutes);
+routes.push(...billingCycleRoutes);
+routes.push(...billingMethodRoutes);
 routes.push(...tShirtSizeRoutes);
 routes.push(...classRoomRoutes);
 routes.push(...membershipTypeRoutes);
 routes.push(...studentGradeLevelRoutes);
+routes.push(...billingMethodRoutes);
+routes.push(...billingCycleRoutes);
+
 
 // Route meta `permissions` requires any one of the listed permission keys; the deepest matched
 // record's list wins.

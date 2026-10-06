@@ -49,11 +49,24 @@
         <q-btn flat dense no-caps color="negative" label="Deactivate" @click="bulkSetStatus(sel, false)" />
       </template>
 
-      <template #body-cell-status="cell">
+      <!-- <template #body-cell-status="cell">
         <q-td :props="cell">
           <q-badge :color="statusColor(cell.value)">{{ cell.value }}</q-badge>
         </q-td>
-      </template>
+      </template> -->
+      <template #body-cell-status="cell">
+  <q-td :props="cell">
+    <div class="flex flex-center">
+      <q-toggle
+        :model-value="cell.row.status === 'Active'"
+        @update:model-value="(val) => updateStatus(cell.row, val)"
+        dense
+        color="positive"
+        :disable="cell.row.status === 'Archived'"
+      />
+    </div>
+  </q-td>
+</template>
 
       <template #body-cell-actions="cell">
         <q-td :props="cell">
@@ -230,9 +243,10 @@ const { refreshTenants } = useTenantScope();
 const columns = [
   { name: "name", label: "Name", field: "name", align: "left", sortable: true, default: true },
   { name: "identifier", label: "Identifier", field: "identifier", align: "left", sortable: true, default: true },
-  { name: "status", label: "Status", field: "status", align: "left", sortable: true, default: true },
+  
   { name: "timeZoneId", label: "Time Zone", field: "timeZoneId", align: "left", sortable: true },
   ...auditColumns(),
+  { name: "status", label: "Status", field: "status", align: "center", sortable: true, default: true },
   { name: "actions", label: "Actions", field: "actions", align: "left" }
 ];
 
@@ -697,5 +711,22 @@ const viewTenantId = ref(null);
 const openView = (row) => {
   viewTenantId.value = row.tenantId;
   viewOpen.value = true;
+};
+const updateStatus = async (row, newStatusVal) => {
+  const id = row.tenantId;
+  if (!id) return;
+
+  const isActive = newStatusVal;
+  const originalStatus = row.status;
+  row.status = isActive ? "Active" : "Inactive";
+
+  try {
+    await tenantApi.setStatus(id, isActive);
+    notify.success("Tenant status updated successfully.");
+    await load();
+  } catch (err) {
+    row.status = originalStatus;
+    notify.error(getApiErrorMessage(err));
+  }
 };
 </script>

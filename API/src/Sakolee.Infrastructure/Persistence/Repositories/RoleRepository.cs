@@ -66,4 +66,17 @@ internal sealed class RoleRepository : IRoleRepository
         => _dbContext.TenantRoles.AddAsync(tenantRole, cancellationToken).AsTask();
 
     public void RemoveTenantRole(TenantRole tenantRole) => _dbContext.TenantRoles.Remove(tenantRole);
+
+    public Task<TenantRoleOverride?> GetTenantOverrideAsync(Guid tenantId, Guid roleId, CancellationToken cancellationToken = default)
+        => _dbContext.TenantRoleOverrides.FirstOrDefaultAsync(o => o.TenantId == tenantId && o.RoleId == roleId, cancellationToken);
+
+    public async Task<IReadOnlyDictionary<Guid, TenantRoleOverride>> ListTenantOverridesAsync(Guid tenantId, CancellationToken cancellationToken = default)
+        => await _dbContext.TenantRoleOverrides
+            .Where(o => o.TenantId == tenantId)
+            .ToDictionaryAsync(o => o.RoleId, cancellationToken);
+
+    public Task AddTenantOverrideAsync(TenantRoleOverride tenantOverride, CancellationToken cancellationToken = default)
+        => _dbContext.TenantRoleOverrides.AddAsync(tenantOverride, cancellationToken).AsTask();
+
+    public void RemoveTenantOverride(TenantRoleOverride tenantOverride) => _dbContext.TenantRoleOverrides.Remove(tenantOverride);
 }

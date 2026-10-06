@@ -43,6 +43,16 @@ public class Role : AuditableEntity
     /// <summary>Groups composed into this role.</summary>
     public ICollection<RolePermissionGroup> GroupLinks { get; set; } = new List<RolePermissionGroup>();
 
+    /// <summary>Per-tenant permission sets for this role, when it is a platform role a tenant has customised.</summary>
+    public ICollection<TenantRoleOverride> TenantOverrides { get; set; } = new List<TenantRoleOverride>();
+
+    /// <summary>
+    /// The direct permission keys that apply inside <paramref name="tenantId"/>: that tenant's override
+    /// when one is loaded in <see cref="TenantOverrides"/>, otherwise <see cref="Permissions"/>.
+    /// </summary>
+    public IReadOnlyList<string> PermissionsFor(Guid tenantId)
+        => TenantOverrides.FirstOrDefault(o => o.TenantId == tenantId && !o.Deleted)?.Permissions ?? Permissions;
+
     /// <summary>Parsed view of <see cref="EffectivePermissionsJson"/> (the group-derived permission keys).</summary>
     [System.ComponentModel.DataAnnotations.Schema.NotMapped]
     public IReadOnlyList<string> EffectivePermissions

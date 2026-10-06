@@ -17,7 +17,10 @@ public sealed class CreateStudentRequest
     public string? FamilyName { get; set; }
     public string? StudentNumber { get; set; }
     public DateTime? AdmissionDate { get; set; }
+    /// <summary>Legacy single class; folded into <see cref="ClassIds"/> when both are sent.</summary>
     public Guid? ClassId { get; set; }
+    /// <summary>Every class the student is enrolled in (a student may be in several). The first is mirrored onto Student.ClassId.</summary>
+    public List<Guid>? ClassIds { get; set; }
     public decimal? FeeAmount { get; set; }
     public DateTime? FeeExpiryDate { get; set; }
     public string? FeeNote { get; set; }
@@ -91,7 +94,10 @@ public sealed class UpdateStudentRequest
     public string? FamilyName { get; set; }
     public string? StudentNumber { get; set; }
     public DateTime? AdmissionDate { get; set; }
+    /// <summary>Legacy single class, used only when <see cref="ClassIds"/> is not sent.</summary>
     public Guid? ClassId { get; set; }
+    /// <summary>Every class the student is enrolled in; replaces the current set when sent. Null leaves enrollments to <see cref="ClassId"/>.</summary>
+    public List<Guid>? ClassIds { get; set; }
     public bool Active { get; set; } = true;
     public decimal? FeeAmount { get; set; }
     public DateTime? FeeExpiryDate { get; set; }
@@ -180,4 +186,9 @@ public sealed record StudentSummary(
     string? CreatedBy,
     DateTime CreatedOnUtc,
     string? UpdatedBy,
-    DateTime? UpdatedOnUtc);
+    DateTime? UpdatedOnUtc,
+    IReadOnlyList<Guid> ClassIds,
+    IReadOnlyList<StudentClassItem>? Classes = null);
+
+/// <summary>One class a student is enrolled in, resolved for display (filled on the single-student read only).</summary>
+public sealed record StudentClassItem(Guid Id, string? Name, string? Schedule, bool Active);

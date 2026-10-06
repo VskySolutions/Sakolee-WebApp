@@ -39,6 +39,10 @@
       <template #body-cell-isSystem="cell">
         <q-td :props="cell">
           <q-badge :color="cell.value ? 'blue-grey' : 'primary'">{{ cell.value ? "System" : "Custom" }}</q-badge>
+          <q-badge v-if="cell.row.isCustomized" color="orange" class="q-ml-xs">
+            Customised
+            <q-tooltip>Your tenant uses its own permissions for this platform role.</q-tooltip>
+          </q-badge>
         </q-td>
       </template>
 
@@ -53,13 +57,14 @@
             <q-tooltip>View Details</q-tooltip>
           </q-btn>
 
-          <!-- Edit Button (Only if canManage is true) -->
+          <!-- Edit Button: anyone with roles.write — the role itself (canManage), or, for a platform role a
+               tenant user cannot own, that tenant's own permission set for it -->
           <q-btn
-            v-if="cell.row.canManage"
+            v-if="canWriteRoles"
             flat round dense color="primary" icon="o_edit"
             @click="openEdit(cell.row)"
           >
-            <q-tooltip>Edit Role</q-tooltip>
+            <q-tooltip>{{ cell.row.canManage ? "Edit Role" : "Edit permissions for your tenant" }}</q-tooltip>
           </q-btn>
 
           <!-- Delete Button -->
@@ -93,18 +98,31 @@
       </div>
 
       <q-form v-else ref="formRef" greedy>
+        <q-banner v-if="isCustomizing" dense rounded class="bg-blue-1 text-grey-9 q-mb-md">
+          <template #avatar><q-icon name="o_info" color="primary" /></template>
+          This is a platform role. Permission changes apply to your tenant only; other tenants keep the
+          platform default.
+          <span v-if="isCustomized">Your tenant already uses its own permissions for it.</span>
+        </q-banner>
         <app-text-field
-          v-model="form.name" label="Name" required class="q-mb-md"
+          v-model="form.name" label="Name" required class="q-mb-md" :readonly="isCustomizing"
           :rules="[(v) => !!v || 'Name is required']"
         />
-        <app-text-field v-model="form.displayName" label="Display Name" class="q-mb-md" />
-        <app-rich-text-field v-model="form.description" label="Description" class="q-mb-md" />
+        <app-text-field v-model="form.displayName" label="Display Name" class="q-mb-md" :readonly="isCustomizing" />
+        <app-rich-text-field v-model="form.description" label="Description" class="q-mb-md" :readonly="isCustomizing" />
         <app-select
-          v-model="form.permissions" :options="permissionOptions" label="Permissions" multiple
+          v-model="form.permissions" :options="formPermissionOptions" label="Permissions" multiple
           :loading="loadingPermissions"
           :info="isSuperAdmin ? '' : 'The list stops at what your own tenant can hand out.'"
         />
       </q-form>
+
+      <template v-if="isCustomizing && isCustomized" #footer-actions>
+        <q-btn
+          flat no-caps color="negative" icon="o_restart_alt" label="Reset to platform default"
+          :disable="saving" @click="resetToDefault"
+        />
+      </template>
     </app-form-dialog>
 
     <!-- Role View Dialog (Inside q-page root) -->
@@ -121,6 +139,7 @@ import { useRouter } from "vue-router";
 import { debounce } from "quasar";
 import { roleApi, getApiErrorMessage, getApiErrorCode, ApiErrorCodes, EntityType } from "services/api";
 import { useAuthStore } from "stores/auth";
+import { usePermissions, Permissions } from "composables/usePermissions";
 import { useNotify } from "composables/useNotify";
 import { useConfirm } from "composables/useConfirm";
 import { useListTable } from "composables/useListTable";
@@ -148,6 +167,8 @@ const authStore = useAuthStore();
 const router = useRouter();
 
 const isSuperAdmin = computed(() => authStore.roles.includes("SuperAdmin"));
+const { has } = usePermissions();
+const canWriteRoles = computed(() => has(Permissions.RolesWrite));
 
 // View Dialog State
 const viewOpen = ref(false);
@@ -228,11 +249,26 @@ const loadingForm = ref(false);
 const formRef = ref(null);
 const editingId = ref(null);
 const isEditing = computed(() => !!editingId.value);
+// Editing a platform role as a tenant user: only the permissions change, and only for this tenant.
+const isCustomizing = ref(false);
+const isCustomized = ref(false);
+// The role's current keys stay pickable even when they sit outside the tenant's ceiling list.
+const editingPermissions = ref([]);
+const formPermissionOptions = computed(() => {
+  const known = new Set(permissionOptions.value.map((o) => o.value));
+  const extra = editingPermissions.value
+    .filter((p) => !known.has(p))
+    .map((p) => ({ label: prettyPermission(p), value: p }));
+  return [...permissionOptions.value, ...extra];
+});
 
 const form = reactive({ name: "", displayName: "", description: "", permissions: [] });
 
 const resetForm = () => {
   editingId.value = null;
+  isCustomizing.value = false;
+  isCustomized.value = false;
+  editingPermissions.value = [];
   form.name = "";
   form.displayName = "";
   form.description = "";
@@ -248,6 +284,8 @@ const openCreate = async () => {
 
 const openEdit = async (row) => {
   editingId.value = row.id;
+  // Not the caller's to manage outright → a platform role they edit for their own tenant only.
+  isCustomizing.value = !row.canManage;
   await loadPermissions();
   formOpen.value = true;
   loadingForm.value = true;
@@ -257,6 +295,8 @@ const openEdit = async (row) => {
     form.displayName = detail.displayName || "";
     form.description = detail.description || "";
     form.permissions = detail.permissions || [];
+    editingPermissions.value = [...form.permissions];
+    isCustomized.value = !!detail.isCustomized;
   } catch (err) {
     notify.error(getApiErrorMessage(err));
   } finally {
@@ -269,12 +309,15 @@ const submitForm = async ({ clearDraft } = {}) => {
   if (!(await formRef.value?.validate())) return;
   saving.value = true;
   try {
-    const payload = {
-      name: form.name,
-      displayName: form.displayName || undefined,
-      description: form.description,
-      permissions: form.permissions
-    };
+    // A platform role customised for this tenant only takes permissions; the rest stays the platform's.
+    const payload = isCustomizing.value
+      ? { permissions: form.permissions }
+      : {
+        name: form.name,
+        displayName: form.displayName || undefined,
+        description: form.description,
+        permissions: form.permissions
+      };
 
     if (isEditing.value) {
       await roleApi.update(editingId.value, payload);
@@ -297,6 +340,29 @@ const submitForm = async ({ clearDraft } = {}) => {
     } else {
       notify.error(getApiErrorMessage(err));
     }
+  } finally {
+    saving.value = false;
+  }
+};
+
+// Drops this tenant's own permissions for a platform role, back to the platform default.
+const resetToDefault = async () => {
+  const ok = await confirm({
+    title: "Reset role",
+    message: `Reset "${form.name}" to the platform default permissions for your tenant?`,
+    confirmLabel: "Reset",
+    type: "danger"
+  });
+  if (!ok) return;
+  saving.value = true;
+  try {
+    await roleApi.resetTenantOverride(editingId.value);
+    notify.success("Role reset to the platform default.");
+    formOpen.value = false;
+    resetForm();
+    load();
+  } catch (err) {
+    notify.error(getApiErrorMessage(err));
   } finally {
     saving.value = false;
   }

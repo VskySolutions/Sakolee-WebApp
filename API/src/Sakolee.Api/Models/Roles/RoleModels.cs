@@ -32,7 +32,9 @@ public sealed record RoleResponse(
     string? TenantName,
     bool CanManage,
     IReadOnlyList<string> Permissions,
-    RecordAudit Audit);
+    RecordAudit Audit,
+    bool CanCustomize = false,
+    bool IsCustomized = false);
 
 /// <summary>A role as the list shows it.</summary>
 public sealed record RoleSummary(
@@ -48,7 +50,9 @@ public sealed record RoleSummary(
     string? CreatedBy,
     DateTime CreatedOnUtc,
     string? UpdatedBy,
-    DateTime UpdatedOnUtc);
+    DateTime UpdatedOnUtc,
+    bool CanCustomize = false,
+    bool IsCustomized = false);
 
 // ---- Role membership (who holds a role in a tenant) ----
 

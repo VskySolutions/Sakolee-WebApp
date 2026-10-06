@@ -48,11 +48,29 @@
         />
       </template>
 
-      <template #body-cell-isActive="cell">
+      <!-- <template #body-cell-isActive="cell">
         <q-td :props="cell">
           <q-badge :color="cell.value ? 'positive' : 'grey'">{{ cell.value ? "Active" : "Inactive" }}</q-badge>
         </q-td>
-      </template>
+      </template> -->
+
+      <template #body-cell-isActive="cell">
+  <q-td :props="cell">
+    <div class="flex flex-center">
+      <q-toggle
+        :model-value="cell.row.isActive ?? cell.row.Active ?? cell.row.is_active ?? true"
+        @update:model-value="(val) => updateStatus(cell.row, val)"
+        dense
+        color="positive"
+        :disable="!has(Permissions.UsersWrite) || (cell.row.isActive && cell.row.isProtected)"
+      >
+        <q-tooltip v-if="cell.row.isActive && cell.row.isProtected">
+          The tenant's default Administrator cannot be deactivated
+        </q-tooltip>
+      </q-toggle>
+    </div>
+  </q-td>
+</template>
 
       <!-- Department, badged when this user heads it. -->
       <template #body-cell-department="cell">
@@ -67,12 +85,12 @@
         </q-td>
       </template>
 
-      <template #body-cell-actions="cell">
+      <!-- <template #body-cell-actions="cell">
         <q-td :props="cell">
           <q-btn flat round dense color="primary" icon="o_visibility" :to="{ name: 'user_detail', params: { id: cell.row.userId } }">
             <q-tooltip>View / Manage</q-tooltip>
           </q-btn>
-          <!-- One button per action, all of them on the row. -->
+          <-- One button per action, all of them on the row. ->
           <q-btn
             v-if="has(Permissions.UsersWrite)" type="a"
             flat round dense
@@ -100,7 +118,44 @@
             <q-tooltip>Send Credentials</q-tooltip>
           </q-btn>
         </q-td>
-      </template>
+      </template> -->
+
+      <template #body-cell-actions="cell">
+  <q-td :props="cell">
+    <!-- Yahan :to ki jagah @click="openView(cell.row.userId)" lagayein -->
+    <q-btn flat round dense color="primary" icon="o_visibility" @click="openView(cell.row.userId)">
+      <q-tooltip>View / Manage</q-tooltip>
+    </q-btn>
+
+    <!-- Baaki buttons waise hi rahenge -->
+    <q-btn
+      v-if="has(Permissions.UsersWrite)" type="a"
+      flat round dense
+      :color="cell.row.isActive ? 'grey-8' : 'positive'"
+      :icon="cell.row.isActive ? 'o_block' : 'o_check_circle'"
+      :disable="cell.row.isActive && cell.row.isProtected"
+      @click="setStatus(cell.row, !cell.row.isActive)"
+    >
+      <q-tooltip>
+        {{ cell.row.isActive && cell.row.isProtected
+          ? "The tenant's default Administrator cannot be deactivated"
+          : (cell.row.isActive ? "Deactivate" : "Activate") }}
+      </q-tooltip>
+    </q-btn>
+    <q-btn
+      v-if="has(Permissions.UsersResetPassword)" type="a"
+      flat round dense color="primary" icon="o_lock_reset" @click="resetPassword(cell.row)"
+    >
+      <q-tooltip>Reset Password</q-tooltip>
+    </q-btn>
+    <q-btn
+      v-if="has(Permissions.UsersResetPassword)" type="a"
+      flat round dense color="primary" icon="o_forward_to_inbox" @click="sendCredentials(cell.row)"
+    >
+      <q-tooltip>Send Credentials</q-tooltip>
+    </q-btn>
+  </q-td>
+</template>
     </app-data-table>
 
     <deleted-records-panel
@@ -138,9 +193,14 @@
         <q-card-actions align="right">
           <q-btn v-close-popup flat no-caps color="primary" label="Done" />
         </q-card-actions>
+
+        
       </q-card>
     </q-dialog>
+    
   </q-page>
+  <!-- Staff View Dialog Component -->
+    <staff-view-dialog v-model="viewOpen" :user-id="selectedUserId" />
 </template>
 
 <script setup>
@@ -165,6 +225,8 @@ import AppListHeader from "components/common/AppListHeader.vue";
 import UserCreateDrawer from "components/user/UserCreateDrawer.vue";
 import TempPasswordDialog from "components/temp_password_dialog.vue";
 
+//mport StaffViewDialog from "components/user/pages/detail.vue"; 
+import StaffViewDialog from "./detail.vue";
 const route = useRoute();
 const router = useRouter();
 
@@ -186,8 +248,9 @@ const columns = computed(() => [
   { name: "groups", label: "Groups", field: (r) => (r.groups || []).map((g) => g.name).join(", "), align: "left", sortable: false, default: true },
   // Department placement in the active tenant.
   { name: "department", label: "Department", field: "department", align: "left", default: true, filterable: false },
-  { name: "isActive", label: "Status", field: "isActive", align: "left", sortable: true, default: true, filterOptions: [{ label: "Active", value: true }, { label: "Inactive", value: false }] },
+  
   ...auditColumns(),
+  { name: "isActive", label: "Status", field: "isActive", align: "center", sortable: true, default: true, filterOptions: [{ label: "Active", value: true }, { label: "Inactive", value: false }] },
   { name: "actions", label: "Actions", field: "actions", align: "left" }
 ]);
 
@@ -334,6 +397,8 @@ const sendCredentials = async (row) => {
   }
 };
 
+
+
 // ---- Bulk Send Credentials ----
 const bulkSending = ref(false);
 const bulkFailedOpen = ref(false);
@@ -389,6 +454,33 @@ const bulkSendCredentials = async (sel) => {
     bulkFailedOpen.value = true;
   }
   selected.value = [];
+};
+
+// ---- View Dialog State ----
+const viewOpen = ref(false);
+const selectedUserId = ref(null);
+
+const openView = (userId) => {
+  selectedUserId.value = userId;
+  viewOpen.value = true;
+};
+
+// ---- Update Status toggle in the table ----
+const updateStatus = async (row, newStatus) => {
+  const id = row.userId;
+  if (!id) return;
+
+  const originalStatus = row.isActive;
+  row.isActive = newStatus;
+
+  try {
+    await userApi.setStatus(id, newStatus);
+    notify.success("Status updated successfully.");
+    await load();
+  } catch (err) {
+    row.isActive = originalStatus;
+    notify.error(getApiErrorMessage(err));
+  }
 };
 
 </script>

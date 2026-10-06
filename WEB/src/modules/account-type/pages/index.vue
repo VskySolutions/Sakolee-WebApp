@@ -8,16 +8,19 @@
       :search="search"
       show-search
       search-placeholder="Search Account Type name"
-      show-filters
-      :filter-count="filterChips.length"
+      
       :show-add="canWrite"
       add-label="Create Account Type"
       show-back
       @update:search="search = $event"
-      @filters="filterOpen = true"
+     
       @add="openCreate"
       @back="$router.back()"
     />
+    <!--Hiding the filter attribute-->
+    <!-- show-filters
+      :filter-count="filterChips.length"
+      @filters="filterOpen = true" -->
     <!-- Filter drawer -->
     <app-filter-drawer
       v-model="filterOpen"

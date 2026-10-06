@@ -10,18 +10,23 @@
       :search="search"
       show-search
       search-placeholder="Search Class-Sessions"
-      show-filters
-      :filter-count="filterChips.length"
+      
       show-add
       add-label="Create Class-Session"
       show-back
       @update:search="search = $event"
-      @filters="filterOpen = true"
+      
       @add="openCreate"
       @back="$router.back()"
     />
+    <!--Hiding the filter attribute and function-->
+    <!-- show-filters
+      :filter-count="filterChips.length"
+      @filters="filterOpen = true" -->
 
-    <app-filter-drawer
+    <!-- Hidden/Commented Filter Drawer Component -->
+    <!-- Filter Drawer Component -->
+    <!-- <app-filter-drawer
       v-model="filterOpen"
       :chips="filterChips"
       @remove="removeFilter"
@@ -39,20 +44,24 @@
         dense
         class="q-mt-md"
       />
-    </app-filter-drawer>
+    </app-filter-drawer> -->
 
     <app-data-table
       page-key="sessions"
       :row-key="(row) => row.sessionId || row.SessionId || row.id || row.Id"
       title="Sessions"
-      :rows="filteredRows"
+      :rows="rows"
       :columns="columns"
       :loading="loading"
-      :total-records="filteredRows.length"
+      :total-records="rows.length"
       :pagination="pagination"
       @request="onRequest"
       @refresh="load"
     >
+    <!--Hiding the filter attribute-->
+    <!-- :rows="filteredRows"
+    :total-records="filteredRows.length" -->
+
       <!-- Session Name Column without strike-through line -->
       <template #body-cell-sessionName="cell">
         <q-td :props="cell" :class="{ 'text-grey': cell.row.deleted || cell.row.Deleted || cell.row.isDeleted || cell.row.IsDeleted }">
@@ -300,18 +309,19 @@ const {
   onError: (err) => notify.error(getApiErrorMessage(err))
 });
 
-const filterOpen = ref(false);
+// Commented filters 
+// const filterOpen = ref(false);
 
-const {
-  filters,
-  filterableColumns,
-  filteredRows,
-  filterChips,
-  removeFilter,
-  clearFilters
-} = useColumnFilters(columns, rows, {
-  server: false
-});
+// const {
+//   filters,
+//   filterableColumns,
+//   filteredRows,
+//   filterChips,
+//   removeFilter,
+//   clearFilters
+// } = useColumnFilters(columns, rows, {
+//   server: false
+// });
 
 const reload = debounce(() => {
   pagination.value.page = 1;

@@ -4,7 +4,7 @@
     :title="role ? role.name : 'Role Details'"
     :subtitle="roleSubtitle"
     avatar-text="R"
-    size="lg"
+    size="md"
     hide-save
     hide-footer
   >

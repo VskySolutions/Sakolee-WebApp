@@ -11,18 +11,21 @@
       :search="search"
       show-search
       search-placeholder="Search billing cycle name"
-      show-filters
-      :filter-count="filterChips.length"
+     
       :show-add="canWrite"
       add-label="Create Billing Cycle"
       show-back
       @update:search="search = $event"
-      @filters="filterOpen = true"
+     
       @add="openCreate"
       @back="$router.back()"
     />
+    <!--Hiding the filter attribute-->
+    <!-- show-filters
+      :filter-count="filterChips.length"
+      @filters="filterOpen = true" -->
     <!-- Filter drawer -->
-    <app-filter-drawer
+    <!-- <app-filter-drawer
       v-model="filterOpen"
       :chips="filterChips"
       @remove="removeFilter"
@@ -40,7 +43,7 @@
         dense
         class="q-mt-md"
       />
-    </app-filter-drawer>
+    </app-filter-drawer> -->
     <!-- Table displaying all Billing Cycles -->
     <app-data-table
       page-key="billing-cycles"
