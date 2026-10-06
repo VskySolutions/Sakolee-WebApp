@@ -34,11 +34,25 @@
       @request="onRequest"
       @refresh="load"
     >
-      <template #body-cell-active="cell">
+      <!-- <template #body-cell-active="cell">
         <q-td :props="cell">
           <q-badge :color="cell.value ? 'positive' : 'grey'">{{ cell.value ? "Active" : "Inactive" }}</q-badge>
         </q-td>
-      </template>
+      </template> -->
+
+      <template #body-cell-active="cell">
+  <q-td :props="cell">
+    <div class="flex flex-center">
+      <q-toggle
+        :model-value="cell.row.active ?? cell.row.Active ?? cell.row.isActive ?? cell.row.IsActive ?? true"
+        @update:model-value="(val) => updateStatus(cell.row, val)"
+        dense
+        color="positive"
+        :disable="!canWrite"
+      />
+    </div>
+  </q-td>
+</template>
 
       <template #body-cell-actions="cell">
         <q-td :props="cell">
@@ -93,8 +107,9 @@ const columns = [
   { name: "endTime", label: "End Time", field: (row) => row.endTime || "—", align: "left" },
   { name: "tuitionFee", label: "Tuition Fee", field: (row) => row.tuitionFee ?? "—", align: "left" },
   { name: "maxClassSize", label: "Max Size", field: (row) => row.maxClassSize ?? "—", align: "left" },
-  { name: "active", label: "Status", field: "active", align: "left", sortable: true, default: true },
+  
   ...auditColumns(),
+  { name: "active", label: "Status", field: "active", align: "center", sortable: true, default: true },
   { name: "actions", label: "Actions", field: "actions", align: "left" }
 ];
 
@@ -171,5 +186,22 @@ const viewRecordId = ref(null);
 const openView = (row) => {
   viewRecordId.value = row.classId;
   viewOpen.value = true;
+};
+
+const updateStatus = async (row, newStatus) => {
+  const id = row.classId;
+  if (!id) return;
+
+  const originalStatus = row.active;
+  row.active = newStatus;
+
+  try {
+    await classApi.update(id, { ...row, active: newStatus });
+    notify.success("Class active status updated successfully.");
+    await load();
+  } catch (err) {
+    row.active = originalStatus;
+    notify.error(getApiErrorMessage(err));
+  }
 };
 </script>

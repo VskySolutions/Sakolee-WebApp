@@ -48,11 +48,29 @@
         />
       </template>
 
-      <template #body-cell-isActive="cell">
+      <!-- <template #body-cell-isActive="cell">
         <q-td :props="cell">
           <q-badge :color="cell.value ? 'positive' : 'grey'">{{ cell.value ? "Active" : "Inactive" }}</q-badge>
         </q-td>
-      </template>
+      </template> -->
+
+      <template #body-cell-isActive="cell">
+  <q-td :props="cell">
+    <div class="flex flex-center">
+      <q-toggle
+        :model-value="cell.row.isActive ?? cell.row.Active ?? cell.row.is_active ?? true"
+        @update:model-value="(val) => updateStatus(cell.row, val)"
+        dense
+        color="positive"
+        :disable="!has(Permissions.UsersWrite) || (cell.row.isActive && cell.row.isProtected)"
+      >
+        <q-tooltip v-if="cell.row.isActive && cell.row.isProtected">
+          The tenant's default Administrator cannot be deactivated
+        </q-tooltip>
+      </q-toggle>
+    </div>
+  </q-td>
+</template>
 
       <!-- Department, badged when this user heads it. -->
       <template #body-cell-department="cell">
@@ -230,8 +248,9 @@ const columns = computed(() => [
   { name: "groups", label: "Groups", field: (r) => (r.groups || []).map((g) => g.name).join(", "), align: "left", sortable: false, default: true },
   // Department placement in the active tenant.
   { name: "department", label: "Department", field: "department", align: "left", default: true, filterable: false },
-  { name: "isActive", label: "Status", field: "isActive", align: "left", sortable: true, default: true, filterOptions: [{ label: "Active", value: true }, { label: "Inactive", value: false }] },
+  
   ...auditColumns(),
+  { name: "isActive", label: "Status", field: "isActive", align: "center", sortable: true, default: true, filterOptions: [{ label: "Active", value: true }, { label: "Inactive", value: false }] },
   { name: "actions", label: "Actions", field: "actions", align: "left" }
 ]);
 
@@ -444,6 +463,24 @@ const selectedUserId = ref(null);
 const openView = (userId) => {
   selectedUserId.value = userId;
   viewOpen.value = true;
+};
+
+// ---- Update Status toggle in the table ----
+const updateStatus = async (row, newStatus) => {
+  const id = row.userId;
+  if (!id) return;
+
+  const originalStatus = row.isActive;
+  row.isActive = newStatus;
+
+  try {
+    await userApi.setStatus(id, newStatus);
+    notify.success("Status updated successfully.");
+    await load();
+  } catch (err) {
+    row.isActive = originalStatus;
+    notify.error(getApiErrorMessage(err));
+  }
 };
 
 </script>
