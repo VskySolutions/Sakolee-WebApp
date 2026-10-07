@@ -29,7 +29,7 @@
         <app-text-field v-model="form.familyName" label="Family Name" required class="col-12 col-sm-6" :rules="[(v) => !!v || 'Family name is required']" />
         <app-select v-model="form.studioLocationId" label="Studio Location" :options="locationOptions" class="col-12 col-sm-6" />
         <!-- <app-select v-model="form.familyStatusId" label="Family Status" :options="familyStatusOptions" class="col-12 col-sm-6" /> -->
-         <app-select v-model="form.familyStatusId" label="Family Status" :options="familyStatusOptions" class="col-12 col-sm-6" />
+         <app-select v-model="form.familyStatusId" label="Family Status" :options="filteredFamilyStatusOptions" class="col-12 col-sm-6" />
         <app-select v-model="form.source" label="How Did You Hear About Us?" :options="sourceOptions" class="col-12 col-sm-6" />
         <app-text-field v-model="form.referralName" label="Referral Name" class="col-12 col-sm-6" />
 
@@ -226,7 +226,7 @@
 
 <script setup>
 import { ref, reactive, computed, watch, onMounted } from "vue";
-import { familyApi, locationApi, classApi, studentApi, studentGradeLevelApi, getApiErrorMessage } from "services/api";
+import { familyApi, locationApi, classApi, studentApi, studentGradeLevelApi, familyRelationApi,getApiErrorMessage } from "services/api";
 import { useNotify } from "composables/useNotify";
 import { blankFamilyForm, blankSecondaryContact, familyFormFromDetail } from "composables/familyForm";
 import { RELATION_OPTIONS, GENDER_OPTIONS, blankStudent } from "composables/quickRegistrationForm";
@@ -248,12 +248,28 @@ const props = defineProps({
   familyStatusOptions: { type: Array, default: () => [] }
 });
 
+const filteredFamilyStatusOptions = computed(() => {
+  return (props.familyStatusOptions || []).filter((s) => s.active ?? s.Active ?? true);
+});
+
 // Grade level options state
 const gradeLevels = ref([]);
 const gradeLevelOptions = computed(() => {
-  const options = gradeLevels.value.map((g) => ({ label: g.Name || g.gradeName, value: g.Id || g.gradeLevelId }));
+  const options = (gradeLevels.value || []).filter((g) => g.active ?? g.Active ?? true).map((g) => ({ label: g.Name || g.gradeName, value: g.Id || g.gradeLevelId }));
   return options;
 });
+
+// Family relation options state
+const familyRelations = ref([]);
+const relationOptions = computed(() => {
+  return (familyRelations.value || [])
+    .filter((r) => r.active ?? r.Active ?? true)
+    .map((r) => ({ 
+      label: r.name || r.relationName || r.Name, 
+      value: r.id || r.familyRelationId || r.Id 
+    }));
+});
+
 
 const emit = defineEmits(["update:modelValue", "saved"]);
 
@@ -270,7 +286,7 @@ const locations = ref([]);
 // Same list as the Class form's Location. A family whose saved location has since been deactivated
 // still shows it by name (from the family record) rather than as a raw id.
 const locationOptions = computed(() => {
-  const options = locations.value.map((l) => ({ label: l.name, value: l.id }));
+  const options = (locations.value || []).filter((l) => l.active ?? l.Active ?? true).map((l) => ({ label: l.name, value: l.id }));
   if (form.studioLocationId && form.studioLocationName && !options.some((o) => o.value === form.studioLocationId)) {
     options.unshift({ label: form.studioLocationName, value: form.studioLocationId });
   }
@@ -286,21 +302,24 @@ const studentClassesLabel = (s) => {
   if (!ids.length) return "Not enrolled in a class";
   return ids.map((id) => className(id) || "Enrolled (inactive class)").join(", ");
 };
-const relationOptions = RELATION_OPTIONS;
-const { options: sourceOptions } = useHearAboutUsOptions(() => form.source);
+//const relationOptions = RELATION_OPTIONS;
+//const { options: sourceOptions } = useHearAboutUsOptions(() => form.source);
+const { options: sourceOptions } = useHearAboutUsOptions();
 const genderOptions = GENDER_OPTIONS;
 const { options: tshirtSizeOptions } = useTShirtSizeOptions();
 
 onMounted(async () => {
   try {
-    const [locRes, classRes, gradeRes] = await Promise.all([
+    const [locRes, classRes, gradeRes,familyRelationRes] = await Promise.all([
       locationApi.list({ limit: 100, active: true }),
       classApi.list({ limit: 100, active: true }),
-      studentGradeLevelApi.list({ limit: 100, active: true })
+      studentGradeLevelApi.list({ limit: 100, active: true }),
+      familyRelationApi.list({ limit: 100, active: true })
     ]);
     locations.value = locRes?.data || [];
     classes.value = classRes?.data || [];
     gradeLevels.value = gradeRes?.data || [];
+    familyRelations.value = familyRelationRes?.data || [];
   } catch (err) {
     notify.error(getApiErrorMessage(err));
   }

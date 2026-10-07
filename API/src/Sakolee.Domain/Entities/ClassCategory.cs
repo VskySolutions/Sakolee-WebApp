@@ -24,6 +24,12 @@ public class ClassCategory : AuditableEntity
     /// </summary>
     public bool Active { get; set; } = true;
 
+    /// <summary>Stable key of a seeded default row (null for rows a tenant adds itself).</summary>
+    public string? Code { get; set; }
+
+    /// <summary>Template rows (in the template tenant) with this set are copied into every new tenant.</summary>
+    public bool IsSystem { get; set; }
+
     /// <summary>Which dropdown this option belongs to on the Class form: "Category 1", "Category 2", or "Category 3".</summary>
     public string? CategoryType { get; set; }
 

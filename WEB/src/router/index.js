@@ -70,12 +70,17 @@ routes.push(...familyrelationRoutes);
 routes.push(...hearAboutUsRoutes);
 routes.push(...ePaymentScheduleRoutes);
 routes.push(...accountTypeRoutes);
+
+
 routes.push(...billingCycleRoutes);
-routes.push(...tShirtSizeRoutes);
+
 routes.push(...classRoomRoutes);
 routes.push(...membershipTypeRoutes);
 routes.push(...studentGradeLevelRoutes);
-routes.push(...billingMethodRoutes);
+
+
+
+
 // Route meta `permissions` requires any one of the listed permission keys; the deepest matched
 // record's list wins.
 const requiredPermissionsFor = (route) => route.matched.reduce((permissions, record) => {

@@ -193,10 +193,10 @@ onMounted(async () => {
     // Only active statuses are offered for selection (inactive ones stay on the Family Status page).
     const [statusRes, gradeRes] = await Promise.all([
       familyStatusApi.list({ limit: 100, active: true }),
-      studentGradeLevelApi.list({ limit: 100 })
+      studentGradeLevelApi.list({ limit: 100,active: true })
     ]);
-    familyStatuses.value = statusRes?.data || [];
-    gradeLevels.value = gradeRes?.data || [];
+    familyStatuses.value = (statusRes?.data || []).filter(s => s.active ?? s.Active ?? true);  //statusRes?.data || [];
+    gradeLevels.value = (gradeRes?.data || []).filter(g => g.active ?? g.Active ?? true);//gradeRes?.data || [];
   } catch (err) {
     notify.error(getApiErrorMessage(err));
   }

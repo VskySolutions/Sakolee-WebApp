@@ -102,6 +102,7 @@ public static class DependencyInjection
         services.AddScoped<ISmtpAccountRepository, SmtpAccountRepository>();
         services.AddScoped<IEmailTemplateRepository, EmailTemplateRepository>();
         services.AddScoped<IOptionSetRepository, OptionSetRepository>();
+        services.AddScoped<ITenantMasterDataProvisioner, TenantMasterDataProvisioner>();
         services.AddScoped<ILocationRepository, LocationRepository>();
         services.AddScoped<ITShirtSizeRepository, TShirtSizeRepository>();
         services.AddScoped<IHearAboutUsRepository, HearAboutUsRepository>();

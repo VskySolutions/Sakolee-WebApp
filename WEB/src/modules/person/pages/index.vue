@@ -59,7 +59,7 @@
           <q-badge :color="cell.value ? 'positive' : 'grey'">{{ cell.value ? "Active" : "Inactive" }}</q-badge>
         </q-td>
       </template> -->
-<template #body-cell-isActive="cell">
+      <template #body-cell-isActive="cell">
         <q-td :props="cell">
           <div class="flex flex-center">
             <q-toggle
