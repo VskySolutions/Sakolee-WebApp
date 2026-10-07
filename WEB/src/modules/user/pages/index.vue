@@ -131,10 +131,7 @@
             :icon="cell.row.isActive ? 'o_block' : 'o_check_circle'"
             :disable="cell.row.isActive && cell.row.isProtected"
             @click="setStatus(cell.row, !cell.row.isActive)">
-            <q-tooltip>
-        {{ cell.row.isActive && cell.row.isProtected
-          ? "The tenant's default Administrator cannot be deactivated"
-          : (cell.row.isActive ? "Deactivate" : "Activate") }}
+            <q-tooltip>{{ cell.row.isActive && cell.row.isProtected ? "The tenant's default Administrator cannot be deactivated" : (cell.row.isActive ? "Deactivate" : "Activate") }}
             </q-tooltip>
           </q-btn>
           <q-btn
@@ -159,11 +156,8 @@
 
     <!-- Create user (promote an existing Person to a login account). -->
     <user-create-drawer v-model="formOpen" :person-id="presetPersonId" :default-role="STAFF_ROLE" @created="load" />
-
     <temp-password-dialog v-model="tempPwOpen" :password="tempPassword" />
-
-    <!-- Bulk Send Credentials: the staff whose email could NOT be sent, with their temporary passwords
-         so they can be shared manually. Successfully emailed passwords are not shown. -->
+    <!-- Bulk Send Credentials: the staff whose email could NOT be sent, with their temporary passwords so they can be shared manually. Successfully emailed passwords are not shown. -->
     <q-dialog v-model="bulkFailedOpen" persistent>
       <q-card style="min-width: 420px;">
         <q-card-section class="row items-center q-gutter-sm">
@@ -171,9 +165,7 @@
           <div class="text-h6">Credentials not emailed</div>
         </q-card-section>
         <q-card-section>
-          <div class="text-body2 text-grey-7 q-mb-sm">
-            These emails could not be sent. The passwords will not be shown again — share them securely.
-          </div>
+          <div class="text-body2 text-grey-7 q-mb-sm">  These emails could not be sent. The passwords will not be shown again — share them securely.</div>
           <div v-for="f in bulkFailed" :key="f.email" class="q-mb-sm">
             <div class="text-caption text-grey-7">{{ f.name }} — {{ f.email }}</div>
             <q-input :model-value="f.password" readonly outlined dense>
@@ -191,13 +183,13 @@
       </q-card>
     </q-dialog>
   </q-page>
-  <!-- Staff View Dialog Component -->
-    <staff-view-dialog v-model="viewOpen" :user-id="selectedUserId" />
-
-    <user-edit-drawer v-model="editFormOpen" :user-id="selectedEditUserId" @updated="load" />
+  <!-- Staff View Dialog Component --> 
+   <staff-view-dialog v-model="viewOpen" :user-id="selectedUserId" />
+  <user-edit-drawer v-model="editFormOpen" :user-id="selectedEditUserId" @updated="load" />
 </template>
 
 <script setup>
+
 import { ref, computed, watch, onMounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { debounce } from "quasar";
@@ -226,6 +218,7 @@ import StaffViewDialog from "./detail.vue";
 const route = useRoute();
 const router = useRouter();
 
+// ---- Permissions ----
 const { showDeleted, canManageDeleted } = useDeletedRecords();
 const notify = useNotify();
 const { confirm } = useConfirm();
@@ -333,6 +326,7 @@ const setStatus = async (row, isActive) => {
   }
 };
 
+// ---- Bulk status / reset ----
 const bulkSetStatus = async (sel, isActive) => {
   if (!sel.length) return;
   // The tenant's default Administrator can't be deactivated (the API rejects it) — skip and warn, same as
@@ -359,6 +353,7 @@ const bulkSetStatus = async (sel, isActive) => {
   }
 };
 
+// Reset Password
 const resetPassword = async (row) => {
   const ok = await confirm({
     title: "Reset password",
@@ -415,6 +410,7 @@ const copyPassword = async (password) => {
   }
 };
 
+//Send credentials to multiple staff members at once. The API sends synchronously, so this avoids hammering the mail server.
 const bulkSendCredentials = async (sel) => {
   if (!sel.length) return;
   const ok = await confirm({

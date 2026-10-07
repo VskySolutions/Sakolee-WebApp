@@ -1,4 +1,5 @@
 <template>
+  <!-- Form Dialog for Creating or Editing Family Status -->
   <app-form-dialog
     v-model="isOpen"
     :title="isEditing ? 'Edit Family Status' : 'Create Family Status'"
@@ -8,6 +9,7 @@
     @submit="submitForm"
     @cancel="resetForm"
   >
+  <!-- Form for Family Status -->
     <q-form ref="formRef" greedy>
       <app-text-field
         v-model="form.familyStatusName"
@@ -26,6 +28,7 @@
         ]"
       />
 
+      <!-- Toggle for Active Status -->
       <q-toggle
         v-model="form.active"
         label="Active"
@@ -59,11 +62,13 @@ const isOpen = ref(props.modelValue);
 
 const isEditing = computed(() => !!props.editingId);
 
+// Reactive form data and error tracking
 const form = reactive({
   familyStatusName: "",
   active: true
 });
 
+// Reactive form error tracking
 const formErrors = reactive({
   familyStatusName: {
     hasError: false,
@@ -71,6 +76,7 @@ const formErrors = reactive({
   }
 });
 
+// Watch for changes in modelValue prop to open/close the dialog and populate form data
 watch(() => props.modelValue, (val) => {
   isOpen.value = val;
   if (val) {
@@ -83,6 +89,7 @@ watch(() => props.modelValue, (val) => {
   }
 });
 
+// Watch for changes in isOpen to emit updates to the parent component
 watch(isOpen, (val) => {
   emit("update:modelValue", val);
 });

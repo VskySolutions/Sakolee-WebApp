@@ -92,6 +92,7 @@ const notify = useNotify();
 const isOpen = ref(props.modelValue);
 const viewLoading = ref(false);
 
+// Reactive object to hold the class room details for viewing
 const viewClassRoom = reactive({
   id: null,
   locationId: null,
@@ -111,6 +112,7 @@ const viewClassRoom = reactive({
 //   return isNaN(date.getTime()) ? String(value) : date.toLocaleString();
 // };
 
+// Formats the date for display, handling invalid dates and .NET MinValue
 const formatDate = (value) => {
   if (!value) return "—";
   const date = new Date(value);
@@ -132,7 +134,7 @@ const resetView = () => {
   viewClassRoom.updatedOnUtc = null;
 };
 
-
+// Watcher to fetch class room details when the dialog is opened
 watch(() => props.modelValue, async (val) => {
   isOpen.value = val;
   if (val && props.viewId) {
@@ -172,7 +174,7 @@ const fetchDetails = async (id) => {
   }
 };
 
-
+// Resolves the location name from the row data or the locationMap prop
 const resolveLocationName = (row) => {
   if (!row) return "—";
   const directName = row.locationName || row.LocationName;
@@ -186,6 +188,7 @@ const resolveLocationName = (row) => {
   return "—";
 };
 
+// Function to close the dialog and reset the view
 const close = () => {
   isOpen.value = false;
   resetView();

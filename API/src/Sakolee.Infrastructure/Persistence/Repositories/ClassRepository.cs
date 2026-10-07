@@ -156,6 +156,36 @@ internal sealed class ClassRepository : IClassRepository
         return null;
     }
 
+    public async Task<IReadOnlyList<Class>> ListByInstructorIdAsync(Guid instructorId, CancellationToken cancellationToken = default)
+    {
+        var instructorIdText = instructorId.ToString();
+
+        return await _dbContext.Classes.Where(c => !c.Deleted &&
+                (
+                    c.PrimaryInstructorId == instructorId
+                    ||
+                    (
+                        !string.IsNullOrWhiteSpace(c.AdditionalInstructors) &&
+                        ("," + c.AdditionalInstructors + ",")
+                            .Contains("," + instructorIdText + ",")
+                    )
+                ))
+            .OrderBy(c => c.ClassName)
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task<IReadOnlyDictionary<Guid, int>> CountEnrollmentsByClassIdsAsync(IEnumerable<Guid> classIds, CancellationToken cancellationToken = default)
+    {
+        var ids = classIds.Distinct().ToList();
+
+        if (ids.Count == 0)
+        {
+            return new Dictionary<Guid, int>();
+        }
+
+        return await _dbContext.StudentClasses.Where(sc => !sc.Deleted && ids.Contains(sc.ClassId)).GroupBy(sc => sc.ClassId).ToDictionaryAsync(g => g.Key, g => g.Count(), cancellationToken);
+    }
+
     private static bool TimeRangesOverlap(string? existingStartTime, string? existingEndTime, string? newStartTime, string? newEndTime)
     {
         if (!DateTime.TryParse(existingStartTime, out var existingStart) ||
