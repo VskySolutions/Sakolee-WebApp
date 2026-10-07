@@ -128,12 +128,13 @@ internal sealed class ClassCategoryRepository : IClassCategoryRepository
     /// This is required during update so that a category does not
     /// conflict with itself.
     /// </summary>
-    public async Task<bool> ExistsByNameAsync(Guid tenantId,string name,Guid? excludeId = null,CancellationToken cancellationToken = default)
+    public async Task<bool> ExistsByNameAsync(Guid tenantId,string name, string categoryType, Guid? excludeId = null,CancellationToken cancellationToken = default)
     {
         // Trim the name before checking for duplicates.
         var normalizedName = name.Trim();
+        var normalizedType = categoryType.Trim();
         // Check for an existing non-deleted category with the same name.
-        var query = _dbContext.ClassCategories.AsNoTracking().Where(c =>c.TenantId == tenantId && !c.Deleted && c.Name == normalizedName);
+        var query = _dbContext.ClassCategories.AsNoTracking().Where(c =>c.TenantId == tenantId && !c.Deleted && c.CategoryType == normalizedType && c.Name == normalizedName);
         // Exclude the current category when checking during an update.
         if (excludeId.HasValue)
         {

@@ -85,7 +85,7 @@ import AppTextField from "components/common/AppTextField.vue";
 import AppSelect from "components/common/AppSelect.vue";
 import AppDateField from "components/common/AppDateField.vue";
 
-//Grade level options state
+// Grade level options state
 const gradeLevels = ref([]);
 const gradeLevelOptions = computed(() => gradeLevels.value.map((g) => ({ label: g.Name || g.gradeName || g.name, value: g.Id ||g.id || g.gradeLevelId })));
 
@@ -139,7 +139,7 @@ const blankForm = () => ({
   firstName: "",
   lastName: "",
   familyName: "",
- // familyStatusId: null,
+  // familyStatusId: null,
   studentNumber: "",
   classIds: [],
   admissionDate: "",
@@ -210,7 +210,7 @@ const preserved = reactive(blankPreserved());
 // to populate a full edit form.
 watch(() => props.modelValue, async (isOpen) => {
   if (!isOpen || !props.studentId) return;
-  //await loadGradeLevels();
+  // await loadGradeLevels();
   Object.assign(form, blankForm());
   Object.assign(preserved, blankPreserved());
   emailError.value = "";
@@ -232,7 +232,7 @@ watch(() => props.modelValue, async (isOpen) => {
       lastName: row.lastName || "",
       familyName: row.familyName || "",
       studentNumber: row.studentNumber || "",
-      //familyStatusId: row.familyStatusId ?? null,
+      // familyStatusId: row.familyStatusId ?? null,
       classIds: [...loadedClassIds.value],
       admissionDate: row.admissionDate ? row.admissionDate.substring(0, 10) : "",
       birthDate: row.birthDate ? row.birthDate.substring(0, 10) : "",
@@ -279,7 +279,7 @@ const save = async () => {
     firstName: form.firstName,
     lastName: form.lastName,
     familyName: form.familyName || null,
-   // familyStatusId: form.familyStatusId || null,
+    // familyStatusId: form.familyStatusId || null,
     studentNumber: form.studentNumber || null,
     classIds: form.classIds || [],
     admissionDate: form.admissionDate || null,
@@ -315,16 +315,32 @@ const save = async () => {
     notify.success(props.enrollmentOnly ? "Class enrollment updated." : "Student updated.");
     open.value = false;
     emit("saved");
+  // } catch (err) {
+  //   if (getApiErrorCode(err) === ApiErrorCodes.DuplicateIdentifier) {
+  //     emailError.value = "A student with this email already exists.";
+  //   } else {
+  //     notify.error(getApiErrorMessage(err));
+  //   }
+  // } finally {
+  //   saving.value = false;
+  // }
   } catch (err) {
+    const message = getApiErrorMessage(err);
     if (getApiErrorCode(err) === ApiErrorCodes.DuplicateIdentifier) {
       emailError.value = "A student with this email already exists.";
+    } else if (isClassFullError(message)) {
+      // Capacity problem: the user can fix it by picking another class, so show a yellow warning, not a red error.
+      notify.warning(message);
     } else {
-      notify.error(getApiErrorMessage(err));
+      notify.error(message);
     }
   } finally {
     saving.value = false;
   }
 };
+// StudentsController.CheckClassCapacityAsync returns "Class is full." with an "allows only N students ..." detail.
+const isClassFullError = (message) =>
+  /class is full|allows only \d+ students/i.test(message || "");
 </script>
 
 <style scoped>

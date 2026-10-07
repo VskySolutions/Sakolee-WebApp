@@ -892,7 +892,19 @@ const sections = [
             icon: "o_card_membership",
             to: "/membership-types",
             permissions: [Permissions.MembershipTypesRead]
-          }
+          },
+          {
+            label: "E-Payment Schedule",
+            icon: "o_payments",
+            to: "/e-payment-schedule",
+            permissions: [Permissions.EPaymentSchedulesRead]
+          },
+          {
+            label: "Account Types",
+            icon: "o_account_balance_wallet",
+            to: "/account-type",
+            permissions: [Permissions.AccountTypesRead]
+          },
         ]
       }
       // { label: "Email/Text Families", icon: "o_mail", to: "/families/email", permissions: null },
