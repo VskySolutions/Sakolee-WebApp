@@ -222,6 +222,16 @@
           <div class="col-12 col-md-4">
             <app-select v-model="form.paymentMethod" label="Payment Method" :options="PAYMENT_METHOD_OPTIONS" :clearable="false" />
           </div>
+
+          <!-- E-Payment Schedule Input -->
+          <div class="col-12 col-md-4">
+            <app-select v-model="form.ePaymentScheduleId" label="E-Payment Schedule" :options="ePaymentScheduleOptions" />
+          </div>
+          <!-- Membership Type Input -->
+          <div class="col-12 col-md-4">
+            <app-select v-model="form.membershipTypeId" label="Membership Type" :options="membershipTypeOptions" />
+          </div>
+
           <div v-if="form.paymentMethod !== 'invoice'" class="col-12 col-md-8">
             <!-- The gateway's own hosted fields mount here once configured, so raw card data never
                  reaches this form or our servers. -->
@@ -305,7 +315,7 @@ import AppPhoneInput from "components/common/AppPhoneInput.vue";
 import AppFieldLabel from "components/common/AppFieldLabel.vue";
 
 import { useNotify } from "composables/useNotify";
-import { classApi, locationApi, familyApi, studentApi,studentGradeLevelApi,familyStatusApi,familyRelationApi,  getApiErrorMessage } from "services/api";
+import { classApi, locationApi, familyApi, studentApi,studentGradeLevelApi,familyStatusApi,familyRelationApi, ePaymentScheduleApi,membershipTypeApi, getApiErrorMessage } from "services/api";
 import {
   blankQuickRegistrationForm,
   blankStudent,
@@ -352,6 +362,44 @@ const loadFamilyRelations = async () => {
   try {
     const res = await familyRelationApi.list({ limit: 100 });
     familyRelations.value = res?.data || [];
+  } catch (err) {
+    notify.error(getApiErrorMessage(err));
+  }
+};
+
+// E-Payment Schedule options state
+const ePaymentSchedules = ref([]);
+const ePaymentScheduleOptions = computed(() => 
+  (ePaymentSchedules.value || [])
+    .filter((eps) => eps.active ?? eps.Active ?? true).map((eps) => ({ 
+      label: eps.name || eps.scheduleName || eps.Name, 
+      value: eps.id || eps.ePaymentScheduleId || eps.Id 
+    }))
+);
+
+const loadEPaymentSchedules = async () => {
+  try {
+    const res = await ePaymentScheduleApi.list({ limit: 100 });
+    ePaymentSchedules.value = res?.data || [];
+  } catch (err) {
+    notify.error(getApiErrorMessage(err));
+  }
+};
+
+// Membership Type options state
+const membershipTypes = ref([]);
+const membershipTypeOptions = computed(() => 
+  (membershipTypes.value || [])
+    .filter((mt) => mt.active ?? mt.Active ?? true).map((mt) => ({ 
+      label: mt.name || mt.membershipName || mt.Name, 
+      value: mt.id || mt.membershipTypeId || mt.Id 
+    }))
+);
+
+const loadMembershipTypes = async () => {
+  try {
+    const res = await membershipTypeApi.list({ limit: 100 });
+    membershipTypes.value = res?.data || [];
   } catch (err) {
     notify.error(getApiErrorMessage(err));
   }
@@ -432,6 +480,8 @@ const classOptions = computed(() => (classes.value || [])
 const locations = ref([]);
 const locationOptions = computed(() => (locations.value || [])
     .filter((l) => l.active ?? l.Active ?? true).map((l) => ({ label: l.name, value: l.id })));
+
+
 onMounted(async () => {
   try {
     const [classResult, locationResult] = await Promise.all([
@@ -439,7 +489,9 @@ onMounted(async () => {
       locationApi.list({ limit: 100, active: true }),
       loadGradeLevels(),
       loadFamilyStatuses(),
-      loadFamilyRelations()
+      loadFamilyRelations(),
+      loadEPaymentSchedules(), // Add this
+      loadMembershipTypes()
     ]);
     classes.value = classResult?.data || [];
     locations.value = locationResult?.data || [];
