@@ -100,10 +100,10 @@ const loadGradeLevels = async () => {
 
 // // Family Status options state
 // const familyStatuses = ref([]);
-// const familyStatusOptions = computed(() => 
-//   familyStatuses.value.map((fs) => ({ 
-//     label: fs.name || fs.statusName || fs.Name, 
-//     value: fs.id || fs.familyStatusId || fs.Id 
+// const familyStatusOptions = computed(() =>
+//   familyStatuses.value.map((fs) => ({
+//     label: fs.name || fs.statusName || fs.Name,
+//     value: fs.id || fs.familyStatusId || fs.Id
 //   }))
 // );
 
@@ -217,7 +217,7 @@ watch(() => props.modelValue, async (isOpen) => {
   loading.value = true;
   loadedClassIds.value = [];
   try {
-    const [row] = await Promise.all([studentApi.get(props.studentId), loadClasses(),loadGradeLevels()]);
+    const [row] = await Promise.all([studentApi.get(props.studentId), loadClasses(), loadGradeLevels()]);
     loadedClassIds.value = row.classIds?.length ? [...row.classIds] : row.classId ? [row.classId] : [];
     Object.assign(preserved, {
       familyId: row.familyId ?? null,

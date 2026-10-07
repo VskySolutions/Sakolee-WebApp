@@ -40,6 +40,7 @@ public sealed class TenantsController : ControllerBase
     private readonly IAddressRepository _addresses;
     private readonly IRoleRepository _roles;
     private readonly IOptionSetRepository _optionSets;
+    private readonly ITenantMasterDataProvisioner _masterData;
     private readonly IPasswordHasher _passwordHasher;
     private readonly ICredentialEncryptionService _credentialEncryption;
     private readonly IRefreshTokenRepository _refreshTokens;
@@ -55,6 +56,7 @@ public sealed class TenantsController : ControllerBase
         IAddressRepository addresses,
         IRoleRepository roles,
         IOptionSetRepository optionSets,
+        ITenantMasterDataProvisioner masterData,
         IPasswordHasher passwordHasher,
         ICredentialEncryptionService credentialEncryption,
         IRefreshTokenRepository refreshTokens,
@@ -69,6 +71,7 @@ public sealed class TenantsController : ControllerBase
         _addresses = addresses;
         _roles = roles;
         _optionSets = optionSets;
+        _masterData = masterData;
         _passwordHasher = passwordHasher;
         _credentialEncryption = credentialEncryption;
         _refreshTokens = refreshTokens;
@@ -143,6 +146,10 @@ public sealed class TenantsController : ControllerBase
             // The new tenant gets its OWN copy of the platform's default option lists, so its admins can
             // manage the values (add / rename / delete / re-order) without touching the shared originals.
             await TenantOptionSetSeeder.EnsureDefaultsAsync(_optionSets, tenant.Id, ct);
+
+            // ...and its own copy of the template tenant's master rows marked IsSystem (Account Types,
+            // Billing Cycles, Locations, Class Rooms, …), editable by the new tenant like any other row.
+            await _masterData.CopyDefaultsAsync(tenant.Id, ct);
 
             // The tenant's own address (optional) — Addresses table, referenced by Tenant.AddressId.
             if (request.Address is { } addressInput)
