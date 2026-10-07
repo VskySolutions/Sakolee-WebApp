@@ -94,6 +94,11 @@ public static class Permissions
     public const string AccountTypesRead = "accountTypes.read";
     public const string AccountTypesWrite = "accountTypes.write";
     public const string AccountTypesDelete = "accountTypes.delete";
+
+    // Policies
+    public const string PoliciesRead = "policies.read";
+    public const string PoliciesWrite = "policies.write";
+    public const string PoliciesDelete = "policies.delete";
     // Users
     public const string UsersRead = "users.read";
     public const string UsersWrite = "users.write";
@@ -155,6 +160,7 @@ public static class Permissions
         HearAboutUsRead,HearAboutUsWrite,HearAboutUsDelete,
         EPaymentSchedulesRead, EPaymentSchedulesWrite, EPaymentSchedulesDelete,
         AccountTypesRead,AccountTypesWrite,AccountTypesDelete,
+        PoliciesRead, PoliciesWrite, PoliciesDelete,
         LocationsRead, LocationsWrite, LocationsDelete,
         UsersRead, UsersWrite, UsersResetPassword, UsersGroupManagement,
         RolesRead, RolesWrite, RolesAssign,
@@ -205,6 +211,8 @@ public static class Permissions
         EPaymentSchedulesRead, EPaymentSchedulesWrite, EPaymentSchedulesDelete,
         // Account Type
         AccountTypesRead, AccountTypesWrite, AccountTypesDelete,
+        // Policies
+        PoliciesRead, PoliciesWrite, PoliciesDelete,
         // Location
         LocationsRead, LocationsWrite, LocationsDelete,
         // Users

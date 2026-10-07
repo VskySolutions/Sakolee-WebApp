@@ -108,20 +108,9 @@
 
       <!-- Step 3 — Address & Emergency Details -->
       <q-form v-show="currentStep === 3" :ref="(el) => (stepForms[3] = el)" greedy>
-        <div class="row q-col-gutter-md">
-          <div class="col-12">
-            <app-text-field v-model="form.streetAddress" label="Street Address" required placeholder="123 Main Street, Apt 4B" :rules="[required]" />
-          </div>
-          <div class="col-12 col-md-4">
-            <app-text-field v-model="form.city" label="City" required placeholder="Chicago" :rules="[required]" />
-          </div>
-          <div class="col-12 col-md-4">
-            <app-text-field v-model="form.state" label="State" required placeholder="IL" :rules="[required]" />
-          </div>
-          <div class="col-12 col-md-4">
-            <app-text-field v-model="form.postalCode" label="ZIP Code" required placeholder="60601" :rules="[required]" />
-          </div>
-        </div>
+        <!-- Same Country → State → City field-set as the Tenant form; required here, as the old Street /
+             City / State / ZIP boxes were. Saved to the Addresses table. -->
+        <app-address-fields v-model="form.address" required />
 
         <q-separator class="q-my-md" />
         <div class="step-subtitle-inline">&bull; Emergency Contact &amp; Health Insurance</div>
@@ -302,6 +291,7 @@ import AppTextField from "components/common/AppTextField.vue";
 import AppSelect from "components/common/AppSelect.vue";
 import AppDateField from "components/common/AppDateField.vue";
 import AppPhoneInput from "components/common/AppPhoneInput.vue";
+import AppAddressFields from "components/common/AppAddressFields.vue";
 import AppFieldLabel from "components/common/AppFieldLabel.vue";
 
 import { useNotify } from "composables/useNotify";

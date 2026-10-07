@@ -136,6 +136,8 @@ public class SakoleeDbContext : DbContext, IDataProtectionKeyContext
     public DbSet<HearAboutUs> HearAboutUs => Set<HearAboutUs>();
     public DbSet<EPaymentSchedule> EPaymentSchedules => Set<EPaymentSchedule>();
     public DbSet<AccountType> AccountTypes => Set<AccountType>();
+    public DbSet<Policy> Policies => Set<Policy>();
+    public DbSet<PolicyClassMapping> PolicyClassMappings => Set<PolicyClassMapping>();
     /// <summary>Data Protection key ring storage (Multi-Tenancy ADR-002).</summary>
     public DbSet<DataProtectionKey> DataProtectionKeys => Set<DataProtectionKey>();
 
@@ -246,6 +248,7 @@ public class SakoleeDbContext : DbContext, IDataProtectionKeyContext
         modelBuilder.Entity<HearAboutUs>().HasQueryFilter(e => (!_tenantContext.IsResolved || e.TenantId == _tenantContext.TenantId) && !e.Deleted);
         modelBuilder.Entity<EPaymentSchedule>().HasQueryFilter(e => (!_tenantContext.IsResolved || e.TenantId == _tenantContext.TenantId) && !e.Deleted);
         modelBuilder.Entity<AccountType>().HasQueryFilter(e => (!_tenantContext.IsResolved || e.TenantId == _tenantContext.TenantId) && !e.Deleted);
+        modelBuilder.Entity<Policy>().HasQueryFilter(e => (!_tenantContext.IsResolved || e.TenantId == _tenantContext.TenantId) && !e.Deleted);
     }
 
     public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)

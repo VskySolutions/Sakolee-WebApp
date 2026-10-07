@@ -43,6 +43,8 @@ public sealed class CreateClassRequest
     public bool AllowWaitlistEnrollment { get; set; }
     public bool AllowPortalDropRequests { get; set; }
     public bool DropInFee { get; set; }
+    /// <summary>Policies (see <c>Policy</c>) of the active tenant that apply to this class.</summary>
+    public IReadOnlyList<Guid>? PolicyIds { get; set; }
 }
 
 public sealed class UpdateClassRequest
@@ -89,6 +91,8 @@ public sealed class UpdateClassRequest
     public bool AllowPortalDropRequests { get; set; }
     public bool DropInFee { get; set; }
     public bool Active { get; set; } = true;
+    /// <summary>Policies of the active tenant that apply to this class; null leaves them unchanged.</summary>
+    public IReadOnlyList<Guid>? PolicyIds { get; set; }
 }
 
 /// <summary>A class row, full detail.</summary>
@@ -149,10 +153,15 @@ public sealed record ClassSummary(
     string? RoomName = null,
     string? PrimaryInstructorName = null,
     // The additional instructors with their names, in saved order — single-class read only, like the names above.
-    IReadOnlyList<ClassInstructorOption>? AdditionalInstructors = null);
+    IReadOnlyList<ClassInstructorOption>? AdditionalInstructors = null,
+    // The active tenant's policies attached to the class, in display order — single-class read only.
+    IReadOnlyList<ClassPolicyOption>? Policies = null);
 
 /// <summary>One option in the class form's Primary Instructor picker — a Staff user of the active tenant.</summary>
 public sealed record ClassInstructorOption(Guid Id, string Name);
+
+/// <summary>One option in the class form's Policies picker — an active policy of the active tenant.</summary>
+public sealed record ClassPolicyOption(Guid Id, string Name);
 
 public sealed record ClassEnrollmentStudentSummary(
     Guid StudentId,

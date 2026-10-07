@@ -1,4 +1,5 @@
 using Sakolee.Api.Models.Families;
+using Sakolee.Api.Models.Profile;
 using Sakolee.Api.Security;
 using Sakolee.Application.Abstractions.Auditing;
 using Sakolee.Application.Abstractions.Persistence;
@@ -58,6 +59,7 @@ public sealed class FamiliesController : ControllerBase
     private readonly IUnitOfWork _unitOfWork;
     private readonly IAuditTrailService _audit;
     private readonly ICredentialEncryptionService _credentialEncryption;
+    private readonly IAddressRepository _addresses;
 
     #endregion
 
@@ -77,7 +79,8 @@ public sealed class FamiliesController : ControllerBase
         IActorAccessor actorAccessor,
         IUnitOfWork unitOfWork,
         IAuditTrailService audit,
-        ICredentialEncryptionService credentialEncryption)
+        ICredentialEncryptionService credentialEncryption,
+        IAddressRepository addresses)
     {
         _families = families;
         _persons = persons;
@@ -90,6 +93,7 @@ public sealed class FamiliesController : ControllerBase
         _unitOfWork = unitOfWork;
         _audit = audit;
         _credentialEncryption = credentialEncryption;
+        _addresses = addresses;
     }
 
     #endregion
@@ -173,11 +177,6 @@ public sealed class FamiliesController : ControllerBase
             CellPhone = request.CellPhone?.Trim(),
             Fax = request.Fax?.Trim(),
             OtherPhone = request.OtherPhone?.Trim(),
-            Address1 = request.Address1?.Trim(),
-            Address2 = request.Address2?.Trim(),
-            City = request.City?.Trim(),
-            State = request.State?.Trim(),
-            ZipCode = request.ZipCode,
             IsPrimaryContact = true,
             IsBillingContact = request.IsBillingContact,
             IsAuthorizedToPickUpStudent = request.IsAuthorizedToPickUpStudent,
@@ -193,6 +192,12 @@ public sealed class FamiliesController : ControllerBase
             UpdatedById = actorId,
         };
         await _families.AddAsync(family, cancellationToken);
+
+        // The household address (optional) — Addresses table, referenced by Families.AddressId.
+        if (HasAddressValue(request.Address))
+        {
+            await UpsertFamilyAddressAsync(family, request.Address!, cancellationToken);
+        }
 
         // 3. The primary contact's own FamilyPersonMapping row — Family's own inlined fields above stay
         // in sync as a legacy-shaped denormalized copy (see Family remarks), but FamilyPersonMapping is
@@ -491,17 +496,18 @@ public sealed class FamiliesController : ControllerBase
         family.OtherPhone = request.OtherPhone?.Trim() ?? family.OtherPhone;
         family.IsBillingContact = request.IsBillingContact;
         family.IsAuthorizedToPickUpStudent = request.IsAuthorizedToPickUpStudent;
-        family.Address1 = request.Address1?.Trim() ?? family.Address1;
-        family.Address2 = request.Address2?.Trim() ?? family.Address2;
-        family.City = request.City?.Trim() ?? family.City;
-        family.State = request.State?.Trim() ?? family.State;
-        family.ZipCode = request.ZipCode ?? family.ZipCode;
         family.EmergencyContactPerson = request.EmergencyContactPerson?.Trim() ?? family.EmergencyContactPerson;
         family.EmergencyPhone = request.EmergencyPhone?.Trim() ?? family.EmergencyPhone;
         family.HealthInsuranceCarrier = request.HealthInsuranceCarrier?.Trim() ?? family.HealthInsuranceCarrier;
         family.UpdatedOnUtc = DateTime.UtcNow;
         family.UpdatedById = CurrentActorId();
         _families.Update(family);
+
+        // The household address — patch semantics like the fields above: omitted keeps the current one.
+        if (request.Address is { } addressInput)
+        {
+            await UpsertFamilyAddressAsync(family, addressInput, cancellationToken);
+        }
 
         // The primary contact's own FamilyPersonMapping row, synced from the (now-merged) Family fields
         // above — unlike the secondary, the primary's Person always already exists (family.PersonId),
@@ -900,6 +906,63 @@ public sealed class FamiliesController : ControllerBase
 
     #endregion
 
+    #region Address Helpers
+
+    /// <summary>True when the payload carries at least one address value worth storing.</summary>
+    private static bool HasAddressValue(AddressInput? input)
+        => input is not null && new[]
+        {
+            input.AddressLine1, input.AddressLine2, input.Landmark, input.BuildingName, input.FloorNumber,
+            input.UnitNumber, input.CountryCode, input.CountryName, input.StateCode, input.StateName,
+            input.CityName, input.PostalCode
+        }.Any(v => !string.IsNullOrWhiteSpace(v));
+
+    /// <summary>
+    /// Upserts the family's household address (Addresses table, referenced by <see cref="Family.AddressId"/>) —
+    /// the same way <c>TenantsController</c> stores a tenant's. Updates the linked row when there is one,
+    /// otherwise creates one and links it.
+    /// </summary>
+    private async Task UpsertFamilyAddressAsync(Family family, AddressInput input, CancellationToken cancellationToken)
+    {
+        var address = family.AddressId is { } addressId
+            ? family.Address ?? await _addresses.GetByIdAsync(addressId, cancellationToken)
+            : null;
+
+        var isNew = address is null;
+        address ??= new Address { Id = Guid.NewGuid() };
+
+        address.AddressType = Enum.TryParse<AddressType>(input.AddressType, ignoreCase: true, out var type) ? type : AddressType.Home;
+        address.AddressLine1 = NullIfBlank(input.AddressLine1);
+        address.AddressLine2 = NullIfBlank(input.AddressLine2);
+        address.Landmark = NullIfBlank(input.Landmark);
+        address.BuildingName = NullIfBlank(input.BuildingName);
+        address.FloorNumber = NullIfBlank(input.FloorNumber);
+        address.UnitNumber = NullIfBlank(input.UnitNumber);
+        address.CountryCode = NullIfBlank(input.CountryCode);
+        address.CountryName = NullIfBlank(input.CountryName);
+        address.StateCode = NullIfBlank(input.StateCode);
+        address.StateName = NullIfBlank(input.StateName);
+        address.CityName = NullIfBlank(input.CityName);
+        address.PostalCode = NullIfBlank(input.PostalCode);
+
+        if (isNew)
+        {
+            await _addresses.AddAsync(address, cancellationToken);
+            family.AddressId = address.Id;
+            family.Address = address;
+        }
+        else
+        {
+            _addresses.Update(address);
+        }
+    }
+
+    /// <summary>Trims a text value; blank becomes null.</summary>
+    private static string? NullIfBlank(string? value)
+        => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+
+    #endregion
+
     #region Response Mapping Helpers
 
     /// <summary>Looks up a resolved actor name by id, or null if unresolved/absent.</summary>
@@ -966,7 +1029,7 @@ public sealed class FamiliesController : ControllerBase
         return new FamilyDetail(
             f.Id, f.FamilyName, f.StudioLocationId, f.StudioLocation?.Name, f.FamilyStatusId, f.FamilyStatus?.Name,
             f.Source, f.ReferralName, f.HomePhone, f.WorkPhone, f.Fax, f.OtherPhone,
-            f.Address1, f.Address2, f.City, f.State, f.ZipCode,
+            f.Address is null ? null : PersonProfileMapper.MapAddress(f.Address),
             f.EmergencyContactPerson, f.EmergencyPhone, f.HealthInsuranceCarrier, f.Active,
             contacts,
             students.Select(s =>

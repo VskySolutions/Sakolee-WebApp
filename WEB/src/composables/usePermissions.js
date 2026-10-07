@@ -48,6 +48,10 @@ export const Permissions = Object.freeze({
   AccountTypesRead: "accountTypes.read",
   AccountTypesWrite: "accountTypes.write",
   AccountTypesDelete: "accountTypes.delete",
+  // Policy permissions
+  PoliciesRead: "policies.read",
+  PoliciesWrite: "policies.write",
+  PoliciesDelete: "policies.delete",
   // Locations Permissions
   LocationsRead: "locations.read",
   LocationsWrite: "locations.write",

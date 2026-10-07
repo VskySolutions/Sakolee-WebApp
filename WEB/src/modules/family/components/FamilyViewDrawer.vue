@@ -263,6 +263,7 @@ import { familyApi, getApiErrorMessage } from "services/api";
 import { useNotify } from "composables/useNotify";
 import { useDateFormat } from "composables/useDateFormat";
 import { blankFamilyForm, familyFormFromDetail } from "composables/familyForm";
+import { addressLines as formatAddressLines } from "utils/address";
 
 import AppFormDialog from "components/common/AppFormDialog.vue";
 
@@ -328,12 +329,7 @@ const primaryPhones = computed(() =>
   ].filter((p) => p.value)
 );
 
-const addressLines = computed(() => {
-  const cityLine = [form.city, [form.state, form.zipCode].filter(Boolean).join(" ")]
-    .filter(Boolean)
-    .join(", ");
-  return [form.address1, form.address2, cityLine].filter(Boolean);
-});
+const addressLines = computed(() => formatAddressLines(form.address));
 
 const fullName = (first, last) => `${first || ""} ${last || ""}`.trim() || "—";
 

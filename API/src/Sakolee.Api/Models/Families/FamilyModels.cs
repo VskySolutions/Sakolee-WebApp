@@ -1,3 +1,5 @@
+using Sakolee.Api.Models.Profile;
+
 namespace Sakolee.Api.Models.Families;
 
 /// <summary>
@@ -48,11 +50,9 @@ public sealed class CreateFamilyRequest
     public bool IsAuthorizedToPickUpStudent { get; set; } = true;
 
     // ---- Household address ----
-    public string? Address1 { get; set; }
-    public string? Address2 { get; set; }
-    public string? City { get; set; }
-    public string? State { get; set; }
-    public int? ZipCode { get; set; }
+    /// <summary>The household address, stored in the Addresses table and linked by Families.AddressId
+    /// (same shape the tenant form sends). Optional.</summary>
+    public AddressInput? Address { get; set; }
 
     public string? EmergencyContactPerson { get; set; }
     public string? EmergencyPhone { get; set; }
@@ -88,11 +88,8 @@ public sealed class UpdateFamilyRequest
     public bool IsBillingContact { get; set; }
     public bool IsAuthorizedToPickUpStudent { get; set; }
 
-    public string? Address1 { get; set; }
-    public string? Address2 { get; set; }
-    public string? City { get; set; }
-    public string? State { get; set; }
-    public int? ZipCode { get; set; }
+    /// <summary>The household address; upserted when present, left unchanged when omitted.</summary>
+    public AddressInput? Address { get; set; }
 
     public string? EmergencyContactPerson { get; set; }
     public string? EmergencyPhone { get; set; }
@@ -134,11 +131,8 @@ public sealed record FamilyDetail(
     string? WorkPhone,
     string? Fax,
     string? OtherPhone,
-    string? Address1,
-    string? Address2,
-    string? City,
-    string? State,
-    int? ZipCode,
+    /// <summary>The household address (Addresses table), or null when the family has none.</summary>
+    AddressResponse? Address,
     string? EmergencyContactPerson,
     string? EmergencyPhone,
     string? HealthInsuranceCarrier,
