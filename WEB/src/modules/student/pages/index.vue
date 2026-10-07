@@ -141,9 +141,9 @@ const columns = [
   { name: "school", label: "School", field: (row) => row.school || "—", align: "left", sortable: true },
   { name: "gradeLevel", label: "Grade", field: (row) => row.gradeLevel || "—", align: "left" },
   { name: "admissionDate", label: "Admission Date", field: (row) => formatDate(row.admissionDate), sort: (row) => row.admissionDate || "", align: "left", sortable: true },
- 
+
   ...auditColumns(),
-   { name: "active", label: "Status", field: "active", align: "center", sortable: true, default: true },
+  { name: "active", label: "Status", field: "active", align: "center", sortable: true, default: true },
   { name: "actions", label: "Actions", field: "actions", align: "left" }
 ];
 

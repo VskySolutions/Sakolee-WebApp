@@ -165,3 +165,18 @@ public sealed record ClassEnrollmentStudentSummary(
     DateTime? FutureDrop,
     decimal? Balance
 );
+
+public sealed record StaffClassSummary(
+    Guid ClassId,
+    string? LocationName,
+    string? ClassName,
+    string Status,
+    string? SessionName,
+    int CurrentEnrollment,
+    int WaitList,
+    string? RoomName,
+    DateTime? StartDate,
+    DateTime? EndDate,
+    string? Days,
+    string? Times
+);

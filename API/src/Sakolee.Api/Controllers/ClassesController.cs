@@ -399,7 +399,7 @@ public sealed class ClassesController : ControllerBase
 
         // Check if existing class schedule for instructor and additional instructor.
         var conflict = await _classes.ValidateInstructorScheduleAsync(
-                                                                        null,
+                                                                        id,
                                                                         request.PrimaryInstructorId,
                                                                         request.AdditionalInstructorIds,
                                                                         request.StartDate,
@@ -457,6 +457,42 @@ public sealed class ClassesController : ControllerBase
         await _audit.AddAsync(nameof(Class), entity.Id.ToString(), "Deleted", cancellationToken: cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
         return Ok(ApiResponseFactory.Success(new { classId = id }, "Class deleted."));
+    }
+
+    [HttpGet("instructor/{instructorId:guid}")]
+    [RequirePermission(Permissions.ClassesRead)]
+    [ProducesResponseType<ApiResponse<IReadOnlyList<StaffClassSummary>>>(StatusCodes.Status200OK)]
+    public async Task<IActionResult> ListByInstructor(Guid instructorId, [FromQuery] int page = 1, [FromQuery] int limit = 20, [FromQuery] string? sortBy = null, [FromQuery] bool descending = true, CancellationToken cancellationToken = default)
+    {
+        page = Math.Max(1, page);
+        limit = Math.Clamp(limit, 1, 100);
+
+        var classes = await _classes.ListByInstructorIdAsync(instructorId, cancellationToken);
+
+        var classIds = classes.Select(c => c.Id).ToList();
+
+        var enrollmentCounts = await _classes.CountEnrollmentsByClassIdsAsync(classIds, cancellationToken);
+
+        var result = new List<StaffClassSummary>();
+
+        foreach (var @class in classes)
+        {
+            var location = @class.LocationId is { } locationId ? await _locations.GetByIdAsync(locationId, cancellationToken) : null;
+
+            var session = @class.SessionId is { } sessionId ? await _sessions.GetByIdAsync(sessionId, cancellationToken) : null;
+
+            var room = @class.RoomId is { } roomId ? await _rooms.GetByIdUnscopedAsync(roomId, cancellationToken) : null;
+
+            enrollmentCounts.TryGetValue(@class.Id, out var currentEnrollment);
+
+            result.Add(new StaffClassSummary(@class.Id, location?.Name, @class.ClassName, @class.Active ? "Active" : "Inactive", session?.Name, currentEnrollment, @class.MaxWaitlistSize ?? 0, room?.Name, @class.StartDate, @class.EndDate, @class.ActiveDays, BuildTimes(@class.StartTime, @class.EndTime)));
+        }
+
+        var sorted = StaffClassSorts.Apply(result, sortBy, descending).ToList();
+
+        var pageItems = sorted.Skip((page - 1) * limit).Take(limit).ToList();
+
+        return Ok(ApiResponseFactory.Paginated(pageItems, "Staff classes retrieved.", page, limit, sorted.Count));
     }
 
     // ---- helpers ----
@@ -591,4 +627,40 @@ public sealed class ClassesController : ControllerBase
         c.AllowDropIns, c.ParentPortalSchedule, c.MakeupsInClass, c.AllowWaitlistEnrollment,
         c.AllowPortalDropRequests, c.DropInFee, c.Active,
         NameOf(names, c.CreatedById), c.CreatedOnUtc, NameOf(names, c.UpdatedById), c.UpdatedOnUtc);
+
+    private static string? BuildTimes(
+    string? startTime,
+    string? endTime)
+    {
+        if (string.IsNullOrWhiteSpace(startTime) &&
+            string.IsNullOrWhiteSpace(endTime))
+        {
+            return null;
+        }
+
+        if (string.IsNullOrWhiteSpace(endTime))
+        {
+            return startTime;
+        }
+
+        if (string.IsNullOrWhiteSpace(startTime))
+        {
+            return endTime;
+        }
+
+        return $"{startTime} - {endTime}";
+    }
+
+    private static readonly SortMap<StaffClassSummary> StaffClassSorts = new SortMap<StaffClassSummary>("className")
+        .Add("locationName", c => c.LocationName)
+        .Add("className", c => c.ClassName)
+        .Add("status", c => c.Status)
+        .Add("sessionName", c => c.SessionName)
+        .Add("currentEnrollment", c => c.CurrentEnrollment)
+        .Add("waitList", c => c.WaitList)
+        .Add("roomName", c => c.RoomName)
+        .Add("startDate", c => c.StartDate)
+        .Add("endDate", c => c.EndDate)
+        .Add("days", c => c.Days)
+        .Add("times", c => c.Times);
 }

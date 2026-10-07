@@ -103,6 +103,7 @@ export const classApi = {
   // Primary Instructor options: the active tenant's active Staff users, as [{ id, name }].
   instructors: () => api.get("/api/admin/classes/instructors").then(envelope),
   enrollments: (id, params) => api.get(`/api/admin/classes/${id}/enrollments`, { params }).then(envelope),
+  listByInstructor: (instructorId, params) => api.get(`/api/admin/classes/instructor/${instructorId}`, { params }).then(envelope),
 };
 
 export const classCategoryApi = {

@@ -625,7 +625,8 @@
           :pagination="pagination"
           @request="onRequest"
           @refresh="load"
-        /></q-tab-panel>
+        />
+      </q-tab-panel>
       <q-tab-panels />
     </q-tab-panels>
   </app-form-dialog>

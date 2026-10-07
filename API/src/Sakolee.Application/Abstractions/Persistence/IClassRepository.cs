@@ -24,4 +24,9 @@ public interface IClassRepository
                                                     string endTime,
                                                     string? activeDays,
                                                     CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<Class>> ListByInstructorIdAsync(Guid instructorId, CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyDictionary<Guid, int>> CountEnrollmentsByClassIdsAsync(IEnumerable<Guid> classIds, CancellationToken cancellationToken = default);
 }
+
