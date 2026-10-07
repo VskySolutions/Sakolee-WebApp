@@ -67,18 +67,14 @@ routes.push(...locationRoutes);
 routes.push(...classCategoryRoutes);
 routes.push(...sessionRoutes);
 routes.push(...familyrelationRoutes);
-routes.push(...tShirtSizeRoutes);
 routes.push(...hearAboutUsRoutes);
 routes.push(...ePaymentScheduleRoutes);
 routes.push(...accountTypeRoutes);
-routes.push(...familyrelationRoutes);
 routes.push(...billingCycleRoutes);
-routes.push(...billingMethodRoutes);
 routes.push(...tShirtSizeRoutes);
 routes.push(...classRoomRoutes);
 routes.push(...membershipTypeRoutes);
 routes.push(...studentGradeLevelRoutes);
-routes.push(...billingCycleRoutes);
 routes.push(...billingMethodRoutes);
 // Route meta `permissions` requires any one of the listed permission keys; the deepest matched
 // record's list wins.
