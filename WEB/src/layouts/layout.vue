@@ -55,7 +55,6 @@
             </q-list>
           </q-btn-dropdown>
 
-          
           <!-- Active-tenant roles: the user's roles for the active tenant, shown on every
                authenticated screen alongside their name (in user-info). -->
           <!-- <div v-if="isLoggedIn && activeRoles.length" class="gt-xs row items-center q-gutter-xs">
@@ -108,7 +107,7 @@
       show-if-above
       :mini="menuCollapsed"
       :width="279"
-      :mini-width="90"
+      :mini-width="80"
       :breakpoint="1023"
       bordered
       class="bg-white"
@@ -165,8 +164,6 @@ import { ref, computed, watch } from "vue";
 import { LocalStorage, Dialog, useQuasar } from "quasar";
 import { storeToRefs } from "pinia";
 import { useTenantStore } from "stores/tenant";
-import { useRouter } from "vue-router";
-import { useAuthStore } from "stores/auth";
 
 import UserInfo from "shared/user_info.vue";
 import AsideHeader from "shared/aside_header.vue";
@@ -182,8 +179,6 @@ import AppTextField from "components/common/AppTextField.vue";
 // because history-mode routes would otherwise resolve it against the current path.
 // const brandMark = "/icons/sakolee-mark.svg";
 
-const authStore = useAuthStore();
-const router = useRouter();
 const $q = useQuasar();
 const isLoggedIn = !!LocalStorage.getItem("token");
 
@@ -219,7 +214,7 @@ const tenantStore = useTenantStore();
 const { assignments, activeTenantId } = storeToRefs(tenantStore);
 const hasMultipleTenants = computed(() => tenantStore.hasMultipleTenants);
 // The role names the user holds in the active tenant (multi-role), shown in the header.
-const activeRoles = computed(() => tenantStore.activeRoles);
+// const activeRoles = computed(() => tenantStore.activeRoles);
 const activeTenantLabel = computed(() => {
   const t = tenantStore.activeTenant;
   return t?.name || t?.identifier || "Tenant";
@@ -244,10 +239,6 @@ const onSwitchTenant = async (tenantId) => {
   }
 };
 
-const handleLogout = async () => {
-  await authStore.logout();
-  router.replace({ name: "login" });
-};
 </script>
 
 <style scoped>

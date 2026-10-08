@@ -45,7 +45,7 @@
             <app-select v-model="form.heardAbout" label="How Did You Hear About Us?" :options="hearAboutUsOptions" />
           </div>
           <div class="col-12 col-md-6">
-            <app-text-field v-model="form.referralName" label="Referral Name" placeholder="Friend or student name (optional)" :rules="[nameOnlyRule]"/>
+            <app-text-field v-model="form.referralName" label="Referral Name" placeholder="Friend or student name (optional)" :rules="[nameOnlyRule]" />
           </div>
           <div class="col-12 col-md-6">
             <app-select v-model="form.studioLocationId" label="Studio Location" required :options="locationOptions" :rules="[required]" />
@@ -248,15 +248,15 @@
 
       <q-separator class="q-my-md" />
       <div class="row items-center justify-between">
-        <q-btn v-if="currentStep > 1" outline no-caps color="grey-8" icon="o_arrow_back" label="Back" @click="prevStep" />
+        <q-btn v-if="currentStep > 1" flat no-caps color="grey-8" icon="o_arrow_back" class="close-btn br-12" label="Back" @click="prevStep" />
         <div v-else />
         <div class="row q-gutter-sm">
-          <q-btn flat no-caps color="grey-8" label="Cancel" :to="{ name: 'families' }" />
+          <q-btn flat no-caps color="grey-8" label="Cancel" class="close-btn br-12" :to="{ name: 'families' }" />
           <q-btn
             unelevated no-caps color="primary" :loading="saving"
             :label="currentStep === STEPS.length ? 'Register Family' : 'Continue'"
             :icon-right="currentStep === STEPS.length ? undefined : 'o_arrow_forward'"
-            @click="nextStep"
+            class="save-btn br-12" @click="nextStep"
           />
         </div>
       </div>
@@ -305,7 +305,7 @@ import AppAddressFields from "components/common/AppAddressFields.vue";
 import AppFieldLabel from "components/common/AppFieldLabel.vue";
 
 import { useNotify } from "composables/useNotify";
-import { classApi, locationApi, familyApi, studentApi, studentGradeLevelApi, familyStatusApi, familyRelationApi,ePaymentScheduleApi,membershipTypeApi, getApiErrorMessage } from "services/api";
+import { classApi, locationApi, familyApi, studentApi, studentGradeLevelApi, familyStatusApi, familyRelationApi, ePaymentScheduleApi, membershipTypeApi, getApiErrorMessage } from "services/api";
 import {
   blankQuickRegistrationForm,
   blankStudent,
@@ -318,6 +318,7 @@ import {
 import { useTShirtSizeOptions } from "composables/useTShirtSizeOptions";
 import { useHearAboutUsOptions } from "composables/useHearAboutUsOptions";
 
+// Grade level options state
 // Grade level options state
 
 const gradeLevels = ref([]);
@@ -359,11 +360,11 @@ const loadFamilyRelations = async () => {
 
 // E-Payment Schedule options state
 const ePaymentSchedules = ref([]);
-const ePaymentScheduleOptions = computed(() => 
+const ePaymentScheduleOptions = computed(() =>
   (ePaymentSchedules.value || [])
-    .filter((eps) => eps.active ?? eps.Active ?? true).map((eps) => ({ 
-      label: eps.name || eps.scheduleName || eps.Name, 
-      value: eps.id || eps.ePaymentScheduleId || eps.Id 
+    .filter((eps) => eps.active ?? eps.Active ?? true).map((eps) => ({
+      label: eps.name || eps.scheduleName || eps.Name,
+      value: eps.id || eps.ePaymentScheduleId || eps.Id
     }))
 );
 
@@ -378,11 +379,11 @@ const loadEPaymentSchedules = async () => {
 
 // Membership Type options state
 const membershipTypes = ref([]);
-const membershipTypeOptions = computed(() => 
+const membershipTypeOptions = computed(() =>
   (membershipTypes.value || [])
-    .filter((mt) => mt.active ?? mt.Active ?? true).map((mt) => ({ 
-      label: mt.name || mt.membershipName || mt.Name, 
-      value: mt.id || mt.membershipTypeId || mt.Id 
+    .filter((mt) => mt.active ?? mt.Active ?? true).map((mt) => ({
+      label: mt.name || mt.membershipName || mt.Name,
+      value: mt.id || mt.membershipTypeId || mt.Id
     }))
 );
 
@@ -524,8 +525,6 @@ const loadCapacity = async () => {
   }
 };
 
-
-
 onMounted(async () => {
   try {
     const [classResult, locationResult] = await Promise.all([classApi.list({ limit: 100, active: true }), locationApi.list({ limit: 100, active: true }), loadGradeLevels(), loadFamilyStatuses(), loadFamilyRelations(),
@@ -579,9 +578,9 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const emailRule = (val) => EMAIL_RE.test(String(val || "")) || "Enter a valid email";
 const optionalEmail = (val) => !String(val || "").trim() || emailRule(val);
 
-// For only-letter name fields 
+// For only-letter name fields
 const NAME_RE = /^[A-Za-z\s]+$/;
-//const nameOnlyRule = (val) => !val || NAME_RE.test(String(val)) || "Only letters are allowed";
+// const nameOnlyRule = (val) => !val || NAME_RE.test(String(val)) || "Only letters are allowed";
 
 const nameOnlyRule = (val) => {
   if (!val) return true;
@@ -595,32 +594,30 @@ const nameOnlyRule = (val) => {
   return true;
 };
 
-// Checks Minimum 4 years old 
+// Checks Minimum 4 years old
 const birthDateRule = (val) => {
-  if (!val) return "Required"; 
+  if (!val) return "Required";
   const birthDate = new Date(val);
   const today = new Date();
   // Future date check
   if (birthDate > today) {
     return "Birth date cannot be in the future";
   }
-  
+
   // Calculate age
   let age = today.getFullYear() - birthDate.getFullYear();
   const m = today.getMonth() - birthDate.getMonth();
   if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
     age--;
   }
-  
+
   // Minimum 4 years check
   if (age < 4) {
     return "Student must be at least 4 years old";
   }
-  
+
   return true;
 };
-
-
 
 // Runs the real Family list search by name — the closest thing to a duplicate check without a
 // dedicated endpoint.
@@ -651,8 +648,6 @@ const nextStep = async () => {
   const isLastStep = currentStep.value === STEPS.length;
   const valid = await stepForms[currentStep.value]?.validate();
   if (!valid) return;
-
- 
 
   const phoneError = REQUIRED_PHONE_BY_STEP[currentStep.value]?.();
   if (phoneError) {
