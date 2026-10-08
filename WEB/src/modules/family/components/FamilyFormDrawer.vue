@@ -26,12 +26,12 @@
          field in an unvisited tab would silently pass validation otherwise. -->
     <q-form ref="formRef" greedy>
       <div v-show="activeTab === 'family'" class="row q-col-gutter-md">
-        <app-text-field v-model="form.familyName" label="Family Name" required class="col-12 col-sm-6" :rules="[(v) => !!v || 'Family name is required']" />
+        <app-text-field v-model="form.familyName" label="Family Name" required class="col-12 col-sm-6" :rules="[(v) => !!v || 'Family name is required', nameOnlyRule]" />
         <app-select v-model="form.studioLocationId" label="Studio Location" :options="locationOptions" class="col-12 col-sm-6" />
         <!-- <app-select v-model="form.familyStatusId" label="Family Status" :options="familyStatusOptions" class="col-12 col-sm-6" /> -->
          <app-select v-model="form.familyStatusId" label="Family Status" :options="filteredFamilyStatusOptions" class="col-12 col-sm-6" />
         <app-select v-model="form.source" label="How Did You Hear About Us?" :options="sourceOptions" class="col-12 col-sm-6" />
-        <app-text-field v-model="form.referralName" label="Referral Name" class="col-12 col-sm-6" />
+        <app-text-field v-model="form.referralName" label="Referral Name" class="col-12 col-sm-6" :rules="[nameOnlyRule]"/>
 
         <div v-if="editing" class="col-12">
           <q-toggle v-model="form.active" label="Active" />
@@ -40,19 +40,19 @@
 
       <div v-show="activeTab === 'contacts'" class="row q-col-gutter-md">
         <div class="col-12 text-subtitle2 text-grey-8">Contact #1 (Primary)</div>
-        <app-text-field v-model="form.firstName" label="First Name" required class="col-12 col-sm-6" :rules="[(v) => !!v || 'First name is required']" />
-        <app-text-field v-model="form.lastName" label="Last Name" required class="col-12 col-sm-6" :rules="[(v) => !!v || 'Last name is required']" />
+        <app-text-field v-model="form.firstName" label="First Name" required class="col-12 col-sm-6" :rules="[(v) => !!v || 'First name is required',nameOnlyRule]" />
+        <app-text-field v-model="form.lastName" label="Last Name" required class="col-12 col-sm-6" :rules="[(v) => !!v || 'Last name is required',nameOnlyRule]" />
         <app-select v-model="form.relation" label="Relation" :options="relationOptions" class="col-12 col-sm-6" />
         <app-text-field
           v-model="form.email" label="Email" type="email" required class="col-12 col-sm-6"
           :error="!!primaryEmailError" :error-message="primaryEmailError"
-          :rules="[(v) => !!v || 'Email is required']"
+          :rules="[(v) => !!v || 'Email is required',emailRule]"
           hint="A login account is created for this contact."
         />
-        <app-text-field v-model="form.homePhone" label="Home Phone" class="col-12 col-sm-6" />
-        <app-text-field v-model="form.workPhone" label="Work Phone" class="col-12 col-sm-6" />
-        <app-text-field v-model="form.cellPhone" label="Cell Phone" class="col-12 col-sm-6" />
-        <app-text-field v-model="form.otherPhone" label="Other Phone" class="col-12 col-sm-6" />
+        <app-phone-input v-model="form.homePhone" label="Home Phone" class="col-12 col-sm-6 "  />
+        <app-phone-input v-model="form.workPhone" label="Work Phone" class="col-12 col-sm-6" />
+        <app-phone-input v-model="form.cellPhone" label="Cell Phone" class="col-12 col-sm-6" />
+        <app-phone-input v-model="form.otherPhone" label="Other Phone" class="col-12 col-sm-6" />
         <app-text-field v-model="form.fax" label="Fax" class="col-12 col-sm-6" />
         <div class="col-12 col-sm-6 toggle-row-inline"><q-toggle v-model="form.isBillingContact" color="primary" /><span class="q-ml-sm">Billing contact</span></div>
         <div class="col-12 col-sm-6 toggle-row-inline"><q-toggle v-model="form.isAuthorizedToPickUpStudent" color="primary" /><span class="q-ml-sm">Authorized to pick up student</span></div>
@@ -63,8 +63,8 @@
           <q-btn v-else-if="hasSecondaryContact && !editing" flat dense no-caps color="negative" icon="o_close" label="Remove" @click="removeSecondaryContact" />
         </div>
         <template v-if="hasSecondaryContact">
-          <app-text-field v-model="form.secondaryContact.firstName" label="First Name" required class="col-12 col-sm-6" :rules="[(v) => !!v || 'First name is required']" />
-          <app-text-field v-model="form.secondaryContact.lastName" label="Last Name" required class="col-12 col-sm-6" :rules="[(v) => !!v || 'Last name is required']" />
+          <app-text-field v-model="form.secondaryContact.firstName" label="First Name" required class="col-12 col-sm-6" :rules="[(v) => !!v || 'First name is required',nameOnlyRule]" />
+          <app-text-field v-model="form.secondaryContact.lastName" label="Last Name" required class="col-12 col-sm-6" :rules="[(v) => !!v || 'Last name is required',nameOnlyRule]" />
           <app-select v-model="form.secondaryContact.relation" label="Relation" :options="relationOptions" class="col-12 col-sm-6" />
           <app-text-field
             v-model="form.secondaryContact.email" label="Email" type="email" required class="col-12 col-sm-6"
@@ -87,8 +87,8 @@
         <app-text-field v-model.number="form.zipCode" label="ZIP Code" type="number" class="col-12 col-sm-4" />
 
         <div class="col-12 text-subtitle2 text-grey-8 q-mt-sm">Emergency Contact &amp; Health Insurance</div>
-        <app-text-field v-model="form.emergencyContactPerson" label="Emergency Contact Person" class="col-12 col-sm-6" />
-        <app-text-field v-model="form.emergencyPhone" label="Emergency Phone" class="col-12 col-sm-6" />
+        <app-text-field v-model="form.emergencyContactPerson" label="Emergency Contact Person" class="col-12 col-sm-6" :rules="[nameOnlyRule]"/>
+        <app-phone-input v-model="form.emergencyPhone" label="Emergency Phone" class="col-12 col-sm-6" />
         <app-text-field v-model="form.healthInsuranceCarrier" label="Health Insurance Carrier / Policy #" class="col-12" />
       </div>
 
@@ -129,11 +129,11 @@
               <q-btn flat dense no-caps color="negative" icon="o_close" label="Remove" @click="removeNewStudent(index)" />
             </div>
             <div class="row q-col-gutter-md q-mb-sm">
-              <app-text-field v-model="student.firstName" label="First Name" required class="col-12 col-sm-6" :rules="[(v) => !!v || 'First name is required']" />
-              <app-text-field v-model="student.lastName" label="Last Name" required class="col-12 col-sm-6" :rules="[(v) => !!v || 'Last name is required']" />
+              <app-text-field v-model="student.firstName" label="First Name" required class="col-12 col-sm-6" :rules="[(v) => !!v || 'First name is required', nameOnlyRule]" />
+              <app-text-field v-model="student.lastName" label="Last Name" required class="col-12 col-sm-6" :rules="[(v) => !!v || 'Last name is required', nameOnlyRule]" />
               <app-text-field
                 v-model="student.email" label="Student Email" type="email" required class="col-12 col-sm-6"
-                :rules="[(v) => !!v || 'Email is required']"
+                :rules="[(v) => !!v || 'Email is required',]"
                 hint="A separate login account is created for the student with this email."
               />
               <app-date-field v-model="student.birthDate" label="Birth Date" required class="col-12 col-sm-6" :rules="[(v) => !!v || 'Birth date is required']" />
@@ -232,6 +232,7 @@ import { blankFamilyForm, blankSecondaryContact, familyFormFromDetail } from "co
 import { RELATION_OPTIONS, GENDER_OPTIONS, blankStudent } from "composables/quickRegistrationForm";
 import { useTShirtSizeOptions } from "composables/useTShirtSizeOptions";
 import { useHearAboutUsOptions } from "composables/useHearAboutUsOptions";
+import AppPhoneInput from "components/common/AppPhoneInput.vue";
 
 import AppFormDialog from "components/common/AppFormDialog.vue";
 import AppSelect from "components/common/AppSelect.vue";
@@ -251,6 +252,24 @@ const props = defineProps({
 const filteredFamilyStatusOptions = computed(() => {
   return (props.familyStatusOptions || []).filter((s) => s.active ?? s.Active ?? true);
 });
+
+const NAME_RE = /^[A-Za-z\s]+$/;
+
+const nameOnlyRule = (val) => {
+  if (!val) return true;
+  const str = String(val);
+  if (!NAME_RE.test(str)) {
+    return "Only letters are allowed";
+  }
+  if (str.length > 30) {
+    return "Maximum 30 characters allowed";
+  }
+  return true;
+};
+
+//Rules for validating email addresses. The optionalEmail rule allows empty values, but if a value is present, it must be a valid email.
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const emailRule = (val) => EMAIL_RE.test(String(val || "")) || "Enter a valid email";
 
 // Grade level options state
 const gradeLevels = ref([]);
@@ -280,6 +299,8 @@ const isOpen = computed({
   set: (val) => emit("update:modelValue", val)
 });
 const editing = computed(() => props.mode === "edit");
+
+
 
 // ---- Reference option lists ----
 const locations = ref([]);
@@ -374,6 +395,7 @@ const resetForm = () => {
 
 const populateFrom = (detail) => {
   Object.assign(form, familyFormFromDetail(detail));
+  //form.familyStatusId = detail.familyStatusId || detail.FamilyStatusId || null;
   students.value = detail.students || [];
 };
 

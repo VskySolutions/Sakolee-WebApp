@@ -123,6 +123,7 @@ export const toCreateFamilyRequest = (form) => {
     studioLocationId: form.studioLocationId || null,
     source: form.heardAbout || null,
     referralName: form.referralName || null,
+    familyStatusId: form.familyStatusId,
     // Primary contact — inlined directly on CreateFamilyRequest (see FamiliesController remarks).
     firstName: form.primaryContact.firstName,
     lastName: form.primaryContact.lastName,

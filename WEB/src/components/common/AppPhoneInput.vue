@@ -146,20 +146,55 @@ const emitValue = () => {
   emit("update:modelValue", stored);
 };
 
+const PHONE_CHARS_RE = /^[0-9\s+\-()]*$/;
+
 const onInput = (val) => {
+
+  const rawVal = val || "";
+  if (rawVal && !PHONE_CHARS_RE.test(rawVal)) {
+    localError.value = "Only digits are allowed.";
+    display.value = rawVal;
+    emit("update:modelValue", rawVal);
+    emit("update:valid", false);
+    return;
+  }
+
   // Format as the user types using the selected country's pattern.
   display.value = new AsYouType(iso.value).input(val || "");
   emitValue();
   validate();
 };
 
+// const validate = () => {
+//   localError.value = "";
+
+//   if (display.value && iso.value && !isPossiblePhoneNumber(display.value, iso.value)) {
+//     localError.value = exampleNational.value
+//       ? `Enter a complete phone number for the selected country (e.g. ${exampleNational.value}).`
+//       : "Enter a complete phone number for the selected country.";
+//   }
+//   const valid = !localError.value;
+//   emit("update:valid", valid);
+//   return valid;
+// };
+
 const validate = () => {
   localError.value = "";
-  if (display.value && iso.value && !isPossiblePhoneNumber(display.value, iso.value)) {
+  
+  if (!display.value) {
+    const valid = true;
+    emit("update:valid", valid);
+    return valid;
+  }
+
+  if (!PHONE_CHARS_RE.test(display.value)) {
+    localError.value = "Only digits are allowed.";
+  } else if (iso.value && !isPossiblePhoneNumber(display.value, iso.value)) {
     localError.value = exampleNational.value
       ? `Enter a complete phone number for the selected country (e.g. ${exampleNational.value}).`
       : "Enter a complete phone number for the selected country.";
   }
+
   const valid = !localError.value;
   emit("update:valid", valid);
   return valid;

@@ -45,13 +45,13 @@
             <app-select v-model="form.heardAbout" label="How Did You Hear About Us?" :options="hearAboutUsOptions" />
           </div>
           <div class="col-12 col-md-6">
-            <app-text-field v-model="form.referralName" label="Referral Name" placeholder="Friend or student name (optional)" />
+            <app-text-field v-model="form.referralName" label="Referral Name" placeholder="Friend or student name (optional)" :rules="[nameOnlyRule]"/>
           </div>
           <div class="col-12 col-md-6">
             <app-select v-model="form.studioLocationId" label="Studio Location" required :options="locationOptions" :rules="[required]" />
           </div>
           <div class="col-12 col-md-6">
-            <app-text-field v-model="form.familyName" label="Family Name" required placeholder="e.g. Miller Family" :rules="[required]" />
+            <app-text-field v-model="form.familyName" label="Family Name" required placeholder="e.g. Miller Family" :rules="[required,nameOnlyRule]" />
           </div>
 
           <div class="col-12 col-md-6">
@@ -76,13 +76,13 @@
             <div class="col-12 col-md-4">
               <app-text-field
                 v-model="contact.model.firstName" label="First Name" placeholder="First Name"
-                :required="contact.required" :rules="contact.required ? [required] : []"
+                :required="contact.required" :rules="contact.required ? [required, nameOnlyRule] : [nameOnlyRule]"
               />
             </div>
             <div class="col-12 col-md-4">
               <app-text-field
                 v-model="contact.model.lastName" label="Last Name" placeholder="Last Name"
-                :required="contact.required" :rules="contact.required ? [required] : []"
+                :required="contact.required" :rules="contact.required ? [required, nameOnlyRule] : [nameOnlyRule]"
               />
             </div>
             <div class="col-12 col-md-4">
@@ -127,7 +127,7 @@
         <div class="step-subtitle-inline">&bull; Emergency Contact &amp; Health Insurance</div>
         <div class="row q-col-gutter-md">
           <div class="col-12 col-md-6">
-            <app-text-field v-model="form.emergencyContactName" label="Emergency Contact Person" required placeholder="Full name &amp; relationship" :rules="[required]" />
+            <app-text-field v-model="form.emergencyContactName" label="Emergency Contact Person" required placeholder="Full name &amp; relationship" :rules="[required, nameOnlyRule]" />
           </div>
           <div class="col-12 col-md-6">
             <app-phone-input v-model="form.emergencyPhone" v-model:country="form.emergencyPhoneCountry" label="Emergency Phone" required />
@@ -150,10 +150,10 @@
           </div>
           <div class="row q-col-gutter-md">
             <div class="col-12 col-md-4">
-              <app-text-field v-model="student.firstName" label="First Name" required placeholder="Student First Name" :rules="[required]" />
+              <app-text-field v-model="student.firstName" label="First Name" required placeholder="Student First Name" :rules="[required,nameOnlyRule]" />
             </div>
             <div class="col-12 col-md-4">
-              <app-text-field v-model="student.lastName" label="Last Name" required placeholder="Student Last Name" :rules="[required]" />
+              <app-text-field v-model="student.lastName" label="Last Name" required placeholder="Student Last Name" :rules="[required,nameOnlyRule]" />
             </div>
             <div class="col-12 col-md-4">
               <app-text-field
@@ -163,7 +163,7 @@
               />
             </div>
             <div class="col-12 col-md-4">
-              <app-date-field v-model="student.birthDate" label="Birth Date" required :rules="[required]" />
+              <app-date-field v-model="student.birthDate" label="Birth Date" required :rules="[required,birthDateRule]" />
             </div>
             <div class="col-12 col-md-4">
               <app-select v-model="student.gender" label="Gender" :options="GENDER_OPTIONS" />
@@ -516,6 +516,49 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const emailRule = (val) => EMAIL_RE.test(String(val || "")) || "Enter a valid email";
 const optionalEmail = (val) => !String(val || "").trim() || emailRule(val);
 
+// For only-letter name fields 
+const NAME_RE = /^[A-Za-z\s]+$/;
+//const nameOnlyRule = (val) => !val || NAME_RE.test(String(val)) || "Only letters are allowed";
+
+const nameOnlyRule = (val) => {
+  if (!val) return true;
+  const str = String(val);
+  if (!NAME_RE.test(str)) {
+    return "Only letters are allowed";
+  }
+  if (str.length > 30) {
+    return "Maximum 30 characters allowed";
+  }
+  return true;
+};
+
+// Checks Minimum 4 years old 
+const birthDateRule = (val) => {
+  if (!val) return "Required"; 
+  const birthDate = new Date(val);
+  const today = new Date();
+  // Future date check
+  if (birthDate > today) {
+    return "Birth date cannot be in the future";
+  }
+  
+  // Calculate age
+  let age = today.getFullYear() - birthDate.getFullYear();
+  const m = today.getMonth() - birthDate.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+    age--;
+  }
+  
+  // Minimum 4 years check
+  if (age < 4) {
+    return "Student must be at least 4 years old";
+  }
+  
+  return true;
+};
+
+
+
 // Runs the real Family list search by name — the closest thing to a duplicate check without a
 // dedicated endpoint.
 const runDuplicateCheck = async () => {
@@ -549,6 +592,8 @@ const nextStep = async () => {
   const isLastStep = currentStep.value === STEPS.length;
   const valid = await stepForms[currentStep.value]?.validate();
   if (!valid) return;
+
+ 
 
   const phoneError = REQUIRED_PHONE_BY_STEP[currentStep.value]?.();
   if (phoneError) {
