@@ -218,6 +218,14 @@ export const studentApi = {
   sendCredentials: (id) => api.post(`/api/admin/students/${id}/send-credentials`).then(unwrap)
 };
 
+// Lead Files (Families): students not currently in a running class. Read-only list.
+export const leadApi = {
+  // params: { page, limit, sortBy?, descending?, studioLocationId?, contactFirstName?,
+  // contactLastName?, studentFirstName?, studentLastName?, email? }. Response: { data: LeadSummary[],
+  // meta: { totalRecords } }.
+  list: (params) => api.get("/api/admin/leads", { params }).then(envelope)
+};
+
 export const userApi = {
   // params: { page, limit, search?, isActive?, name?, email?, phone?, role?, group?, tenantId? }. Without
   // `tenantId` this is the caller's ACTIVE tenant.

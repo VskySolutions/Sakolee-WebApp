@@ -855,6 +855,20 @@ const sections = [
       { label: "All Families", icon: "o_groups", to: "/families", permissions: [Permissions.FamiliesRead] },
       // Gated like its route — part of the Families area.
       { label: "Quick Registration", icon: "o_how_to_reg", to: { name: "family_quick_registration" }, permissions: [Permissions.FamiliesRead] },
+      // Lead Files — students without a running class. All Leads is the one page so far.
+      {
+        key: "lead-files",
+        label: "Lead Files",
+        icon: "o_contact_page",
+        items: [
+          {
+            label: "All Leads",
+            icon: "o_contact_page",
+            to: "/families/leads",
+            permissions: [Permissions.FamiliesRead]
+          }
+        ]
+      },
       // Families Settings
       {
         key: "families-Configuration",
@@ -913,7 +927,6 @@ const sections = [
       }
       // { label: "Email/Text Families", icon: "o_mail", to: "/families/email", permissions: null },
       // { label: "Drop Unpaid Families", icon: "o_money_off", to: "/families/drop-unpaid", permissions: null },
-      // { label: "Lead Files", icon: "o_contact_page", to: "/families/leads", permissions: null },
       // { label: "Family Report", icon: "o_summarize", to: "/families/report", permissions: null }
     ]
   },

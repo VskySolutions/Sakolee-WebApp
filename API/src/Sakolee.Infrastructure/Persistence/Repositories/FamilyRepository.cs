@@ -74,6 +74,26 @@ internal sealed class FamilyRepository : IFamilyRepository
         return (items, total);
     }
 
+    /// <summary>Loads the named families (with their studio location) by id, scoped the way <see cref="ListAsync"/> scopes.</summary>
+    public async Task<IReadOnlyList<Family>> ListByIdsAsync(IReadOnlyCollection<Guid> ids, Guid? tenantId, CancellationToken cancellationToken = default)
+    {
+        if (ids.Count == 0)
+        {
+            return Array.Empty<Family>();
+        }
+
+        // Same cross-tenant/ambient split as ListAsync: an explicit tenant id pins the read and bypasses
+        // the ambient filter; otherwise the ambient set applies as-is.
+        var query = tenantId is { } tid
+            ? _dbContext.Families.IgnoreQueryFilters().Where(f => f.TenantId == tid && !f.Deleted)
+            : _dbContext.Families.AsQueryable();
+
+        return await query
+            .Include(f => f.StudioLocation)
+            .Where(f => ids.Contains(f.Id))
+            .ToListAsync(cancellationToken);
+    }
+
     public async Task AddAsync(Family family, CancellationToken cancellationToken = default)
         => await _dbContext.Families.AddAsync(family, cancellationToken);
 
