@@ -102,7 +102,10 @@ export const classApi = {
   remove: (id) => api.delete(`/api/admin/classes/${id}`).then(envelope),
   // Primary Instructor options: the active tenant's active Staff users, as [{ id, name }].
   instructors: () => api.get("/api/admin/classes/instructors").then(envelope),
+  // Policies picker options: the active tenant's active policies, as [{ id, name }].
+  policies: () => api.get("/api/admin/classes/policies").then(envelope),
   enrollments: (id, params) => api.get(`/api/admin/classes/${id}/enrollments`, { params }).then(envelope),
+  listByInstructor: (instructorId, params) => api.get(`/api/admin/classes/instructor/${instructorId}`, { params }).then(envelope),
 };
 
 export const classCategoryApi = {
@@ -620,6 +623,21 @@ export const classRoomApi = {
   create: (payload) => api.post("/api/admin/class-rooms", payload).then(unwrap),
   update: (id, payload) => api.put(`/api/admin/class-rooms/${id}`, payload).then(unwrap),
   delete: (id) => api.delete(`/api/admin/class-rooms/${id}`).then(unwrap)
+};
+
+/**
+ * API service for managing policy operations (PoliciesController). A policy's `classIds` are the classes it
+ * applies to; on update, leaving `classIds` out keeps the current ones.
+ */
+export const policyApi = {
+  // Paged grid rows: { data: PolicySummary[], meta: { totalRecords } }. Content is not included.
+  list: (params) => api.get("/api/admin/policies", { params }).then(envelope),
+  // One policy with its content and classIds.
+  get: (id) => api.get(`/api/admin/policies/${id}`).then(unwrap),
+  create: (payload) => api.post("/api/admin/policies", payload).then(unwrap),
+  update: (id, payload) => api.put(`/api/admin/policies/${id}`, payload).then(unwrap),
+  // Soft delete; also unlinks the policy from its classes.
+  delete: (id) => api.delete(`/api/admin/policies/${id}`).then(unwrap)
 };
 
 /**

@@ -100,3 +100,4 @@ yarn-error.log*
 # folded into the same tree, and stays listed so an older deployment's leftovers are never committed.
 media-uploads/
 uf-attachments/
+API/src/Sakolee.Api/appsettings.Development.json

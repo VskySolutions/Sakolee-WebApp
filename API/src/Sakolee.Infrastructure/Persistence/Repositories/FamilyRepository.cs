@@ -21,6 +21,7 @@ internal sealed class FamilyRepository : IFamilyRepository
             .Include(f => f.Contacts.Where(c => !c.Deleted))
             .Include(f => f.FamilyStatus)
             .Include(f => f.StudioLocation)
+            .Include(f => f.Address)
             .FirstOrDefaultAsync(f => f.Id == id, cancellationToken);
 
     public Task<Family?> GetByIdUnscopedAsync(Guid id, CancellationToken cancellationToken = default)
@@ -29,6 +30,7 @@ internal sealed class FamilyRepository : IFamilyRepository
             .Include(f => f.Contacts.Where(c => !c.Deleted))
             .Include(f => f.FamilyStatus)
             .Include(f => f.StudioLocation)
+            .Include(f => f.Address)
             .FirstOrDefaultAsync(f => f.Id == id && !f.Deleted, cancellationToken);
 
     public Task<bool> FamilyNameExistsAsync(Guid tenantId, string familyName, Guid? excludingFamilyId = null, CancellationToken cancellationToken = default)

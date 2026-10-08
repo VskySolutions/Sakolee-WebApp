@@ -1,3 +1,5 @@
+import { blankAddress, addressFromResponse } from "utils/address";
+
 // A blank Family form — one canonical shape shared by the family module's Create/Edit drawer
 // (FamilyFormDrawer) and read-only View drawer (FamilyViewDrawer).
 export const blankSecondaryContact = () => ({
@@ -30,11 +32,8 @@ export const blankFamilyForm = () => ({
   isBillingContact: true,
   isAuthorizedToPickUpStudent: true,
   secondaryContact: null,
-  address1: "",
-  address2: "",
-  city: "",
-  state: "",
-  zipCode: null,
+  // Household address — the Addresses table shape AppAddressFields edits (see utils/address).
+  address: blankAddress(),
   emergencyContactPerson: "",
   emergencyPhone: "",
   healthInsuranceCarrier: "",
@@ -79,11 +78,7 @@ export const familyFormFromDetail = (detail) => {
         isAuthorizedToPickUpStudent: !!secondary.isAuthorizedToPickUpStudent
       }
       : null,
-    address1: detail.address1 || "",
-    address2: detail.address2 || "",
-    city: detail.city || "",
-    state: detail.state || "",
-    zipCode: detail.zipCode ?? null,
+    address: addressFromResponse(detail.address),
     emergencyContactPerson: detail.emergencyContactPerson || "",
     emergencyPhone: detail.emergencyPhone || "",
     healthInsuranceCarrier: detail.healthInsuranceCarrier || "",

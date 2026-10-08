@@ -45,6 +45,7 @@ import membershipTypeRoutes from "modules/membership-type/routes";
 import studentGradeLevelRoutes from "modules/student-grade-level/routes";
 import billingCycleRoutes from "modules/billing-cycle/routes";
 import billingMethodRoutes from "modules/billing-method/routes";
+import policyRoutes from "modules/policy/routes";
 
 routes.push(...accountRoutes);
 routes.push(...authRoutes);
@@ -79,6 +80,7 @@ routes.push(...billingMethodRoutes);
 routes.push(...classRoomRoutes);
 routes.push(...membershipTypeRoutes);
 routes.push(...studentGradeLevelRoutes);
+routes.push(...policyRoutes);
 
 
 

@@ -40,6 +40,7 @@ public sealed class ClassesController : ControllerBase
     private readonly IFamilyRepository _families;
     private readonly IStudentRepository _students;
     private readonly IPersonRepository _persons;
+    private readonly IPolicyRepository _policies;
     private readonly IActorAccessor _actorAccessor;
     private readonly IUnitOfWork _unitOfWork;
     private readonly IAuditTrailService _audit;
@@ -54,6 +55,7 @@ public sealed class ClassesController : ControllerBase
         IFamilyRepository families,
         IStudentRepository students,
         IPersonRepository persons,
+        IPolicyRepository policies,
         IActorAccessor actorAccessor,
         IUnitOfWork unitOfWork,
         IAuditTrailService audit)
@@ -67,6 +69,7 @@ public sealed class ClassesController : ControllerBase
         _families = families;
         _students = students;
         _persons = persons;
+        _policies = policies;
         _actorAccessor = actorAccessor;
         _unitOfWork = unitOfWork;
         _audit = audit;
@@ -129,6 +132,7 @@ public sealed class ClassesController : ControllerBase
             request.AllowWaitlistEnrollment, request.AllowPortalDropRequests, request.DropInFee);
 
         await _classes.AddAsync(entity, cancellationToken);
+        await SetPoliciesAsync(entity.Id, request.PolicyIds, cancellationToken);
         await _audit.AddAsync(nameof(Class), entity.Id.ToString(), "Created", details: entity.ClassName, cancellationToken: cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
@@ -205,6 +209,10 @@ public sealed class ClassesController : ControllerBase
         var additionalIds = ParseInstructorIds(entity.AdditionalInstructors);
         var instructorNames = await ResolveActorNamesAsync(
             additionalIds.Select(i => (Guid?)i).Append(entity.PrimaryInstructorId), cancellationToken);
+        // Policies are tenant-scoped; with no active tenant the query filter would not narrow them.
+        var policies = User.GetActiveTenantId() is not null
+            ? await _policies.ListByClassIdAsync(entity.Id, cancellationToken)
+            : Array.Empty<Policy>();
 
         return Ok(ApiResponseFactory.Success(
             ToSummary(entity, names) with
@@ -219,6 +227,7 @@ public sealed class ClassesController : ControllerBase
                 SessionName = session?.Name,
                 RoomName = room?.Name,
                 PrimaryInstructorName = NameOf(instructorNames, entity.PrimaryInstructorId),
+                Policies = policies.Select(p => new ClassPolicyOption(p.Id, p.Name)).ToList(),
             },
             "Class retrieved."));
     }
@@ -386,6 +395,30 @@ public sealed class ClassesController : ControllerBase
         return Ok(ApiResponseFactory.Success(options, "Instructors retrieved."));
     }
 
+    #region Class Policies
+
+    /// <summary>
+    /// The Policies picker's options: the active tenant's active policies, in display order. Readable with
+    /// Classes permissions alone, so the class form does not need policies.read.
+    /// </summary>
+    [HttpGet("policies")]
+    [RequireAnyPermission(Permissions.ClassesRead, Permissions.ClassesWrite)]
+    [ProducesResponseType<ApiResponse<IReadOnlyList<ClassPolicyOption>>>(StatusCodes.Status200OK)]
+    public async Task<IActionResult> ListPolicies(CancellationToken cancellationToken)
+    {
+        if (User.GetActiveTenantId() is null)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, ApiResponseFactory.Forbidden("No active tenant for the caller."));
+        }
+
+        // Active policies only; a class's already-saved inactive ones come back on the class read instead.
+        var policies = await _policies.ListActiveAsync(cancellationToken);
+        var options = policies.Select(p => new ClassPolicyOption(p.Id, p.Name)).ToList();
+        return Ok(ApiResponseFactory.Success(options, "Policies retrieved."));
+    }
+
+    #endregion
+
     [HttpPut("{id:guid}")]
     [RequirePermission(Permissions.ClassesWrite)]
     [ProducesResponseType<ApiResponse<ClassSummary>>(StatusCodes.Status200OK)]
@@ -397,9 +430,10 @@ public sealed class ClassesController : ControllerBase
             return NotFound(ApiResponseFactory.NotFound("Class not found."));
         }
 
-        // Check if existing class schedule for instructor and additional instructor.
+        // Check if existing class schedule for instructor and additional instructor. The class being edited
+        // is excluded — otherwise it always clashes with its own saved schedule.
         var conflict = await _classes.ValidateInstructorScheduleAsync(
-                                                                        null,
+                                                                        id,
                                                                         request.PrimaryInstructorId,
                                                                         request.AdditionalInstructorIds,
                                                                         request.StartDate,
@@ -431,6 +465,7 @@ public sealed class ClassesController : ControllerBase
         entity.UpdatedOnUtc = DateTime.UtcNow;
         entity.UpdatedById = CurrentActorId();
         _classes.Update(entity);
+        await SetPoliciesAsync(entity.Id, request.PolicyIds, cancellationToken);
 
         await _audit.AddAsync(nameof(Class), entity.Id.ToString(), "Updated", cancellationToken: cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
@@ -454,12 +489,69 @@ public sealed class ClassesController : ControllerBase
         entity.UpdatedOnUtc = DateTime.UtcNow;
         entity.UpdatedById = CurrentActorId();
         _classes.Update(entity);
+        // A deleted class no longer carries the tenant's policies.
+        await SetPoliciesAsync(entity.Id, Array.Empty<Guid>(), cancellationToken);
         await _audit.AddAsync(nameof(Class), entity.Id.ToString(), "Deleted", cancellationToken: cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
         return Ok(ApiResponseFactory.Success(new { classId = id }, "Class deleted."));
     }
 
+    [HttpGet("instructor/{instructorId:guid}")]
+    [RequirePermission(Permissions.ClassesRead)]
+    [ProducesResponseType<ApiResponse<IReadOnlyList<StaffClassSummary>>>(StatusCodes.Status200OK)]
+    public async Task<IActionResult> ListByInstructor(Guid instructorId, [FromQuery] int page = 1, [FromQuery] int limit = 20, [FromQuery] string? sortBy = null, [FromQuery] bool descending = true, CancellationToken cancellationToken = default)
+    {
+        page = Math.Max(1, page);
+        limit = Math.Clamp(limit, 1, 100);
+
+        var classes = await _classes.ListByInstructorIdAsync(instructorId, cancellationToken);
+
+        var classIds = classes.Select(c => c.Id).ToList();
+
+        var enrollmentCounts = await _classes.CountEnrollmentsByClassIdsAsync(classIds, cancellationToken);
+
+        var result = new List<StaffClassSummary>();
+
+        foreach (var @class in classes)
+        {
+            var location = @class.LocationId is { } locationId ? await _locations.GetByIdAsync(locationId, cancellationToken) : null;
+
+            var session = @class.SessionId is { } sessionId ? await _sessions.GetByIdAsync(sessionId, cancellationToken) : null;
+
+            var room = @class.RoomId is { } roomId ? await _rooms.GetByIdUnscopedAsync(roomId, cancellationToken) : null;
+
+            enrollmentCounts.TryGetValue(@class.Id, out var currentEnrollment);
+
+            result.Add(new StaffClassSummary(@class.Id, location?.Name, @class.ClassName, @class.Active ? "Active" : "Inactive", session?.Name, currentEnrollment, @class.MaxWaitlistSize ?? 0, room?.Name, @class.StartDate, @class.EndDate, @class.ActiveDays, BuildTimes(@class.StartTime, @class.EndTime)));
+        }
+
+        var sorted = StaffClassSorts.Apply(result, sortBy, descending).ToList();
+
+        var pageItems = sorted.Skip((page - 1) * limit).Take(limit).ToList();
+
+        return Ok(ApiResponseFactory.Paginated(pageItems, "Staff classes retrieved.", page, limit, sorted.Count));
+    }
+
     // ---- helpers ----
+
+    #region Class Policy Helpers
+
+    /// <summary>
+    /// Replaces the class's policies with <paramref name="policyIds"/>; null leaves them unchanged. Skipped with
+    /// no active tenant, since policies are tenant-scoped and the mapping sync relies on the tenant filter.
+    /// </summary>
+    private async Task SetPoliciesAsync(Guid classId, IReadOnlyList<Guid>? policyIds, CancellationToken cancellationToken)
+    {
+        if (policyIds is null || User.GetActiveTenantId() is null)
+        {
+            return;
+        }
+
+        // Staged on the shared DbContext; saved with the class by the caller's SaveChangesAsync.
+        await _policies.SetPoliciesForClassAsync(classId, policyIds, cancellationToken);
+    }
+
+    #endregion
 
     private static void ApplyRequest(
         Class entity, Guid? locationId, Guid? roomId, Guid? sessionId, Guid? primaryInstructorId,
@@ -591,4 +683,40 @@ public sealed class ClassesController : ControllerBase
         c.AllowDropIns, c.ParentPortalSchedule, c.MakeupsInClass, c.AllowWaitlistEnrollment,
         c.AllowPortalDropRequests, c.DropInFee, c.Active,
         NameOf(names, c.CreatedById), c.CreatedOnUtc, NameOf(names, c.UpdatedById), c.UpdatedOnUtc);
+
+    private static string? BuildTimes(
+    string? startTime,
+    string? endTime)
+    {
+        if (string.IsNullOrWhiteSpace(startTime) &&
+            string.IsNullOrWhiteSpace(endTime))
+        {
+            return null;
+        }
+
+        if (string.IsNullOrWhiteSpace(endTime))
+        {
+            return startTime;
+        }
+
+        if (string.IsNullOrWhiteSpace(startTime))
+        {
+            return endTime;
+        }
+
+        return $"{startTime} - {endTime}";
+    }
+
+    private static readonly SortMap<StaffClassSummary> StaffClassSorts = new SortMap<StaffClassSummary>("className")
+        .Add("locationName", c => c.LocationName)
+        .Add("className", c => c.ClassName)
+        .Add("status", c => c.Status)
+        .Add("sessionName", c => c.SessionName)
+        .Add("currentEnrollment", c => c.CurrentEnrollment)
+        .Add("waitList", c => c.WaitList)
+        .Add("roomName", c => c.RoomName)
+        .Add("startDate", c => c.StartDate)
+        .Add("endDate", c => c.EndDate)
+        .Add("days", c => c.Days)
+        .Add("times", c => c.Times);
 }
