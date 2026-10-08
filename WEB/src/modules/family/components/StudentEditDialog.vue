@@ -1,10 +1,10 @@
 <template>
   <app-form-dialog
     v-model="open"
-    :title="enrollmentOnly ? 'Edit Class Enrollment' : 'Edit Student'"
-    :subtitle="enrollmentOnly ? `Choose the classes ${studentName || 'this student'} is enrolled in.` : 'Update the student\'s identity, school, fee, medical, and notes.'"
+    :title="isCreate ? 'Add Student' : enrollmentOnly ? 'Edit Class Enrollment' : 'Edit Student'"
+    :subtitle="isCreate ? 'Enter the student\'s identity, school, fee, medical, and notes.' : enrollmentOnly ? `Choose the classes ${studentName || 'this student'} is enrolled in.` : 'Update the student\'s identity, school, fee, medical, and notes.'"
     :saving="saving"
-    :save-label="enrollmentOnly ? 'Update Enrollment' : 'Update Student'"
+    :save-label="isCreate ? 'Save Student' : enrollmentOnly ? 'Update Enrollment' : 'Update Student'"
     :size="enrollmentOnly ? 'md' : 'lg'"
     @submit="save"
   >
@@ -101,28 +101,28 @@ const loadGradeLevels = async () => {
 // Required validation rule
 const required = (val) => (val !== null && val !== undefined && String(val).trim() !== "") || "Required";
 
-// Birth date validation rule Checks Minimum 4 years old 
+// Birth date validation rule Checks Minimum 4 years old
 const birthDateRule = (val) => {
-  if (!val) return "Required"; 
+  if (!val) return "Required";
   const birthDate = new Date(val);
   const today = new Date();
   // Future date check
   if (birthDate > today) {
     return "Birth date cannot be in the future";
   }
-  
+
   // Calculate age
   let age = today.getFullYear() - birthDate.getFullYear();
   const m = today.getMonth() - birthDate.getMonth();
   if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
     age--;
   }
-  
+
   // Minimum 4 years check
   if (age < 4) {
     return "Student must be at least 4 years old";
   }
-  
+
   return true;
 };
 
@@ -130,7 +130,7 @@ const birthDateRule = (val) => {
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const emailRule = (val) => EMAIL_RE.test(String(val || "")) || "Enter a valid email";
 
-// For only-letter name fields 
+// For only-letter name fields
 const NAME_RE = /^[A-Za-z\s]+$/;
 //const nameOnlyRule = (val) => !val || NAME_RE.test(String(val)) || "Only letters are allowed";
 
@@ -167,7 +167,9 @@ const nameOnlyRule = (val) => {
 
 const props = defineProps({
   modelValue: { type: Boolean, default: false },
+  // No studentId → Add mode: a new student is created in `familyId`.
   studentId: { type: String, default: null },
+  familyId: { type: String, default: null },
   // Class Enrollment tab: show only the class selection.
   enrollmentOnly: { type: Boolean, default: false }
 });
@@ -183,6 +185,7 @@ const loading = ref(false);
 const saving = ref(false);
 const emailError = ref("");
 const formRef = ref(null);
+const isCreate = computed(() => !props.studentId);
 
 const blankForm = () => ({
   firstName: "",
@@ -296,6 +299,15 @@ watch(() => props.modelValue, async (isOpen) => {
   emailError.value = "";
   loading.value = true;
   loadedClassIds.value = [];
+  if (isCreate.value) {
+    preserved.familyId = props.familyId;
+    try {
+      await Promise.all([loadClasses(), loadGradeLevels()]);
+    } finally {
+      loading.value = false;
+    }
+    return;
+  }
   try {
     // const [row] = await Promise.all([studentApi.get(props.studentId), loadClasses(), loadGradeLevels()]);
     const [row] = await Promise.all([studentApi.get(props.studentId), loadClasses(), loadGradeLevels(), loadCapacity()]);
@@ -392,8 +404,13 @@ const save = async () => {
 
   saving.value = true;
   try {
-    await studentApi.update(props.studentId, payload);
-    notify.success(props.enrollmentOnly ? "Class enrollment updated." : "Student updated.");
+    if (isCreate.value) {
+      await studentApi.create(payload);
+      notify.success("Student added.");
+    } else {
+      await studentApi.update(props.studentId, payload);
+      notify.success(props.enrollmentOnly ? "Class enrollment updated." : "Student updated.");
+    }
     open.value = false;
     emit("saved");
   // } catch (err) {
