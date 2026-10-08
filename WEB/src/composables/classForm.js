@@ -71,6 +71,7 @@ export const blankClassForm = () => ({
   parentPortalSchedule: false,
   allowPortalDropRequests: false,
   policyGroups: "",
+  policyIds: [],
   active: true
 });
 
@@ -116,7 +117,8 @@ export const toClassPayload = (form) => ({
   allowPortalEnrollment: form.allowPortalEnrollment,
   parentPortalSchedule: form.parentPortalSchedule,
   allowPortalDropRequests: form.allowPortalDropRequests,
-  policyGroups: form.policyGroups || null
+  policyGroups: form.policyGroups || null,
+  policyIds: form.policyIds || []
 });
 
 // Maps a ClassSummary API row onto the form shape for the Edit/View pages.
@@ -172,5 +174,8 @@ export const classFormFromRow = (row) => ({
   parentPortalSchedule: !!row.parentPortalSchedule,
   allowPortalDropRequests: !!row.allowPortalDropRequests,
   policyGroups: row.policyGroups || "",
+  policyIds: (row.policies || []).map((p) => p.id),
+  // Display-only: the saved policies with names, for ones no longer in the active picker list.
+  policyNames: row.policies || [],
   active: row.active
 });

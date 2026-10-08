@@ -11,12 +11,10 @@
       :search="search"
       show-search
       search-placeholder="Search class room"
-      
       show-add
       add-label="Create Class Room"
       show-back
       @update:search="search = $event"
-      
       @add="openCreate"
       @back="$router.back()"
     />
@@ -26,7 +24,6 @@
       @filters="filterOpen = true" -->
 
     <!-- Hidden/Commented Filter Drawer Component -->
-     
     <!-- Filter Drawer Component -->
     <!-- <app-filter-drawer
       v-model="filterOpen"
@@ -38,7 +35,6 @@
         v-model="filters"
         :columns="filterableColumns"
       />
-
       <q-toggle
         v-if="canManageDeleted"
         v-model="showDeleted"
@@ -87,7 +83,6 @@
         <q-td :props="cell">
           <!-- <div class="row items-center q-gutter-x-sm"></div> -->
             <div class="flex flex-center">
-             
             <q-toggle
               :model-value="cell.row.active ?? cell.row.Active ?? cell.row.isActive ?? cell.row.IsActive ?? true"
               @update:model-value="(val) => updateStatus(cell.row, val)"
@@ -180,6 +175,7 @@ import AppColumnFilters from "components/common/AppColumnFilters.vue";
 import CreateEditClassRoom from "src/modules/class-room/components/create_edit.vue";
 import ViewClassRoom from "src/modules/class-room/components/view.vue";
 
+// Reactive state variables for managing the component's state
 const { showDeleted, canManageDeleted } = useDeletedRecords();
 const notify = useNotify();
 const { confirm } = useConfirm();
@@ -194,6 +190,7 @@ const selectedRow = ref(null);
 const viewOpen = ref(false);
 const selectedViewId = ref(null);
 
+//Load locations on component mount
 const loadLocations = async () => {
   try {
     const response = await locationApi.list({ limit: 1000 });
@@ -216,19 +213,17 @@ const loadLocations = async () => {
   }
 };
 
+// Resolves the location name from a row object, checking various possible property names and falling back to the locationMap if necessary.
 const resolveLocationName = (row) => {
   if (!row) return "—";
-  
   const directName = row.locationName || row.LocationName || row.locationTitle || row.LocationTitle;
   if (directName) return directName;
-
   const nestedLoc = row.location || row.Location;
   if (nestedLoc) {
     if (typeof nestedLoc === 'string') return nestedLoc;
     const nestedName = nestedLoc.name || nestedLoc.Name || nestedLoc.locationName || nestedLoc.LocationName;
     if (nestedName) return nestedName;
   }
-
   const locId = row.locationId || row.LocationId;
   if (locId && locationMap.value[locId]) {
     return locationMap.value[locId];
@@ -236,12 +231,7 @@ const resolveLocationName = (row) => {
   return "—";
 };
 
-// const formatDate = (value) => {
-//   if (!value) return "—";
-//   const date = new Date(value);
-//   return isNaN(date.getTime()) ? String(value) : date.toLocaleString();
-// };
-
+// Formats the date for display, handling invalid dates and .NET MinValue
 const formatDate = (value) => {
   if (!value) return "—";
   const date = new Date(value);
@@ -250,6 +240,7 @@ const formatDate = (value) => {
   return date.toLocaleString();
 };
 
+// Table columns to display class room data
 const columns = [
   { 
     name: "name", 
@@ -323,6 +314,7 @@ const columns = [
   }
 ];
 
+// Use the useListTable composable to manage table data, loading state, search, and pagination
 const {
   rows,
   loading,
@@ -396,17 +388,20 @@ const {
 //   server: false
 // });
 
+// Debounced reload function to reset pagination and reload data when search or showDeleted changes
 const reload = debounce(() => {
   pagination.value.page = 1;
   load();
 }, 300);
 
+// Watchers to trigger reload on search or showDeleted changes
 watch(search, reload);
 watch(showDeleted, () => {
   pagination.value.page = 1;
   load();
 });
 
+// Load locations and initial data on component mount
 onMounted(async () => {
   pagination.value.sortBy = 'createdOnUtc';
   pagination.value.descending = true;
@@ -414,12 +409,14 @@ onMounted(async () => {
   load();
 });
 
+// Function to open the create form, resetting editingId and selectedRow
 const openCreate = () => {
   editingId.value = null;
   selectedRow.value = null;
   formOpen.value = true;
 };
 
+// Function to open the edit form, setting editingId and selectedRow based on the provided row
 const openEdit = (row) => {
   const id = row.id || row.Id || row.classRoomId || row.ClassRoomId;
   if (!id) {
@@ -431,6 +428,7 @@ const openEdit = (row) => {
   formOpen.value = true;
 };
 
+// Function to update the status of a class room, handling API calls and error rollback
 const updateStatus = async (row, newStatus) => {
   const id = row.id || row.Id || row.classRoomId || row.ClassRoomId;
   if (!id) return;
@@ -461,6 +459,7 @@ const updateStatus = async (row, newStatus) => {
   }
 };
 
+// Function to handle the saved event from the create/edit form, resetting pagination and reloading data
 const handleSaved = () => {
   pagination.value.page = 1;
   pagination.value.sortBy = 'createdOnUtc';
@@ -468,6 +467,7 @@ const handleSaved = () => {
   load();
 };
 
+// Function to open the view drawer for a specific class room, setting the selectedViewId
 const openView = (row) => {
   const id = row.id || row.Id || row.classRoomId || row.ClassRoomId;
   if (!id) {
@@ -478,6 +478,7 @@ const openView = (row) => {
   viewOpen.value = true;
 };
 
+// Function to remove a class room, prompting for confirmation and handling API deletion
 const removeClassRoom = async (row) => {
   const id = row.id || row.Id || row.classRoomId || row.ClassRoomId;
   if (!id) return;

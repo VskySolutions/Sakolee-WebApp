@@ -42,9 +42,7 @@ internal sealed class FamilyConfiguration : IEntityTypeConfiguration<Family>
         builder.Property(f => f.CellPhone).HasMaxLength(100);
         builder.Property(f => f.Fax).HasMaxLength(100);
         builder.Property(f => f.OtherPhone).HasMaxLength(100);
-        builder.Property(f => f.City).HasMaxLength(100);
-        builder.Property(f => f.State).HasMaxLength(100);
-        // Address1/Address2/MassEmailOptOut/TextOptIn are nvarchar(max) — no length cap on the live column.
+        // MassEmailOptOut/TextOptIn are nvarchar(max) — no length cap on the live column.
 
         // ---- Columns added by ExtendParentsAndParentContactsForFamilies ----
         builder.Property(f => f.Source).HasMaxLength(20);
@@ -69,6 +67,14 @@ internal sealed class FamilyConfiguration : IEntityTypeConfiguration<Family>
         builder.HasOne(f => f.FamilyStatus)
             .WithMany()
             .HasForeignKey(f => f.FamilyStatusId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // The household address, as Tenant holds its own (no cascade — the address is an independently
+        // owned record). AddressId is a native uniqueidentifier column, unlike the legacy id columns above.
+        builder.HasOne(f => f.Address)
+            .WithMany()
+            .HasForeignKey(f => f.AddressId)
+            .HasConstraintName("FK_Families_Addresses_AddressId")
             .OnDelete(DeleteBehavior.Restrict);
     }
 }

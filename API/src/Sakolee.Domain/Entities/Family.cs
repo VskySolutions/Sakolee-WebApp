@@ -74,14 +74,14 @@ public class Family
     public string? Fax { get; set; }
     public string? OtherPhone { get; set; }
 
-    // ---- Household address (inlined on this row) ----
-    public string? Address1 { get; set; }
-    public string? Address2 { get; set; }
-    public string? City { get; set; }
-    public string? State { get; set; }
+    // ---- Household address ----
 
-    /// <summary>Numeric on the legacy schema — no support for a non-numeric or ZIP+4 postal code.</summary>
-    public int? ZipCode { get; set; }
+    /// <summary>The household address (optional; reusable <see cref="Entities.Address"/> record), the same
+    /// way <see cref="Tenant.AddressId"/> holds a tenant's. Replaces the legacy inline Address1/Address2/
+    /// City/State/ZipCode columns.</summary>
+    public Guid? AddressId { get; set; }
+
+    public Address? Address { get; set; }
 
     /// <summary>Always true in practice — this row IS the primary contact (see class remarks); preserved
     /// as a real column rather than assumed, since it already exists on the live schema.</summary>

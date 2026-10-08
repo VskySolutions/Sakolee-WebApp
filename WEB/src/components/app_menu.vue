@@ -1162,6 +1162,12 @@ const settingsMenu = {
     //   ]
     // },
     {
+      label: "Policies",
+      icon: "o_policy",
+      to: "/policies",
+      permissions: [Permissions.PoliciesRead]
+    },
+    {
       label: "My Account",
       icon: "o_manage_accounts",
       to: "/account",

@@ -225,9 +225,9 @@
                   </div>
 
                   <div class="col-12">
-                    <div class="cv-label">Policy Groups</div>
+                    <div class="cv-label">Policies</div>
                     <div class="cv-value cv-value--multiline">
-                      {{ classData?.policyGroups || "—" }}
+                      {{ (classData?.policies || []).map((p) => p.name).join(", ") || "—" }}
                     </div>
                   </div>
 
@@ -625,7 +625,8 @@
           :pagination="pagination"
           @request="onRequest"
           @refresh="load"
-        /></q-tab-panel>
+        />
+      </q-tab-panel>
       <q-tab-panels />
     </q-tab-panels>
   </app-form-dialog>

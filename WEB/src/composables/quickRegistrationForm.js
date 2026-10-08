@@ -7,6 +7,8 @@
 // calls familyApi.create() then studentApi.createBulk() with the new family's id as familyId on
 // every student). Only payment stays UI-only — there is still no billing intake to save it to.
 
+import { blankAddress, hasAddressValue } from "utils/address";
+
 // The prototype's option lists, kept here rather than in the template so the page stays readable.
 // Studio Location and Class are real lookups, fetched by the page itself (locationApi/classApi) —
 // these two stay free text (Family.Source/Family.Type or FamilyContact.Relation on the backend).
@@ -77,10 +79,8 @@ export const blankQuickRegistrationForm = () => ({
   secondaryContact: blankContact("Father"),
 
   // Step 3 — Address & emergency
-  streetAddress: "",
-  city: "",
-  state: "",
-  postalCode: "",
+  // Household address — the Addresses table shape AppAddressFields edits (see utils/address).
+  address: blankAddress(),
   emergencyContactName: "",
   emergencyPhone: "",
   emergencyPhoneCountry: null,
@@ -113,11 +113,6 @@ export const toCreateFamilyRequest = (form) => {
   // any slot it's given, so a partially-filled secondary contact is dropped rather than submitted
   // half-complete.
   const hasSecondary = !!(secondary.firstName.trim() && secondary.lastName.trim() && secondary.email.trim());
-  const hasAddress = form.streetAddress || form.city || form.state || form.postalCode;
-
-  // ZipCode is a plain int on the backend (Parents.ZipCode) — no support for a non-numeric or ZIP+4 code.
-  const zip = parseInt(form.postalCode, 10);
-
   return {
     familyName: form.familyName,
     studioLocationId: form.studioLocationId || null,
@@ -145,10 +140,8 @@ export const toCreateFamilyRequest = (form) => {
     emergencyContactPerson: form.emergencyContactName || null,
     emergencyPhone: form.emergencyPhone || null,
     healthInsuranceCarrier: form.insuranceCarrier || null,
-    address1: hasAddress ? form.streetAddress || null : null,
-    city: hasAddress ? form.city || null : null,
-    state: hasAddress ? form.state || null : null,
-    zipCode: hasAddress && !Number.isNaN(zip) ? zip : null
+    // Stored on the Addresses table and linked by Families.AddressId.
+    address: hasAddressValue(form.address) ? form.address : null
   };
 };
 
@@ -177,12 +170,6 @@ export const toCreateStudentRequest = (student, form, familyId) => ({
   healthInsuranceCarrier: form.insuranceCarrier || null,
   emergencyContactName: form.emergencyContactName || null,
   emergencyContactNumber: form.emergencyPhone || null,
-  address: form.streetAddress || form.city || form.state || form.postalCode
-    ? {
-      addressLine1: form.streetAddress || null,
-      cityName: form.city || null,
-      stateName: form.state || null,
-      postalCode: form.postalCode || null
-    }
-    : null
+  // The student's own Person address — the same household address the family gets.
+  address: hasAddressValue(form.address) ? { ...form.address } : null
 });

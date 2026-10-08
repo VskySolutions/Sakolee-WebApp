@@ -80,11 +80,10 @@
 
       <div v-show="activeTab === 'address'" class="row q-col-gutter-md">
         <div class="col-12 text-subtitle2 text-grey-8">Household Address</div>
-        <app-text-field v-model="form.address1" label="Street Address" class="col-12" />
-        <app-text-field v-model="form.address2" label="Street Address 2" class="col-12" />
-        <app-text-field v-model="form.city" label="City" class="col-12 col-sm-4" />
-        <app-text-field v-model="form.state" label="State" class="col-12 col-sm-4" />
-        <app-text-field v-model.number="form.zipCode" label="ZIP Code" type="number" class="col-12 col-sm-4" />
+        <!-- Same Country → State → City field-set as the Tenant form; saved to the Addresses table. -->
+        <div class="col-12">
+          <app-address-fields v-model="form.address" />
+        </div>
 
         <div class="col-12 text-subtitle2 text-grey-8 q-mt-sm">Emergency Contact &amp; Health Insurance</div>
         <app-text-field v-model="form.emergencyContactPerson" label="Emergency Contact Person" class="col-12 col-sm-6" />
@@ -237,6 +236,8 @@ import AppFormDialog from "components/common/AppFormDialog.vue";
 import AppSelect from "components/common/AppSelect.vue";
 import AppTextField from "components/common/AppTextField.vue";
 import AppDateField from "components/common/AppDateField.vue";
+import AppAddressFields from "components/common/AppAddressFields.vue";
+import { hasAddressValue } from "utils/address";
 import StudentEditDialog from "modules/family/components/StudentEditDialog.vue";
 
 const props = defineProps({
@@ -471,11 +472,8 @@ const submitForm = async () => {
     fax: form.fax || null,
     isBillingContact: form.isBillingContact,
     isAuthorizedToPickUpStudent: form.isAuthorizedToPickUpStudent,
-    address1: form.address1 || null,
-    address2: form.address2 || null,
-    city: form.city || null,
-    state: form.state || null,
-    zipCode: form.zipCode || null,
+    // An untouched address block is left out (on update that keeps the saved address unchanged).
+    address: hasAddressValue(form.address) ? form.address : undefined,
     emergencyContactPerson: form.emergencyContactPerson || null,
     emergencyPhone: form.emergencyPhone || null,
     healthInsuranceCarrier: form.healthInsuranceCarrier || null,

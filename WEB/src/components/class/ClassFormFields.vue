@@ -12,7 +12,9 @@
       <app-select :key="`category1-${categoriesLoaded}`" v-model="form.category1" label="Category 1 *" :options="category1Options" class="col-12 col-sm-6" :disable="disable" :rules="[requiredRule]" />
       <app-select :key="`category2-${categoriesLoaded}`" v-model="form.category2" label="Category 2" :options="category2Options" class="col-12 col-sm-6" :disable="disable" />
       <app-select :key="`category3-${categoriesLoaded}`" v-model="form.category3" label="Category 3" :options="category3Options" class="col-12 col-sm-6" :disable="disable" />
-      <app-select :key="`location-${categoriesLoaded}`" v-model="form.location" label="Location *" :options="locationOptions" class="col-12 col-sm-6" :disable="disable" />
+      <!-- Location must carry its own rule: Room is disabled until a location is picked, and a disabled
+           field skips validation, so without this a class saves with neither. -->
+      <app-select :key="`location-${categoriesLoaded}`" v-model="form.location" label="Location *" :options="locationOptions" class="col-12 col-sm-6" :disable="disable" :rules="[requiredRule]" />
       <app-select
         :key="`room-${roomsLoaded}`" v-model="form.room" label="Room *" :options="roomOptions" class="col-12 col-sm-6"
         :disable="disable || !form.location" :hint="form.location ? '' : 'Select a location first'" :rules="[requiredRule]"
@@ -87,7 +89,10 @@
       <app-text-field v-model.number="form.maxClassSize" label="Max Class Size *" type="number" placeholder="Enter maximum class size" class="col-12 col-sm-6" :disable="disable" :rules="[requiredRule]" />
       <app-text-field v-model.number="form.maxWaitlistSize" label="Max Waitlist Size" type="number" placeholder="Max Waitlist Size" class="col-12 col-sm-6" :disable="disable" />
       <app-date-field v-model="form.cutoffDate" label="Cutoff Date" class="col-12 col-sm-6" :disable="disable" />
-      <app-text-field v-model="form.policyGroups" label="Policy Groups" hint="Free text (no policy group list yet)" class="col-12 col-sm-6" :disable="disable" />
+      <app-select
+        :key="`policies-${categoriesLoaded}`" v-model="form.policyIds" label="Policies" :options="policyOptions"
+        multiple class="col-12 col-sm-6" :disable="disable" info="Managed under Settings → Policies."
+      />
     </div>
 
     <q-separator class="q-my-sm" />
@@ -156,6 +161,8 @@ const locations = ref([]);
 const sessions = ref([]);
 const instructors = ref([]);
 const billingCycles = ref([]);
+// Policies: the tenant's active policies, saved to PolicyClassMapping (see classForm.js's toClassPayload).
+const policies = ref([]);
 // The Category/Location/Session selects mount before these async fetches resolve, and QSelect's value→label
 // mapping (map-options) doesn't reliably re-run once `options` fills in later — an edit page showing
 // a class's saved category renders the raw id instead of its name until this remounts them. Keying
@@ -163,13 +170,13 @@ const billingCycles = ref([]);
 const categoriesLoaded = ref(false);
 onMounted(async () => {
   // Loaded independently: one list failing must not leave the other empty.
-  // const [categoryResult, locationResult, sessionResult, instructorResult] = await Promise.allSettled([
-  //   classCategoryApi.list(),
-  //   locationApi.list({ active: true }),
-  //   classSessionApi.list({ isActive: true, limit: 100 }),
-  //   classApi.instructors()
-  // ]);
-  const [categoryResult, locationResult, sessionResult, instructorResult, billingCycleResult ] = await Promise.allSettled([classCategoryApi.list(), locationApi.list({ active: true }), classSessionApi.list({ isActive: true, limit: 100 }), classApi.instructors(), billingCycleApi.list({ active: true, limit: 100 })]);
+  const [categoryResult, locationResult, sessionResult, instructorResult, policyResult] = await Promise.allSettled([
+    classCategoryApi.list(),
+    locationApi.list({ active: true }),
+    classSessionApi.list({ isActive: true, limit: 100 }),
+    classApi.instructors(),
+    classApi.policies()
+  ]);
   if (categoryResult.status === "fulfilled") classCategories.value = categoryResult.value?.data || [];
   else notify.error(getApiErrorMessage(categoryResult.reason));
   if (locationResult.status === "fulfilled") locations.value = locationResult.value?.data || [];
@@ -178,8 +185,8 @@ onMounted(async () => {
   else notify.error(getApiErrorMessage(sessionResult.reason));
   if (instructorResult.status === "fulfilled") instructors.value = instructorResult.value?.data || [];
   else notify.error(getApiErrorMessage(instructorResult.reason));
-  if (billingCycleResult.status === "fulfilled") billingCycles.value = billingCycleResult.value?.data || [];
-  else notify.error(getApiErrorMessage(billingCycleResult.reason));
+  if (policyResult.status === "fulfilled") policies.value = policyResult.value?.data || [];
+  else notify.error(getApiErrorMessage(policyResult.reason));
   categoriesLoaded.value = true;
 });
 
@@ -258,6 +265,17 @@ const additionalInstructorOptions = computed(() => {
     }
   });
   return options.map((o) => ({ ...o, disable: selected.length >= 2 && !selected.includes(o.value) }));
+});
+// Policies: the active list, plus any saved policy since made inactive (shown by name from the class row).
+const policyOptions = computed(() => {
+  const selected = form.value.policyIds || [];
+  const options = policies.value.map((p) => ({ label: p.name, value: p.id }));
+  (form.value.policyNames || []).forEach((saved) => {
+    if (selected.includes(saved.id) && !options.some((o) => o.value === saved.id)) {
+      options.push({ label: saved.name, value: saved.id });
+    }
+  });
+  return options;
 });
 // Picking someone as primary drops them from the additional list, so nobody is listed twice.
 watch(
