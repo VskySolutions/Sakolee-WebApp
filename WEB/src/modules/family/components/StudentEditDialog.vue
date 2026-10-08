@@ -1,10 +1,10 @@
 <template>
   <app-form-dialog
     v-model="open"
-    :title="enrollmentOnly ? 'Edit Class Enrollment' : 'Edit Student'"
-    :subtitle="enrollmentOnly ? `Choose the classes ${studentName || 'this student'} is enrolled in.` : 'Update the student\'s identity, school, fee, medical, and notes.'"
+    :title="isCreate ? 'Add Student' : enrollmentOnly ? 'Edit Class Enrollment' : 'Edit Student'"
+    :subtitle="isCreate ? 'Enter the student\'s identity, school, fee, medical, and notes.' : enrollmentOnly ? `Choose the classes ${studentName || 'this student'} is enrolled in.` : 'Update the student\'s identity, school, fee, medical, and notes.'"
     :saving="saving"
-    :save-label="enrollmentOnly ? 'Update Enrollment' : 'Update Student'"
+    :save-label="isCreate ? 'Save Student' : enrollmentOnly ? 'Update Enrollment' : 'Update Student'"
     :size="enrollmentOnly ? 'md' : 'lg'"
     @submit="save"
   >
@@ -118,7 +118,9 @@ const loadGradeLevels = async () => {
 
 const props = defineProps({
   modelValue: { type: Boolean, default: false },
+  // No studentId → Add mode: a new student is created in `familyId`.
   studentId: { type: String, default: null },
+  familyId: { type: String, default: null },
   // Class Enrollment tab: show only the class selection.
   enrollmentOnly: { type: Boolean, default: false }
 });
@@ -134,6 +136,7 @@ const loading = ref(false);
 const saving = ref(false);
 const emailError = ref("");
 const formRef = ref(null);
+const isCreate = computed(() => !props.studentId);
 
 const blankForm = () => ({
   firstName: "",
@@ -209,13 +212,22 @@ const preserved = reactive(blankPreserved());
 // rows carry only the minimal FamilyStudentSummary shape (name, number, active, classIds), not enough
 // to populate a full edit form.
 watch(() => props.modelValue, async (isOpen) => {
-  if (!isOpen || !props.studentId) return;
+  if (!isOpen) return;
   //await loadGradeLevels();
   Object.assign(form, blankForm());
   Object.assign(preserved, blankPreserved());
   emailError.value = "";
   loading.value = true;
   loadedClassIds.value = [];
+  if (isCreate.value) {
+    preserved.familyId = props.familyId;
+    try {
+      await Promise.all([loadClasses(), loadGradeLevels()]);
+    } finally {
+      loading.value = false;
+    }
+    return;
+  }
   try {
     const [row] = await Promise.all([studentApi.get(props.studentId), loadClasses(), loadGradeLevels()]);
     loadedClassIds.value = row.classIds?.length ? [...row.classIds] : row.classId ? [row.classId] : [];
@@ -311,8 +323,13 @@ const save = async () => {
 
   saving.value = true;
   try {
-    await studentApi.update(props.studentId, payload);
-    notify.success(props.enrollmentOnly ? "Class enrollment updated." : "Student updated.");
+    if (isCreate.value) {
+      await studentApi.create(payload);
+      notify.success("Student added.");
+    } else {
+      await studentApi.update(props.studentId, payload);
+      notify.success(props.enrollmentOnly ? "Class enrollment updated." : "Student updated.");
+    }
     open.value = false;
     emit("saved");
   } catch (err) {

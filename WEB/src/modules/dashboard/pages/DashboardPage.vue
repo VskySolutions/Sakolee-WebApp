@@ -26,7 +26,7 @@
     </q-banner>
 
     <!-- ---- Alerts & Attention Required ---- -->
-    <studio-section-header
+    <!-- <studio-section-header
       title="Alerts & Attention Required"
       icon="o_error"
       icon-color="negative"
@@ -43,7 +43,7 @@
       <div v-for="alert in alerts" v-else :key="alert.id" class="col-12 col-md-4">
         <studio-alert-card :alert="alert" />
       </div>
-    </div>
+    </div> -->
 
     <!-- ---- Enrollment & Studio Metrics ---- -->
     <studio-section-header
@@ -94,7 +94,7 @@
     </div>
 
     <!-- ---- Announcements ---- -->
-    <div class="row q-col-gutter-md">
+    <!-- <div class="row q-col-gutter-md">
       <div class="col-8">
         <q-skeleton v-if="loading" type="rect" height="180px" class="dashboard-overview__skeleton" />
         <announcements-panel v-else :announcements="announcements" @post="onPostAnnouncement" />
@@ -118,7 +118,7 @@
           </div>
         </div>
       </div>
-    </div>
+    </div> -->
   </q-page>
 </template>
 
@@ -126,13 +126,13 @@
 import { computed } from "vue";
 // import AppBreadcrumbs from "components/common/AppBreadcrumbs.vue";
 import StudioSectionHeader from "components/dashboard/studio/StudioSectionHeader.vue";
-import StudioAlertCard from "components/dashboard/studio/StudioAlertCard.vue";
+// import StudioAlertCard from "components/dashboard/studio/StudioAlertCard.vue";
 import StudioMetricCard from "components/dashboard/studio/StudioMetricCard.vue";
 import EnrollmentActivityPanel from "components/dashboard/studio/EnrollmentActivityPanel.vue";
-import MyTasksPanel from "components/dashboard/studio/MyTasksPanel.vue";
-import UnpaidBalancesPanel from "components/dashboard/studio/UnpaidBalancesPanel.vue";
-import RevenueAnalyticsPanel from "components/dashboard/studio/RevenueAnalyticsPanel.vue";
-import AnnouncementsPanel from "components/dashboard/studio/AnnouncementsPanel.vue";
+// import MyTasksPanel from "components/dashboard/studio/MyTasksPanel.vue";
+// import UnpaidBalancesPanel from "components/dashboard/studio/UnpaidBalancesPanel.vue";
+// import RevenueAnalyticsPanel from "components/dashboard/studio/RevenueAnalyticsPanel.vue";
+// import AnnouncementsPanel from "components/dashboard/studio/AnnouncementsPanel.vue";
 import { useStudioDashboard } from "composables/useStudioDashboard";
 import { useNotify } from "composables/useNotify";
 
@@ -142,16 +142,16 @@ const {
   loading,
   error,
   refresh,
-  alerts,
-  activeAlertCount,
+  // alerts,
+  // activeAlertCount,
   metrics,
   termLabel,
-  updatedAt,
+  // updatedAt,
   recentActivity,
   tasks,
   receivables,
   revenue,
-  announcements
+  // announcements
 } = useStudioDashboard();
 
 // The KPI band, in the reference's reading order. `field` maps onto the studio-metrics payload, `tone` is
@@ -177,7 +177,7 @@ const metricCards = computed(() =>
 // than opening a form or navigating somewhere that does not exist.
 const onAddTask = () => notify.info("Task creation isn't available yet.");
 const onViewUnpaid = () => notify.info("The unpaid families list isn't available yet.");
-const onPostAnnouncement = () => notify.info("Posting announcements isn't available yet.");
+// const onPostAnnouncement = () => notify.info("Posting announcements isn't available yet.");
 </script>
 
 <style scoped>

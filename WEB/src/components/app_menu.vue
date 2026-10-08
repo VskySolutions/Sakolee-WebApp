@@ -747,6 +747,7 @@ import { LocalStorage } from "quasar";
 import { useRouter } from "vue-router";
 import { useAuthStore } from "stores/auth";
 import { Permissions } from "composables/usePermissions";
+import { useIsParentPortal } from "composables/useParentPortal";
 
 defineProps({
   // Collapsed to the icon rail: each group offers its children as a flyout beside its icon.
@@ -755,6 +756,7 @@ defineProps({
 
 const authStore = useAuthStore();
 const router = useRouter();
+const isParentPortal = useIsParentPortal();
 const loggedUserRole = computed(() => authStore.user?.tenants[0]?.roleNames[0]);
 console.log("Logged User Role:", loggedUserRole.value);
 
@@ -906,7 +908,7 @@ const sections = [
     label: "Students",
     icon: "o_group",
     items: [
-      { label: "All Students", icon: "o_person", to: "/students", permissions: [Permissions.StudentsRead] },
+      { label: "All Students", parentLabel: "My Students", icon: "o_person", to: "/students", permissions: [Permissions.StudentsRead] },
       // Students Settings
       {
         key: "students-settings",
@@ -1209,7 +1211,8 @@ const filterSectionItems = (items) => {
           items: filterSectionItems(item.items)
         };
       }
-      return item;
+      // `parentLabel` is what a family-contact (Parent/Guardian) login sees in place of `label`.
+      return isParentPortal.value && item.parentLabel ? { ...item, label: item.parentLabel } : item;
     })
     .filter((item) => {
       if (item.items) {
