@@ -17,22 +17,22 @@
         </div>
         <div v-else class="row q-col-gutter-md">
           <div class="col-12 text-subtitle2 text-grey-8">Identity</div>
-          <app-text-field v-model="form.firstName" label="First Name" required class="col-12 col-sm-6" :rules="[(v) => !!v || 'First name is required']" />
-          <app-text-field v-model="form.lastName" label="Last Name" required class="col-12 col-sm-6" :rules="[(v) => !!v || 'Last name is required']" />
-          <app-text-field v-model="form.familyName" label="Family Name" class="col-12 col-sm-6" />
+          <app-text-field v-model="form.firstName" label="First Name" required class="col-12 col-sm-6" :rules="[(v) => !!v || 'First name is required',nameOnlyRule]" />
+          <app-text-field v-model="form.lastName" label="Last Name" required class="col-12 col-sm-6" :rules="[(v) => !!v || 'Last name is required',nameOnlyRule]" />
+          <app-text-field v-model="form.familyName" label="Family Name" required class="col-12 col-sm-6" :rules="[(v) => !!v || 'Family name is required',nameOnlyRule]"/>
           <app-text-field v-model="form.studentNumber" label="Student Number" class="col-12 col-sm-6" />
           <app-select v-model="form.gender" label="Gender" :options="GENDER_OPTIONS" class="col-12 col-sm-6" />
-          <app-date-field v-model="form.birthDate" label="Date of Birth" required class="col-12 col-sm-6" :rules="[(v) => !!v || 'Date of birth is required']" />
+          <app-date-field v-model="form.birthDate" label="Date of Birth" required class="col-12 col-sm-6"  :rules="[required,birthDateRule]"/>
           <app-select v-model="form.classIds" label="Classes" :options="classOptions" multiple class="col-12 col-sm-6" />
           <app-date-field v-model="form.admissionDate" label="Admission Date" class="col-12 col-sm-6" />
           <div class="col-12 col-sm-6 toggle-row-inline"><q-toggle v-model="form.allowTextMessaging" color="primary" /><span class="q-ml-sm">Allow text messaging</span></div>
           <app-text-field
             v-model="form.email" label="Email" required class="col-12 col-sm-6"
             :error="!!emailError" :error-message="emailError"
-            :rules="[(v) => !!v || 'Email is required']"
+            :rules="[(v) => !!v || 'Email is required',emailRule]"
             hint="This student's own login email."
           />
-          <app-text-field v-model="form.cellPhone" label="Cell Phone" class="col-12 col-sm-6" />
+          <app-phone-input v-model="form.cellPhone" label="Cell Phone" class="col-12 col-sm-6" />
 
           <div class="col-12 text-subtitle2 text-grey-8 q-mt-sm">School</div>
           <app-text-field v-model="form.school" label="School" class="col-12 col-sm-6" />
@@ -85,7 +85,7 @@ import AppTextField from "components/common/AppTextField.vue";
 import AppSelect from "components/common/AppSelect.vue";
 import AppDateField from "components/common/AppDateField.vue";
 
-//Grade level options state
+// Grade level options state
 const gradeLevels = ref([]);
 const gradeLevelOptions = computed(() => gradeLevels.value.map((g) => ({ label: g.Name || g.gradeName || g.name, value: g.Id ||g.id || g.gradeLevelId })));
 
@@ -97,6 +97,55 @@ const loadGradeLevels = async () => {
     notify.error(getApiErrorMessage(err));
   }
 };
+
+// Required validation rule
+const required = (val) => (val !== null && val !== undefined && String(val).trim() !== "") || "Required";
+
+// Birth date validation rule Checks Minimum 4 years old
+const birthDateRule = (val) => {
+  if (!val) return "Required";
+  const birthDate = new Date(val);
+  const today = new Date();
+  // Future date check
+  if (birthDate > today) {
+    return "Birth date cannot be in the future";
+  }
+
+  // Calculate age
+  let age = today.getFullYear() - birthDate.getFullYear();
+  const m = today.getMonth() - birthDate.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+    age--;
+  }
+
+  // Minimum 4 years check
+  if (age < 4) {
+    return "Student must be at least 4 years old";
+  }
+
+  return true;
+};
+
+// Email validation rule
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const emailRule = (val) => EMAIL_RE.test(String(val || "")) || "Enter a valid email";
+
+// For only-letter name fields
+const NAME_RE = /^[A-Za-z\s]+$/;
+//const nameOnlyRule = (val) => !val || NAME_RE.test(String(val)) || "Only letters are allowed";
+
+const nameOnlyRule = (val) => {
+  if (!val) return true;
+  const str = String(val);
+  if (!NAME_RE.test(str)) {
+    return "Only letters are allowed";
+  }
+  if (str.length > 30) {
+    return "Maximum 30 characters allowed";
+  }
+  return true;
+};
+
 
 // // Family Status options state
 // const familyStatuses = ref([]);
@@ -142,7 +191,7 @@ const blankForm = () => ({
   firstName: "",
   lastName: "",
   familyName: "",
- // familyStatusId: null,
+  // familyStatusId: null,
   studentNumber: "",
   classIds: [],
   admissionDate: "",
@@ -212,8 +261,8 @@ const preserved = reactive(blankPreserved());
 // rows carry only the minimal FamilyStudentSummary shape (name, number, active, classIds), not enough
 // to populate a full edit form.
 watch(() => props.modelValue, async (isOpen) => {
-  if (!isOpen) return;
-  //await loadGradeLevels();
+  if (!isOpen || !props.studentId) return;
+  // await loadGradeLevels();
   Object.assign(form, blankForm());
   Object.assign(preserved, blankPreserved());
   emailError.value = "";
@@ -244,7 +293,7 @@ watch(() => props.modelValue, async (isOpen) => {
       lastName: row.lastName || "",
       familyName: row.familyName || "",
       studentNumber: row.studentNumber || "",
-      //familyStatusId: row.familyStatusId ?? null,
+      // familyStatusId: row.familyStatusId ?? null,
       classIds: [...loadedClassIds.value],
       admissionDate: row.admissionDate ? row.admissionDate.substring(0, 10) : "",
       birthDate: row.birthDate ? row.birthDate.substring(0, 10) : "",
@@ -291,7 +340,7 @@ const save = async () => {
     firstName: form.firstName,
     lastName: form.lastName,
     familyName: form.familyName || null,
-   // familyStatusId: form.familyStatusId || null,
+    // familyStatusId: form.familyStatusId || null,
     studentNumber: form.studentNumber || null,
     classIds: form.classIds || [],
     admissionDate: form.admissionDate || null,
@@ -332,16 +381,32 @@ const save = async () => {
     }
     open.value = false;
     emit("saved");
+  // } catch (err) {
+  //   if (getApiErrorCode(err) === ApiErrorCodes.DuplicateIdentifier) {
+  //     emailError.value = "A student with this email already exists.";
+  //   } else {
+  //     notify.error(getApiErrorMessage(err));
+  //   }
+  // } finally {
+  //   saving.value = false;
+  // }
   } catch (err) {
+    const message = getApiErrorMessage(err);
     if (getApiErrorCode(err) === ApiErrorCodes.DuplicateIdentifier) {
       emailError.value = "A student with this email already exists.";
+    } else if (isClassFullError(message)) {
+      // Capacity problem: the user can fix it by picking another class, so show a yellow warning, not a red error.
+      notify.warning(message);
     } else {
-      notify.error(getApiErrorMessage(err));
+      notify.error(message);
     }
   } finally {
     saving.value = false;
   }
 };
+// StudentsController.CheckClassCapacityAsync returns "Class is full." with an "allows only N students ..." detail.
+const isClassFullError = (message) =>
+  /class is full|allows only \d+ students/i.test(message || "");
 </script>
 
 <style scoped>

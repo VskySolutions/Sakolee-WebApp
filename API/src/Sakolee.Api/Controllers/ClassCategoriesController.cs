@@ -146,11 +146,11 @@ public sealed class ClassCategoriesController : ControllerBase
             return BadRequest(new { message = "Category type must be Category 1, Category 2, or Category 3." });
         }
         // Check whether a Class Category with the same name already exists for the active tenant.
-        var nameExists = await _classCategories.ExistsByNameAsync(tenantId,name,cancellationToken: cancellationToken);
+        var nameExists = await _classCategories.ExistsByNameAsync(tenantId,name, categoryType, cancellationToken: cancellationToken);
         // Return Conflict if a duplicate Class Category exists.
         if (nameExists)
         {
-            return Conflict(new { message = $"A class category with the name '{name}' already exists."});
+            return Conflict(new { message = $"'{name}' already exists in {categoryType}. Use a different name or choose another category." });
         }
         // Create the new Class Category entity.
         var classCategory = new Domain.Entities.ClassCategory { Id = Guid.NewGuid(), TenantId = tenantId, Name = name, CategoryType = categoryType, Active = request.Active };
@@ -215,11 +215,11 @@ public sealed class ClassCategoriesController : ControllerBase
             return NotFound(ApiResponseFactory.NotFound("Class category not found."));
         }
         // Check whether another Class Category already uses the same name within the active tenant.
-        var nameExists = await _classCategories.ExistsByNameAsync(tenantId,name, excludeId: id,cancellationToken: cancellationToken);
+        var nameExists = await _classCategories.ExistsByNameAsync(tenantId,name, categoryType, excludeId: id,cancellationToken: cancellationToken);
         // Return Conflict if another Class Category has the same name.
         if (nameExists)
         {
-            return Conflict(new { message = $"A class category with the name '{name}' already exists." });
+            return Conflict(new { message = $"'{name}' already exists in {categoryType}. Use a different name or choose another category." });
         }
         // Update the Class Category values.
         classCategory.Name = name;

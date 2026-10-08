@@ -11,9 +11,9 @@
       </div>
     </div>
     <div v-if="!menuCollapsed" class="tenant-section flex bg-primary" :class="menuCollapsed ? 'px-10' : 'px-20'">
-      <q-avatar size="40px" class="tenant-logo">
+      <q-avatar size="40px" class="tenant-logo" :class="tenantLogoPreviewUrl ? 'q-pr-xl' : ''">
         <img v-if="tenantLogoPreviewUrl" :src="tenantLogoPreviewUrl" alt="Tenant Logo">
-        <q-icon v-else name="o_account_balance" class="text-white" size="24px" />
+        <q-icon v-else name="o_account_balance" class="text-white" size="22px" />
       </q-avatar>
       <div class="tenant-info q-mini-drawer-hide">
         <div class="tenant-name text-white">{{ tenantName }}
@@ -137,7 +137,7 @@ onBeforeUnmount(() => {
 .tenant-section {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 0px;
   border-top: 1px solid #eeeeee;
 }
 
@@ -169,7 +169,7 @@ onBeforeUnmount(() => {
 }
 
 .tenant-info {
-  min-width: 0; 
+  min-width: 0;
   flex: 1;
 }
 </style>

@@ -105,6 +105,8 @@ export const classApi = {
   // Policies picker options: the active tenant's active policies, as [{ id, name }].
   policies: () => api.get("/api/admin/classes/policies").then(envelope),
   enrollments: (id, params) => api.get(`/api/admin/classes/${id}/enrollments`, { params }).then(envelope),
+  // NEW: per-class { classId, className, maxClassSize, maxWaitlistSize, enrolled, limit, remaining }
+  capacity: () => api.get("/api/admin/classes/capacity").then(unwrap),
   listByInstructor: (instructorId, params) => api.get(`/api/admin/classes/instructor/${instructorId}`, { params }).then(envelope),
 };
 

@@ -168,4 +168,24 @@ internal sealed class StudentRepository : IStudentRepository
                 sc => sc.CreatedOnUtc,
                 cancellationToken);
     }
+    //public async Task<IReadOnlyDictionary<Guid, int>> CountByClassIdsAsync(IEnumerable<Guid> classIds, CancellationToken cancellationToken = default)
+    //{
+    //    var idList = classIds.Distinct().ToList();
+    //    if (idList.Count == 0) return new Dictionary<Guid, int>();
+    //    var mapped = await _dbContext.StudentClasses.Where(sc => !sc.Deleted && idList.Contains(sc.ClassId)).Select(sc => new { sc.ClassId, sc.StudentId }).ToListAsync(cancellationToken);
+    //    // Older students who only have Student.ClassId
+    //    var legacy = await _dbContext.Students.Where(s => !s.Deleted && s.ClassId.HasValue && idList.Contains(s.ClassId.Value)).Select(s => new { ClassId = s.ClassId!.Value, StudentId = s.Id }).ToListAsync(cancellationToken);
+    //    return mapped.Concat(legacy).Distinct().GroupBy(x => x.ClassId).ToDictionary(g => g.Key, g => g.Count());
+    //}
+    public async Task<IReadOnlyDictionary<Guid, int>> CountByClassIdsAsync(IEnumerable<Guid> classIds,CancellationToken cancellationToken = default)
+    {
+        var idList = classIds.Distinct().ToList();
+        if (idList.Count == 0) return new Dictionary<Guid, int>();
+        // StudentClasses + Students
+        // Count only non-deleted enrollment and non-deleted students.
+        var mapped = await (from sc in _dbContext.StudentClasses join s in _dbContext.Students on sc.StudentId equals s.Id where !sc.Deleted && !s.Deleted && idList.Contains(sc.ClassId) select new { sc.ClassId, sc.StudentId }).ToListAsync(cancellationToken);
+        // Older students who only have Student.ClassId
+        var legacy = await _dbContext.Students.Where(s =>!s.Deleted && s.ClassId.HasValue && idList.Contains(s.ClassId.Value)).Select(s => new { ClassId = s.ClassId!.Value, s.Id}).ToListAsync(cancellationToken);
+        return mapped.Select(x => new { x.ClassId, StudentId = x.StudentId }) .Concat(legacy.Select(x => new { x.ClassId, StudentId = x.Id })).Distinct().GroupBy(x => x.ClassId).ToDictionary( g => g.Key, g => g.Count());
+    }
 }

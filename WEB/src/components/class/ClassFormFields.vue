@@ -64,6 +64,7 @@
         <template #prepend><span class="text-grey-7">$</span></template>
       </app-text-field>
       <app-select v-model="form.billingMethod" label="Billing Method" :options="billingMethodOptions" class="col-12 col-sm-6" :disable="disable" />
+      <!-- <app-select v-model="form.billingCycle" label="Billing Cycle" :options="billingCycleOptions" class="col-12 col-sm-6" :disable="disable" /> -->
       <app-select v-model="form.billingCycle" label="Billing Cycle" :options="billingCycleOptions" class="col-12 col-sm-6" :disable="disable" />
       <div class="col-12 col-sm-6 toggle-row-inline">
         <q-toggle v-model="form.registrationFee" color="primary" :disable="disable" />
@@ -84,7 +85,8 @@
       </div>
       <app-text-field v-model.number="form.minAge" label="Min Age" type="number" placeholder="Min Age" class="col-12 col-sm-6" :disable="disable" />
       <app-text-field v-model.number="form.maxAge" label="Max Age" type="number" placeholder="Max Age" class="col-12 col-sm-6" :disable="disable" />
-      <app-text-field v-model.number="form.maxClassSize" label="Max Class Size" type="number" placeholder="Max Class Size" class="col-12 col-sm-6" :disable="disable" />
+      <!-- <app-text-field v-model.number="form.maxClassSize" label="Max Class Size" type="number" placeholder="Max Class Size" class="col-12 col-sm-6" :disable="disable" /> -->
+      <app-text-field v-model.number="form.maxClassSize" label="Max Class Size *" type="number" placeholder="Enter maximum class size" class="col-12 col-sm-6" :disable="disable" :rules="[requiredRule]" />
       <app-text-field v-model.number="form.maxWaitlistSize" label="Max Waitlist Size" type="number" placeholder="Max Waitlist Size" class="col-12 col-sm-6" :disable="disable" />
       <app-date-field v-model="form.cutoffDate" label="Cutoff Date" class="col-12 col-sm-6" :disable="disable" />
       <app-select
@@ -128,7 +130,7 @@
 <script setup>
 // The Class create/edit/view field set, defined once and reused by the Add/Edit/View class pages.
 import { ref, computed, watch, onMounted } from "vue";
-import { classApi, classCategoryApi, classRoomApi, classSessionApi, locationApi, getApiErrorMessage } from "services/api";
+import { classApi, classCategoryApi, classRoomApi, classSessionApi, locationApi, billingCycleApi, getApiErrorMessage } from "services/api";
 import { useNotify } from "composables/useNotify";
 import { formatDuration } from "composables/classForm";
 
@@ -158,6 +160,7 @@ const classCategories = ref([]);
 const locations = ref([]);
 const sessions = ref([]);
 const instructors = ref([]);
+const billingCycles = ref([]);
 // Policies: the tenant's active policies, saved to PolicyClassMapping (see classForm.js's toClassPayload).
 const policies = ref([]);
 // The Category/Location/Session selects mount before these async fetches resolve, and QSelect's value→label
@@ -291,8 +294,8 @@ const genderOptions = [
   { label: "Female", value: "Female" }
 ];
 const billingMethodOptions = ["Flat Rate", "Per Session", "Per Class", "Hourly"];
-const billingCycleOptions = ["Monthly", "Weekly", "Bi-Weekly", "Per Session", "One-Time"];
-
+// const billingCycleOptions = ["Monthly", "Weekly", "Bi-Weekly", "Per Session", "One-Time"];
+const billingCycleOptions = computed(() => billingCycles.value.map((cycle) => ({ label: cycle.name, value: cycle.name })));
 // Active Days stays a comma-separated free-text string on the server (see Class entity); the pill
 // toggles below just read/write that string so nothing on the wire changes.
 const dayOptions = [

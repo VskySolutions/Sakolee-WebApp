@@ -532,6 +532,51 @@ public sealed class ClassesController : ControllerBase
         return Ok(ApiResponseFactory.Paginated(pageItems, "Staff classes retrieved.", page, limit, sorted.Count));
     }
 
+    //[HttpGet("capacity")]
+    //[RequireAnyPermission(Permissions.ClassesRead, Permissions.StudentsRead, Permissions.StudentsWrite, Permissions.FamiliesWrite)]
+    //public async Task<IActionResult> Capacity(CancellationToken cancellationToken)
+    //{
+    //    var all = await _classes.ListAsync(cancellationToken);
+    //    var counts = await _students.CountByClassIdsAsync(all.Select(c => c.Id), cancellationToken);
+    //    var items = all.Select(c =>
+    //    {
+    //        var enrolled = counts.TryGetValue(c.Id, out var n) ? n : 0;
+    //        int? limit = c.MaxClassSize is { } m ? m + (c.MaxWaitlistSize ?? 0) : null;
+    //        return new { classId = c.Id, className = c.ClassName, maxClassSize = c.MaxClassSize, maxWaitlistSize = c.MaxWaitlistSize, enrolled, limit, remaining = limit is { } l ? Math.Max(0, l - enrolled) : (int?)null };
+    //    }).ToList();
+
+    //    return Ok(ApiResponseFactory.Success(items, "Class capacity retrieved."));
+    //}
+    [HttpGet("capacity")]
+    [RequireAnyPermission(Permissions.ClassesRead,Permissions.StudentsRead,Permissions.StudentsWrite,Permissions.FamiliesWrite)]
+    public async Task<IActionResult> Capacity( CancellationToken cancellationToken)
+    {
+        var all = await _classes.ListAsync(cancellationToken);
+        var counts = await _students.CountByClassIdsAsync(all.Select(c => c.Id),cancellationToken);
+        var items = all.Select(c =>
+        {
+            var enrolled = counts.TryGetValue(c.Id, out var count) ? count : 0;
+            int? totalCapacity = null;
+            if (c.MaxClassSize.HasValue)
+            {
+                totalCapacity = c.MaxClassSize.Value + (c.MaxWaitlistSize ?? 0);
+            }
+            return new
+            {
+                classId = c.Id,
+                className = c.ClassName,
+                maxClassSize = c.MaxClassSize,
+                maxWaitlistSize = c.MaxWaitlistSize,
+                // Only non-deleted students are counted here.
+                enrolled,
+                // Example: 6 + 4 = 10
+                limit = totalCapacity,
+                remaining = totalCapacity.HasValue ? Math.Max(0, totalCapacity.Value - enrolled) : (int?)null
+            };
+        }).ToList();
+        return Ok(
+            ApiResponseFactory.Success( items, "Class capacity retrieved."));
+    }
     // ---- helpers ----
 
     #region Class Policy Helpers

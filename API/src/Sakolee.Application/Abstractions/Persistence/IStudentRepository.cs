@@ -48,4 +48,9 @@ public interface IStudentRepository
     Task<IReadOnlyList<Student>> ListByClassIdAsync(Guid classId, Guid? tenantId, CancellationToken cancellationToken = default);
 
     Task<IReadOnlyDictionary<Guid, DateTime>> GetEnrollmentDatesAsync(Guid classId, CancellationToken cancellationToken = default);
+    
+    /// <summary>
+    /// Count students per class
+    /// </summary>
+    Task<IReadOnlyDictionary<Guid, int>> CountByClassIdsAsync(IEnumerable<Guid> classIds, CancellationToken cancellationToken = default);
 }
