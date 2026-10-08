@@ -220,13 +220,35 @@ const blankForm = () => ({
 const form = reactive(blankForm());
 const studentName = computed(() => [form.firstName, form.lastName].filter(Boolean).join(" "));
 const { options: tShirtSizeOptions } = useTShirtSizeOptions(() => form.tShirtSize);
-
 // Active classes for the Class select. A student whose saved class has since been deactivated keeps
 // it as an option (labelled as such) rather than showing a raw id or silently losing it on save.
 const classes = ref([]);
 const loadedClassIds = ref([]);
+// const classOptions = computed(() => {
+//   const options = classes.value.map((c) => ({ label: c.className, value: c.classId }));
+//   for (const id of loadedClassIds.value.filter((id) => !options.some((o) => o.value === id))) {
+//     options.unshift({ label: "Current class (inactive)", value: id });
+//   }
+//   return options;
+// });
 const classOptions = computed(() => {
-  const options = classes.value.map((c) => ({ label: c.className, value: c.classId }));
+  const options = classes.value.map((c) => {
+    const cap = capacity.value[c.classId];
+    const alreadyEnrolled = loadedClassIds.value.includes(c.classId);
+    // No size limit, or the student is already in this class: never disable it
+    // (their own seat is already counted in "enrolled", and it must stay deselectable).
+    if (!cap || cap.limit == null || alreadyEnrolled) {
+      return { label: c.className, value: c.classId, disable: false };
+    }
+    const full = cap.remaining <= 0;
+    return {
+      label: full
+        ? `${c.className} — FULL`
+        : `${c.className} (${cap.remaining} seat${cap.remaining === 1 ? "" : "s"} left)`,
+      value: c.classId,
+      disable: full
+    };
+  });
   for (const id of loadedClassIds.value.filter((id) => !options.some((o) => o.value === id))) {
     options.unshift({ label: "Current class (inactive)", value: id });
   }
@@ -240,7 +262,16 @@ const loadClasses = async () => {
     notify.error(getApiErrorMessage(err));
   }
 };
-
+// classId -> { className, maxClassSize, enrolled, limit, remaining }
+const capacity = ref({});
+const loadCapacity = async () => {
+  try {
+    const rows = (await classApi.capacity()) || [];
+    capacity.value = Object.fromEntries(rows.map((r) => [r.classId, r]));
+  } catch (err) {
+    notify.error(getApiErrorMessage(err));
+  }
+};
 // Fields this dialog does not edit. StudentsController.Update writes every field it is sent, so a
 // missing one is saved as null — a missing familyId drops the student out of their family. They are
 // carried over from the loaded record and sent back unchanged.
@@ -266,7 +297,8 @@ watch(() => props.modelValue, async (isOpen) => {
   loading.value = true;
   loadedClassIds.value = [];
   try {
-    const [row] = await Promise.all([studentApi.get(props.studentId), loadClasses(), loadGradeLevels()]);
+    // const [row] = await Promise.all([studentApi.get(props.studentId), loadClasses(), loadGradeLevels()]);
+    const [row] = await Promise.all([studentApi.get(props.studentId), loadClasses(), loadGradeLevels(), loadCapacity()]);
     loadedClassIds.value = row.classIds?.length ? [...row.classIds] : row.classId ? [row.classId] : [];
     Object.assign(preserved, {
       familyId: row.familyId ?? null,
@@ -380,6 +412,7 @@ const save = async () => {
     } else if (isClassFullError(message)) {
       // Capacity problem: the user can fix it by picking another class, so show a yellow warning, not a red error.
       notify.warning(message);
+      await loadCapacity();   // refresh seats so the dropdown shows the new FULL state
     } else {
       notify.error(message);
     }

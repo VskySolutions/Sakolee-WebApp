@@ -126,18 +126,288 @@ const saveDraft = () => {
   }
 };
 
+const validateInstructorSchedule = async () => {
+  const instructorIds = [
+    form.primaryInstructor,
+    ...(form.additionalInstructors || [])
+  ].filter(Boolean);
+  if (!instructorIds.length) {
+    return true;
+  }
+  if (!form.activeDays) {
+    return true;
+  }
+  if (!form.startDate || !form.endDate) {
+    return true;
+  }
+  if (!form.startTime || !form.endTime) {
+    return true;
+  }
+  const selectedDays = normalizeDays(form.activeDays);
+  for (const instructorId of instructorIds) {
+    const response = await classApi.listByInstructor(
+      instructorId,
+      {
+        page: 1,
+        limit: 100,
+        descending: true
+      }
+    );
+    const classes = response?.data || [];
+    for (const existingClass of classes) {
+      // Ignore the class currently being edited.
+      if (
+        isEdit.value &&
+        String(existingClass.classId) === String(props.classId)
+      ) {
+        continue;
+      }
+      // Inactive classes do not create schedule conflicts.
+      const status = String(existingClass.status || "").toLowerCase();
+      if (status !== "active") {
+        continue;
+      }
+      // Check date range.
+      const dateOverlap = hasDateOverlap(
+        existingClass.startDate,
+        existingClass.endDate,
+        form.startDate,
+        form.endDate
+      );
+      if (!dateOverlap) {
+        continue;
+      }
+      // Check active days.
+      const dayOverlap = hasCommonActiveDay(
+        existingClass.activeDays,
+        selectedDays
+      );
+      if (!dayOverlap) {
+        continue;
+      }
+      // Convert existing "times" to start/end.
+      const existingTimes = parseExistingTimes(
+        existingClass.times
+      );
+      // Check time overlap.
+      const timeOverlap = hasTimeOverlap(
+        existingTimes.startTime,
+        existingTimes.endTime,
+        form.startTime,
+        form.endTime
+      );
+      if (!timeOverlap) {
+        continue;
+      }
+      return {
+        valid: false,
+        message:
+          `Instructor is already scheduled for "${existingClass.className}" ` +
+          `during an overlapping day and time.`
+      };
+    }
+  }
+
+  return true;
+};
+const timeToMinutes = (value) => {
+  if (!value) return null;
+  const text = String(value).trim();
+  // 24-hour format: HH:mm
+  let match = text.match(/^(\d{1,2}):(\d{2})$/);
+  if (match) {
+    const hours = Number(match[1]);
+    const minutes = Number(match[2]);
+    if (hours >= 0 && hours <= 23 && minutes >= 0 && minutes <= 59) {
+      return hours * 60 + minutes;
+    }
+  }
+  // 12-hour format: h:mm AM/PM
+  match = text.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+  if (match) {
+    let hours = Number(match[1]);
+    const minutes = Number(match[2]);
+    const period = match[3].toUpperCase();
+    if (hours >= 1 && hours <= 12 && minutes >= 0 && minutes <= 59) {
+      if (period === "AM") {
+        if (hours === 12) hours = 0;
+      } else if (hours !== 12) {
+        hours += 12;
+      }
+      return hours * 60 + minutes;
+    }
+  }
+  return null;
+};
+
+const parseExistingTimes = (times) => {
+  if (!times) {
+    return {
+      startTime: null,
+      endTime: null
+    };
+  }
+  const text = String(times).trim();
+  const parts = text.split(/\s*[-–—]\s*/);
+  if (parts.length < 2) {
+    return {
+      startTime: null,
+      endTime: null
+    };
+  }
+  return {
+    startTime: parts[0].trim(),
+    endTime: parts[1].trim()
+  };
+};
+
+const normalizeDays = (value) => {
+  if (!value) return [];
+  if (Array.isArray(value)) {
+    return value
+      .map((day) => String(day).trim().toLowerCase())
+      .filter(Boolean);
+  }
+  return String(value)
+    .split(",")
+    .map((day) => day.trim().toLowerCase())
+    .filter(Boolean);
+};
+
+const hasCommonActiveDay = (existingDays, selectedDays) => {
+  const existing = normalizeDays(existingDays);
+  const selected = normalizeDays(selectedDays);
+  return selected.some((day) => existing.includes(day));
+};
+
+const normalizeDate = (value) => {
+  if (!value) return null;
+  const text = String(value).slice(0, 10);
+  return text.replaceAll("/", "-");
+};
+const hasDateOverlap = (
+  existingStartDate,
+  existingEndDate,
+  selectedStartDate,
+  selectedEndDate
+) => {
+  const existingStart = normalizeDate(existingStartDate);
+  const existingEnd = normalizeDate(existingEndDate);
+  const selectedStart = normalizeDate(selectedStartDate);
+  const selectedEnd = normalizeDate(selectedEndDate);
+  if (
+    !existingStart ||
+    !existingEnd ||
+    !selectedStart ||
+    !selectedEnd
+  ) {
+    return false;
+  }
+  return (
+    existingStart <= selectedEnd &&
+    existingEnd >= selectedStart
+  );
+};
+
+const hasTimeOverlap = (
+  existingStartTime,
+  existingEndTime,
+  selectedStartTime,
+  selectedEndTime
+) => {
+  const existingStart = timeToMinutes(existingStartTime);
+  const existingEnd = timeToMinutes(existingEndTime);
+  const selectedStart = timeToMinutes(selectedStartTime);
+  const selectedEnd = timeToMinutes(selectedEndTime);
+  if (
+    existingStart === null ||
+    existingEnd === null ||
+    selectedStart === null ||
+    selectedEnd === null
+  ) {
+    return false;
+  }
+  return (
+    existingStart < selectedEnd &&
+    existingEnd > selectedStart
+  );
+};
+// const submitForm = async () => {
+//   if (saving.value || loading.value) return;
+//   const valid = await formRef.value?.validate();
+//   if (!valid) return;
+
+//   saving.value = true;
+//   try {
+//     if (isEdit.value) {
+//       await classApi.update(props.classId, { ...toClassPayload(form), active: form.active });
+//       notify.success("Class updated.");
+//     } else {
+//       await classApi.create(toClassPayload(form));
+//       clearDraft();
+//       notify.success("Class created.");
+//     }
+//     formOpen.value = false;
+//     reset();
+//     emit("saved");
+//   } catch (err) {
+//     notify.error(getApiErrorMessage(err));
+//   } finally {
+//     saving.value = false;
+//   }
+// };
 const submitForm = async () => {
   if (saving.value || loading.value) return;
+  // Run all normal form validations first.
   const valid = await formRef.value?.validate();
-  if (!valid) return;
-
+  if (!valid) {
+    return;
+  }
+  // Active Days is handled by the custom day buttons.
+  if (!form.activeDays || !String(form.activeDays).trim()) {
+    notify.error("Please select at least one active day.");
+    return;
+  }
+  // Extra protection for Start/End Time.
+  const startMinutes = timeToMinutes(form.startTime);
+  const endMinutes = timeToMinutes(form.endTime);
+  if (startMinutes === null) {
+    notify.error("Please enter a valid start time.");
+    return;
+  }
+  if (endMinutes === null) {
+    notify.error("Please enter a valid end time.");
+    return;
+  }
+  if (startMinutes >= endMinutes) {
+    notify.error("End time must be after start time.");
+    return;
+  }
   saving.value = true;
   try {
+    // Check instructor schedule before saving.
+    const scheduleValidation =
+      await validateInstructorSchedule();
+    if (
+      scheduleValidation &&
+      scheduleValidation.valid === false
+    ) {
+      notify.error(scheduleValidation.message);
+      return;
+    }
     if (isEdit.value) {
-      await classApi.update(props.classId, { ...toClassPayload(form), active: form.active });
+      await classApi.update(
+        props.classId,
+        {
+          ...toClassPayload(form),
+          active: form.active
+        }
+      );
       notify.success("Class updated.");
     } else {
-      await classApi.create(toClassPayload(form));
+      await classApi.create(
+        toClassPayload(form)
+      );
       clearDraft();
       notify.success("Class created.");
     }

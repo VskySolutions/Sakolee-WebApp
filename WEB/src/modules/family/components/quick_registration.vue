@@ -524,8 +524,6 @@ const loadCapacity = async () => {
   }
 };
 
-
-
 onMounted(async () => {
   try {
     const [classResult, locationResult] = await Promise.all([classApi.list({ limit: 100, active: true }), locationApi.list({ limit: 100, active: true }), loadGradeLevels(), loadFamilyStatuses(), loadFamilyRelations(),
@@ -551,9 +549,10 @@ const validateCapacity = () => {
   for (const [classId, wanted] of Object.entries(requestedSeats.value)) {
     const c = capacity.value[classId];
     if (!c || c.limit == null) continue;            // class has no size limit
-    if (wanted > c.remaining) {
-      errors[classId] = `"${c.className}" allows only ${c.limit} students (class size ${c.maxClassSize} + waitlist ${c.maxWaitlistSize ?? 0}). ` + `${c.enrolled} already enrolled, ${c.remaining} seat(s) left, but you selected ${wanted}.`;
-    }
+    // if (wanted > c.remaining) {
+    //   errors[classId] = `"${c.className}" allows only ${c.limit} students (class size ${c.maxClassSize} + waitlist ${c.maxWaitlistSize ?? 0}). ` + `${c.enrolled} already enrolled, ${c.remaining} seat(s) left, but you selected ${wanted}.`;
+    // }
+    if (wanted > c.remaining) { errors[classId] = `"${c.className}" allows only ${c.limit} students. ` + `${c.enrolled} already enrolled, ${c.remaining} seat(s) left, but you selected ${wanted}.`; }
   }
   capacityErrors.value = errors;
   return Object.values(errors);

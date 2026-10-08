@@ -853,9 +853,9 @@ const sections = [
       { label: "Quick Registration", icon: "o_how_to_reg", to: { name: "family_quick_registration" }, permissions: [Permissions.FamiliesRead] },
       // Families Settings
       {
-        key: "families-settings",
-        label: "Settings",
-        icon: "o_settings",
+        key: "families-Configuration",
+        label: "Configuration",
+        icon: "o_settings_suggest",
         items: [
           {
             label: "Family Statuses",
@@ -921,9 +921,9 @@ const sections = [
       { label: "All Students", icon: "o_person", to: "/students", permissions: [Permissions.StudentsRead] },
       // Students Settings
       {
-        key: "students-settings",
-        label: "Settings",
-        icon: "o_settings",
+        key: "students-Configuration",
+        label: "Configuration",
+        icon: "o_settings_suggest",
         items: [
           {
             label: "T-Shirt Sizes",
@@ -958,9 +958,9 @@ const sections = [
       { label: "All Classes", icon: "o_class", to: "/classes", permissions: [Permissions.ClassesRead] },
       // Classes Settings
       {
-        key: "classes-settings",
-        label: "Settings",
-        icon: "o_settings",
+        key: "classes-Configuration",
+        label: "Configuration",
+        icon: "o_settings_suggest",
         items: [
           {
             label: "Class Rooms",
