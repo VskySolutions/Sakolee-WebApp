@@ -51,7 +51,7 @@
 
       <!-- Category labels in a grouped list — options carrying `header: true`, as the role picker's
            System / Custom do. -->
-      <template v-if="hasHeaders" #option="scope">
+      <!-- <template v-if="hasHeaders" #option="scope">
         <q-item-label v-if="scope.opt.header" header class="app-select__group">
           {{ scope.opt.label }}
         </q-item-label>
@@ -65,6 +65,37 @@
           <q-item-section>
             <q-item-label>{{ scope.opt.label }}</q-item-label>
           </q-item-section>
+        </q-item>
+      </template> -->
+
+      <template #option="scope">
+        <!-- Group header -->
+        <q-item-label
+          v-if="scope.opt.header"
+          header
+          class="app-select__group"
+        >
+          {{ scope.opt.label }}
+        </q-item-label>
+
+        <!-- Normal option -->
+        <q-item v-else v-bind="scope.itemProps">
+
+          <!-- Checkbox appears only for multi-select -->
+          <q-item-section v-if="multiple" side>
+            <q-checkbox
+              :model-value="scope.selected"
+              dense
+              @update:model-value="scope.toggleOption(scope.opt)"
+            />
+          </q-item-section>
+
+          <q-item-section>
+            <q-item-label>
+              {{ scope.opt.label ?? scope.opt }}
+            </q-item-label>
+          </q-item-section>
+
         </q-item>
       </template>
 

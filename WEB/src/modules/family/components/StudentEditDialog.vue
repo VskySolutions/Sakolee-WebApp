@@ -1,10 +1,10 @@
 <template>
   <app-form-dialog
     v-model="open"
-    :title="enrollmentOnly ? 'Edit Class Enrollment' : 'Edit Student'"
-    :subtitle="enrollmentOnly ? `Choose the classes ${studentName || 'this student'} is enrolled in.` : 'Update the student\'s identity, school, fee, medical, and notes.'"
+    :title="isCreate ? 'Add Student' : enrollmentOnly ? 'Edit Class Enrollment' : 'Edit Student'"
+    :subtitle="isCreate ? 'Enter the student\'s identity, school, fee, medical, and notes.' : enrollmentOnly ? `Choose the classes ${studentName || 'this student'} is enrolled in.` : 'Update the student\'s identity, school, fee, medical, and notes.'"
     :saving="saving"
-    :save-label="enrollmentOnly ? 'Update Enrollment' : 'Update Student'"
+    :save-label="isCreate ? 'Save Student' : enrollmentOnly ? 'Update Enrollment' : 'Update Student'"
     :size="enrollmentOnly ? 'md' : 'lg'"
     @submit="save"
   >
@@ -88,7 +88,7 @@ import AppTextField from "components/common/AppTextField.vue";
 import AppSelect from "components/common/AppSelect.vue";
 import AppDateField from "components/common/AppDateField.vue";
 
-//Grade level options state
+// Grade level options state
 const gradeLevels = ref([]);
 const gradeLevelOptions = computed(() => gradeLevels.value.map((g) => ({ label: g.Name || g.gradeName || g.name, value: g.Id ||g.id || g.gradeLevelId })));
 
@@ -104,23 +104,23 @@ const loadGradeLevels = async () => {
 // Required validation rule
 const required = (val) => (val !== null && val !== undefined && String(val).trim() !== "") || "Required";
 
-// Birth date validation rule Checks Minimum 4 years old 
+// Birth date validation rule Checks Minimum 4 years old
 const birthDateRule = (val) => {
-  if (!val) return "Required"; 
+  if (!val) return "Required";
   const birthDate = new Date(val);
   const today = new Date();
   // Future date check
   if (birthDate > today) {
     return "Birth date cannot be in the future";
   }
-  
+
   // Calculate age
   let age = today.getFullYear() - birthDate.getFullYear();
   const m = today.getMonth() - birthDate.getMonth();
   if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
     age--;
   }
-  
+
   // Minimum 4 years check
   // if (age < 4) {
   //   return "Student must be at least 4 years old";
@@ -134,7 +134,7 @@ const birthDateRule = (val) => {
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const emailRule = (val) => EMAIL_RE.test(String(val || "")) || "Enter a valid email";
 
-// For only-letter name fields 
+// For only-letter name fields
 const NAME_RE = /^[A-Za-z\s]+$/;
 //const nameOnlyRule = (val) => !val || NAME_RE.test(String(val)) || "Only letters are allowed";
 
@@ -218,7 +218,9 @@ const getFilteredClassesForStudent = (studentOrForm) => {
 
 const props = defineProps({
   modelValue: { type: Boolean, default: false },
+  // No studentId → Add mode: a new student is created in `familyId`.
   studentId: { type: String, default: null },
+  familyId: { type: String, default: null },
   // Class Enrollment tab: show only the class selection.
   enrollmentOnly: { type: Boolean, default: false }
 });
@@ -234,12 +236,13 @@ const loading = ref(false);
 const saving = ref(false);
 const emailError = ref("");
 const formRef = ref(null);
+const isCreate = computed(() => !props.studentId);
 
 const blankForm = () => ({
   firstName: "",
   lastName: "",
   familyName: "",
- // familyStatusId: null,
+  // familyStatusId: null,
   studentNumber: "",
   classIds: [],
   admissionDate: "",
@@ -284,13 +287,35 @@ watch(() => form.birthDate, (newVal, oldVal) => {
 
 const studentName = computed(() => [form.firstName, form.lastName].filter(Boolean).join(" "));
 const { options: tShirtSizeOptions } = useTShirtSizeOptions(() => form.tShirtSize);
-
 // Active classes for the Class select. A student whose saved class has since been deactivated keeps
 // it as an option (labelled as such) rather than showing a raw id or silently losing it on save.
 const classes = ref([]);
 const loadedClassIds = ref([]);
+// const classOptions = computed(() => {
+//   const options = classes.value.map((c) => ({ label: c.className, value: c.classId }));
+//   for (const id of loadedClassIds.value.filter((id) => !options.some((o) => o.value === id))) {
+//     options.unshift({ label: "Current class (inactive)", value: id });
+//   }
+//   return options;
+// });
 const classOptions = computed(() => {
-  const options = classes.value.map((c) => ({ label: c.className, value: c.classId }));
+  const options = classes.value.map((c) => {
+    const cap = capacity.value[c.classId];
+    const alreadyEnrolled = loadedClassIds.value.includes(c.classId);
+    // No size limit, or the student is already in this class: never disable it
+    // (their own seat is already counted in "enrolled", and it must stay deselectable).
+    if (!cap || cap.limit == null || alreadyEnrolled) {
+      return { label: c.className, value: c.classId, disable: false };
+    }
+    const full = cap.remaining <= 0;
+    return {
+      label: full
+        ? `${c.className} — FULL`
+        : `${c.className} (${cap.remaining} seat${cap.remaining === 1 ? "" : "s"} left)`,
+      value: c.classId,
+      disable: full
+    };
+  });
   for (const id of loadedClassIds.value.filter((id) => !options.some((o) => o.value === id))) {
     options.unshift({ label: "Current class (inactive)", value: id });
   }
@@ -304,7 +329,16 @@ const loadClasses = async () => {
     notify.error(getApiErrorMessage(err));
   }
 };
-
+// classId -> { className, maxClassSize, enrolled, limit, remaining }
+const capacity = ref({});
+const loadCapacity = async () => {
+  try {
+    const rows = (await classApi.capacity()) || [];
+    capacity.value = Object.fromEntries(rows.map((r) => [r.classId, r]));
+  } catch (err) {
+    notify.error(getApiErrorMessage(err));
+  }
+};
 // Fields this dialog does not edit. StudentsController.Update writes every field it is sent, so a
 // missing one is saved as null — a missing familyId drops the student out of their family. They are
 // carried over from the loaded record and sent back unchanged.
@@ -331,8 +365,18 @@ isInitializing.value = true;
   emailError.value = "";
   loading.value = true;
   loadedClassIds.value = [];
+  if (isCreate.value) {
+    preserved.familyId = props.familyId;
+    try {
+      await Promise.all([loadClasses(), loadGradeLevels()]);
+    } finally {
+      loading.value = false;
+    }
+    return;
+  }
   try {
-    const [row] = await Promise.all([studentApi.get(props.studentId), loadClasses(), loadGradeLevels()]);
+    // const [row] = await Promise.all([studentApi.get(props.studentId), loadClasses(), loadGradeLevels()]);
+    const [row] = await Promise.all([studentApi.get(props.studentId), loadClasses(), loadGradeLevels(), loadCapacity()]);
     loadedClassIds.value = row.classIds?.length ? [...row.classIds] : row.classId ? [row.classId] : [];
     Object.assign(preserved, {
       familyId: row.familyId ?? null,
@@ -347,7 +391,7 @@ isInitializing.value = true;
       lastName: row.lastName || "",
       familyName: row.familyName || "",
       studentNumber: row.studentNumber || "",
-      //familyStatusId: row.familyStatusId ?? null,
+      // familyStatusId: row.familyStatusId ?? null,
       classIds: [...loadedClassIds.value],
       admissionDate: row.admissionDate ? row.admissionDate.substring(0, 10) : "",
       birthDate: row.birthDate ? row.birthDate.substring(0, 10) : "",
@@ -398,7 +442,7 @@ const save = async () => {
     firstName: form.firstName,
     lastName: form.lastName,
     familyName: form.familyName || null,
-   // familyStatusId: form.familyStatusId || null,
+    // familyStatusId: form.familyStatusId || null,
     studentNumber: form.studentNumber || null,
     classIds: form.classIds || [],
     admissionDate: form.admissionDate || null,
@@ -430,20 +474,42 @@ const save = async () => {
 
   saving.value = true;
   try {
-    await studentApi.update(props.studentId, payload);
-    notify.success(props.enrollmentOnly ? "Class enrollment updated." : "Student updated.");
+    if (isCreate.value) {
+      await studentApi.create(payload);
+      notify.success("Student added.");
+    } else {
+      await studentApi.update(props.studentId, payload);
+      notify.success(props.enrollmentOnly ? "Class enrollment updated." : "Student updated.");
+    }
     open.value = false;
     emit("saved");
+  // } catch (err) {
+  //   if (getApiErrorCode(err) === ApiErrorCodes.DuplicateIdentifier) {
+  //     emailError.value = "A student with this email already exists.";
+  //   } else {
+  //     notify.error(getApiErrorMessage(err));
+  //   }
+  // } finally {
+  //   saving.value = false;
+  // }
   } catch (err) {
+    const message = getApiErrorMessage(err);
     if (getApiErrorCode(err) === ApiErrorCodes.DuplicateIdentifier) {
       emailError.value = "A student with this email already exists.";
+    } else if (isClassFullError(message)) {
+      // Capacity problem: the user can fix it by picking another class, so show a yellow warning, not a red error.
+      notify.warning(message);
+      await loadCapacity();   // refresh seats so the dropdown shows the new FULL state
     } else {
-      notify.error(getApiErrorMessage(err));
+      notify.error(message);
     }
   } finally {
     saving.value = false;
   }
 };
+// StudentsController.CheckClassCapacityAsync returns "Class is full." with an "allows only N students ..." detail.
+const isClassFullError = (message) =>
+  /class is full|allows only \d+ students/i.test(message || "");
 </script>
 
 <style scoped>

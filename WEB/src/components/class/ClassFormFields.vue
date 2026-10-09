@@ -2,11 +2,7 @@
   <div>
     <div class="form-section-title">Class Information</div>
     <div class="row q-col-gutter-md q-mb-md">
-      <app-text-field
-        v-model="form.className" label="Class Name *" placeholder="e.g. Advanced Ballet" class="col-12"
-        :disable="disable" :rules="[requiredRule]"
-      />
-
+      <app-text-field v-model="form.className" label="Class Name *" placeholder="e.g. Advanced Ballet" class="col-12" :disable="disable" :rules="[requiredRule, classNameRule]" />
       <!-- Category 1/2/3, Location, Room, Session and Primary/Additional Instructors save to the Class record (backed by
            ClassCategory/Locations/ClassRooms/ClassSessions/the tenant's Staff users). -->
       <app-select :key="`category1-${categoriesLoaded}`" v-model="form.category1" label="Category 1 *" :options="category1Options" class="col-12 col-sm-6" :disable="disable" :rules="[requiredRule]" />
@@ -20,7 +16,15 @@
         :disable="disable || !form.location" :hint="form.location ? '' : 'Select a location first'" :rules="[requiredRule]"
       />
       <app-select :key="`session-${categoriesLoaded}`" v-model="form.session" label="Session *" :options="sessionOptions" class="col-12 col-sm-6" :disable="disable" />
-      <app-select :key="`instructor-${categoriesLoaded}`" v-model="form.primaryInstructor" label="Primary Instructor *" :options="instructorOptions" class="col-12 col-sm-6" :disable="disable" />
+      <app-select
+        :key="`instructor-${categoriesLoaded}`"
+        v-model="form.primaryInstructor"
+        label="Primary Instructor *"
+        :options="instructorOptions"
+        class="col-12 col-sm-6"
+        :disable="disable"
+        :rules="[requiredRule]"
+      />
       <app-select
         :key="`additional-instructors-${categoriesLoaded}`" v-model="form.additionalInstructors" label="Additional Instructors (Max 2)"
         :options="additionalInstructorOptions" multiple class="col-12 col-sm-6" :disable="disable"
@@ -30,16 +34,24 @@
     <q-separator class="q-my-sm" />
     <div class="form-section-title">Timeframe</div>
     <div class="row q-col-gutter-md q-mb-md">
-      <app-date-field v-model="form.startDate" label="Start Date *" class="col-12 col-sm-6" :disable="disable" :rules="[requiredRule]" />
-      <app-date-field v-model="form.endDate" label="End Date *" class="col-12 col-sm-6" :disable="disable" :rules="[requiredRule]" />
+      <!-- Row 1: Registration Open Date alone -->
       <app-date-field v-model="form.registrationOpenDate" label="Registration Open Date *" class="col-12 col-sm-6" :disable="disable" :rules="[requiredRule]" />
-
+      <div class="row-break" />
+      <!-- Row 2: Start Date + End Date side by side -->
+      <app-date-field v-model="form.startDate" label="Start Date *" class="col-12 col-sm-6" :disable="disable || !form.registrationOpenDate" :hint="form.registrationOpenDate ? '' : 'Select registration open date first'" :options="startDateOptions" :default-year-month="startYearMonth" :rules="[requiredRule, startDateRule]" />
+      <app-date-field v-model="form.endDate" label="End Date *" class="col-12 col-sm-6" :disable="disable || !form.startDate" :hint="form.startDate ? '' : 'Select start date first'" :options="endDateOptions" :default-year-month="endYearMonth" :rules="[requiredRule, endDateRule]" />
       <div class="col-12">
-        <app-field-label label="Active Days" />
+        <app-field-label label="Active Days *" />
+
         <div class="row q-gutter-sm">
           <q-btn
-            v-for="day in dayOptions" :key="day.value"
-            :label="day.label" rounded dense no-caps unelevated
+            v-for="day in dayOptions"
+            :key="day.value"
+            :label="day.label"
+            rounded
+            dense
+            no-caps
+            unelevated
             :color="isDaySelected(day.value) ? 'primary' : 'grey-3'"
             :text-color="isDaySelected(day.value) ? 'white' : 'grey-8'"
             :disable="disable"
@@ -47,10 +59,32 @@
             @click="toggleDay(day.value)"
           />
         </div>
+
+        <div
+          v-if="!disable && activeDaysTouched && selectedDays.length === 0"
+          class="text-negative text-caption q-mt-xs"
+        >
+          Select at least one active day
+        </div>
       </div>
 
-      <app-time-field v-model="form.startTime" label="Start Time *" class="col-12 col-sm-6" :disable="disable" :rules="[requiredRule]" />
-      <app-time-field v-model="form.endTime" label="End Time *" class="col-12 col-sm-6" :disable="disable" :rules="[requiredRule]" />
+      <!-- <app-time-field v-model="form.startTime" label="Start Time *" class="col-12 col-sm-6" :disable="disable" :rules="[requiredRule]" />
+      <app-time-field v-model="form.endTime" label="End Time *" class="col-12 col-sm-6" :disable="disable" :rules="[requiredRule]" /> -->
+      <app-time-field
+        v-model="form.startTime"
+        label="Start Time *"
+        class="col-12 col-sm-6"
+        :disable="disable"
+        :rules="[requiredRule, startTimeRule]"
+      />
+
+      <app-time-field
+        v-model="form.endTime"
+        label="End Time *"
+        class="col-12 col-sm-6"
+        :disable="disable"
+        :rules="[requiredRule, endTimeRule]"
+      />
       <app-text-field v-model="form.duration" label="Duration" placeholder="—" hint="Calculated from Start Time and End Time" class="col-12 col-sm-6" disable />
     </div>
 
@@ -64,6 +98,7 @@
         <template #prepend><span class="text-grey-7">$</span></template>
       </app-text-field>
       <app-select v-model="form.billingMethod" label="Billing Method" :options="billingMethodOptions" class="col-12 col-sm-6" :disable="disable" />
+      <!-- <app-select v-model="form.billingCycle" label="Billing Cycle" :options="billingCycleOptions" class="col-12 col-sm-6" :disable="disable" /> -->
       <app-select v-model="form.billingCycle" label="Billing Cycle" :options="billingCycleOptions" class="col-12 col-sm-6" :disable="disable" />
       <div class="col-12 col-sm-6 toggle-row-inline">
         <q-toggle v-model="form.registrationFee" color="primary" :disable="disable" />
@@ -82,9 +117,10 @@
           class="gender-options" :disable="disable"
         />
       </div>
-      <app-text-field v-model.number="form.minAge" label="Min Age" type="number" placeholder="Min Age" class="col-12 col-sm-6" :disable="disable" />
-      <app-text-field v-model.number="form.maxAge" label="Max Age" type="number" placeholder="Max Age" class="col-12 col-sm-6" :disable="disable" />
-      <app-text-field v-model.number="form.maxClassSize" label="Max Class Size" type="number" placeholder="Max Class Size" class="col-12 col-sm-6" :disable="disable" />
+      <app-text-field v-model.number="form.minAge" label="Min Age" type="number" placeholder="Min Age" class="col-12 col-sm-6" :disable="disable" :rules="[ageRule, minAgeRule]" />
+      <app-text-field v-model.number="form.maxAge" label="Max Age" type="number" placeholder="Max Age" class="col-12 col-sm-6" :disable="disable" :rules="[ageRule, maxAgeRule]" />
+      <!-- <app-text-field v-model.number="form.maxClassSize" label="Max Class Size" type="number" placeholder="Max Class Size" class="col-12 col-sm-6" :disable="disable" /> -->
+      <app-text-field v-model.number="form.maxClassSize" label="Max Class Size *" type="number" placeholder="Enter maximum class size" class="col-12 col-sm-6" :disable="disable" :rules="[requiredRule]" />
       <app-text-field v-model.number="form.maxWaitlistSize" label="Max Waitlist Size" type="number" placeholder="Max Waitlist Size" class="col-12 col-sm-6" :disable="disable" />
       <app-date-field v-model="form.cutoffDate" label="Cutoff Date" class="col-12 col-sm-6" :disable="disable" />
       <app-select
@@ -128,7 +164,7 @@
 <script setup>
 // The Class create/edit/view field set, defined once and reused by the Add/Edit/View class pages.
 import { ref, computed, watch, onMounted } from "vue";
-import { classApi, classCategoryApi, classRoomApi, classSessionApi, locationApi, getApiErrorMessage } from "services/api";
+import { classApi, classCategoryApi, classRoomApi, classSessionApi, locationApi, billingCycleApi, getApiErrorMessage } from "services/api";
 import { useNotify } from "composables/useNotify";
 import { formatDuration } from "composables/classForm";
 
@@ -158,6 +194,7 @@ const classCategories = ref([]);
 const locations = ref([]);
 const sessions = ref([]);
 const instructors = ref([]);
+const billingCycles = ref([]);
 // Policies: the tenant's active policies, saved to PolicyClassMapping (see classForm.js's toClassPayload).
 const policies = ref([]);
 // The Category/Location/Session selects mount before these async fetches resolve, and QSelect's value→label
@@ -291,8 +328,8 @@ const genderOptions = [
   { label: "Female", value: "Female" }
 ];
 const billingMethodOptions = ["Flat Rate", "Per Session", "Per Class", "Hourly"];
-const billingCycleOptions = ["Monthly", "Weekly", "Bi-Weekly", "Per Session", "One-Time"];
-
+// const billingCycleOptions = ["Monthly", "Weekly", "Bi-Weekly", "Per Session", "One-Time"];
+const billingCycleOptions = computed(() => billingCycles.value.map((cycle) => ({ label: cycle.name, value: cycle.name })));
 // Active Days stays a comma-separated free-text string on the server (see Class entity); the pill
 // toggles below just read/write that string so nothing on the wire changes.
 const dayOptions = [
@@ -312,12 +349,30 @@ watch(
   { immediate: true }
 );
 
-const selectedDays = computed(() => (form.value.activeDays || "").split(",").map((d) => d.trim()).filter(Boolean));
+// const selectedDays = computed(() => (form.value.activeDays || "").split(",").map((d) => d.trim()).filter(Boolean));
+const selectedDays = computed(() =>
+  (form.value.activeDays || "")
+    .split(",")
+    .map((d) => d.trim())
+    .filter(Boolean)
+);
+const activeDaysTouched = ref(false);
 const isDaySelected = (day) => selectedDays.value.includes(day);
+// const toggleDay = (day) => {
+//   if (props.disable) return;
+//   const days = isDaySelected(day) ? selectedDays.value.filter((d) => d !== day) : [...selectedDays.value, day];
+//   form.value.activeDays = dayOptions.map((d) => d.value).filter((d) => days.includes(d)).join(", ");
+// };
 const toggleDay = (day) => {
   if (props.disable) return;
-  const days = isDaySelected(day) ? selectedDays.value.filter((d) => d !== day) : [...selectedDays.value, day];
-  form.value.activeDays = dayOptions.map((d) => d.value).filter((d) => days.includes(d)).join(", ");
+  activeDaysTouched.value = true;
+  const days = isDaySelected(day)
+    ? selectedDays.value.filter((d) => d !== day)
+    : [...selectedDays.value, day];
+  form.value.activeDays = dayOptions
+    .map((d) => d.value)
+    .filter((d) => days.includes(d))
+    .join(", ");
 };
 
 // Validations
@@ -325,12 +380,128 @@ const requiredRule = (v) => {
   if (Array.isArray(v)) {
     return v.length > 0 || "This field is required";
   }
-
   return (v !== null && v !== undefined && String(v).trim() !== "") || "This field is required";
 };
+const timeToMinutes = (value) => {
+  if (!value) return null;
+  const text = String(value).trim();
+  // 24-hour format: HH:mm
+  let match = text.match(/^(\d{1,2}):(\d{2})$/);
+  if (match) {
+    const hours = Number(match[1]);
+    const minutes = Number(match[2]);
+    if (hours >= 0 && hours <= 23 && minutes >= 0 && minutes <= 59) {
+      return hours * 60 + minutes;
+    }
+  }
+  // 12-hour format: h:mm AM/PM
+  match = text.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+  if (match) {
+    let hours = Number(match[1]);
+    const minutes = Number(match[2]);
+    const period = match[3].toUpperCase();
+    if (hours >= 1 && hours <= 12 && minutes >= 0 && minutes <= 59) {
+      if (period === "AM") {
+        if (hours === 12) hours = 0;
+      } else if (hours !== 12) {
+        hours += 12;
+      }
+      return hours * 60 + minutes;
+    }
+  }
+  return null;
+};
+
+const startTimeRule = (value) => {
+  if (!value) return true;
+  const start = timeToMinutes(value);
+  if (start === null) {
+    return "Enter a valid start time";
+  }
+  if (form.value.endTime) {
+    const end = timeToMinutes(form.value.endTime);
+    if (end !== null && start >= end) {
+      return "Start time must be before end time";
+    }
+  }
+  return true;
+};
+const endTimeRule = (value) => {
+  if (!value) return true;
+  const end = timeToMinutes(value);
+  if (end === null) {
+    return "Enter a valid end time";
+  }
+  if (form.value.startTime) {
+    const start = timeToMinutes(form.value.startTime);
+    if (start !== null && end <= start) {
+      return "End time must be after start time";
+    }
+  }
+  return true;
+};
+// Min Age / Max Age: optional, whole numbers 0–120, and min must not exceed max
+const hasValue = (v) => v !== "" && v !== null && v !== undefined;
+const ageRule = (v) => !hasValue(v) || (Number.isInteger(Number(v)) && Number(v) >= 0 && Number(v) <= 120) || "Enter a whole number between 0 and 120";
+const minAgeRule = (v) => !hasValue(v) || !hasValue(form.value.maxAge) || Number(v) <= Number(form.value.maxAge) || "Min age cannot be greater than max age";
+const maxAgeRule = (v) => !hasValue(v) || !hasValue(form.value.minAge) || Number(v) >= Number(form.value.minAge) || "Max age cannot be less than min age";
+// Class Name: letters (any language), spaces, and . ' - only. No digits.
+const nameRegex = /^[\p{L}][\p{L}\s.'-]*$/u;
+const classNameRule = (v) => !v || nameRegex.test(v.trim()) || "Only letters are allowed (no numbers)";
+// Strip any disallowed character as the user types
+watch(() => form.value.className, (v) => {
+  if (typeof v !== "string") return;
+  const cleaned = v.replace(/[^\p{L}\s.'-]/gu, "");
+  if (cleaned !== v) form.value.className = cleaned;
+});
+
+// q-date `options` always receives "YYYY/MM/DD"; the model is "YYYY-MM-DD".
+const toKey = (v) => (v ? String(v).slice(0, 10).replaceAll("-", "/") : "");
+
+// Start Date: days BEFORE the registration open date are disabled
+const startDateOptions = (d) =>
+  !form.value.registrationOpenDate || d >= toKey(form.value.registrationOpenDate);
+
+// End Date: days BEFORE the start date are disabled
+const endDateOptions = (d) =>
+  !form.value.startDate || d >= toKey(form.value.startDate);
+
+const startDateRule = (v) =>
+  !v || !form.value.registrationOpenDate ||
+  toKey(v) >= toKey(form.value.registrationOpenDate) ||
+  "Start date cannot be before the registration open date";
+
+const endDateRule = (v) =>
+  !v || !form.value.startDate ||
+  toKey(v) >= toKey(form.value.startDate) ||
+  "End date cannot be before the start date";
+
+// Open each calendar on the month where selectable days begin ("YYYY/MM")
+const startYearMonth = computed(() => toKey(form.value.registrationOpenDate).slice(0, 7) || undefined);
+const endYearMonth = computed(() => toKey(form.value.startDate).slice(0, 7) || undefined);
+
+// If an earlier date changes, clear later dates that are no longer valid
+watch(() => form.value.registrationOpenDate, (reg) => {
+  if (reg && form.value.startDate && toKey(form.value.startDate) < toKey(reg)) {
+    form.value.startDate = "";
+    form.value.endDate = "";
+  }
+});
+watch(() => form.value.startDate, (start) => {
+  if (start && form.value.endDate && toKey(form.value.endDate) < toKey(start)) {
+    form.value.endDate = "";
+  }
+});
 </script>
 
 <style scoped>
+.row-break {
+  flex-basis: 100%;
+  width: 100%;
+  height: 0;
+  padding: 0 !important;
+  margin: 0 !important;
+}
 .form-section-title {
   font-size: 11px;
   font-weight: 700;

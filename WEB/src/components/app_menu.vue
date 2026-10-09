@@ -16,6 +16,7 @@
           <!-- =================================================
                UNGROUPED ITEMS
                ================================================= -->
+          <!-- Dashboard -->
           <template v-if="!section.label">
 
             <q-item
@@ -27,12 +28,13 @@
               :to="item.to"
               :exact="item.exact"
               active-class="active-menu-class"
+              class="dashboard-menu"
               @click="onItem(item)"
             >
               <q-item-section avatar>
                 <q-icon
                   :name="item.icon"
-                  size="24px"
+                  size="22px"
                 />
               </q-item-section>
 
@@ -70,7 +72,7 @@
             <q-item-section avatar>
               <q-icon
                 :name="section.icon"
-                size="24px"
+                size="22px"
               />
             </q-item-section>
 
@@ -204,7 +206,7 @@
                       @update:model-value="
                         (open) =>
                           nestedFlyoutKey =
-                            open ? section.key + '-' + item.key : null
+                          open ? section.key + '-' + item.key : null
                       "
                     >
                       <q-list
@@ -286,7 +288,7 @@
                 clickable
                 :to="item.to"
                 :exact="item.exact"
-                active-class="text-primary"
+                active-class="active-menu-class"
                 class="app-menu__nested"
                 @click="onItem(item)"
               >
@@ -334,7 +336,7 @@
                   clickable
                   :to="child.to"
                   :exact="child.exact"
-                  active-class="text-primary"
+                  active-class="active-menu-class"
                   class="app-menu__nested app-menu__settings-child"
                   @click="onItem(child)"
                 >
@@ -376,7 +378,7 @@
           icon="o_settings"
           label="Settings"
           :model-value="isOpen(settingsSection)"
-          header-class="app-menu__group app-menu__settings"
+          header-class="app-menu__group app-menu__settings-header"
           class="sakolee-app-menu-footer"
           @update:model-value="
             (v) => setOpen(settingsSection.key, v)
@@ -398,7 +400,7 @@
               :label="item.label"
               :model-value="isOpen(item)"
               header-class="app-menu__flyout-group"
-              class="q-pl-sm"
+              class="app-menu__settings-child-group"
               @update:model-value="
                 (v) => setOpen(item.key, v)
               "
@@ -412,7 +414,7 @@
                 clickable
                 :to="child.to"
                 :exact="child.exact"
-                active-class="text-primary"
+                active-class="active-menu-class"
                 class="app-menu__flyout-child q-pl-lg"
                 @click="onItem(child)"
               >
@@ -444,7 +446,7 @@
               :to="item.to"
               :exact="item.exact"
               active-class="active-menu-class"
-              class="q-pl-lg"
+              class="app-menu__settings-child"
               @click="onItem(item)"
             >
 
@@ -484,7 +486,7 @@
         <q-item-section avatar>
           <q-icon
             name="o_settings"
-            size="24px"
+            size="22px"
           />
         </q-item-section>
 
@@ -715,7 +717,7 @@
         <q-item-section avatar>
           <q-icon
             name="o_logout"
-            size="24px"
+            size="22px"
           />
         </q-item-section>
 
@@ -747,6 +749,7 @@ import { LocalStorage } from "quasar";
 import { useRouter } from "vue-router";
 import { useAuthStore } from "stores/auth";
 import { Permissions } from "composables/usePermissions";
+import { useIsParentPortal } from "composables/useParentPortal";
 
 defineProps({
   // Collapsed to the icon rail: each group offers its children as a flyout beside its icon.
@@ -755,6 +758,7 @@ defineProps({
 
 const authStore = useAuthStore();
 const router = useRouter();
+const isParentPortal = useIsParentPortal();
 const loggedUserRole = computed(() => authStore.user?.tenants[0]?.roleNames[0]);
 console.log("Logged User Role:", loggedUserRole.value);
 
@@ -851,11 +855,25 @@ const sections = [
       { label: "All Families", icon: "o_groups", to: "/families", permissions: [Permissions.FamiliesRead] },
       // Gated like its route — part of the Families area.
       { label: "Quick Registration", icon: "o_how_to_reg", to: { name: "family_quick_registration" }, permissions: [Permissions.FamiliesRead] },
+      // Lead Files — students without a running class. All Leads is the one page so far.
+      {
+        key: "lead-files",
+        label: "Lead Files",
+        icon: "o_contact_page",
+        items: [
+          {
+            label: "All Leads",
+            icon: "o_contact_page",
+            to: "/families/leads",
+            permissions: [Permissions.FamiliesRead]
+          }
+        ]
+      },
       // Families Settings
       {
-        key: "families-settings",
-        label: "Settings",
-        icon: "o_settings",
+        key: "families-Configuration",
+        label: "Configuration",
+        icon: "o_settings_suggest",
         items: [
           {
             label: "Family Statuses",
@@ -892,12 +910,23 @@ const sections = [
             icon: "o_card_membership",
             to: "/membership-types",
             permissions: [Permissions.MembershipTypesRead]
-          }
+          },
+          {
+            label: "E-Payment Schedule",
+            icon: "o_payments",
+            to: "/e-payment-schedule",
+            permissions: [Permissions.EPaymentSchedulesRead]
+          },
+          {
+            label: "Account Types",
+            icon: "o_account_balance_wallet",
+            to: "/account-type",
+            permissions: [Permissions.AccountTypesRead]
+          },
         ]
       }
       // { label: "Email/Text Families", icon: "o_mail", to: "/families/email", permissions: null },
       // { label: "Drop Unpaid Families", icon: "o_money_off", to: "/families/drop-unpaid", permissions: null },
-      // { label: "Lead Files", icon: "o_contact_page", to: "/families/leads", permissions: null },
       // { label: "Family Report", icon: "o_summarize", to: "/families/report", permissions: null }
     ]
   },
@@ -906,12 +935,12 @@ const sections = [
     label: "Students",
     icon: "o_group",
     items: [
-      { label: "All Students", icon: "o_person", to: "/students", permissions: [Permissions.StudentsRead] },
+      { label: "All Students", parentLabel: "My Students", icon: "o_person", to: "/students", permissions: [Permissions.StudentsRead] },
       // Students Settings
       {
-        key: "students-settings",
-        label: "Settings",
-        icon: "o_settings",
+        key: "students-Configuration",
+        label: "Configuration",
+        icon: "o_settings_suggest",
         items: [
           {
             label: "T-Shirt Sizes",
@@ -946,9 +975,9 @@ const sections = [
       { label: "All Classes", icon: "o_class", to: "/classes", permissions: [Permissions.ClassesRead] },
       // Classes Settings
       {
-        key: "classes-settings",
-        label: "Settings",
-        icon: "o_settings",
+        key: "classes-Configuration",
+        label: "Configuration",
+        icon: "o_settings_suggest",
         items: [
           {
             label: "Class Rooms",
@@ -1000,7 +1029,7 @@ const sections = [
     label: "Staffs",
     icon: "o_badge",
     items: [
-      { label: "Staffs", icon: "o_assignment_ind", to: "/users", permissions: [Permissions.UsersRead] } 
+      { label: "Staffs", icon: "o_assignment_ind", to: "/users", permissions: [Permissions.UsersRead] }
     ]
   },
   {
@@ -1209,7 +1238,8 @@ const filterSectionItems = (items) => {
           items: filterSectionItems(item.items)
         };
       }
-      return item;
+      // `parentLabel` is what a family-contact (Parent/Guardian) login sees in place of `label`.
+      return isParentPortal.value && item.parentLabel ? { ...item, label: item.parentLabel } : item;
     })
     .filter((item) => {
       if (item.items) {
@@ -1242,92 +1272,287 @@ const setOpen = (key, open) => {
 };
 </script>
 
-<style scoped>
-/* Compact spacing — the drawer holds many items. */
+<style scoped lang="scss">
+
+/* ============================================================
+   MENU COLORS
+   ============================================================ */
+
+$menu-color: #464554;
+$parent-menu-color: #131b2e;
+$parent-icon-color: #464554;
+$expand-icon-color: #767586;
+
+/* ============================================================
+   ACTIVE MENU
+   ============================================================ */
+
+.active-menu-class {
+  color: var(--primary) !important;
+}
+
+/* Active label */
+:deep(.active-menu-class .q-item__section:not(.q-item__section--avatar)) {
+  color: var(--primary) !important;
+}
+
+/* Active icon */
+:deep(.active-menu-class .q-item__section--avatar .q-icon) {
+  color: var(--primary) !important;
+}
+
+/* ============================================================
+   GENERAL MENU
+   ============================================================ */
+
 .app-menu :deep(.q-item) {
   min-height: 40px;
 }
-/* Tighten the icon gutter so icon + label sit close together. */
+
 .app-menu :deep(.q-item__section--avatar) {
   min-width: 32px;
   padding-right: 8px;
 }
-/* Collapsible group headers, set as the prototype's nav sets them: 14px, medium weight, normal
-   case — not the small-caps treatment the rest of the app uses for section labels. */
+
+/* ============================================================
+   DASHBOARD / UNGROUPED PARENT
+   ============================================================ */
+
+.dashboard-menu {
+  padding: 4px 12px !important;
+}
+
+.dashboard-menu :deep(
+  .q-item__section:not(.q-item__section--avatar)
+) {
+  font-size: 14px;
+  font-weight: 500;
+  color: $parent-menu-color;
+}
+
+.dashboard-menu :deep(
+  .q-item__section--avatar .q-icon
+) {
+  font-size: 22px !important;
+  color: $parent-icon-color;
+}
+
+/* ============================================================
+   MAIN PARENT EXPANSION
+   Families / Students / Classes / etc.
+   ============================================================ */
+
 .app-menu :deep(.app-menu__group) {
   min-height: 40px;
   padding: 4px 12px;
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--on-surface);
-}
-.app-menu :deep(.app-menu__group .q-item__section--avatar) {
-  min-width: 30px;
-  padding-right: 10px;
-}
-/* Indent the items within a group so the hierarchy reads clearly. */
-.app-menu__nested {
-  padding-left: 20px;
-  font-size: 14px;
-  font-weight: 400;
 }
 
-/* The rail's flyout. Portaled to the body, so .app-menu selectors cannot reach it — spacing restated. */
+/* Parent label */
+.app-menu :deep(
+  .app-menu__group .q-item__section:not(.q-item__section--avatar)
+) {
+  font-size: 14px;
+  font-weight: 500;
+  color: $parent-menu-color;
+}
+
+/* Parent icon */
+.app-menu :deep(
+  .app-menu__group .q-item__section--avatar .q-icon
+) {
+  font-size: 22px !important;
+  color: $parent-icon-color;
+}
+
+/* Parent expand arrow */
+.app-menu :deep(
+  .app-menu__group .q-expansion-item__toggle-icon
+) {
+  font-size: 18px !important;
+  color: $expand-icon-color;
+}
+
+/* ============================================================
+   NORMAL CHILD
+   All Families / All Students / etc.
+   ============================================================ */
+
+.app-menu__nested {
+  padding-left: 20px;
+}
+
+/* Child label */
+:deep(
+  .app-menu__nested .q-item__section:not(.q-item__section--avatar)
+) {
+  font-size: 12px;
+  font-weight: 400;
+  color: $menu-color;
+}
+
+/* Child icon */
+:deep(
+  .app-menu__nested .q-item__section--avatar .q-icon
+) {
+  font-size: 20px !important;
+  color: $menu-color;
+}
+
+/* ============================================================
+   NESTED EXPANSION
+   Families → Settings
+   Students → Settings
+   Classes → Settings
+   ============================================================ */
+
+.app-menu :deep(.app-menu__nested-group) {
+  min-height: 40px;
+  padding: 4px 16px 4px 20px;
+}
+
+/* Nested parent label */
+.app-menu :deep(
+  .app-menu__nested-group .q-item__section:not(.q-item__section--avatar)
+) {
+  font-size: 12px;
+  font-weight: 400;
+  color: $menu-color;
+}
+
+/* Nested parent icon */
+.app-menu :deep(
+  .app-menu__nested-group .q-item__section--avatar .q-icon
+) {
+  font-size: 20px !important;
+  color: $menu-color;
+}
+
+/* Nested parent arrow */
+.app-menu :deep(
+  .app-menu__nested-group .q-expansion-item__toggle-icon
+) {
+  font-size: 18px !important;
+  color: $expand-icon-color;
+}
+
+/* ============================================================
+   NESTED CHILD
+   Family Statuses / Studio Locations / etc.
+   ============================================================ */
+
+.app-menu__settings-child {
+  padding-left: 20px !important;
+}
+
+/* ============================================================
+   FLYOUT
+   ============================================================ */
+
 .app-menu__flyout {
   min-width: 208px;
   padding: 2px 0 4px;
 }
+
 .app-menu__flyout :deep(.q-item) {
   min-height: 34px;
 }
+
 .app-menu__flyout :deep(.q-item__section--avatar) {
   min-width: 32px;
   padding-right: 8px;
 }
-/* Names the group, styled as the expanded menu's group headers. */
+
+/* Flyout heading */
 .app-menu__flyout-head {
   min-height: auto;
   padding: 8px 16px 4px;
+
   font-size: 14px;
   font-weight: 600;
-  color: var(--on-surface);
+
+  color: $menu-color;
 }
 
 /* ============================================================
-   COMPLETE MENU CONTAINER
+   MINI FLYOUT PARENT
+   Example: Settings → Masters
    ============================================================ */
 
-.app-menu-wrapper {
-  height: 100%;
+.app-menu__flyout-parent {
+  min-height: 36px;
+  padding: 4px 12px;
 
-  display: flex;
-  flex-direction: column;
+  border-radius: 6px;
+}
 
-  min-height: 0;
+/* Parent icon */
+.app-menu__flyout-parent :deep(
+  .q-item__section--avatar .q-icon
+) {
+  font-size: 20px !important;
+  color: $menu-color;
+}
+
+/* Parent label */
+.app-menu__flyout-parent :deep(
+  .q-item__section:not(.q-item__section--avatar):not(.q-item__section--side)
+) {
+  font-size: 12px;
+  font-weight: 400;
+  color: $menu-color;
+}
+
+/* Parent arrow */
+.app-menu__flyout-parent :deep(
+  .q-item__section--side .q-icon
+) {
+  font-size: 18px !important;
+  color: $expand-icon-color;
+}
+
+.app-menu__flyout-parent:hover {
+  background: #f5f6ff;
 }
 
 /* ============================================================
-   SCROLLABLE MAIN MENU
+   NESTED FLYOUT
    ============================================================ */
 
-.app-menu-scroll {
-  flex: 1 1 auto;
+.app-menu__nested-flyout {
+  min-width: 230px;
+  padding: 2px 0 4px;
+}
 
-  min-height: 0;
+.app-menu__nested-flyout :deep(.q-item) {
+  min-height: 34px;
+}
 
-  padding: 0 14px;
+.app-menu__nested-flyout :deep(
+  .q-item__section--avatar
+) {
+  min-width: 32px;
+  padding-right: 8px;
+}
+
+/* Nested flyout child label */
+.app-menu__nested-flyout :deep(
+  .q-item__section:not(.q-item__section--avatar)
+) {
+  font-size: 12px;
+  font-weight: 400;
+  color: $menu-color;
+}
+
+/* Nested flyout child icon */
+.app-menu__nested-flyout :deep(
+  .q-item__section--avatar .q-icon
+) {
+  font-size: 20px !important;
+  color: $menu-color;
 }
 
 /* ============================================================
-   MAIN MENU
-   ============================================================ */
-
-.app-menu {
-  padding-bottom: 12px;
-}
-
-/* ============================================================
-   FIXED FOOTER
+   FOOTER
    ============================================================ */
 
 .app-menu-footer {
@@ -1341,16 +1566,135 @@ const setOpen = (key, open) => {
 }
 
 /* ============================================================
-   FOOTER ITEMS
+   FOOTER SETTINGS PARENT
+   ============================================================ */
+
+.app-menu-footer :deep(.app-menu__settings-header) {
+  min-height: 40px;
+  padding: 4px 12px;
+}
+
+/* Settings parent label */
+.app-menu-footer :deep(
+  .app-menu__settings-header .q-item__section:not(.q-item__section--avatar)
+) {
+  font-size: 14px;
+  font-weight: 500;
+  color: $parent-menu-color;
+}
+
+/* Settings parent icon */
+.app-menu-footer :deep(
+  .app-menu__settings-header .q-item__section--avatar .q-icon
+) {
+  font-size: 22px !important;
+  color: $parent-icon-color;
+}
+
+/* Settings parent arrow */
+.app-menu-footer :deep(
+  .app-menu__settings-header .q-expansion-item__toggle-icon
+) {
+  font-size: 18px !important;
+  color: $expand-icon-color;
+}
+
+/* ============================================================
+   FOOTER SETTINGS CHILDREN
+   Policies / My Account / Profile / Change Password
+   ============================================================ */
+
+.app-menu-footer :deep(.app-menu__settings-child) {
+  min-height: 40px;
+  padding: 4px 12px 4px 28px;
+}
+
+/* Child label */
+.app-menu-footer :deep(
+  .app-menu__settings-child .q-item__section:not(.q-item__section--avatar)
+) {
+  font-size: 12px;
+  font-weight: 400;
+  color: $menu-color;
+}
+
+/* Child icon */
+.app-menu-footer :deep(
+  .app-menu__settings-child .q-item__section--avatar .q-icon
+) {
+  font-size: 20px !important;
+  color: $menu-color;
+}
+
+/* ============================================================
+   FOOTER FLYOUT GROUP
+   Settings → Masters
+   ============================================================ */
+
+.app-menu-footer :deep(.app-menu__flyout-group) {
+  min-height: 36px;
+  padding: 4px 12px;
+}
+
+/* Group label */
+.app-menu-footer :deep(
+  .app-menu__flyout-group .q-item__section:not(.q-item__section--avatar)
+) {
+  font-size: 12px;
+  font-weight: 400;
+  color: $menu-color;
+}
+
+/* Group icon */
+.app-menu-footer :deep(
+  .app-menu__flyout-group .q-item__section--avatar .q-icon
+) {
+  font-size: 20px !important;
+  color: $menu-color;
+}
+
+/* Group arrow */
+.app-menu-footer :deep(
+  .app-menu__flyout-group .q-expansion-item__toggle-icon
+) {
+  font-size: 18px !important;
+  color: $expand-icon-color;
+}
+
+/* ============================================================
+   FOOTER FLYOUT CHILD
+   ============================================================ */
+
+.app-menu__flyout-child {
+  min-height: 34px;
+}
+
+/* Child label */
+.app-menu__flyout-child :deep(
+  .q-item__section:not(.q-item__section--avatar)
+) {
+  font-size: 12px;
+  font-weight: 400;
+  color: $menu-color;
+}
+
+/* Child icon */
+.app-menu__flyout-child :deep(
+  .q-item__section--avatar .q-icon
+) {
+  font-size: 20px !important;
+  color: $menu-color;
+}
+
+/* ============================================================
+   FOOTER NORMAL ITEM
    ============================================================ */
 
 .app-menu__footer-item {
   min-height: 40px;
-
   padding: 4px 4px;
 
-  color: var(--on-surface);
-
+  color: $menu-color;
   border-radius: 8px;
 }
 
@@ -1363,164 +1707,71 @@ const setOpen = (key, open) => {
    ============================================================ */
 
 .logout-item {
-  color: #dc2626;
+  min-height: 40px;
+  color: #dc2626 !important;
 }
 
-.pl-15{ padding-left: 15px !important; }
-.pl-0{ padding-left: 0px !important; }
+.logout-item :deep(
+  .q-item__section--avatar .q-icon
+) {
+  font-size: 22px !important;
+  color: #dc2626 !important;
+}
+
+.logout-item :deep(
+  .q-item__section:not(.q-item__section--avatar)
+) {
+  font-size: 14px;
+  font-weight: 500;
+  color: #dc2626 !important;
+}
 
 /* ============================================================
-   SETTINGS GROUP
+   MENU CONTAINER
+   ============================================================ */
+
+.app-menu-wrapper {
+  height: 100%;
+
+  display: flex;
+  flex-direction: column;
+
+  min-height: 0;
+}
+
+.app-menu-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+
+  padding: 0 14px;
+}
+
+.app-menu {
+  padding-bottom: 12px;
+}
+
+/* ============================================================
+   SETTINGS
    ============================================================ */
 
 .app-menu__settings {
   border-radius: 8px;
 }
 
-/* ============================================================
-   EXISTING MENU
-   ============================================================ */
-
-.app-menu :deep(.q-item) {
-  min-height: 40px;
-}
-
-.app-menu :deep(.q-item__section--avatar) {
-  min-width: 32px;
-  padding-right: 8px;
-}
-
-.app-menu :deep(.app-menu__group) {
-  min-height: 40px;
-
-  padding: 4px 12px;
-
-  font-size: 14px;
-  font-weight: 500;
-
-  color: var(--on-surface);
-}
-
-.app-menu :deep(.app-menu__group .q-item__section--avatar) {
-  min-width: 30px;
-  padding-right: 10px;
-}
-
-/* ============================================================
-   NESTED ITEMS
-   ============================================================ */
-
-.app-menu__nested {
-  padding-left: 20px;
-
-  font-size: 14px;
-  font-weight: 400;
-}
-
-/* ============================================================
-   FLYOUT
-   ============================================================ */
-
-.app-menu__flyout {
-  min-width: 208px;
-
-  padding: 2px 0 4px;
-}
-
-.app-menu__flyout :deep(.q-item) {
-  min-height: 34px;
-}
-
-.app-menu__flyout :deep(.q-item__section--avatar) {
-  min-width: 32px;
-  padding-right: 8px;
-}
-
-.app-menu__flyout-head {
-  min-height: auto;
-
-  padding: 8px 16px 4px;
-
-  font-size: 14px;
-  font-weight: 600;
-
-  color: var(--on-surface);
-}
-
 .app-menu__settings-nested {
   padding-left: 8px;
 }
 
-/* .app-menu__nested-group {
-  min-height: 38px !important;
-
-  padding: 4px 12px 4px 32px !important;
-
-  font-size: 14px;
-  font-weight: 500;
-
-  color: var(--on-surface);
-} */
-
-/* Nested "Settings" header inside Families / Students / Classes.
-   Same left offset, icon size and weight as All Families / Quick Registration. */
-.app-menu :deep(.app-menu__nested-group) {
-  min-height: 40px;
-  padding: 4px 16px 4px 20px;
-  font-size: 14px;
-  font-weight: 400;
-  color: var(--on-surface);
-}
-
-.app-menu :deep(.app-menu__nested-group .q-item__section--avatar) {
-  min-width: 32px;
-  padding-right: 8px;
-}
-
-.app-menu :deep(.app-menu__nested-group .q-icon) {
-  font-size: 20px;
-}
-
-.app-menu__settings-child {
-  padding-left: 52px !important;
-}
 /* ============================================================
-   MINI SETTINGS PARENT
+   UTILITY
    ============================================================ */
 
-.app-menu__flyout-parent {
-  min-height: 36px;
-
-  padding: 4px 12px;
-
-  font-size: 14px;
-  font-weight: 400;
-
-  color: var(--on-surface);
-
-  border-radius: 6px;
+.pl-15 {
+  padding-left: 15px !important;
 }
 
-.app-menu__flyout-parent:hover {
-  background: #f5f6ff;
+.pl-0 {
+  padding-left: 0 !important;
 }
 
-/* ============================================================
-   NESTED FLYOUT
-   ============================================================ */
-
-.app-menu__nested-flyout {
-  min-width: 230px;
-
-  padding: 2px 0 4px;
-}
-
-.app-menu__nested-flyout :deep(.q-item) {
-  min-height: 34px;
-}
-
-.app-menu__nested-flyout :deep(.q-item__section--avatar) {
-  min-width: 32px;
-  padding-right: 8px;
-}
 </style>

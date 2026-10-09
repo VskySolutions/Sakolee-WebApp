@@ -111,7 +111,6 @@ const columns = [
   { name: "endTime", label: "End Time", field: (row) => row.endTime || "—", align: "left" },
   { name: "tuitionFee", label: "Tuition Fee", field: (row) => row.tuitionFee ?? "—", align: "left" },
   { name: "maxClassSize", label: "Max Size", field: (row) => row.maxClassSize ?? "—", align: "left" },
-  
   ...auditColumns(),
   { name: "active", label: "Status", field: "active", align: "center", sortable: true, default: true },
   { name: "actions", label: "Actions", field: "actions", align: "left" }

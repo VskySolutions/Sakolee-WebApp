@@ -100,6 +100,7 @@ public sealed class StudentsController : ControllerBase
     {
         // Creating the Person (and the login account below) needs a tenant to own them — there is no
         // request-level tenant picker here, unlike Person/User creation, because a student is always
+
         // created inside the caller's own active tenant.
         if (!_tenantContext.IsResolved)
         {
@@ -112,7 +113,8 @@ public sealed class StudentsController : ControllerBase
         {
             return notOwnFamily;
         }
-
+        var seats = RequestedClassIds(request.ClassIds, request.ClassId).ToDictionary(id => id, _ => 1);
+        if (await CheckClassCapacityAsync(seats, cancellationToken) is { } full) return full;
         var email = request.Email.Trim();
         if (await _users.EmailExistsAsync(email, cancellationToken))
         {
@@ -187,7 +189,8 @@ public sealed class StudentsController : ControllerBase
         {
             return notOwnFamily;
         }
-
+        var seats = request.Students.SelectMany(s => RequestedClassIds(s.ClassIds, s.ClassId)).GroupBy(id => id).ToDictionary(g => g.Key, g => g.Count());
+        if (await CheckClassCapacityAsync(seats, cancellationToken) is { } full) return full;
         // Every email already checked against existing users, up front, before any entity is staged —
         // a within-batch duplicate is already rejected by CreateStudentsBulkRequestValidator.
         foreach (var email in request.Students.Select(s => s.Email.Trim()).Distinct(StringComparer.OrdinalIgnoreCase))
@@ -419,7 +422,9 @@ public sealed class StudentsController : ControllerBase
         {
             return notOwnFamily;
         }
-
+        var current = (await _students.GetClassIdsAsync(new[] { student }, cancellationToken))[student.Id];
+        var seats = RequestedClassIds(request.ClassIds, request.ClassId).Except(current).ToDictionary(id => id, _ => 1);
+        if (await CheckClassCapacityAsync(seats, cancellationToken) is { } full) return full;
         var person = student.PersonId is { } personId ? await _persons.GetByIdAsync(personId, cancellationToken) : null;
 
         // Email lives on the login account first (it is what a student signs in with); the Person's copy
@@ -622,6 +627,27 @@ public sealed class StudentsController : ControllerBase
         user.TokenVersion++;
         _users.Update(user);
         return true;
+    }
+    /// <summary>Rejects the request when any class would exceed MaxClassSize + MaxWaitlistSize.</summary>
+    private async Task<IActionResult?> CheckClassCapacityAsync(
+        IReadOnlyDictionary<Guid, int> newSeatsByClass, CancellationToken cancellationToken)
+    {
+        var counts = await _students.CountByClassIdsAsync(newSeatsByClass.Keys, cancellationToken);
+        foreach (var (classId, newSeats) in newSeatsByClass)
+        {
+            var cls = await _classes.GetByIdAsync(classId, cancellationToken);
+            // no limit set
+            if (cls is null || cls.MaxClassSize is not { } max) continue;   
+            var waitlist = cls.MaxWaitlistSize ?? 0;
+            var limit = max + waitlist;
+            var enrolled = counts.TryGetValue(classId, out var c) ? c : 0;
+            var remaining = Math.Max(0, limit - enrolled);
+            if (newSeats > remaining)
+            {
+                return BadRequest(ApiResponseFactory.Error(ApiErrorCodes.ValidationFailed, "Class is full.", $"Class \"{cls.ClassName}\" allows only {limit} students (class size {max} + waitlist {waitlist}). " + $"{enrolled} already enrolled, {remaining} seat(s) left, but {newSeats} requested."));
+            }
+        }
+        return null;
     }
     /// <summary>Loads a student and confirms it belongs to the caller's resolved tenant (via PersonId),
     /// returning null — the same as "not found" — for a foreign-tenant record.</summary>

@@ -59,10 +59,11 @@
           <div class="flex flex-center">
             <q-toggle
               :model-value="cell.row.isActive ?? cell.row.Active ?? cell.row.is_active ?? true"
-              @update:model-value="(val) => updateStatus(cell.row, val)"
               dense
               color="positive"
-              :disable="!has(Permissions.UsersWrite) || (cell.row.isActive && cell.row.isProtected)">
+              :disable="!has(Permissions.UsersWrite) || (cell.row.isActive && cell.row.isProtected)"
+              @update:model-value="(val) => updateStatus(cell.row, val)"
+            >
               <q-tooltip v-if="cell.row.isActive && cell.row.isProtected"> The tenant's default Administrator cannot be deactivated </q-tooltip>
             </q-toggle>
           </div>
@@ -130,7 +131,8 @@
             :color="cell.row.isActive ? 'grey-8' : 'positive'"
             :icon="cell.row.isActive ? 'o_block' : 'o_check_circle'"
             :disable="cell.row.isActive && cell.row.isProtected"
-            @click="setStatus(cell.row, !cell.row.isActive)">
+            @click="setStatus(cell.row, !cell.row.isActive)"
+          >
             <q-tooltip>{{ cell.row.isActive && cell.row.isProtected ? "The tenant's default Administrator cannot be deactivated" : (cell.row.isActive ? "Deactivate" : "Activate") }}
             </q-tooltip>
           </q-btn>
@@ -144,10 +146,10 @@
             v-if="has(Permissions.UsersResetPassword)" type="a"
             flat round dense color="primary" icon="o_forward_to_inbox" @click="sendCredentials(cell.row)"
           >
-      <q-tooltip>Send Credentials</q-tooltip>
-    </q-btn>
-  </q-td>
-</template>
+            <q-tooltip>Send Credentials</q-tooltip>
+          </q-btn>
+        </q-td>
+      </template>
     </app-data-table>
 
     <deleted-records-panel
@@ -183,8 +185,8 @@
       </q-card>
     </q-dialog>
   </q-page>
-  <!-- Staff View Dialog Component --> 
-   <staff-view-dialog v-model="viewOpen" :user-id="selectedUserId" />
+  <!-- Staff View Dialog Component -->
+  <staff-view-dialog v-model="viewOpen" :user-id="selectedUserId" />
   <user-edit-drawer v-model="editFormOpen" :user-id="selectedEditUserId" @updated="load" />
 </template>
 
@@ -213,7 +215,7 @@ import TempPasswordDialog from "components/temp_password_dialog.vue";
 
 import UserEditDrawer from "components/user/UserEditDrawer.vue";
 
-//mport StaffViewDialog from "components/user/pages/detail.vue"; 
+// mport StaffViewDialog from "components/user/pages/detail.vue";
 import StaffViewDialog from "./detail.vue";
 const route = useRoute();
 const router = useRouter();
@@ -411,7 +413,7 @@ const copyPassword = async (password) => {
   }
 };
 
-//Send credentials to multiple staff members at once. The API sends synchronously, so this avoids hammering the mail server.
+// Send credentials to multiple staff members at once. The API sends synchronously, so this avoids hammering the mail server.
 const bulkSendCredentials = async (sel) => {
   if (!sel.length) return;
   const ok = await confirm({
@@ -463,8 +465,6 @@ const openView = (userId) => {
   selectedUserId.value = userId;
   viewOpen.value = true;
 };
-
-
 
 // ---- Update Status toggle in the table ----
 const updateStatus = async (row, newStatus) => {

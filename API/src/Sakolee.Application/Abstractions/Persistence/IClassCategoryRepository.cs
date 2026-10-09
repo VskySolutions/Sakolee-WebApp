@@ -28,7 +28,7 @@ public interface IClassCategoryRepository
     /// Checks whether a non-deleted Class Category with the specified
     /// name already exists for the tenant.
     /// </summary>
-    Task<bool> ExistsByNameAsync(Guid tenantId, string name, Guid? excludeId = null, CancellationToken cancellationToken = default);
+    Task<bool> ExistsByNameAsync(Guid tenantId, string name, string categoryType, Guid? excludeId = null, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Adds a class category to the current DbContext.

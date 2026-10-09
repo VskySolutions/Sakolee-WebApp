@@ -6,7 +6,7 @@ export default [
       {
         path: "",
         name: "students",
-        component: () => import("modules/student/pages/index.vue"),
+        component: () => import("modules/student/pages/StudentsHome.vue"),
         meta: { requiresAuth: true, permissions: ["students.read"], title: "Student" }
       }
     ]

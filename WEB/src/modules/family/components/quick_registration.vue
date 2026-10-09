@@ -45,7 +45,7 @@
             <app-select v-model="form.heardAbout" label="How Did You Hear About Us?" :options="hearAboutUsOptions" />
           </div>
           <div class="col-12 col-md-6">
-            <app-text-field v-model="form.referralName" label="Referral Name" placeholder="Friend or student name (optional)" :rules="[nameOnlyRule]"/>
+            <app-text-field v-model="form.referralName" label="Referral Name" placeholder="Friend or student name (optional)" :rules="[nameOnlyRule]" />
           </div>
           <div class="col-12 col-md-6">
             <app-select v-model="form.studioLocationId" label="Studio Location" required :options="locationOptions" :rules="[required]" />
@@ -55,8 +55,8 @@
           </div>
 
           <div class="col-12 col-md-6">
-  <app-select v-model="form.familyStatusId" label="Family Status" :options="familyStatusOptions" />
-</div>
+            <app-select v-model="form.familyStatusId" label="Family Status" :options="familyStatusOptions" />
+          </div>
         </div>
 
         <div class="duplicate-check-band">
@@ -87,7 +87,7 @@
             </div>
             <div class="col-12 col-md-4">
               <!-- <app-select v-model="contact.model.relation" label="Type / Relation" :options="RELATION_OPTIONS" /> -->
-               <app-select v-model="contact.model.relation" label="Type / Relation" :options="relationOptions" />
+              <app-select v-model="contact.model.relation" label="Type / Relation" :options="relationOptions" />
             </div>
             <div class="col-12 col-md-6">
               <app-text-field
@@ -162,7 +162,7 @@
             </div>
             <div class="col-12 col-md-4">
               <!-- <app-text-field v-model="student.gradeLevel" label="Grade Level" placeholder="e.g. 3rd Grade" /> -->
-               <app-select v-model="student.gradeLevel" label="Grade Level" :options="gradeLevelOptions" class="col-12 col-md-4" />
+              <app-select v-model="student.gradeLevel" label="Grade Level" :options="gradeLevelOptions" class="col-12 col-md-4" />
             </div>
             <div class="col-12">
               <app-text-field
@@ -248,15 +248,15 @@
 
       <q-separator class="q-my-md" />
       <div class="row items-center justify-between">
-        <q-btn v-if="currentStep > 1" outline no-caps color="grey-8" icon="o_arrow_back" label="Back" @click="prevStep" />
+        <q-btn v-if="currentStep > 1" flat no-caps color="grey-8" icon="o_arrow_back" class="close-btn br-12" label="Back" @click="prevStep" />
         <div v-else />
         <div class="row q-gutter-sm">
-          <q-btn flat no-caps color="grey-8" label="Cancel" :to="{ name: 'families' }" />
+          <q-btn flat no-caps color="grey-8" label="Cancel" class="close-btn br-12" :to="{ name: 'families' }" />
           <q-btn
             unelevated no-caps color="primary" :loading="saving"
             :label="currentStep === STEPS.length ? 'Register Family' : 'Continue'"
             :icon-right="currentStep === STEPS.length ? undefined : 'o_arrow_forward'"
-            @click="nextStep"
+            class="save-btn br-12" @click="nextStep"
           />
         </div>
       </div>
@@ -421,6 +421,28 @@ const studentDisplayName = (student) => `${student.firstName || ""} ${student.la
 
 // Real classes and studio locations, fetched the same way Class's own Category dropdowns load — the
 // composable's CLASS_OPTIONS were prototype demo labels, not ids a real enrollment could use.
+// const classes = ref([]);
+// const classOptions = computed(() => (classes.value || [])
+//     .filter((c) => c.active ?? c.Active ?? true).map((c) => ({ label: c.className, value: c.classId })));
+// const locations = ref([]);
+// const locationOptions = computed(() => (locations.value || [])
+//     .filter((l) => l.active ?? l.Active ?? true).map((l) => ({ label: l.name, value: l.id })));
+// onMounted(async () => {
+//   try {
+//     const [classResult, locationResult] = await Promise.all([
+//       classApi.list({ limit: 100, active: true }),
+//       locationApi.list({ limit: 100, active: true }),
+//       loadGradeLevels(),
+//       loadFamilyStatuses(),
+//       loadFamilyRelations()
+//     ]);
+//     classes.value = classResult?.data || [];
+//     locations.value = locationResult?.data || [];
+//   } catch (err) {
+//     notify.error(getApiErrorMessage(err));
+//   }
+// });
+
 const classes = ref([]);
 const classOptions = computed(() => (classes.value || []).filter((c) => c.active ?? c.Active ?? true).map((c) => ({ label: c.className, value: c.classId })));
 const locations = ref([]);
@@ -437,6 +459,32 @@ onMounted(async () => {
   }
 });
 
+// How many students in THIS form picked each class: { classId: count }
+const requestedSeats = computed(() => {
+  const map = {};
+  form.students.forEach((s) => (s.classIds || []).forEach((id) => { map[id] = (map[id] || 0) + 1; }));
+  return map;
+});
+
+// Fills capacityErrors and returns the list of messages (empty = OK).
+const validateCapacity = () => {
+  const errors = {};
+  for (const [classId, wanted] of Object.entries(requestedSeats.value)) {
+    const c = capacity.value[classId];
+    if (!c || c.limit == null) continue;            // class has no size limit
+    // if (wanted > c.remaining) {
+    //   errors[classId] = `"${c.className}" allows only ${c.limit} students (class size ${c.maxClassSize} + waitlist ${c.maxWaitlistSize ?? 0}). ` + `${c.enrolled} already enrolled, ${c.remaining} seat(s) left, but you selected ${wanted}.`;
+    // }
+    if (wanted > c.remaining) { errors[classId] = `"${c.className}" allows only ${c.limit} students. ` + `${c.enrolled} already enrolled, ${c.remaining} seat(s) left, but you selected ${wanted}.`; }
+  }
+  capacityErrors.value = errors;
+  return Object.values(errors);
+};
+
+// Re-check live while the user changes selections, but only once an error is showing.
+watch(requestedSeats, () => {
+  if (Object.keys(capacityErrors.value).length) validateCapacity();
+});
 const tempPwOpen = ref(false);
 const tempPasswords = ref([]);
 const copyPassword = async (password) => {
@@ -453,9 +501,9 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const emailRule = (val) => EMAIL_RE.test(String(val || "")) || "Enter a valid email";
 const optionalEmail = (val) => !String(val || "").trim() || emailRule(val);
 
-// For only-letter name fields 
+// For only-letter name fields
 const NAME_RE = /^[A-Za-z\s]+$/;
-//const nameOnlyRule = (val) => !val || NAME_RE.test(String(val)) || "Only letters are allowed";
+// const nameOnlyRule = (val) => !val || NAME_RE.test(String(val)) || "Only letters are allowed";
 
 const nameOnlyRule = (val) => {
   if (!val) return true;
@@ -469,16 +517,16 @@ const nameOnlyRule = (val) => {
   return true;
 };
 
-// Checks Minimum 4 years old 
+// Checks Minimum 4 years old
 const birthDateRule = (val) => {
-  if (!val) return "Required"; 
+  if (!val) return "Required";
   const birthDate = new Date(val);
   const today = new Date();
   // Future date check
   if (birthDate > today) {
     return "Birth date cannot be in the future";
   }
-  
+
   // Calculate age
   let age = today.getFullYear() - birthDate.getFullYear();
   const m = today.getMonth() - birthDate.getMonth();
@@ -586,11 +634,7 @@ const runDuplicateCheck = async () => {
   try {
     const result = await familyApi.list({ search: name, limit: 5 });
     const matches = result?.data || [];
-    notify.info(
-      matches.length
-        ? `${matches.length} existing famil${matches.length === 1 ? "y matches" : "ies match"} "${name}".`
-        : `No existing family matches "${name}".`
-    );
+    notify.info(matches.length ? `${matches.length} existing famil${matches.length === 1 ? "y matches" : "ies match"} "${name}".` : `No existing family matches "${name}".`);
   } catch (err) {
     notify.error(getApiErrorMessage(err));
   }
@@ -609,8 +653,6 @@ const nextStep = async () => {
   const valid = await stepForms[currentStep.value]?.validate();
   if (!valid) return;
 
- 
-
   const phoneError = REQUIRED_PHONE_BY_STEP[currentStep.value]?.();
   if (phoneError) {
     notify.warning(phoneError);
@@ -623,7 +665,15 @@ const nextStep = async () => {
     notify.warning("Choose a class for at least one student.");
     return;
   }
-
+  // Step 5 — capacity check (refresh counts first, someone else may have enrolled meanwhile)
+  if (currentStep.value === 5) {
+    await loadCapacity();
+    const problems = validateCapacity();
+    if (problems.length) {
+      notify.warning(problems[0]);
+      return;
+    }
+  }
   if (!isLastStep) {
     currentStep.value += 1;
     return;

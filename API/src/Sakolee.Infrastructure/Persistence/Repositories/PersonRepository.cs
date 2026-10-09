@@ -72,12 +72,8 @@ internal sealed class PersonRepository : IPersonRepository
     {
         // Cross-tenant (Super Admin) reads pass an explicit tenant id and bypass the ambient filter;
         // everyone else gets the ambient-filtered set, pinned to their active tenant.
-        var query = (tenantId is { } tid
-            ? _dbContext.Persons.IgnoreQueryFilters().Where(p => p.TenantId == tid && !p.Deleted)
-            : _dbContext.Persons.AsQueryable())
-            .Include(p => p.Tenant)
-            .AsQueryable();
-
+        // Soft-deleted rows are excluded explicitly in both paths.
+        var query = (tenantId is { } tid ? _dbContext.Persons.IgnoreQueryFilters().Where(p => p.TenantId == tid && !p.Deleted): _dbContext.Persons.Where(p => !p.Deleted)).Include(p => p.Tenant).AsQueryable();
         if (!string.IsNullOrWhiteSpace(search))
         {
             var term = search.Trim();
@@ -138,10 +134,10 @@ internal sealed class PersonRepository : IPersonRepository
     {
         // Naming a tenant means reading OUTSIDE the ambient one, so the filters come off — and with them
         // the soft-delete predicate they carry, which is why `Deleted` is then stated in full.
-        var query = tenantId is { } scope
-            ? _dbContext.Persons.IgnoreQueryFilters().Where(p => !p.Deleted && p.TenantId == scope)
-            : _dbContext.Persons.AsQueryable();
-
+        //var query = tenantId is { } scope
+        //    ? _dbContext.Persons.IgnoreQueryFilters().Where(p => !p.Deleted && p.TenantId == scope)
+        //    : _dbContext.Persons.AsQueryable();
+        var query = tenantId is { } scope ? _dbContext.Persons.IgnoreQueryFilters().Where(p => !p.Deleted && p.TenantId == scope) : _dbContext.Persons.Where(p => !p.Deleted);
         var items = await query
             .OrderBy(p => p.FirstName).ThenBy(p => p.LastName)
             .Select(p => new { Person = p, IsUser = p.UserId != null })

@@ -148,8 +148,14 @@ const submit = async ({ clearDraft } = {}) => {
     reset();
     emit("saved");
   } catch (error) {
+    // if (error?.response?.status === 409) {
+    //   nameError.value = "A class category with this name already exists.";
+    //   return;
+    // }
     if (error?.response?.status === 409) {
-      nameError.value = "A class category with this name already exists.";
+      nameError.value =
+        error.response.data?.message ||
+        `"${form.name.trim()}" already exists in ${form.categoryType}.`;
       return;
     }
     const message = getApiErrorMessage(error, "Unable to save class category.");
