@@ -31,6 +31,8 @@
       @input-value="search = $event || ''"
       @popup-show="search = ''"
       @popup-hide="search = ''"
+      @filter="filterFn"
+      
     >
       <!-- Multi-select renders each selection as a consistent badge/chip (removable when editable). -->
       <template v-if="chips" #selected-item="scope">
@@ -126,6 +128,8 @@ const props = defineProps({
   inputDebounce: { type: [Number, String], default: 0 }
 });
 
+
+
 const emit = defineEmits(["update:modelValue"]);
 
 const model = computed({
@@ -137,9 +141,14 @@ const model = computed({
 const chips = computed(() => (props.useChips === undefined ? props.multiple : props.useChips));
 
 // Past this many options a list is quicker to type than to scroll, so search switches on by itself.
-const SEARCH_THRESHOLD = 10;
+//const SEARCH_THRESHOLD = 10;
+const SEARCH_THRESHOLD = 0;
 const searchable = computed(() =>
-  (props.useInput === undefined ? props.options.length > SEARCH_THRESHOLD : props.useInput));
+  props.useInput === undefined ? true : props.useInput
+);
+
+// const searchable = computed(() =>
+//   (props.useInput === undefined ? props.options.length > SEARCH_THRESHOLD : props.useInput));
 
 // A searchable single-select reads as an autocomplete: the selection sits in the search input itself
 // instead of beside it. Multi-select keeps its chips and a separate input.
@@ -180,6 +189,13 @@ const visibleOptions = computed(() => {
 // visible label at all.
 const { text: labelText } = useFieldLabel(toRef(props, "label"), toRef(props, "required"));
 const ariaLabel = computed(() => labelText.value || props.ariaLabel);
+
+const filterFn = (val, update) => {
+  update(() => {
+    search.value = val;
+  });
+};
+
 </script>
 
 <style scoped>

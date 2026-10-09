@@ -85,10 +85,10 @@
           <app-address-fields v-model="form.address" />
         </div>
 
-        <div class="col-12 text-subtitle2 text-grey-8 q-mt-sm">Emergency Contact &amp; Health Insurance</div>
+        <div class="col-12 text-subtitle2 text-grey-8 q-mt-sm">Emergency Contact</div>
         <app-text-field v-model="form.emergencyContactPerson" label="Emergency Contact Person" class="col-12 col-sm-6" :rules="[nameOnlyRule]"/>
         <app-phone-input v-model="form.emergencyPhone" label="Emergency Phone" class="col-12 col-sm-6" />
-        <app-text-field v-model="form.healthInsuranceCarrier" label="Health Insurance Carrier / Policy #" class="col-12" />
+        <!-- <app-text-field v-model="form.healthInsuranceCarrier" label="Health Insurance Carrier / Policy #" class="col-12" />  &amp; Health Insurance-->
       </div>
 
       <div v-show="activeTab === 'students'" class="row q-col-gutter-md">
@@ -174,7 +174,44 @@
           </div>
         </template>
 
-        <template v-if="form.newStudents.length">
+        <!-- <template v-if="validNewStudents.length">
+          <div class="col-12 text-subtitle2 text-grey-8 q-mt-sm">New Student Enrollment</div>
+          <div v-for="(student, index) in validNewStudents" :key="student.key" class="col-12">
+            <div class="text-caption text-weight-bold text-primary q-mb-xs">
+              Student #{{ index + 1 }}{{ studentDisplayName(student) ? ` — ${studentDisplayName(student)}` : "" }}
+            </div>
+            <div class="row q-col-gutter-md q-mb-sm">
+              <app-select v-model="student.classIds" label="Choose Classes" :options="getFilteredClassesForStudent(student)" multiple class="col-12 col-sm-6" />
+              <app-date-field v-model="student.enrollmentDate" label="Enrollment Date" class="col-12 col-sm-6" />
+            </div>
+          </div>
+        </template> -->
+
+        <template v-if="validNewStudents.length">
+          <div class="col-12 text-subtitle2 text-grey-8 q-mt-sm">New Student Enrollment</div>
+          <div v-for="(student, index) in validNewStudents" :key="student.key" class="col-12">
+            <div class="text-caption text-weight-bold text-primary q-mb-xs">
+              Student #{{ index + 1 }}{{ studentDisplayName(student) ? ` — ${studentDisplayName(student)}` : "" }}
+            </div>
+            <div class="row q-col-gutter-md q-mb-sm">
+              <app-select 
+                v-model="student.classIds" 
+                label="Choose Classes" 
+                :options="getFilteredClassesForStudent(student)" 
+                multiple 
+                class="col-12 col-sm-6" 
+              />
+              <app-date-field v-model="student.enrollmentDate" label="Enrollment Date" class="col-12 col-sm-6" />
+            </div>
+          </div>
+        </template>
+
+        <div v-if="!students.length && !validNewStudents.length" class="col-12 text-grey-6 text-caption">
+          No students to enroll yet. Add a student on the Students tab first.
+        
+      </div>
+
+        <!-- <template v-if="form.newStudents.length">
           <div class="col-12 text-subtitle2 text-grey-8 q-mt-sm">New Student Enrollment</div>
           <div v-for="(student, index) in form.newStudents" :key="student.key" class="col-12">
             <div class="text-caption text-weight-bold text-primary q-mb-xs">
@@ -185,7 +222,7 @@
               <app-date-field v-model="student.enrollmentDate" label="Enrollment Date" class="col-12 col-sm-6" />
             </div>
           </div>
-        </template>
+        </template> -->
 
         <div v-if="!students.length && !form.newStudents.length" class="col-12 text-grey-6 text-caption">
           No students to enroll yet. Add a student on the Students tab first.
@@ -301,7 +338,64 @@ const isOpen = computed({
 });
 const editing = computed(() => props.mode === "edit");
 
+// Only new students with at least one field filled in are considered for enrollment; the rest are ignored.
+const validNewStudents = computed(() => {
+  return (form.newStudents || []).filter(s => s.firstName || s.lastName || s.email || s.birthDate);
+});
 
+const studentDisplayIndex = (student) => {
+  const originalIndex = form.newStudents.findIndex(s => s.key === student.key);
+  return originalIndex !== -1 ? originalIndex + 1 : 1;
+};
+
+
+// Calculates age from birth date string, returns null if invalid or not provided
+const calculateAge = (birthDateString) => {
+  if (!birthDateString) return null;
+  const birthDate = new Date(birthDateString);
+  const today = new Date();
+  if (isNaN(birthDate.getTime())) return null;
+
+  let age = today.getFullYear() - birthDate.getFullYear();
+  const m = today.getMonth() - birthDate.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+    age--;
+  }
+  return age;
+};
+
+// Filters available classes based on the student's age range safely
+const getFilteredClassesForStudent = (studentOrForm) => {
+  if (!studentOrForm) return [];
+
+  const studentAge = calculateAge(studentOrForm.birthDate);
+
+  const filtered = (classes.value || []).filter((c) => {
+    // Check if the class is active
+    const isActive = c.active ?? c.Active ?? c.IsActive ?? true;
+    if (!isActive) return false;
+
+    // If student's age is not provided, show all active classes
+    if (studentAge === null) return true;
+
+    // Get min and max age (handle null/undefined fields safely from DB)
+    const rawMin = c.minAge ?? c.minimumAge ?? c.MinAge ?? c.min_age;
+    const rawMax = c.maxAge ?? c.maximumAge ?? c.MaxAge ?? c.max_age;
+
+    // If min/max are not set (NULL in DB), class is open for all ages
+    const min = (rawMin !== null && rawMin !== undefined && rawMin !== "") ? Number(rawMin) : 0;
+    const max = (rawMax !== null && rawMax !== undefined && rawMax !== "") ? Number(rawMax) : 999;
+
+    // Check if student's age falls within this class range
+    return studentAge >= min && studentAge <= max;
+  });
+
+  // Map to select options format
+  return filtered.map((c) => ({
+    label: c.className || c.name || c.Name || c.class_name || "Unnamed Class",
+    value: c.classId || c.id || c.Id || c.class_id
+  }));
+};
 
 // ---- Reference option lists ----
 const locations = ref([]);

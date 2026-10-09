@@ -155,7 +155,7 @@
     />
 
     <!-- Create user (promote an existing Person to a login account). -->
-    <user-create-drawer v-model="formOpen" :person-id="presetPersonId" :default-role="STAFF_ROLE" @created="load" />
+    <user-create-drawer v-model="formOpen" :person-id="presetPersonId" :default-role="STAFF_ROLE" v-model:send-credentials="sendCredentialsOnCreate" @created="load" />
     <temp-password-dialog v-model="tempPwOpen" :password="tempPassword" />
     <!-- Bulk Send Credentials: the staff whose email could NOT be sent, with their temporary passwords so they can be shared manually. Successfully emailed passwords are not shown. -->
     <q-dialog v-model="bulkFailedOpen" persistent>
@@ -289,6 +289,7 @@ watch([search, filters], reload, { deep: true });
 // page only says WHEN to open it and, for the deep-link below, about whom.
 const formOpen = ref(false);
 const presetPersonId = ref(null);
+const sendCredentialsOnCreate = ref(true);
 
 const openCreate = (personId = null) => {
   presetPersonId.value = personId;

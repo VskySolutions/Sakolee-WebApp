@@ -43,6 +43,7 @@ const blankContact = (relation) => ({
   relation,
   email: "",
   phone: "",
+  // birthDate: "",
   phoneCountry: null,
   // Prototype shows this only for the primary contact — carried on both for a symmetric shape.
   textOptIn: true
@@ -119,12 +120,14 @@ export const toCreateFamilyRequest = (form) => {
     source: form.heardAbout || null,
     referralName: form.referralName || null,
     familyStatusId: form.familyStatusId,
+    // birthDate: form.primaryContact.birthDate || null,
     // Primary contact — inlined directly on CreateFamilyRequest (see FamiliesController remarks).
     firstName: form.primaryContact.firstName,
     lastName: form.primaryContact.lastName,
     email: form.primaryContact.email,
     relation: form.primaryContact.relation || null,
     cellPhone: form.primaryContact.phone || null,
+    
     isBillingContact: true,
     isAuthorizedToPickUpStudent: true,
     secondaryContact: hasSecondary

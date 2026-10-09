@@ -13,7 +13,7 @@
       <q-form v-if="!loading" ref="formRef" greedy>
         <!-- Enrollment only: just the classes. Every other field is still loaded and sent back unchanged. -->
         <div v-if="enrollmentOnly" class="row q-col-gutter-md">
-          <app-select v-model="form.classIds" label="Classes" :options="classOptions" multiple class="col-12" />
+          <app-select v-model="form.classIds" label="Classes" :options="getFilteredClassesForStudent(form)" multiple class="col-12 col-sm-6" />
         </div>
         <div v-else class="row q-col-gutter-md">
           <div class="col-12 text-subtitle2 text-grey-8">Identity</div>
@@ -23,7 +23,7 @@
           <app-text-field v-model="form.studentNumber" label="Student Number" class="col-12 col-sm-6" />
           <app-select v-model="form.gender" label="Gender" :options="GENDER_OPTIONS" class="col-12 col-sm-6" />
           <app-date-field v-model="form.birthDate" label="Date of Birth" required class="col-12 col-sm-6"  :rules="[required,birthDateRule]"/>
-          <app-select v-model="form.classIds" label="Classes" :options="classOptions" multiple class="col-12 col-sm-6" />
+          <app-select v-model="form.classIds" label="Classes" :options="getFilteredClassesForStudent(form)" multiple class="col-12 col-sm-6" />
           <app-date-field v-model="form.admissionDate" label="Admission Date" class="col-12 col-sm-6" />
           <div class="col-12 col-sm-6 toggle-row-inline"><q-toggle v-model="form.allowTextMessaging" color="primary" /><span class="q-ml-sm">Allow text messaging</span></div>
           <app-text-field
@@ -58,8 +58,11 @@
 
           <div class="col-12 text-subtitle2 text-grey-8 q-mt-sm">Notes</div>
           <app-text-field v-model="form.skillNotes" label="Skill Notes" type="textarea" class="col-12" />
-          <app-text-field v-model="form.textOptIn" label="Text Opt-In" class="col-12 col-sm-6" />
-          <app-text-field v-model="form.massEmailOptOut" label="Mass Email Opt-Out" class="col-12 col-sm-6" />
+          <div class="col-12 col-sm-6 toggle-row-inline"><q-checkbox v-model="form.textOptIn" label="Text Opt-In" /></div>
+          <div class="col-12 col-sm-6 toggle-row-inline"><q-checkbox v-model="form.massEmailOptOut" label="Mass Email Opt-Out" /></div>
+
+          <!-- <app-text-field v-model="form.textOptIn" label="Text Opt-In" class="col-12 col-sm-6" />
+          <app-text-field v-model="form.massEmailOptOut" label="Mass Email Opt-Out" class="col-12 col-sm-6" /> -->
 
           <div class="col-12">
             <q-toggle v-model="form.active" label="Active" />
@@ -119,12 +122,13 @@ const birthDateRule = (val) => {
   }
   
   // Minimum 4 years check
-  if (age < 4) {
-    return "Student must be at least 4 years old";
-  }
+  // if (age < 4) {
+  //   return "Student must be at least 4 years old";
+  // }
   
   return true;
 };
+
 
 // Email validation rule
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -146,6 +150,53 @@ const nameOnlyRule = (val) => {
   return true;
 };
 
+// Calculates age from birth date string, returns null if invalid or not provided
+const calculateAge = (birthDateString) => {
+  if (!birthDateString) return null;
+  const birthDate = new Date(birthDateString);
+  const today = new Date();
+  if (isNaN(birthDate.getTime())) return null;
+
+  let age = today.getFullYear() - birthDate.getFullYear();
+  const m = today.getMonth() - birthDate.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+    age--;
+  }
+  return age;
+};
+
+// Filters available classes based on the student's age range safely
+const getFilteredClassesForStudent = (studentOrForm) => {
+  if (!studentOrForm) return [];
+
+  const studentAge = calculateAge(studentOrForm.birthDate);
+
+  const filtered = (classes.value || []).filter((c) => {
+    // Check if the class is active
+    const isActive = c.active ?? c.Active ?? c.IsActive ?? true;
+    if (!isActive) return false;
+
+    // If student's age is not provided, show all active classes
+    if (studentAge === null) return true;
+
+    // Get min and max age (handle null/undefined fields safely from DB)
+    const rawMin = c.minAge ?? c.minimumAge ?? c.MinAge ?? c.min_age;
+    const rawMax = c.maxAge ?? c.maximumAge ?? c.MaxAge ?? c.max_age;
+
+    // If min/max are not set (NULL in DB), class is open for all ages
+    const min = (rawMin !== null && rawMin !== undefined && rawMin !== "") ? Number(rawMin) : 0;
+    const max = (rawMax !== null && rawMax !== undefined && rawMax !== "") ? Number(rawMax) : 999;
+
+    // Check if student's age falls within this class range
+    return studentAge >= min && studentAge <= max;
+  });
+
+  // Map to select options format
+  return filtered.map((c) => ({
+    label: c.className || c.name || c.Name || c.class_name || "Unnamed Class",
+    value: c.classId || c.id || c.Id || c.class_id
+  }));
+};
 
 // // Family Status options state
 // const familyStatuses = ref([]);
@@ -213,11 +264,24 @@ const blankForm = () => ({
   allergiesNotes: "",
   specialNeeds: "",
   skillNotes: "",
-  textOptIn: "",
-  massEmailOptOut: "",
-  active: true
+ textOptIn: false,
+  massEmailOptOut: false,
+  active: true,
+  
 });
 const form = reactive(blankForm());
+
+// Flag to track whether the form is currently loading initial student data
+const isInitializing = ref(false);
+
+// Watch birthDate changes: clear classes ONLY when the user actively modifies DOB, not during initial load
+watch(() => form.birthDate, (newVal, oldVal) => {
+  if (isInitializing.value) return; // Ignore when data is being populated initially
+  if (newVal !== oldVal) {
+    form.classIds = [];
+  }
+});
+
 const studentName = computed(() => [form.firstName, form.lastName].filter(Boolean).join(" "));
 const { options: tShirtSizeOptions } = useTShirtSizeOptions(() => form.tShirtSize);
 
@@ -259,6 +323,8 @@ const preserved = reactive(blankPreserved());
 // to populate a full edit form.
 watch(() => props.modelValue, async (isOpen) => {
   if (!isOpen || !props.studentId) return;
+isInitializing.value = true;
+
   //await loadGradeLevels();
   Object.assign(form, blankForm());
   Object.assign(preserved, blankPreserved());
@@ -305,8 +371,9 @@ watch(() => props.modelValue, async (isOpen) => {
       allergiesNotes: row.allergiesNotes || "",
       specialNeeds: row.specialNeeds || "",
       skillNotes: row.skillNotes || "",
-      textOptIn: row.textOptIn || "",
-      massEmailOptOut: row.massEmailOptOut || "",
+      textOptIn: Boolean(row.textOptIn),
+      massEmailOptOut: Boolean(row.massEmailOptOut),
+      
       active: row.active
     });
   } catch (err) {
@@ -314,6 +381,9 @@ watch(() => props.modelValue, async (isOpen) => {
     open.value = false;
   } finally {
     loading.value = false;
+    setTimeout(() => {
+      isInitializing.value = false;
+    }, 100);
   }
 });
 

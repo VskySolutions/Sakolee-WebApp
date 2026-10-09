@@ -182,16 +182,16 @@
               </div>
               <div class="col-12">
                 <div class="fw-500 fs-11 text-86  mb-4">Relationship</div>
-                <div class="fw-600 fs-12 text-2e">{{ form.relation || "—" }}</div>
+                <div class="fw-600 fs-12 text-2e">{{ relationLabel }}</div>
               </div>
               <div class="col-6">
                 <div class="fw-500 fs-11 text-86  mb-4">Preferred Name</div>
                 <div class="fw-600 fs-12 text-2e">{{ form.referralName || "—" }}</div>
               </div>
-              <div class="col-6">
+              <!-- <div class="col-6">
                 <div class="fw-500 fs-11 text-86  mb-4">DOB</div>
-                <div class="fw-600 fs-12 text-2e">{{ form.birthDate || "—" }}</div>
-              </div>
+                <div class="fw-600 fs-12 text-2e">{{ formatLongDate(form.birthDate) || "—" }}</div>
+              </div> -->
             </div>
 
             <q-separator class="q-my-md" />
@@ -271,7 +271,9 @@ const props = defineProps({
   modelValue: { type: Boolean, required: true },
   familyId: { type: [String, Number], default: null },
   // Owned by the list page (it also drives the Family Status filter there).
-  familyStatusOptions: { type: Array, default: () => [] }
+  familyStatusOptions: { type: Array, default: () => [] },
+  familyRelationOptions: { type: Array, default: () => [] }
+  
 });
 
 const emit = defineEmits(["update:modelValue"]);
@@ -316,6 +318,15 @@ const familyStatusLabel = computed(() =>
   props.familyStatusOptions.find((x) => x.value === form.familyStatusId)?.label ||
   "—"
 );
+
+const relationLabel = computed(() => {
+  const rel = form.relation;
+  if (!rel) return "—";
+  const found = props.familyRelationOptions.find(
+    (x) => x.value === rel || x.id === rel || x.name === rel
+  );
+  return found ? (found.label || found.name) : rel;
+});
 
 const activeStudentCount = computed(() => students.value.filter((s) => s.active).length);
 

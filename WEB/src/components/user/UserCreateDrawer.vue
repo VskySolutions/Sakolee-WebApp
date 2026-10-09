@@ -46,7 +46,7 @@
           />
         </template>
 
-        <!-- Send invitation toggle hidden for now.
+        <!-- Send invitation toggle hidden for now. -->
         <q-toggle
           v-model="form.sendInvitation" color="primary"
           label="Send invitation email with the temporary password"
@@ -54,7 +54,7 @@
         <div class="text-caption text-grey-7 q-mb-md">
           Emails the user their login link and temporary password via the tenant's active SMTP account.
         </div>
-        -->
+       
       </q-form>
     </app-form-dialog>
 

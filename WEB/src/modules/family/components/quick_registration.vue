@@ -113,7 +113,7 @@
         <app-address-fields v-model="form.address" required />
 
         <q-separator class="q-my-md" />
-        <div class="step-subtitle-inline">&bull; Emergency Contact &amp; Health Insurance</div>
+        <div class="step-subtitle-inline">&bull; Emergency Contact </div>
         <div class="row q-col-gutter-md">
           <div class="col-12 col-md-6">
             <app-text-field v-model="form.emergencyContactName" label="Emergency Contact Person" required placeholder="Full name &amp; relationship" :rules="[required, nameOnlyRule]" />
@@ -121,9 +121,9 @@
           <div class="col-12 col-md-6">
             <app-phone-input v-model="form.emergencyPhone" v-model:country="form.emergencyPhoneCountry" label="Emergency Phone" required />
           </div>
-          <div class="col-12">
+          <!-- <div class="col-12">
             <app-text-field v-model="form.insuranceCarrier" label="Health Insurance Carrier / Policy #" placeholder="e.g. BlueCross BlueShield #9823471" />
-          </div>
+          </div> Title :&amp; Health Insurance-->
         </div>
       </q-form>
 
@@ -152,7 +152,7 @@
               />
             </div>
             <div class="col-12 col-md-4">
-              <app-date-field v-model="student.birthDate" label="Birth Date" required :rules="[required,birthDateRule]" />
+              <app-date-field v-model="student.birthDate" label="Birth Date" required :rules="[required,birthDateRule] " />
             </div>
             <div class="col-12 col-md-4">
               <app-select v-model="student.gender" label="Gender" :options="GENDER_OPTIONS" />
@@ -190,7 +190,7 @@
               <div class="text-body2 text-weight-medium">{{ studentDisplayName(student) || `Student #${index + 1}` }}</div>
             </div>
             <div class="col-12 col-md-6">
-              <app-select v-model="student.classIds" label="Choose Classes" :options="classOptions" multiple />
+              <app-select v-model="student.classIds" label="Choose Classes" :options="getFilteredClassesForStudent(student)" multiple />
             </div>
           </div>
           <div class="row q-col-gutter-md">
@@ -292,7 +292,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, reactive, ref } from "vue";
+import { computed, onMounted, reactive, ref,watch } from "vue";
 import { useRouter } from "vue-router";
 
 // import AppBreadcrumbs from "components/common/AppBreadcrumbs.vue";
@@ -306,28 +306,13 @@ import AppFieldLabel from "components/common/AppFieldLabel.vue";
 
 import { useNotify } from "composables/useNotify";
 import { classApi, locationApi, familyApi, studentApi,studentGradeLevelApi,familyStatusApi,familyRelationApi, ePaymentScheduleApi,membershipTypeApi, getApiErrorMessage } from "services/api";
-import {
-  blankQuickRegistrationForm,
-  blankStudent,
-  toCreateFamilyRequest,
-  toCreateStudentRequest,
-  RELATION_OPTIONS,
-  GENDER_OPTIONS,
-  PAYMENT_METHOD_OPTIONS
-} from "composables/quickRegistrationForm";
+import { blankQuickRegistrationForm, blankStudent, toCreateFamilyRequest,  toCreateStudentRequest, RELATION_OPTIONS, GENDER_OPTIONS, PAYMENT_METHOD_OPTIONS} from "composables/quickRegistrationForm";
 import { useTShirtSizeOptions } from "composables/useTShirtSizeOptions";
 import { useHearAboutUsOptions } from "composables/useHearAboutUsOptions";
 
 //Grade level options state
-
 const gradeLevels = ref([]);
-const gradeLevelOptions = computed(() => 
-  (gradeLevels.value || [])
-    .filter((g) => g.active ?? g.Active ?? true).map((g) => ({ 
-    label: g.name || g.gradeName || g.Name, 
-    value: g.id || g.gradeLevelId || g.Id 
-  }))
-);
+const gradeLevelOptions = computed(() =>  (gradeLevels.value || []).filter((g) => g.active ?? g.Active ?? true).map((g) => ({ label: g.name || g.gradeName || g.Name,  value: g.id || g.gradeLevelId || g.Id  })));
 
 const loadGradeLevels = async () => {
   try {
@@ -340,13 +325,7 @@ const loadGradeLevels = async () => {
 
 // Family relation options state
 const familyRelations = ref([]);
-const relationOptions = computed(() => 
-  (familyRelations.value || [])
-    .filter((fr) => fr.active ?? fr.Active ?? true).map((fr) => ({ 
-      label: fr.name || fr.relationName || fr.Name, 
-      value: fr.id || fr.familyRelationId || fr.Id 
-    }))
-);
+const relationOptions = computed(() => (familyRelations.value || []).filter((fr) => fr.active ?? fr.Active ?? true).map((fr) => ({ label: fr.name || fr.relationName || fr.Name, value: fr.id || fr.familyRelationId || fr.Id  })));
 
 const loadFamilyRelations = async () => {
   try {
@@ -359,13 +338,7 @@ const loadFamilyRelations = async () => {
 
 // E-Payment Schedule options state
 const ePaymentSchedules = ref([]);
-const ePaymentScheduleOptions = computed(() => 
-  (ePaymentSchedules.value || [])
-    .filter((eps) => eps.active ?? eps.Active ?? true).map((eps) => ({ 
-      label: eps.name || eps.scheduleName || eps.Name, 
-      value: eps.id || eps.ePaymentScheduleId || eps.Id 
-    }))
-);
+const ePaymentScheduleOptions = computed(() => (ePaymentSchedules.value || []).filter((eps) => eps.active ?? eps.Active ?? true).map((eps) => ({ label: eps.name || eps.scheduleName || eps.Name, value: eps.id || eps.ePaymentScheduleId || eps.Id })));
 
 const loadEPaymentSchedules = async () => {
   try {
@@ -378,13 +351,7 @@ const loadEPaymentSchedules = async () => {
 
 // Membership Type options state
 const membershipTypes = ref([]);
-const membershipTypeOptions = computed(() => 
-  (membershipTypes.value || [])
-    .filter((mt) => mt.active ?? mt.Active ?? true).map((mt) => ({ 
-      label: mt.name || mt.membershipName || mt.Name, 
-      value: mt.id || mt.membershipTypeId || mt.Id 
-    }))
-);
+const membershipTypeOptions = computed(() => (membershipTypes.value || []).filter((mt) => mt.active ?? mt.Active ?? true).map((mt) => ({  label: mt.name || mt.membershipName || mt.Name,  value: mt.id || mt.membershipTypeId || mt.Id })));
 
 const loadMembershipTypes = async () => {
   try {
@@ -402,13 +369,7 @@ const router = useRouter();
 
 // Family status options state
 const familyStatuses = ref([]);
-const familyStatusOptions = computed(() => 
-  (familyStatuses.value || [])
-    .filter((fs) => fs.active ?? fs.Active ?? true).map((fs) => ({ 
-    label: fs.name || fs.statusName || fs.Name, 
-    value: fs.id || fs.familyStatusId || fs.Id 
-  }))
-);
+const familyStatusOptions = computed(() => (familyStatuses.value || []).filter((fs) => fs.active ?? fs.Active ?? true).map((fs) => ({ label: fs.name || fs.statusName || fs.Name, value: fs.id || fs.familyStatusId || fs.Id })));
 
 const loadFamilyStatuses = async () => {
   try {
@@ -450,12 +411,8 @@ const prevStep = () => {
 const saving = ref(false);
 const form = reactive(blankQuickRegistrationForm());
 
-// The prototype repeats the same five fields for a primary and a second contact; both now save for
-// real (FamiliesController.Create) — only the first is mandatory.
-const contactSlots = computed(() => [
-  { key: "primary", heading: "Contact #1 (Primary)", model: form.primaryContact, required: true },
-  { key: "secondary", heading: "Contact #2 (Secondary / Optional)", model: form.secondaryContact, required: false }
-]);
+// The prototype repeats the same five fields for a primary and a second contact; both now save for real (FamiliesController.Create) — only the first is mandatory.
+const contactSlots = computed(() => [{ key: "primary", heading: "Contact #1 (Primary)", model: form.primaryContact, required: true },{ key: "secondary", heading: "Contact #2 (Secondary / Optional)", model: form.secondaryContact, required: false }]);
 
 // Step 4 — one or more students of the family being registered; Step 5 picks each one's class.
 const addStudent = () => { form.students.push(blankStudent()); };
@@ -465,24 +422,14 @@ const studentDisplayName = (student) => `${student.firstName || ""} ${student.la
 // Real classes and studio locations, fetched the same way Class's own Category dropdowns load — the
 // composable's CLASS_OPTIONS were prototype demo labels, not ids a real enrollment could use.
 const classes = ref([]);
-const classOptions = computed(() => (classes.value || [])
-    .filter((c) => c.active ?? c.Active ?? true).map((c) => ({ label: c.className, value: c.classId })));
+const classOptions = computed(() => (classes.value || []).filter((c) => c.active ?? c.Active ?? true).map((c) => ({ label: c.className, value: c.classId })));
 const locations = ref([]);
-const locationOptions = computed(() => (locations.value || [])
-    .filter((l) => l.active ?? l.Active ?? true).map((l) => ({ label: l.name, value: l.id })));
+const locationOptions = computed(() => (locations.value || []).filter((l) => l.active ?? l.Active ?? true).map((l) => ({ label: l.name, value: l.id })));
 
 
 onMounted(async () => {
   try {
-    const [classResult, locationResult] = await Promise.all([
-      classApi.list({ limit: 100, active: true }),
-      locationApi.list({ limit: 100, active: true }),
-      loadGradeLevels(),
-      loadFamilyStatuses(),
-      loadFamilyRelations(),
-      loadEPaymentSchedules(), // Add this
-      loadMembershipTypes()
-    ]);
+    const [classResult, locationResult] = await Promise.all([classApi.list({ limit: 100, active: true }),locationApi.list({ limit: 100, active: true }),loadGradeLevels(), loadFamilyStatuses(), loadFamilyRelations(),loadEPaymentSchedules(), loadMembershipTypes()]);
     classes.value = classResult?.data || [];
     locations.value = locationResult?.data || [];
   } catch (err) {
@@ -539,15 +486,94 @@ const birthDateRule = (val) => {
     age--;
   }
   
-  // Minimum 4 years check
-  if (age < 4) {
-    return "Student must be at least 4 years old";
-  }
+  // // Minimum 4 years check
+  // if (age < 4) {
+  //   return "Student must be at least 4 years old";
+  // }
   
   return true;
 };
 
+//Calculates age from birth date string, returns null if invalid or not provided
+// const calculateAge = (birthDateString) => {
+//   if (!birthDateString) return null;
+//   const birthDate = new Date(birthDateString);
+//   const today = new Date();
+//   if (isNaN(birthDate.getTime())) return null;
 
+//   let age = today.getFullYear() - birthDate.getFullYear();
+//   const m = today.getMonth() - birthDate.getMonth();
+//   if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+//     age--;
+//   }
+//   return age;
+// };
+
+
+
+// const getFilteredClassesForStudent = (student) => {
+//   const studentAge = calculateAge(student.birthDate);
+//   return (classes.value || [])
+//     .filter((c) => { 
+//       if (!(c.active ?? c.Active ?? true)) return false;
+//         if (studentAge === null) return true;
+//       const min = c.minAge ?? c.minimumAge ?? c.MinAge ?? 0;
+//       const max = c.maxAge ?? c.maximumAge ?? c.MaxAge ?? 999;
+//       return studentAge >= min && studentAge <= max;
+//     })
+//     .map((c) => ({
+//       label: c.className || c.name || c.Name,
+//       value: c.classId || c.id || c.Id
+//     }));
+// };
+
+// Calculates age from birth date string, returns null if invalid or not provided
+const calculateAge = (birthDateString) => {
+  if (!birthDateString) return null;
+  const birthDate = new Date(birthDateString);
+  const today = new Date();
+  if (isNaN(birthDate.getTime())) return null;
+
+  let age = today.getFullYear() - birthDate.getFullYear();
+  const m = today.getMonth() - birthDate.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+    age--;
+  }
+  return age;
+};
+
+// Filters available classes based on the student's age range safely
+const getFilteredClassesForStudent = (studentOrForm) => {
+  if (!studentOrForm) return [];
+
+  const studentAge = calculateAge(studentOrForm.birthDate);
+
+  const filtered = (classes.value || []).filter((c) => {
+    // Check if the class is active
+    const isActive = c.active ?? c.Active ?? c.IsActive ?? true;
+    if (!isActive) return false;
+
+    // If student's age is not provided, show all active classes
+    if (studentAge === null) return true;
+
+    // Get min and max age (handle null/undefined fields safely from DB)
+    const rawMin = c.minAge ?? c.minimumAge ?? c.MinAge ?? c.min_age;
+    const rawMax = c.maxAge ?? c.maximumAge ?? c.MaxAge ?? c.max_age;
+
+    // If min/max are not set (NULL in DB), class is open for all ages
+    const min = (rawMin !== null && rawMin !== undefined && rawMin !== "") ? Number(rawMin) : 0;
+    const max = (rawMax !== null && rawMax !== undefined && rawMax !== "") ? Number(rawMax) : 999;
+
+    // Check if student's age falls within this class range
+    return studentAge >= min && studentAge <= max;
+  });
+
+  // Map to select options format
+  return filtered.map((c) => ({
+    label: c.className || c.name || c.Name || c.class_name || "Unnamed Class",
+    value: c.classId || c.id || c.Id || c.class_id
+  }));
+};
 
 // Runs the real Family list search by name — the closest thing to a duplicate check without a
 // dedicated endpoint.
@@ -699,6 +725,22 @@ const nextStep = async () => {
 const onTempPasswordsClosed = () => {
   router.push({ name: "students" });
 };
+
+// Watch each student's birthDate changes to clear their selected classes when DOB is modified
+watch(
+  () => form.students.map(s => s.birthDate),
+  (newDates, oldDates) => {
+    if (!oldDates) return;
+    newDates.forEach((newVal, index) => {
+      if (newVal !== oldDates[index]) {
+        if (form.students[index]) {
+          form.students[index].classIds = [];
+        }
+      }
+    });
+  },
+  { deep: true }
+);
 </script>
 
 <style scoped>
