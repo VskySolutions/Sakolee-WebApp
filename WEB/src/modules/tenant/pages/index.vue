@@ -86,8 +86,11 @@
           >
             <q-tooltip>{{ cell.row.status === "Active" ? "Deactivate" : "Activate" }}</q-tooltip>
           </q-btn>
-          <q-btn type="a" flat round dense color="negative" icon="o_archive" @click="archive(cell.row)">
+          <!-- <q-btn type="a" flat round dense color="negative" icon="o_archive" @click="archive(cell.row)">
             <q-tooltip>Archive</q-tooltip>
+          </q-btn> -->
+          <q-btn type="a" flat round dense color="negative" icon="o_delete" @click="remove(cell.row)">
+            <q-tooltip>Delete</q-tooltip>
           </q-btn>
           <q-btn
             type="a" flat round dense color="primary" icon="o_forward_to_inbox"
@@ -648,19 +651,37 @@ const bulkSetStatus = async (sel, isActive) => {
   }
 };
 
-const archive = async (row) => {
+// const archive = async (row) => {
+//   const ok = await confirm({
+//     title: "Archive tenant",
+//     message: `Archive "${row.name}"? This retires the tenant.`,
+//     confirmLabel: "Archive",
+//     type: "danger"
+//   });
+//   if (!ok) return;
+//   try {
+//     await tenantApi.archive(row.tenantId);
+//     notify.success("Tenant archived.");
+//     load();
+//     // An archived tenant drops out of the list the scope picker offers, so it must not stay on the menu.
+//     refreshTenants();
+//   } catch (err) {
+//     notify.error(getApiErrorMessage(err));
+//   }
+// };
+
+const remove = async (row) => {
   const ok = await confirm({
-    title: "Archive tenant",
-    message: `Archive "${row.name}"? This retires the tenant.`,
-    confirmLabel: "Archive",
+    title: "Delete tenant",
+    message: `Delete "${row.name}"?`,
+    confirmLabel: "Delete",
     type: "danger"
   });
   if (!ok) return;
   try {
-    await tenantApi.archive(row.tenantId);
-    notify.success("Tenant archived.");
+    await tenantApi.remove(row.tenantId);
+    notify.success("Tenant deleted.");
     load();
-    // An archived tenant drops out of the list the scope picker offers, so it must not stay on the menu.
     refreshTenants();
   } catch (err) {
     notify.error(getApiErrorMessage(err));

@@ -45,18 +45,18 @@
             <app-select v-model="form.heardAbout" label="How Did You Hear About Us?" :options="hearAboutUsOptions" />
           </div>
           <div class="col-12 col-md-6">
-            <app-text-field v-model="form.referralName" label="Referral Name" placeholder="Friend or student name (optional)" :rules="[nameOnlyRule]" />
+            <app-text-field v-model="form.referralName" label="Referral Name" placeholder="Friend or student name (optional)" :rules="[nameOnlyRule]" @keypress="(e) => { if (!/^[A-Za-z\s]$/.test(e.key)) e.preventDefault(); }"/>
           </div>
           <div class="col-12 col-md-6">
             <app-select v-model="form.studioLocationId" label="Studio Location" required :options="locationOptions" :rules="[required]" />
           </div>
           <div class="col-12 col-md-6">
-            <app-text-field v-model="form.familyName" label="Family Name" required placeholder="e.g. Miller Family" :rules="[required,nameOnlyRule]" />
+            <app-text-field v-model="form.familyName" label="Family Name" required placeholder="e.g. Miller Family" :rules="[required,nameOnlyRule]" @keypress="(e) => { if (!/^[A-Za-z\s]$/.test(e.key)) e.preventDefault(); }"/>
           </div>
 
           <div class="col-12 col-md-6">
-            <app-select v-model="form.familyStatusId" label="Family Status" :options="familyStatusOptions" />
-          </div>
+  <app-select v-model="form.familyStatusId" label="Family Status" :options="familyStatusOptions" />
+</div>
         </div>
 
         <div class="duplicate-check-band">
@@ -77,17 +77,17 @@
               <app-text-field
                 v-model="contact.model.firstName" label="First Name" placeholder="First Name"
                 :required="contact.required" :rules="contact.required ? [required, nameOnlyRule] : [nameOnlyRule]"
+                @keypress="(e) => { if (!/^[A-Za-z\s]$/.test(e.key)) e.preventDefault(); }"
               />
             </div>
             <div class="col-12 col-md-4">
               <app-text-field
-                v-model="contact.model.lastName" label="Last Name" placeholder="Last Name"
-                :required="contact.required" :rules="contact.required ? [required, nameOnlyRule] : [nameOnlyRule]"
+                v-model="contact.model.lastName" label="Last Name" placeholder="Last Name" :required="contact.required" :rules="contact.required ? [required, nameOnlyRule] : [nameOnlyRule]" @keypress="(e) => { if (!/^[A-Za-z\s]$/.test(e.key)) e.preventDefault(); }"
               />
             </div>
             <div class="col-12 col-md-4">
               <!-- <app-select v-model="contact.model.relation" label="Type / Relation" :options="RELATION_OPTIONS" /> -->
-              <app-select v-model="contact.model.relation" label="Type / Relation" :options="relationOptions" />
+               <app-select v-model="contact.model.relation" label="Type / Relation" :options="relationOptions" />
             </div>
             <div class="col-12 col-md-6">
               <app-text-field
@@ -116,7 +116,7 @@
         <div class="step-subtitle-inline">&bull; Emergency Contact </div>
         <div class="row q-col-gutter-md">
           <div class="col-12 col-md-6">
-            <app-text-field v-model="form.emergencyContactName" label="Emergency Contact Person" required placeholder="Full name &amp; relationship" :rules="[required, nameOnlyRule]" />
+            <app-text-field v-model="form.emergencyContactName" label="Emergency Contact Person" required placeholder="Full name &amp; relationship" :rules="[required, nameOnlyRule]" @keypress="(e) => { if (!/^[A-Za-z\s]$/.test(e.key)) e.preventDefault(); }"/>
           </div>
           <div class="col-12 col-md-6">
             <app-phone-input v-model="form.emergencyPhone" v-model:country="form.emergencyPhoneCountry" label="Emergency Phone" required />
@@ -139,10 +139,10 @@
           </div>
           <div class="row q-col-gutter-md">
             <div class="col-12 col-md-4">
-              <app-text-field v-model="student.firstName" label="First Name" required placeholder="Student First Name" :rules="[required,nameOnlyRule]" />
+              <app-text-field v-model="student.firstName" label="First Name" required placeholder="Student First Name" :rules="[required,nameOnlyRule]" @keypress="(e) => { if (!/^[A-Za-z\s]$/.test(e.key)) e.preventDefault(); }"/>
             </div>
             <div class="col-12 col-md-4">
-              <app-text-field v-model="student.lastName" label="Last Name" required placeholder="Student Last Name" :rules="[required,nameOnlyRule]" />
+              <app-text-field v-model="student.lastName" label="Last Name" required placeholder="Student Last Name" :rules="[required,nameOnlyRule]" @keypress="(e) => { if (!/^[A-Za-z\s]$/.test(e.key)) e.preventDefault(); }"/>
             </div>
             <div class="col-12 col-md-4">
               <app-text-field
@@ -162,7 +162,7 @@
             </div>
             <div class="col-12 col-md-4">
               <!-- <app-text-field v-model="student.gradeLevel" label="Grade Level" placeholder="e.g. 3rd Grade" /> -->
-              <app-select v-model="student.gradeLevel" label="Grade Level" :options="gradeLevelOptions" class="col-12 col-md-4" />
+               <app-select v-model="student.gradeLevel" label="Grade Level" :options="gradeLevelOptions" class="col-12 col-md-4" />
             </div>
             <div class="col-12">
               <app-text-field
@@ -248,15 +248,15 @@
 
       <q-separator class="q-my-md" />
       <div class="row items-center justify-between">
-        <q-btn v-if="currentStep > 1" flat no-caps color="grey-8" icon="o_arrow_back" class="close-btn br-12" label="Back" @click="prevStep" />
+        <q-btn v-if="currentStep > 1" outline no-caps color="grey-8" icon="o_arrow_back" label="Back" @click="prevStep" />
         <div v-else />
         <div class="row q-gutter-sm">
-          <q-btn flat no-caps color="grey-8" label="Cancel" class="close-btn br-12" :to="{ name: 'families' }" />
+          <q-btn flat no-caps color="grey-8" label="Cancel" :to="{ name: 'families' }" />
           <q-btn
             unelevated no-caps color="primary" :loading="saving"
             :label="currentStep === STEPS.length ? 'Register Family' : 'Continue'"
             :icon-right="currentStep === STEPS.length ? undefined : 'o_arrow_forward'"
-            class="save-btn br-12" @click="nextStep"
+            @click="nextStep"
           />
         </div>
       </div>
@@ -421,37 +421,26 @@ const studentDisplayName = (student) => `${student.firstName || ""} ${student.la
 
 // Real classes and studio locations, fetched the same way Class's own Category dropdowns load — the
 // composable's CLASS_OPTIONS were prototype demo labels, not ids a real enrollment could use.
-// const classes = ref([]);
-// const classOptions = computed(() => (classes.value || [])
-//     .filter((c) => c.active ?? c.Active ?? true).map((c) => ({ label: c.className, value: c.classId })));
-// const locations = ref([]);
-// const locationOptions = computed(() => (locations.value || [])
-//     .filter((l) => l.active ?? l.Active ?? true).map((l) => ({ label: l.name, value: l.id })));
-// onMounted(async () => {
-//   try {
-//     const [classResult, locationResult] = await Promise.all([
-//       classApi.list({ limit: 100, active: true }),
-//       locationApi.list({ limit: 100, active: true }),
-//       loadGradeLevels(),
-//       loadFamilyStatuses(),
-//       loadFamilyRelations()
-//     ]);
-//     classes.value = classResult?.data || [];
-//     locations.value = locationResult?.data || [];
-//   } catch (err) {
-//     notify.error(getApiErrorMessage(err));
-//   }
-// });
-
 const classes = ref([]);
 const classOptions = computed(() => (classes.value || []).filter((c) => c.active ?? c.Active ?? true).map((c) => ({ label: c.className, value: c.classId })));
 const locations = ref([]);
 const locationOptions = computed(() => (locations.value || []).filter((l) => l.active ?? l.Active ?? true).map((l) => ({ label: l.name, value: l.id })));
 
+const capacity = ref({});
+const capacityErrors = ref({});
+
+const loadCapacity = async () => {
+  try {
+    const rows = (await classApi.capacity()) || [];
+    capacity.value = Object.fromEntries(rows.map((r) => [r.classId, r]));
+  } catch (err) {
+    notify.error(getApiErrorMessage(err));
+  }
+};
 
 onMounted(async () => {
   try {
-    const [classResult, locationResult] = await Promise.all([classApi.list({ limit: 100, active: true }),locationApi.list({ limit: 100, active: true }),loadGradeLevels(), loadFamilyStatuses(), loadFamilyRelations(),loadEPaymentSchedules(), loadMembershipTypes()]);
+    const [classResult, locationResult] = await Promise.all([classApi.list({ limit: 100, active: true }),locationApi.list({ limit: 100, active: true }),loadGradeLevels(), loadFamilyStatuses(), loadFamilyRelations(),loadEPaymentSchedules(), loadMembershipTypes(),loadCapacity()]);
     classes.value = classResult?.data || [];
     locations.value = locationResult?.data || [];
   } catch (err) {
@@ -459,32 +448,6 @@ onMounted(async () => {
   }
 });
 
-// How many students in THIS form picked each class: { classId: count }
-const requestedSeats = computed(() => {
-  const map = {};
-  form.students.forEach((s) => (s.classIds || []).forEach((id) => { map[id] = (map[id] || 0) + 1; }));
-  return map;
-});
-
-// Fills capacityErrors and returns the list of messages (empty = OK).
-const validateCapacity = () => {
-  const errors = {};
-  for (const [classId, wanted] of Object.entries(requestedSeats.value)) {
-    const c = capacity.value[classId];
-    if (!c || c.limit == null) continue;            // class has no size limit
-    // if (wanted > c.remaining) {
-    //   errors[classId] = `"${c.className}" allows only ${c.limit} students (class size ${c.maxClassSize} + waitlist ${c.maxWaitlistSize ?? 0}). ` + `${c.enrolled} already enrolled, ${c.remaining} seat(s) left, but you selected ${wanted}.`;
-    // }
-    if (wanted > c.remaining) { errors[classId] = `"${c.className}" allows only ${c.limit} students. ` + `${c.enrolled} already enrolled, ${c.remaining} seat(s) left, but you selected ${wanted}.`; }
-  }
-  capacityErrors.value = errors;
-  return Object.values(errors);
-};
-
-// Re-check live while the user changes selections, but only once an error is showing.
-watch(requestedSeats, () => {
-  if (Object.keys(capacityErrors.value).length) validateCapacity();
-});
 const tempPwOpen = ref(false);
 const tempPasswords = ref([]);
 const copyPassword = async (password) => {
@@ -496,14 +459,15 @@ const copyPassword = async (password) => {
   }
 };
 
+
 const required = (val) => (val !== null && val !== undefined && String(val).trim() !== "") || "Required";
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const emailRule = (val) => EMAIL_RE.test(String(val || "")) || "Enter a valid email";
 const optionalEmail = (val) => !String(val || "").trim() || emailRule(val);
 
-// For only-letter name fields
+// For only-letter name fields 
 const NAME_RE = /^[A-Za-z\s]+$/;
-// const nameOnlyRule = (val) => !val || NAME_RE.test(String(val)) || "Only letters are allowed";
+//const nameOnlyRule = (val) => !val || NAME_RE.test(String(val)) || "Only letters are allowed";
 
 const nameOnlyRule = (val) => {
   if (!val) return true;
@@ -517,16 +481,18 @@ const nameOnlyRule = (val) => {
   return true;
 };
 
-// Checks Minimum 4 years old
+
+
+// Checks Minimum 4 years old 
 const birthDateRule = (val) => {
-  if (!val) return "Required";
+  if (!val) return "Required"; 
   const birthDate = new Date(val);
   const today = new Date();
   // Future date check
   if (birthDate > today) {
     return "Birth date cannot be in the future";
   }
-
+  
   // Calculate age
   let age = today.getFullYear() - birthDate.getFullYear();
   const m = today.getMonth() - birthDate.getMonth();
@@ -617,26 +583,61 @@ const getFilteredClassesForStudent = (studentOrForm) => {
   });
 
   // Map to select options format
-  return filtered.map((c) => ({
-    label: c.className || c.name || c.Name || c.class_name || "Unnamed Class",
-    value: c.classId || c.id || c.Id || c.class_id
-  }));
+//   return filtered.map((c) => ({
+//     label: c.className || c.name || c.Name || c.class_name || "Unnamed Class",
+//     value: c.classId || c.id || c.Id || c.class_id
+//   }));
+// };
+
+// Map to select options format including capacity rules
+  return filtered.map((c) => {
+    const classId = c.classId || c.id || c.Id || c.class_id;
+    const className = c.className || c.name || c.Name || c.class_name || "Unnamed Class";
+    const cap = capacity.value[classId];
+
+    if (!cap || cap.limit == null) {
+      return {
+        label: className,
+        value: classId,
+        disable: false
+      };
+    }
+
+    const full = cap.remaining <= 0;
+    return {
+      label: full
+        ? `${className} — FULL`
+        : `${className} (${cap.remaining} seat${cap.remaining === 1 ? "" : "s"} left)`,
+      value: classId,
+      disable: full
+    };
+  });
 };
 
 // Runs the real Family list search by name — the closest thing to a duplicate check without a
 // dedicated endpoint.
-const runDuplicateCheck = async () => {
+const runDuplicateCheck = async ({ silent = false }) => {
   const name = form.familyName.trim();
   if (!name) {
-    notify.warning("Enter a family name first.");
-    return;
+    // notify.warning("Enter a family name first.");
+    // return;
+    if (!silent) notify.warning("Enter a family name first.");
+    return { matchesCount: 0 };
   }
   try {
     const result = await familyApi.list({ search: name, limit: 5 });
     const matches = result?.data || [];
-    notify.info(matches.length ? `${matches.length} existing famil${matches.length === 1 ? "y matches" : "ies match"} "${name}".` : `No existing family matches "${name}".`);
+    if (!silent) {
+    notify.info(
+      matches.length
+        ? `${matches.length} existing famil${matches.length === 1 ? "y matches" : "ies match"} "${name}".`
+        : `No existing family matches "${name}".`
+    );
+    }
+    return { matchesCount: matches.length, matches };
   } catch (err) {
     notify.error(getApiErrorMessage(err));
+    return { matchesCount: 0, error: err };
   }
 };
 
@@ -648,10 +649,47 @@ const REQUIRED_PHONE_BY_STEP = {
   3: () => (form.emergencyPhone ? "" : "Emergency Phone is required.")
 };
 
+// How many students in THIS form picked each class: { classId: count }
+const requestedSeats = computed(() => {
+  const map = {};
+  form.students.forEach((s) => (s.classIds || []).forEach((id) => { map[id] = (map[id] || 0) + 1; }));
+  return map;
+});
+
+// Fills capacityErrors and returns the list of messages (empty = OK).
+
+const validateCapacity = () => {
+  const errors = {};
+  for (const [classId, wanted] of Object.entries(requestedSeats.value)) {
+    const c = capacity.value[classId];
+    if (!c || c.limit == null) continue;            // class has no size limit
+    // if (wanted > c.remaining) {
+    //   errors[classId] = `"${c.className}" allows only ${c.limit} students (class size ${c.maxClassSize} + waitlist ${c.maxWaitlistSize ?? 0}). ` + `${c.enrolled} already enrolled, ${c.remaining} seat(s) left, but you selected ${wanted}.`;
+    // }
+    if (wanted > c.remaining) { errors[classId] = `"${c.className}" allows only ${c.limit} students. ` + `${c.enrolled} already enrolled, ${c.remaining} seat(s) left, but you selected ${wanted}.`; }
+  }
+  capacityErrors.value = errors;
+  return Object.values(errors);
+};
+
 const nextStep = async () => {
   const isLastStep = currentStep.value === STEPS.length;
   const valid = await stepForms[currentStep.value]?.validate();
   if (!valid) return;
+
+ // Step 1: Automatic Duplicate Family Check on Continue
+  if (currentStep.value === 1) {
+    saving.value = true;
+    const { matchesCount } = await runDuplicateCheck({ silent: true });
+    saving.value = false;
+
+    if (matchesCount > 0) {
+      notify.warning(
+        `A family with the name "${form.familyName}" already exists. Please verify or use a different family name.`
+      );
+      return; // Stop user from going to Step 2
+    }
+  }
 
   const phoneError = REQUIRED_PHONE_BY_STEP[currentStep.value]?.();
   if (phoneError) {
@@ -665,7 +703,8 @@ const nextStep = async () => {
     notify.warning("Choose a class for at least one student.");
     return;
   }
-  // Step 5 — capacity check (refresh counts first, someone else may have enrolled meanwhile)
+
+   // Step 5 — capacity check (refresh counts first, someone else may have enrolled meanwhile)
   if (currentStep.value === 5) {
     await loadCapacity();
     const problems = validateCapacity();
@@ -674,6 +713,7 @@ const nextStep = async () => {
       return;
     }
   }
+
   if (!isLastStep) {
     currentStep.value += 1;
     return;

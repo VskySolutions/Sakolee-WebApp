@@ -485,6 +485,30 @@ public sealed class TenantsController : ControllerBase
 
     #endregion
 
+    #region Delete Tenant
+    /// <summary>
+    /// Deletes a tenant (soft delete by marking deleted = true).
+    /// </summary>
+    [HttpDelete("{id:guid}")]
+    [RequirePermission(Permissions.TenantsWrite)]
+    public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
+    {
+        var tenant = await _tenants.GetByIdAsync(id, cancellationToken);
+        if (tenant is null)
+        {
+            return NotFound(ApiResponseFactory.Error(ApiErrorCodes.TenantNotFound, "Tenant not found.", id.ToString()));
+        }
+
+        tenant.Deleted = true; 
+        _tenants.Update(tenant);
+        await _audit.AddAsync(nameof(Tenant), tenant.Id.ToString(), "Deleted", cancellationToken: cancellationToken);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+        return Ok(ApiResponseFactory.Success(new { tenantId = tenant.Id }, "Tenant deleted."));
+    }
+
+    #endregion
+
     #region Helpers
 
     /// <summary>Resolves the display names of the given user ids (nulls skipped), for the CreatedBy/UpdatedBy columns.</summary>

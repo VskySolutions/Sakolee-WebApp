@@ -26,12 +26,12 @@
          field in an unvisited tab would silently pass validation otherwise. -->
     <q-form ref="formRef" greedy>
       <div v-show="activeTab === 'family'" class="row q-col-gutter-md">
-        <app-text-field v-model="form.familyName" label="Family Name" required class="col-12 col-sm-6" :rules="[(v) => !!v || 'Family name is required', nameOnlyRule]" />
+        <app-text-field v-model="form.familyName" label="Family Name" required class="col-12 col-sm-6" :rules="[(v) => !!v || 'Family name is required', nameOnlyRule]" @keypress="(e) => { if (!/^[A-Za-z\s]$/.test(e.key)) e.preventDefault(); }"/>
         <app-select v-model="form.studioLocationId" label="Studio Location" :options="locationOptions" class="col-12 col-sm-6" />
         <!-- <app-select v-model="form.familyStatusId" label="Family Status" :options="familyStatusOptions" class="col-12 col-sm-6" /> -->
          <app-select v-model="form.familyStatusId" label="Family Status" :options="filteredFamilyStatusOptions" class="col-12 col-sm-6" />
         <app-select v-model="form.source" label="How Did You Hear About Us?" :options="sourceOptions" class="col-12 col-sm-6" />
-        <app-text-field v-model="form.referralName" label="Referral Name" class="col-12 col-sm-6" :rules="[nameOnlyRule]"/>
+        <app-text-field v-model="form.referralName" label="Referral Name" class="col-12 col-sm-6" :rules="[nameOnlyRule]" @keypress="(e) => { if (!/^[A-Za-z\s]$/.test(e.key)) e.preventDefault(); }"/>
 
         <div v-if="editing" class="col-12">
           <q-toggle v-model="form.active" label="Active" />
@@ -40,8 +40,8 @@
 
       <div v-show="activeTab === 'contacts'" class="row q-col-gutter-md">
         <div class="col-12 text-subtitle2 text-grey-8">Contact #1 (Primary)</div>
-        <app-text-field v-model="form.firstName" label="First Name" required class="col-12 col-sm-6" :rules="[(v) => !!v || 'First name is required',nameOnlyRule]" />
-        <app-text-field v-model="form.lastName" label="Last Name" required class="col-12 col-sm-6" :rules="[(v) => !!v || 'Last name is required',nameOnlyRule]" />
+        <app-text-field v-model="form.firstName" label="First Name" required class="col-12 col-sm-6" :rules="[(v) => !!v || 'First name is required',nameOnlyRule]" @keypress="(e) => { if (!/^[A-Za-z\s]$/.test(e.key)) e.preventDefault(); }"/>
+        <app-text-field v-model="form.lastName" label="Last Name" required class="col-12 col-sm-6" :rules="[(v) => !!v || 'Last name is required',nameOnlyRule]" @keypress="(e) => { if (!/^[A-Za-z\s]$/.test(e.key)) e.preventDefault(); }"/>
         <app-select v-model="form.relation" label="Relation" :options="relationOptions" class="col-12 col-sm-6" />
         <app-text-field
           v-model="form.email" label="Email" type="email" required class="col-12 col-sm-6"
@@ -63,8 +63,8 @@
           <q-btn v-else-if="hasSecondaryContact && !editing" flat dense no-caps color="negative" icon="o_close" label="Remove" @click="removeSecondaryContact" />
         </div>
         <template v-if="hasSecondaryContact">
-          <app-text-field v-model="form.secondaryContact.firstName" label="First Name" required class="col-12 col-sm-6" :rules="[(v) => !!v || 'First name is required',nameOnlyRule]" />
-          <app-text-field v-model="form.secondaryContact.lastName" label="Last Name" required class="col-12 col-sm-6" :rules="[(v) => !!v || 'Last name is required',nameOnlyRule]" />
+          <app-text-field v-model="form.secondaryContact.firstName" label="First Name" required class="col-12 col-sm-6" :rules="[(v) => !!v || 'First name is required',nameOnlyRule]" @keypress="(e) => { if (!/^[A-Za-z\s]$/.test(e.key)) e.preventDefault(); }" />
+          <app-text-field v-model="form.secondaryContact.lastName" label="Last Name" required class="col-12 col-sm-6" :rules="[(v) => !!v || 'Last name is required',nameOnlyRule]" @keypress="(e) => { if (!/^[A-Za-z\s]$/.test(e.key)) e.preventDefault(); }" />
           <app-select v-model="form.secondaryContact.relation" label="Relation" :options="relationOptions" class="col-12 col-sm-6" />
           <app-text-field
             v-model="form.secondaryContact.email" label="Email" type="email" required class="col-12 col-sm-6"
@@ -86,7 +86,7 @@
         </div>
 
         <div class="col-12 text-subtitle2 text-grey-8 q-mt-sm">Emergency Contact</div>
-        <app-text-field v-model="form.emergencyContactPerson" label="Emergency Contact Person" class="col-12 col-sm-6" :rules="[nameOnlyRule]"/>
+        <app-text-field v-model="form.emergencyContactPerson" label="Emergency Contact Person" class="col-12 col-sm-6" :rules="[nameOnlyRule]" @keypress="(e) => { if (!/^[A-Za-z\s]$/.test(e.key)) e.preventDefault(); }"/>
         <app-phone-input v-model="form.emergencyPhone" label="Emergency Phone" class="col-12 col-sm-6" />
         <!-- <app-text-field v-model="form.healthInsuranceCarrier" label="Health Insurance Carrier / Policy #" class="col-12" />  &amp; Health Insurance-->
       </div>
@@ -128,8 +128,8 @@
               <q-btn flat dense no-caps color="negative" icon="o_close" label="Remove" @click="removeNewStudent(index)" />
             </div>
             <div class="row q-col-gutter-md q-mb-sm">
-              <app-text-field v-model="student.firstName" label="First Name" required class="col-12 col-sm-6" :rules="[(v) => !!v || 'First name is required', nameOnlyRule]" />
-              <app-text-field v-model="student.lastName" label="Last Name" required class="col-12 col-sm-6" :rules="[(v) => !!v || 'Last name is required', nameOnlyRule]" />
+              <app-text-field v-model="student.firstName" label="First Name" required class="col-12 col-sm-6" :rules="[(v) => !!v || 'First name is required', nameOnlyRule]" @keypress="(e) => { if (!/^[A-Za-z\s]$/.test(e.key)) e.preventDefault(); }" />
+              <app-text-field v-model="student.lastName" label="Last Name" required class="col-12 col-sm-6" :rules="[(v) => !!v || 'Last name is required', nameOnlyRule]" @keypress="(e) => { if (!/^[A-Za-z\s]$/.test(e.key)) e.preventDefault(); }" />
               <app-text-field
                 v-model="student.email" label="Student Email" type="email" required class="col-12 col-sm-6"
                 :rules="[(v) => !!v || 'Email is required',]"

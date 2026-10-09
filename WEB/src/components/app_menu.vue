@@ -834,6 +834,7 @@ const scheduleNestedFlyoutClose = () => {
   }, 300);
 };
 
+
 // Ordered by application flow: overview → set up → configure → operate → personal. `permissions:
 // null` → visible to every authenticated user.
 const sections = [

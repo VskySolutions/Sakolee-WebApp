@@ -87,7 +87,8 @@ export const tenantApi = {
   create: (payload) => api.post("/api/admin/tenants", payload).then(unwrap),
   update: (id, payload) => api.put(`/api/admin/tenants/${id}`, payload).then(unwrap),
   setStatus: (id, isActive) => api.put(`/api/admin/tenants/${id}/status`, { isActive }).then(unwrap),
-  archive: (id) => api.put(`/api/admin/tenants/${id}/archive`).then(unwrap),
+  remove: (id) => api.delete(`/api/admin/tenants/${id}`).then(unwrap),
+  //archive: (id) => api.put(`/api/admin/tenants/${id}/archive`).then(unwrap),
   // Mints a fresh temporary password for the tenant's default Administrator and emails it (welcome +
   // login credentials) via the tenant's active SMTP account. Response carries { ..., temporaryPassword,
   // emailSent } — same one-time-reveal contract as userApi.resetPassword.
