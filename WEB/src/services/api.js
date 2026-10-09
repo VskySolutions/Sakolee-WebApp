@@ -87,7 +87,8 @@ export const tenantApi = {
   create: (payload) => api.post("/api/admin/tenants", payload).then(unwrap),
   update: (id, payload) => api.put(`/api/admin/tenants/${id}`, payload).then(unwrap),
   setStatus: (id, isActive) => api.put(`/api/admin/tenants/${id}/status`, { isActive }).then(unwrap),
-  archive: (id) => api.put(`/api/admin/tenants/${id}/archive`).then(unwrap),
+  remove: (id) => api.delete(`/api/admin/tenants/${id}`).then(unwrap),
+  //archive: (id) => api.put(`/api/admin/tenants/${id}/archive`).then(unwrap),
   // Mints a fresh temporary password for the tenant's default Administrator and emails it (welcome +
   // login credentials) via the tenant's active SMTP account. Response carries { ..., temporaryPassword,
   // emailSent } — same one-time-reveal contract as userApi.resetPassword.
@@ -216,6 +217,14 @@ export const studentApi = {
   // Emails the student their username (login email) + temporary password. Response: { email,
   // temporaryPassword, emailSent, passwordWasReset } — same one-time-reveal contract as userApi.sendCredentials.
   sendCredentials: (id) => api.post(`/api/admin/students/${id}/send-credentials`).then(unwrap)
+};
+
+// Lead Files (Families): students not currently in a running class. Read-only list.
+export const leadApi = {
+  // params: { page, limit, sortBy?, descending?, studioLocationId?, contactFirstName?,
+  // contactLastName?, studentFirstName?, studentLastName?, email? }. Response: { data: LeadSummary[],
+  // meta: { totalRecords } }.
+  list: (params) => api.get("/api/admin/leads", { params }).then(envelope)
 };
 
 export const userApi = {

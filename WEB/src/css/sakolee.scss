@@ -2079,7 +2079,37 @@ svg { fill: none; stroke: currentColor; stroke-width: 1.8px; stroke-linecap: rou
 
 .mb-4{ margin-bottom: 4px !important; }
 
+.box-shadow{ box-shadow: 0 5px 15px #00000026 !important; }
+
+.no-border{ border: 0 !important; }
+
 .view-separator{ background-color: #c7c4d733 !important; }
+
+// .app-menu-wrapper{
+//   .q-item:hover{
+//     background-color: #F1F2FF !important;
+//     border-radius: 12px !important;
+//   }
+// }
+
+// .app-menu-wrapper {
+//   .q-item {
+//     &:hover {
+//       background-color: #f1f2ff !important;
+//       border-radius: 12px !important;
+//       color: 4648d4 !important;
+//     }
+
+//     // Remove Quasar default black/dark hover overlay
+//     :deep(.q-focus-helper) {
+//       background-color: transparent !important;
+//     }
+
+//     &:hover :deep(.q-focus-helper) {
+//       background-color: transparent !important;
+//     }
+//   }
+// }
 
 .dialogs-scss{
   .app-form-dialog {

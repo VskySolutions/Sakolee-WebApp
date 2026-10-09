@@ -117,8 +117,8 @@
           class="gender-options" :disable="disable"
         />
       </div>
-      <app-text-field v-model.number="form.minAge" label="Min Age" type="number" placeholder="Min Age" class="col-12 col-sm-6" :disable="disable" :rules="[ageRule, minAgeRule]" />
-      <app-text-field v-model.number="form.maxAge" label="Max Age" type="number" placeholder="Max Age" class="col-12 col-sm-6" :disable="disable" :rules="[ageRule, maxAgeRule]" />
+      <app-text-field v-model.number="form.minAge" label="Min Age" type="number" placeholder="Min Age" class="col-12 col-sm-6" :disable="disable" required :rules="[ageRule, minAgeRule,requiredRules]" />
+      <app-text-field v-model.number="form.maxAge" label="Max Age" type="number" placeholder="Max Age" class="col-12 col-sm-6" :disable="disable" required :rules="[requiredRules,ageRule, maxAgeRule]" />
       <!-- <app-text-field v-model.number="form.maxClassSize" label="Max Class Size" type="number" placeholder="Max Class Size" class="col-12 col-sm-6" :disable="disable" /> -->
       <app-text-field v-model.number="form.maxClassSize" label="Max Class Size *" type="number" placeholder="Enter maximum class size" class="col-12 col-sm-6" :disable="disable" :rules="[requiredRule]" />
       <app-text-field v-model.number="form.maxWaitlistSize" label="Max Waitlist Size" type="number" placeholder="Max Waitlist Size" class="col-12 col-sm-6" :disable="disable" />
@@ -382,6 +382,8 @@ const requiredRule = (v) => {
   }
   return (v !== null && v !== undefined && String(v).trim() !== "") || "This field is required";
 };
+
+const requiredRules = (val) => (val !== null && val !== undefined && String(val).trim() !== "") || "This field is required";
 const timeToMinutes = (value) => {
   if (!value) return null;
   const text = String(value).trim();

@@ -33,6 +33,9 @@ public static class DependencyInjection
         // shared IMemoryCache, so the reads are shared across requests.
         services.AddScoped<Abstractions.OptionSets.IOptionCodeResolver, OptionSets.OptionCodeResolver>();
 
+        // Lead Files: the not-currently-enrolled student list under Families.
+        services.AddScoped<Abstractions.Leads.ILeadService, Leads.LeadService>();
+
         // Universal Features (Phase 14): cross-cutting activity writer + notification dispatcher.
         services.AddScoped<Abstractions.UniversalFeatures.IActivityEventWriter, UniversalFeatures.ActivityEventWriter>();
         services.AddScoped<Abstractions.UniversalFeatures.INotificationDispatcher, UniversalFeatures.NotificationDispatcher>();

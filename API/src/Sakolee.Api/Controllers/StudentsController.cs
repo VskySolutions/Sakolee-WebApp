@@ -100,6 +100,7 @@ public sealed class StudentsController : ControllerBase
     {
         // Creating the Person (and the login account below) needs a tenant to own them — there is no
         // request-level tenant picker here, unlike Person/User creation, because a student is always
+
         // created inside the caller's own active tenant.
         if (!_tenantContext.IsResolved)
         {

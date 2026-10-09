@@ -2,9 +2,10 @@
   <!-- Toolbar control, styled like the tenant switcher beside it. -->
   <q-btn-dropdown
     v-if="canScopeTenant"
-    flat no-caps dense
-    icon="o_travel_explore"
+    flat no-caps dense padding="5px 5px"
+    icon="mdi-bank"
     :label="buttonLabel"
+    class="tenant-select-ddl"
     :class="isScoped ? 'text-orange-9' : 'text-grey-9'"
   >
     <q-tooltip>Super Admin: view and manage another tenant</q-tooltip>
@@ -54,3 +55,13 @@ const buttonLabel = computed(() => (isScoped.value ? scopedTenantName.value || "
 
 onMounted(loadTenants);
 </script>
+<style scoped lang="scss">
+.tenant-select-ddl{
+  border: 1px solid #b9b9c3;
+  // background-color: #f2f3ff;
+  background-color: white;
+  border-radius: 12px;
+  font-weight: 400 !important;
+  font-size: 12px;
+}
+</style>
