@@ -1,14 +1,20 @@
 <template>
   <q-page padding>
-    <app-detail-header :items="[{ label: 'Home', icon: 'o_home', to: '/' }, { label: 'My Account' }]">
-      <!-- The same percentage the profile page shows, commented out with it: it counts fields that page no
+    <!-- <app-detail-header :items="[{ label: 'Home', icon: 'o_home', to: '/' }, { label: 'My Account' }]"> -->
+    <!-- The same percentage the profile page shows, commented out with it: it counts fields that page no
            longer asks for, so it reads the same on both screens and can be moved from neither. -->
-      <!-- <template #actions> <q-chip v-if="profile" dense color="teal-1" text-color="primary"
+    <!-- <template #actions> <q-chip v-if="profile" dense color="teal-1" text-color="primary"
            class="text-weight-medium"> {{ completion }}% complete </q-chip> </template> -->
-    </app-detail-header>
+    <!-- </app-detail-header> -->
+
+    <app-list-header
+      :breadcrumbs="[{ label: 'Home', to: '/' }, { label: 'My Account' }]"
+      title="My Account"
+      description="Manage your account settings here."
+    />
 
     <!-- Profile summary -->
-    <q-card flat bordered class="account-card q-mb-md">
+    <q-card flat class="account-card q-mb-md box-shadow">
       <q-card-section class="row items-center q-gutter-md">
         <q-avatar size="92px" color="primary" text-color="white">
           <img v-if="avatarUrl" :src="avatarUrl" alt="Profile">
@@ -32,9 +38,9 @@
           </div>
         </div>
 
-        <div class="column q-gutter-sm">
-          <q-btn unelevated no-caps color="primary" icon="o_edit" label="Edit Profile" :to="{ name: 'profile' }" />
-          <q-btn outline no-caps color="primary" icon="o_lock" label="Change Password" :to="{ name: 'change_password' }" />
+        <div class="q-gutter-x-md">
+          <q-btn unelevated no-caps color="primary" icon="o_edit" label="Edit Profile" class="save-btn br-12" :to="{ name: 'profile' }" />
+          <q-btn outline no-caps color="primary" icon="o_lock" label="Change Password" class="close-btn br-12 no-border" :to="{ name: 'change_password' }" />
         </div>
       </q-card-section>
 
@@ -43,16 +49,16 @@
            /. -->
     </q-card>
 
-    <div class="row q-col-gutter-md">
+    <div class="row q-col-gutter-md q-mt-md">
       <!-- Contact -->
       <div class="col-12 col-md-6">
-        <q-card flat bordered class="account-card full-height">
+        <q-card flat class="account-card full-height box-shadow">
           <q-card-section class="row items-center q-gutter-sm">
             <q-icon name="o_contact_mail" color="primary" size="sm" />
             <div class="text-subtitle1 text-weight-medium">Contact</div>
           </q-card-section>
           <q-separator />
-          <q-list>
+          <q-list class="q-pb-sm">
             <q-item v-for="row in contactRows" :key="row.label">
               <q-item-section avatar><q-icon :name="row.icon" color="grey-6" /></q-item-section>
               <q-item-section>
@@ -66,7 +72,7 @@
 
       <!-- Tenants & roles -->
       <div class="col-12 col-md-6">
-        <q-card flat bordered class="account-card full-height">
+        <q-card flat class="account-card full-height box-shadow">
           <q-card-section class="row items-center q-gutter-sm">
             <q-icon name="o_apartment" color="primary" size="sm" />
             <div class="text-subtitle1 text-weight-medium">User Roles</div>
@@ -87,7 +93,7 @@
               </q-item-section>
               <q-item-section side>
                 <div class="row q-gutter-xs justify-end">
-                  <q-badge v-for="r in (t.roleNames || [])" :key="r" color="primary" class="text-capitalize">{{ r }}</q-badge>
+                  <q-badge v-for="r in (t.roleNames || [])" :key="r" color="primary" class="text-capitalize br-12 q-pa-xs q-px-sm q-py-xm">{{ r }}</q-badge>
                   <span v-if="!(t.roleNames || []).length" class="text-caption text-grey-6">No roles</span>
                 </div>
               </q-item-section>
@@ -108,7 +114,8 @@ import { useAuthStore } from "stores/auth";
 import { useTenantStore } from "stores/tenant";
 import { profileApi, mediaApi, getApiErrorMessage } from "services/api";
 import { useNotify } from "composables/useNotify";
-import AppDetailHeader from "components/common/AppDetailHeader.vue";
+// import AppDetailHeader from "components/common/AppDetailHeader.vue";
+import AppListHeader from "components/common/AppListHeader.vue";
 
 const authStore = useAuthStore();
 const tenantStore = useTenantStore();

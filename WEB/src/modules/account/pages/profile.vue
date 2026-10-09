@@ -1,21 +1,51 @@
 <template>
   <q-page padding>
-    <app-detail-header
+    <!-- <app-detail-header
       :items="[
         { label: 'Home', icon: 'o_home', to: '/' },
         { label: 'My Account', to: { name: 'account' } },
         { label: 'My Profile' }
       ]"
       :back-to="{ name: 'account' }"
-    >
-      <!-- Commented out along with the fields it counts. -->
-    </app-detail-header>
+    > -->
+    <!-- Commented out along with the fields it counts. -->
+    <!-- </app-detail-header> -->
+
+    <app-list-header
+      :breadcrumbs="[{ label: 'Home', to: '/' }, { label: 'My Account', to: { name: 'account' } }, { label: 'My Profile' }]"
+      title="My Profile"
+      description="Manage your profile information here."
+      @back="$router.back()"
+    />
 
     <div v-if="loading" class="row flex-center q-pa-xl"><q-spinner color="primary" size="40px" /></div>
 
     <template v-else>
+      <!-- Personal details -->
+      <q-card flat class="profile-card q-mb-md box-shadow">
+        <q-card-section class="text-subtitle1 text-weight-medium">Personal Details</q-card-section>
+        <q-separator />
+        <q-card-section class="row q-col-gutter-md">
+          <div class="col-12 section-subhead">Name</div>
+          <app-text-field v-model="form.firstName" label="First Name" class="col-12 col-sm-6" :rules="nameRules('First name')" />
+          <app-text-field v-model="form.lastName" label="Last Name" class="col-8 col-sm-4" :rules="nameRules('Last name')" />
+          <!-- The generational particle on your name, after the surname where it is read. -->
+          <app-name-suffix-field v-model="form.suffix" class="col-4 col-sm-2" />
+        </q-card-section>
+      </q-card>
+
+      <!-- Address -->
+      <q-card flat class="profile-card q-mb-md box-shadow">
+        <q-card-section class="text-subtitle1 text-weight-medium">Address</q-card-section>
+        <q-separator />
+        <q-card-section>
+          <!-- Not `extended`: the landmark / building / floor / unit boxes are off this page. -->
+          <app-address-fields ref="addressRef" v-model="address" />
+        </q-card-section>
+      </q-card>
+
       <!-- Profile image -->
-      <q-card flat bordered class="profile-card q-mb-md">
+      <q-card flat class="profile-card q-mb-md box-shadow">
         <q-card-section class="text-subtitle1 text-weight-medium">Profile picture</q-card-section>
         <q-separator />
         <q-card-section>
@@ -30,37 +60,14 @@
         </q-card-section>
       </q-card>
 
-      <!-- Personal details -->
-      <q-card flat bordered class="profile-card q-mb-md">
-        <q-card-section class="text-subtitle1 text-weight-medium">Personal details</q-card-section>
-        <q-separator />
-        <q-card-section class="row q-col-gutter-md">
-          <div class="col-12 section-subhead">Name</div>
-          <app-text-field v-model="form.firstName" label="First Name" class="col-12 col-sm-6" :rules="nameRules('First name')" />
-          <app-text-field v-model="form.lastName" label="Last Name" class="col-8 col-sm-4" :rules="nameRules('Last name')" />
-          <!-- The generational particle on your name, after the surname where it is read. -->
-          <app-name-suffix-field v-model="form.suffix" class="col-4 col-sm-2" />
-        </q-card-section>
-      </q-card>
-
-      <!-- Address -->
-      <q-card flat bordered class="profile-card q-mb-md">
-        <q-card-section class="text-subtitle1 text-weight-medium">Address</q-card-section>
-        <q-separator />
-        <q-card-section>
-          <!-- Not `extended`: the landmark / building / floor / unit boxes are off this page. -->
-          <app-address-fields ref="addressRef" v-model="address" />
-        </q-card-section>
-      </q-card>
-
       <div class="row justify-end q-mb-lg">
-        <q-btn unelevated no-caps color="primary" label="Save profile" :loading="saving" @click="save" />
+        <q-btn unelevated no-caps color="primary" label="Save profile" :loading="saving" class="save-btn br-12" @click="save" />
       </div>
     </template>
 
     <!-- Tenant assignments -->
-    <q-card flat bordered class="profile-card q-mb-md">
-      <q-card-section class="text-subtitle1 text-weight-medium">Tenant assignments</q-card-section>
+    <q-card flat class="profile-card q-mb-md box-shadow">
+      <q-card-section class="text-subtitle1 text-weight-medium">Tenant Assignments</q-card-section>
       <q-separator />
       <q-list separator>
         <q-item v-for="t in assignments" :key="t.tenantId">
@@ -70,7 +77,7 @@
           </q-item-section>
           <q-item-section side>
             <div class="row q-gutter-xs justify-end">
-              <q-badge v-for="r in (t.roleNames || [])" :key="r" color="primary" class="text-capitalize">{{ r }}</q-badge>
+              <q-badge v-for="r in (t.roleNames || [])" :key="r" color="primary" class="text-capitalize q-px-sm q-py-xs br-12">{{ r }}</q-badge>
               <span v-if="!(t.roleNames || []).length" class="text-caption text-grey-6">No roles</span>
             </div>
           </q-item-section>
@@ -80,9 +87,9 @@
     </q-card>
 
     <!-- Effective permissions (read-only source view) -->
-    <q-card flat bordered class="profile-card q-mb-md">
+    <q-card flat class="profile-card q-mb-md box-shadow">
       <q-card-section class="text-subtitle1 text-weight-medium">
-        Effective permissions
+        Effective Permissions
         <q-badge v-if="effective" color="primary" class="q-ml-sm">{{ effective.effectivePermissions.length }}</q-badge>
         <div class="text-caption text-grey-6">Your permissions in the active tenant, and where each comes from (Role → Permission Group → key). Read-only.</div>
       </q-card-section>
@@ -120,13 +127,13 @@
     </q-card>
 
     <!-- Password change. -->
-    <q-card flat bordered class="profile-card">
-      <q-card-section class="text-subtitle1 text-weight-medium">Change password</q-card-section>
+    <q-card flat class="profile-card box-shadow">
+      <q-card-section class="text-subtitle1 text-weight-medium">Change Password</q-card-section>
       <q-separator />
       <change-password-form submit-label="Update password" />
     </q-card>
 
-    <app-record-audit :audit="profile?.audit" class="q-mt-md" />
+    <app-record-audit :audit="profile?.audit" class="q-mt-md box-shadow no-border" />
   </q-page>
 </template>
 
@@ -137,7 +144,9 @@ import { humanizeKey } from "composables/usePermissionCategories";
 import { useAuthStore } from "stores/auth";
 import { useNotify } from "composables/useNotify";
 import { nameRules } from "utils/personName";
+
 import AppDetailHeader from "components/common/AppDetailHeader.vue";
+import AppListHeader from "components/common/AppListHeader.vue";
 import AppRecordAudit from "components/common/AppRecordAudit.vue";
 import AppTextField from "components/common/AppTextField.vue";
 import AppNameSuffixField from "components/common/AppNameSuffixField.vue";
