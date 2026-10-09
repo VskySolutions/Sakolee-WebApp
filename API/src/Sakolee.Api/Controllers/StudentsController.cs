@@ -628,8 +628,7 @@ public sealed class StudentsController : ControllerBase
         return true;
     }
     /// <summary>Rejects the request when any class would exceed MaxClassSize + MaxWaitlistSize.</summary>
-    private async Task<IActionResult?> CheckClassCapacityAsync(
-        IReadOnlyDictionary<Guid, int> newSeatsByClass, CancellationToken cancellationToken)
+    private async Task<IActionResult?> CheckClassCapacityAsync(IReadOnlyDictionary<Guid, int> newSeatsByClass, CancellationToken cancellationToken)
     {
         var counts = await _students.CountByClassIdsAsync(newSeatsByClass.Keys, cancellationToken);
         foreach (var (classId, newSeats) in newSeatsByClass)
@@ -637,13 +636,15 @@ public sealed class StudentsController : ControllerBase
             var cls = await _classes.GetByIdAsync(classId, cancellationToken);
             // no limit set
             if (cls is null || cls.MaxClassSize is not { } max) continue;   
-            var waitlist = cls.MaxWaitlistSize ?? 0;
-            var limit = max + waitlist;
+           // var waitlist = cls.MaxWaitlistSize ?? 0;
+           // var limit = max + waitlist;
             var enrolled = counts.TryGetValue(classId, out var c) ? c : 0;
-            var remaining = Math.Max(0, limit - enrolled);
+            //var remaining = Math.Max(0, limit - enrolled);
+            var remaining = Math.Max(0, max - enrolled);
             if (newSeats > remaining)
             {
-                return BadRequest(ApiResponseFactory.Error(ApiErrorCodes.ValidationFailed, "Class is full.", $"Class \"{cls.ClassName}\" allows only {limit} students (class size {max} + waitlist {waitlist}). " + $"{enrolled} already enrolled, {remaining} seat(s) left, but {newSeats} requested."));
+                // return BadRequest(ApiResponseFactory.Error(ApiErrorCodes.ValidationFailed, "Class is full.", $"Class \"{cls.ClassName}\" allows only {limit} students (class size {max} + waitlist {waitlist}). " + $"{enrolled} already enrolled, {remaining} seat(s) left, but {newSeats} requested."));
+                return BadRequest(ApiResponseFactory.Error(ApiErrorCodes.ValidationFailed,"Class is full.", $"Class \"{cls.ClassName}\" allows only {max} students. " + $"{enrolled} already enrolled, {remaining} seat(s) left, but {newSeats} requested."));
             }
         }
         return null;

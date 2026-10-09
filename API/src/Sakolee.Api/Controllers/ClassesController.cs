@@ -556,20 +556,21 @@ public sealed class ClassesController : ControllerBase
         var items = all.Select(c =>
         {
             var enrolled = counts.TryGetValue(c.Id, out var count) ? count : 0;
-            int? totalCapacity = null;
-            if (c.MaxClassSize.HasValue)
-            {
-                totalCapacity = c.MaxClassSize.Value + (c.MaxWaitlistSize ?? 0);
-            }
+            // int? totalCapacity = null;
+            // max class size only
+            int? totalCapacity = c.MaxClassSize;
+            //if (c.MaxClassSize.HasValue)
+            //{
+            //    totalCapacity = c.MaxClassSize.Value + (c.MaxWaitlistSize ?? 0);
+            //}
             return new
             {
                 classId = c.Id,
                 className = c.ClassName,
                 maxClassSize = c.MaxClassSize,
-                maxWaitlistSize = c.MaxWaitlistSize,
+               // maxWaitlistSize = c.MaxWaitlistSize,
                 // Only non-deleted students are counted here.
                 enrolled,
-                // Example: 6 + 4 = 10
                 limit = totalCapacity,
                 remaining = totalCapacity.HasValue ? Math.Max(0, totalCapacity.Value - enrolled) : (int?)null
             };
