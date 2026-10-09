@@ -41,8 +41,11 @@ public sealed class CreateStudentRequest
     public string? HasImmunizations { get; set; }
     public string? ImmunizationNotes { get; set; }
     public string? SkillNotes { get; set; }
-    public string? TextOptIn { get; set; }
-    public string? MassEmailOptOut { get; set; }
+    //public string? TextOptIn { get; set; }
+    //public string? MassEmailOptOut { get; set; }
+
+    public bool? TextOptIn { get; set; }
+    public bool? MassEmailOptOut { get; set; }
     public string? HealthInsuranceCarrier { get; set; }
     public string? DisabilitiesNotes { get; set; }
     public string? AllergiesNotes { get; set; }
@@ -119,8 +122,10 @@ public sealed class UpdateStudentRequest
     public string? HasImmunizations { get; set; }
     public string? ImmunizationNotes { get; set; }
     public string? SkillNotes { get; set; }
-    public string? TextOptIn { get; set; }
-    public string? MassEmailOptOut { get; set; }
+    //public string? TextOptIn { get; set; }
+    //public string? MassEmailOptOut { get; set; }
+    public bool? TextOptIn { get; set; }
+    public bool? MassEmailOptOut { get; set; }
     public string? HealthInsuranceCarrier { get; set; }
     public string? DisabilitiesNotes { get; set; }
     public string? AllergiesNotes { get; set; }
@@ -175,8 +180,9 @@ public sealed record StudentSummary(
     string? HasImmunizations,
     string? ImmunizationNotes,
     string? SkillNotes,
-    string? TextOptIn,
-    string? MassEmailOptOut,
+    bool? TextOptIn,
+    bool? MassEmailOptOut,
+
     string? HealthInsuranceCarrier,
     string? DisabilitiesNotes,
     string? AllergiesNotes,
