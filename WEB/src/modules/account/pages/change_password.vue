@@ -1,8 +1,13 @@
 <template>
   <q-page padding>
+        <app-list-header
+      :breadcrumbs="[{ label: 'Home', to: '/' }, { label: 'Change Password' }]"
+      title="Change Password"
+      description="Manage your password here."
+      @back="$router.back()"
+    />
     <div class="q-mx-auto" style="max-width: 560px;">
-      <div class="text-h5 text-weight-bold q-mb-md">Change Password</div>
-      <q-card flat bordered class="account-card">
+      <q-card flat class="account-card box-shadow">
         <q-card-section class="row items-center q-gutter-sm">
           <q-icon name="o_lock" color="primary" size="sm" />
           <div class="text-subtitle1 text-weight-medium">Update your password</div>
@@ -34,6 +39,8 @@ import { onBeforeRouteLeave } from "vue-router";
 import { useAuthStore } from "stores/auth";
 import { useNotify } from "composables/useNotify";
 import ChangePasswordForm from "components/account/ChangePasswordForm.vue";
+
+import AppListHeader from "components/common/AppListHeader.vue";
 
 const authStore = useAuthStore();
 const { notifyWarning } = useNotify();

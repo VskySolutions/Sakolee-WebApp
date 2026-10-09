@@ -23,12 +23,12 @@
       />
       <q-btn
         unelevated no-caps color="primary" label="Send reset link" type="submit"
-        class="full-width" :loading="loading"
+        class="full-width br-12" :loading="loading"
       />
     </q-form>
 
     <div class="row justify-center q-mt-md">
-      <q-btn flat no-caps dense color="primary" icon="o_arrow_back" label="Back to sign in" :to="{ name: 'login' }" />
+      <q-btn flat no-caps dense color="primary" icon="o_arrow_back" label="Back to sign in" class="br-12" :to="{ name: 'login' }" />
     </div>
   </q-card>
 </template>

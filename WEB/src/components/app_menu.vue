@@ -337,7 +337,7 @@
                   :to="child.to"
                   :exact="child.exact"
                   active-class="active-menu-class"
-                  class="app-menu__nested app-menu__settings-child"
+                  class="app-menu__nested app-menu__settings-child q-ml-md"
                   @click="onItem(child)"
                 >
                   <q-item-section avatar>
@@ -716,7 +716,7 @@
 
         <q-item-section avatar>
           <q-icon
-            name="o_logout"
+            name="mdi-logout"
             size="22px"
           />
         </q-item-section>
@@ -842,7 +842,7 @@ const sections = [
     key: "overview",
     label: null,
     items: [
-      { label: "Dashboard", icon: "o_dashboard", to: "/dashboard", permissions: null }
+      { label: "Dashboard", icon: "mdi-view-dashboard", to: "/dashboard", permissions: null }
     ]
   },
   {
@@ -853,18 +853,18 @@ const sections = [
     label: "Families",
     icon: "o_family_restroom",
     items: [
-      { label: "All Families", icon: "o_groups", to: "/families", permissions: [Permissions.FamiliesRead] },
+      { label: "All Families", icon: "mdi-account-group-outline", to: "/families", permissions: [Permissions.FamiliesRead] },
       // Gated like its route — part of the Families area.
-      { label: "Quick Registration", icon: "o_how_to_reg", to: { name: "family_quick_registration" }, permissions: [Permissions.FamiliesRead] },
+      { label: "Quick Registration", icon: "mdi-account-check-outline", to: { name: "family_quick_registration" }, permissions: [Permissions.FamiliesRead] },
       // Lead Files — students without a running class. All Leads is the one page so far.
       {
         key: "lead-files",
         label: "Lead Files",
-        icon: "o_contact_page",
+        icon: "mdi-file-account-outline",
         items: [
           {
             label: "All Leads",
-            icon: "o_contact_page",
+            icon: "mdi-view-list-outline",
             to: "/families/leads",
             permissions: [Permissions.FamiliesRead]
           }
@@ -874,53 +874,53 @@ const sections = [
       {
         key: "families-Configuration",
         label: "Configuration",
-        icon: "o_settings_suggest",
+        icon: "mdi-cog-sync-outline",
         items: [
           {
             label: "Family Statuses",
-            icon: "o_flag",
+            icon: "mdi-flag-outline",
             to: "/familystatus",
             permissions: [Permissions.FamilyStatusesRead]
           },
           {
             label: "Studio Locations",
-            icon: "o_location_on",
+            icon: "mdi-map-marker-outline",
             to: "/locations",
             permissions: [Permissions.LocationsRead]
           },
           {
             label: "Family Relations",
-            icon: "o_supervised_user_circle",
+            icon: "mdi-account-supervisor-circle-outline",
             to: "/family-relations",
             permissions: [Permissions.FamilyRelationsRead]
           },
           {
             label: "Hear About Us",
-            icon: "o_campaign",
+            icon: "mdi-bullhorn-outline",
             to: "/hear-about-us",
             permissions: [Permissions.HearAboutUsRead]
           },
           {
             label: "Billing Methods",
-            icon: "o_account_balance",
+            icon: "mdi-bank",
             to: "/billing-methods",
             permissions: [Permissions.BillingMethodsRead]
           },
           {
             label: "Membership Types",
-            icon: "o_card_membership",
+            icon: "mdi-wallet-membership",
             to: "/membership-types",
             permissions: [Permissions.MembershipTypesRead]
           },
           {
             label: "E-Payment Schedule",
-            icon: "o_payments",
+            icon: "mdi-cash-multiple",
             to: "/e-payment-schedule",
             permissions: [Permissions.EPaymentSchedulesRead]
           },
           {
             label: "Account Types",
-            icon: "o_account_balance_wallet",
+            icon: "mdi-wallet-outline",
             to: "/account-type",
             permissions: [Permissions.AccountTypesRead]
           },
@@ -934,24 +934,24 @@ const sections = [
   {
     key: "students",
     label: "Students",
-    icon: "o_group",
+    icon: "mdi-account-multiple-outline",
     items: [
-      { label: "All Students", parentLabel: "My Students", icon: "o_person", to: "/students", permissions: [Permissions.StudentsRead] },
+      { label: "All Students", parentLabel: "My Students", icon: "mdi-account-group-outline", to: "/students", permissions: [Permissions.StudentsRead] },
       // Students Settings
       {
         key: "students-Configuration",
         label: "Configuration",
-        icon: "o_settings_suggest",
+        icon: "mdi-cog-sync-outline",
         items: [
           {
             label: "T-Shirt Sizes",
-            icon: "o_checkroom",
+            icon: "mdi-hanger",
             to: "/t-shirt-sizes",
             permissions: [Permissions.TShirtSizesRead]
           },
           {
             label: "Student Grade Levels",
-            icon: "o_school",
+            icon: "mdi-school-outline",
             to: "/student-grade-levels",
             permissions: [Permissions.StudentGradeLevelsRead]
           }
@@ -962,45 +962,45 @@ const sections = [
   {
     key: "administration",
     label: "Administration",
-    icon: "o_corporate_fare",
+    icon: "mdi-domain",
     items: [
-      { label: "Tenants", icon: "o_apartment", to: "/tenants", permissions: [Permissions.TenantsWrite] },
-      { label: "Person", icon: "o_group", to: "/persons", permissions: [Permissions.PersonsRead] },
+      { label: "Tenants", icon: "mdi-office-building-outline", to: "/tenants", permissions: [Permissions.TenantsWrite] },
+      { label: "Person", icon: "mdi-account-group-outline", to: "/persons", permissions: [Permissions.PersonsRead] },
     ]
   },
   {
     key: "class",
     label: "Classes",
-    icon: "o_school",
+    icon: "mdi-school-outline",
     items: [
-      { label: "All Classes", icon: "o_class", to: "/classes", permissions: [Permissions.ClassesRead] },
+      { label: "All Classes", icon: "mdi-google-classroom", to: "/classes", permissions: [Permissions.ClassesRead] },
       // Classes Settings
       {
         key: "classes-Configuration",
         label: "Configuration",
-        icon: "o_settings_suggest",
+        icon: "mdi-cog-sync-outline",
         items: [
           {
             label: "Class Rooms",
-            icon: "o_class",
+            icon: "mdi-google-classroom",
             to: "/class-rooms",
             permissions: [Permissions.ClassRoomsRead]
           },
           {
             label: "Class Sessions",
-            icon: "o_date_range",
+            icon: "mdi-calendar-range",
             to: "/sessions",
             permissions: [Permissions.ClassSessionsRead]
           },
           {
             label: "Class Categories",
-            icon: "o_category",
+            icon: "mdi-shape-outline",
             to: "/class-categories",
             permissions: [Permissions.ClassCategoriesRead]
           },
           {
             label: "Billing Cycles",
-            icon: "o_autorenew",
+            icon: "mdi-autorenew",
             to: "/billing-cycles",
             permissions: [Permissions.BillingCyclesRead]
           }
@@ -1028,18 +1028,18 @@ const sections = [
   {
     key: "staff",
     label: "Staffs",
-    icon: "o_badge",
+    icon: "mdi-badge-account-horizontal-outline",
     items: [
-      { label: "Staffs", icon: "o_assignment_ind", to: "/users", permissions: [Permissions.UsersRead] }
+      { label: "Staffs", icon: "mdi-clipboard-account-outline", to: "/users", permissions: [Permissions.UsersRead] }
     ]
   },
   {
     key: "access-management",
     label: "Access Management",
-    icon: "o_lock",
+    icon: "mdi-lock-outline",
     items: [
       // { label: "Permission Groups", icon: "o_workspaces", to: "/permission-groups", permissions: [Permissions.GroupsManage] },
-      { label: "Roles", icon: "o_admin_panel_settings", to: "/roles", permissions: [Permissions.RolesWrite] }
+      { label: "Roles", icon: "mdi-shield-account-variant-outline", to: "/roles", permissions: [Permissions.RolesWrite] }
       // { label: "User Groups", icon: "o_groups", to: "/user-groups", permissions: [Permissions.UsersGroupManagement] }
     ]
   },
@@ -1085,7 +1085,7 @@ const sections = [
 const settingsMenu = {
   key: "settings",
   label: "Settings",
-  icon: "o_settings",
+  icon: "mdi-cog-outline",
   items: [
     // {
     //   key: "settings-masters",
@@ -1181,25 +1181,25 @@ const settingsMenu = {
     // },
     {
       label: "Policies",
-      icon: "o_policy",
+      icon: "mdi-shield-account-outline",
       to: "/policies",
       permissions: [Permissions.PoliciesRead]
     },
     {
       label: "My Account",
-      icon: "o_manage_accounts",
+      icon: "mdi-account-cog-outline",
       to: "/account",
       permissions: null
     },
     {
       label: "Profile",
-      icon: "o_person",
+      icon: "mdi-account-outline",
       to: { name: "profile" },
       permissions: null
     },
     {
       label: "Change Password",
-      icon: "o_lock",
+      icon: "mdi-lock-outline",
       to: { name: "change_password" },
       permissions: null
     }
@@ -1260,15 +1260,63 @@ const visibleSections = computed(() =>
 
 // Per-group collapse state, persisted to LocalStorage so the user's expand/collapse choices survive a
 // page refresh. The stored object holds only the collapsed groups ({ [sectionKey]: true }).
+// const STORAGE_KEY = "appMenuCollapsed";
+// const collapsed = reactive(LocalStorage.getItem(STORAGE_KEY) || {});
+// const isOpen = (section) => collapsed[section.key] !== true;
+// const setOpen = (key, open) => {
+//   if (open) {
+//     delete collapsed[key];
+//   } else {
+//     collapsed[key] = true;
+//   }
+//   LocalStorage.set(STORAGE_KEY, { ...collapsed });
+// };
+
+// Per-group collapse state
 const STORAGE_KEY = "appMenuCollapsed";
-const collapsed = reactive(LocalStorage.getItem(STORAGE_KEY) || {});
+
+const createDefaultCollapsedState = () => {
+  const state = {};
+
+  const collectKeys = (items) => {
+    items.forEach((item) => {
+      if (item.key) {
+        state[item.key] = true;
+      }
+
+      if (item.items?.length) {
+        collectKeys(item.items);
+      }
+    });
+  };
+
+  collectKeys(sections);
+
+  // Settings is maintained separately from the main sections
+  if (settingsMenu?.key) {
+    state[settingsMenu.key] = true;
+  }
+
+  collectKeys(settingsMenu?.items || []);
+
+  return state;
+};
+
+const storedCollapsed = LocalStorage.getItem(STORAGE_KEY);
+
+const collapsed = reactive(
+  storedCollapsed ?? createDefaultCollapsedState()
+);
+
 const isOpen = (section) => collapsed[section.key] !== true;
+
 const setOpen = (key, open) => {
   if (open) {
     delete collapsed[key];
   } else {
     collapsed[key] = true;
   }
+
   LocalStorage.set(STORAGE_KEY, { ...collapsed });
 };
 </script>
@@ -1775,4 +1823,21 @@ $expand-icon-color: #767586;
   padding-left: 0 !important;
 }
 
+.app-menu-wrapper {
+  :deep(.q-item) {
+    &:hover {
+      background-color: #f1f2ff !important;
+      border-radius: 12px !important;
+    }
+
+    // Remove Quasar default hover overlay
+    .q-focus-helper {
+      background: transparent !important;
+    }
+
+    &:hover .q-focus-helper {
+      background: transparent !important;
+    }
+  }
+}
 </style>
