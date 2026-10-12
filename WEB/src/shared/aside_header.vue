@@ -1,7 +1,7 @@
 <template>
   <div class="aside-header">
     <!-- Product -->
-    <div class="brand-section" :class="menuCollapsed ? 'pa-10' : 'pa-20'">
+    <div class="brand-section cursor-pointer" :class="menuCollapsed ? 'pa-10' : 'pa-20'" @click="$router.push('/dashboard')">
       <div class="brand-logo">
         <span class="material-symbols-outlined fs-26" style="font-variation-settings: 'FILL' 1;">school</span>
       </div>

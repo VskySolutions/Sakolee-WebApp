@@ -9,8 +9,8 @@
       </q-avatar>
       <div class="column q-gutter-sm">
         <div class="row q-gutter-sm">
-          <q-btn outline no-caps color="primary" icon="o_upload" :label="buttonLabel" :disable="disable" @click="pick" />
-          <q-btn v-if="modelValue" flat no-caps color="negative" icon="o_delete" label="Remove" :disable="disable" @click="remove" />
+          <q-btn outline no-caps color="primary" icon="o_upload" class="br-12" :label="buttonLabel" :disable="disable" @click="pick" />
+          <q-btn v-if="modelValue" flat no-caps color="negative" icon="o_delete" class="br-12" label="Remove" :disable="disable" @click="remove" />
         </div>
         <div v-if="hintText" class="app-image-upload__hint">{{ hintText }}</div>
         <div v-if="error" class="app-image-upload__error">{{ error }}</div>

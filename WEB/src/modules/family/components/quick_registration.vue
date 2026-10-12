@@ -45,13 +45,13 @@
             <app-select v-model="form.heardAbout" label="How Did You Hear About Us?" :options="hearAboutUsOptions" />
           </div>
           <div class="col-12 col-md-6">
-            <app-text-field v-model="form.referralName" label="Referral Name" placeholder="Friend or student name (optional)" :rules="[nameOnlyRule]" />
+            <app-text-field v-model="form.referralName" label="Referral Name" placeholder="Friend or student name (optional)" :rules="[nameOnlyRule]" @keypress="(e) => { if (!/^[A-Za-z\s]$/.test(e.key)) e.preventDefault(); }" />
           </div>
           <div class="col-12 col-md-6">
             <app-select v-model="form.studioLocationId" label="Studio Location" required :options="locationOptions" :rules="[required]" />
           </div>
           <div class="col-12 col-md-6">
-            <app-text-field v-model="form.familyName" label="Family Name" required placeholder="e.g. Miller Family" :rules="[required,nameOnlyRule]" />
+            <app-text-field v-model="form.familyName" label="Family Name" required placeholder="e.g. Miller Family" :rules="[required,nameOnlyRule]" @keypress="(e) => { if (!/^[A-Za-z\s]$/.test(e.key)) e.preventDefault(); }" />
           </div>
 
           <div class="col-12 col-md-6">
@@ -77,12 +77,12 @@
               <app-text-field
                 v-model="contact.model.firstName" label="First Name" placeholder="First Name"
                 :required="contact.required" :rules="contact.required ? [required, nameOnlyRule] : [nameOnlyRule]"
+                @keypress="(e) => { if (!/^[A-Za-z\s]$/.test(e.key)) e.preventDefault(); }"
               />
             </div>
             <div class="col-12 col-md-4">
               <app-text-field
-                v-model="contact.model.lastName" label="Last Name" placeholder="Last Name"
-                :required="contact.required" :rules="contact.required ? [required, nameOnlyRule] : [nameOnlyRule]"
+                v-model="contact.model.lastName" label="Last Name" placeholder="Last Name" :required="contact.required" :rules="contact.required ? [required, nameOnlyRule] : [nameOnlyRule]" @keypress="(e) => { if (!/^[A-Za-z\s]$/.test(e.key)) e.preventDefault(); }"
               />
             </div>
             <div class="col-12 col-md-4">
@@ -113,17 +113,17 @@
         <app-address-fields v-model="form.address" required />
 
         <q-separator class="q-my-md" />
-        <div class="step-subtitle-inline">&bull; Emergency Contact &amp; Health Insurance</div>
+        <div class="step-subtitle-inline">&bull; Emergency Contact </div>
         <div class="row q-col-gutter-md">
           <div class="col-12 col-md-6">
-            <app-text-field v-model="form.emergencyContactName" label="Emergency Contact Person" required placeholder="Full name &amp; relationship" :rules="[required, nameOnlyRule]" />
+            <app-text-field v-model="form.emergencyContactName" label="Emergency Contact Person" required placeholder="Full name &amp; relationship" :rules="[required, nameOnlyRule]" @keypress="(e) => { if (!/^[A-Za-z\s]$/.test(e.key)) e.preventDefault(); }" />
           </div>
           <div class="col-12 col-md-6">
             <app-phone-input v-model="form.emergencyPhone" v-model:country="form.emergencyPhoneCountry" label="Emergency Phone" required />
           </div>
-          <div class="col-12">
+          <!-- <div class="col-12">
             <app-text-field v-model="form.insuranceCarrier" label="Health Insurance Carrier / Policy #" placeholder="e.g. BlueCross BlueShield #9823471" />
-          </div>
+          </div> Title :&amp; Health Insurance-->
         </div>
       </q-form>
 
@@ -139,20 +139,20 @@
           </div>
           <div class="row q-col-gutter-md">
             <div class="col-12 col-md-4">
-              <app-text-field v-model="student.firstName" label="First Name" required placeholder="Student First Name" :rules="[required,nameOnlyRule]" />
+              <app-text-field v-model="student.firstName" label="First Name" required placeholder="Student First Name" :rules="[required,nameOnlyRule]" @keypress="(e) => { if (!/^[A-Za-z\s]$/.test(e.key)) e.preventDefault(); }" />
             </div>
             <div class="col-12 col-md-4">
-              <app-text-field v-model="student.lastName" label="Last Name" required placeholder="Student Last Name" :rules="[required,nameOnlyRule]" />
+              <app-text-field v-model="student.lastName" label="Last Name" required placeholder="Student Last Name" :rules="[required,nameOnlyRule]" @keypress="(e) => { if (!/^[A-Za-z\s]$/.test(e.key)) e.preventDefault(); }" />
             </div>
             <div class="col-12 col-md-4">
               <app-text-field
-                v-model="student.email" label="Student Email" type="email" required placeholder="student@example.com"
-                :rules="[required, emailRule]"
+                v-model="student.email" label="Student Email" type="email" placeholder="student@example.com"
+                :rules="[optionalEmail]"
                 hint="A separate login account is created for the student with this email."
               />
             </div>
             <div class="col-12 col-md-4">
-              <app-date-field v-model="student.birthDate" label="Birth Date" required :rules="[required,birthDateRule]" />
+              <app-date-field v-model="student.birthDate" label="Birth Date" required :rules="[required,birthDateRule] " />
             </div>
             <div class="col-12 col-md-4">
               <app-select v-model="student.gender" label="Gender" :options="GENDER_OPTIONS" />
@@ -190,7 +190,7 @@
               <div class="text-body2 text-weight-medium">{{ studentDisplayName(student) || `Student #${index + 1}` }}</div>
             </div>
             <div class="col-12 col-md-6">
-              <app-select v-model="student.classIds" label="Choose Classes" :options="classOptions" multiple />
+              <app-select v-model="student.classIds" label="Choose Classes" :options="getFilteredClassesForStudent(student)" multiple />
             </div>
           </div>
           <div class="row q-col-gutter-md">
@@ -248,15 +248,15 @@
 
       <q-separator class="q-my-md" />
       <div class="row items-center justify-between">
-        <q-btn v-if="currentStep > 1" flat no-caps color="grey-8" icon="o_arrow_back" class="close-btn br-12" label="Back" @click="prevStep" />
+        <q-btn v-if="currentStep > 1" outline no-caps color="grey-8" icon="o_arrow_back" label="Back" @click="prevStep" />
         <div v-else />
         <div class="row q-gutter-sm">
-          <q-btn flat no-caps color="grey-8" label="Cancel" class="close-btn br-12" :to="{ name: 'families' }" />
+          <q-btn flat no-caps color="grey-8" label="Cancel" :to="{ name: 'families' }" />
           <q-btn
             unelevated no-caps color="primary" :loading="saving"
             :label="currentStep === STEPS.length ? 'Register Family' : 'Continue'"
             :icon-right="currentStep === STEPS.length ? undefined : 'o_arrow_forward'"
-            class="save-btn br-12" @click="nextStep"
+            @click="nextStep"
           />
         </div>
       </div>
@@ -306,29 +306,13 @@ import AppFieldLabel from "components/common/AppFieldLabel.vue";
 
 import { useNotify } from "composables/useNotify";
 import { classApi, locationApi, familyApi, studentApi, studentGradeLevelApi, familyStatusApi, familyRelationApi, ePaymentScheduleApi, membershipTypeApi, getApiErrorMessage } from "services/api";
-import {
-  blankQuickRegistrationForm,
-  blankStudent,
-  toCreateFamilyRequest,
-  toCreateStudentRequest,
-  RELATION_OPTIONS,
-  GENDER_OPTIONS,
-  PAYMENT_METHOD_OPTIONS
-} from "composables/quickRegistrationForm";
+import { blankQuickRegistrationForm, blankStudent, toCreateFamilyRequest, toCreateStudentRequest, RELATION_OPTIONS, GENDER_OPTIONS, PAYMENT_METHOD_OPTIONS } from "composables/quickRegistrationForm";
 import { useTShirtSizeOptions } from "composables/useTShirtSizeOptions";
 import { useHearAboutUsOptions } from "composables/useHearAboutUsOptions";
 
 // Grade level options state
-// Grade level options state
-
 const gradeLevels = ref([]);
-const gradeLevelOptions = computed(() =>
-  (gradeLevels.value || [])
-    .filter((g) => g.active ?? g.Active ?? true).map((g) => ({
-      label: g.name || g.gradeName || g.Name,
-      value: g.id || g.gradeLevelId || g.Id
-    }))
-);
+const gradeLevelOptions = computed(() => (gradeLevels.value || []).filter((g) => g.active ?? g.Active ?? true).map((g) => ({ label: g.name || g.gradeName || g.Name, value: g.id || g.gradeLevelId || g.Id })));
 
 const loadGradeLevels = async () => {
   try {
@@ -341,13 +325,7 @@ const loadGradeLevels = async () => {
 
 // Family relation options state
 const familyRelations = ref([]);
-const relationOptions = computed(() =>
-  (familyRelations.value || [])
-    .filter((fr) => fr.active ?? fr.Active ?? true).map((fr) => ({
-      label: fr.name || fr.relationName || fr.Name,
-      value: fr.id || fr.familyRelationId || fr.Id
-    }))
-);
+const relationOptions = computed(() => (familyRelations.value || []).filter((fr) => fr.active ?? fr.Active ?? true).map((fr) => ({ label: fr.name || fr.relationName || fr.Name, value: fr.id || fr.familyRelationId || fr.Id })));
 
 const loadFamilyRelations = async () => {
   try {
@@ -360,13 +338,7 @@ const loadFamilyRelations = async () => {
 
 // E-Payment Schedule options state
 const ePaymentSchedules = ref([]);
-const ePaymentScheduleOptions = computed(() =>
-  (ePaymentSchedules.value || [])
-    .filter((eps) => eps.active ?? eps.Active ?? true).map((eps) => ({
-      label: eps.name || eps.scheduleName || eps.Name,
-      value: eps.id || eps.ePaymentScheduleId || eps.Id
-    }))
-);
+const ePaymentScheduleOptions = computed(() => (ePaymentSchedules.value || []).filter((eps) => eps.active ?? eps.Active ?? true).map((eps) => ({ label: eps.name || eps.scheduleName || eps.Name, value: eps.id || eps.ePaymentScheduleId || eps.Id })));
 
 const loadEPaymentSchedules = async () => {
   try {
@@ -379,13 +351,7 @@ const loadEPaymentSchedules = async () => {
 
 // Membership Type options state
 const membershipTypes = ref([]);
-const membershipTypeOptions = computed(() =>
-  (membershipTypes.value || [])
-    .filter((mt) => mt.active ?? mt.Active ?? true).map((mt) => ({
-      label: mt.name || mt.membershipName || mt.Name,
-      value: mt.id || mt.membershipTypeId || mt.Id
-    }))
-);
+const membershipTypeOptions = computed(() => (membershipTypes.value || []).filter((mt) => mt.active ?? mt.Active ?? true).map((mt) => ({ label: mt.name || mt.membershipName || mt.Name, value: mt.id || mt.membershipTypeId || mt.Id })));
 
 const loadMembershipTypes = async () => {
   try {
@@ -403,13 +369,7 @@ const router = useRouter();
 
 // Family status options state
 const familyStatuses = ref([]);
-const familyStatusOptions = computed(() =>
-  (familyStatuses.value || [])
-    .filter((fs) => fs.active ?? fs.Active ?? true).map((fs) => ({
-      label: fs.name || fs.statusName || fs.Name,
-      value: fs.id || fs.familyStatusId || fs.Id
-    }))
-);
+const familyStatusOptions = computed(() => (familyStatuses.value || []).filter((fs) => fs.active ?? fs.Active ?? true).map((fs) => ({ label: fs.name || fs.statusName || fs.Name, value: fs.id || fs.familyStatusId || fs.Id })));
 
 const loadFamilyStatuses = async () => {
   try {
@@ -451,12 +411,8 @@ const prevStep = () => {
 const saving = ref(false);
 const form = reactive(blankQuickRegistrationForm());
 
-// The prototype repeats the same five fields for a primary and a second contact; both now save for
-// real (FamiliesController.Create) — only the first is mandatory.
-const contactSlots = computed(() => [
-  { key: "primary", heading: "Contact #1 (Primary)", model: form.primaryContact, required: true },
-  { key: "secondary", heading: "Contact #2 (Secondary / Optional)", model: form.secondaryContact, required: false }
-]);
+// The prototype repeats the same five fields for a primary and a second contact; both now save for real (FamiliesController.Create) — only the first is mandatory.
+const contactSlots = computed(() => [{ key: "primary", heading: "Contact #1 (Primary)", model: form.primaryContact, required: true }, { key: "secondary", heading: "Contact #2 (Secondary / Optional)", model: form.secondaryContact, required: false }]);
 
 // Step 4 — one or more students of the family being registered; Step 5 picks each one's class.
 const addStudent = () => { form.students.push(blankStudent()); };
@@ -465,57 +421,14 @@ const studentDisplayName = (student) => `${student.firstName || ""} ${student.la
 
 // Real classes and studio locations, fetched the same way Class's own Category dropdowns load — the
 // composable's CLASS_OPTIONS were prototype demo labels, not ids a real enrollment could use.
-// const classes = ref([]);
-// const classOptions = computed(() => (classes.value || [])
-//     .filter((c) => c.active ?? c.Active ?? true).map((c) => ({ label: c.className, value: c.classId })));
-// const locations = ref([]);
-// const locationOptions = computed(() => (locations.value || [])
-//     .filter((l) => l.active ?? l.Active ?? true).map((l) => ({ label: l.name, value: l.id })));
-// onMounted(async () => {
-//   try {
-//     const [classResult, locationResult] = await Promise.all([
-//       classApi.list({ limit: 100, active: true }),
-//       locationApi.list({ limit: 100, active: true }),
-//       loadGradeLevels(),
-//       loadFamilyStatuses(),
-//       loadFamilyRelations()
-//     ]);
-//     classes.value = classResult?.data || [];
-//     locations.value = locationResult?.data || [];
-//   } catch (err) {
-//     notify.error(getApiErrorMessage(err));
-//   }
-// });
-
 const classes = ref([]);
+const classOptions = computed(() => (classes.value || []).filter((c) => c.active ?? c.Active ?? true).map((c) => ({ label: c.className, value: c.classId })));
 const locations = ref([]);
-// classId -> { className, maxClassSize, maxWaitlistSize, enrolled, limit, remaining }
-const capacity = ref({});
-// classId -> error message. Drives the red background on Step 5.
-const capacityErrors = ref({});
-// Step 5 — class selection has to respect each class's capacity, so the options show how many seats remain and disable full classes. The API returns a per-class { classId, className, maxClassSize, maxWaitlistSize, enrolled, limit, remaining }.
-const classOptions = computed(() =>
-  (classes.value || []).filter((c) => c.active ?? c.Active ?? true)
-    .map((c) => {
-      const cap = capacity.value[c.classId];
-      if (!cap || cap.limit == null) {
-        return {
-          label: c.className,
-          value: c.classId,
-          disable: false
-        };
-      }
-      const full = cap.remaining <= 0;
-      return {
-        label: full
-          ? `${c.className} — FULL`
-          : `${c.className} (${cap.remaining} seat${cap.remaining === 1 ? "" : "s"} left)`,
-        value: c.classId,
-        disable: full
-      };
-    })
-);
 const locationOptions = computed(() => (locations.value || []).filter((l) => l.active ?? l.Active ?? true).map((l) => ({ label: l.name, value: l.id })));
+
+const capacity = ref({});
+const capacityErrors = ref({});
+
 const loadCapacity = async () => {
   try {
     const rows = (await classApi.capacity()) || [];
@@ -527,9 +440,7 @@ const loadCapacity = async () => {
 
 onMounted(async () => {
   try {
-    const [classResult, locationResult] = await Promise.all([classApi.list({ limit: 100, active: true }), locationApi.list({ limit: 100, active: true }), loadGradeLevels(), loadFamilyStatuses(), loadFamilyRelations(),
-      loadEPaymentSchedules(), // Add this
-      loadMembershipTypes(), loadCapacity()]);
+    const [classResult, locationResult] = await Promise.all([classApi.list({ limit: 100, active: true }), locationApi.list({ limit: 100, active: true }), loadGradeLevels(), loadFamilyStatuses(), loadFamilyRelations(), loadEPaymentSchedules(), loadMembershipTypes(), loadCapacity()]);
     classes.value = classResult?.data || [];
     locations.value = locationResult?.data || [];
   } catch (err) {
@@ -537,31 +448,6 @@ onMounted(async () => {
   }
 });
 
-// How many students in THIS form picked each class: { classId: count }
-const requestedSeats = computed(() => {
-  const map = {};
-  form.students.forEach((s) => (s.classIds || []).forEach((id) => { map[id] = (map[id] || 0) + 1; }));
-  return map;
-});
-
-// Fills capacityErrors and returns the list of messages (empty = OK).
-const validateCapacity = () => {
-  const errors = {};
-  for (const [classId, wanted] of Object.entries(requestedSeats.value)) {
-    const c = capacity.value[classId];
-    if (!c || c.limit == null) continue;            // class has no size limit
-    if (wanted > c.remaining) {
-      errors[classId] = `"${c.className}" allows only ${c.limit} students (class size ${c.maxClassSize} + waitlist ${c.maxWaitlistSize ?? 0}). ` + `${c.enrolled} already enrolled, ${c.remaining} seat(s) left, but you selected ${wanted}.`;
-    }
-  }
-  capacityErrors.value = errors;
-  return Object.values(errors);
-};
-
-// Re-check live while the user changes selections, but only once an error is showing.
-watch(requestedSeats, () => {
-  if (Object.keys(capacityErrors.value).length) validateCapacity();
-});
 const tempPwOpen = ref(false);
 const tempPasswords = ref([]);
 const copyPassword = async (password) => {
@@ -611,28 +497,142 @@ const birthDateRule = (val) => {
     age--;
   }
 
-  // Minimum 4 years check
-  if (age < 4) {
-    return "Student must be at least 4 years old";
-  }
+  // // Minimum 4 years check
+  // if (age < 4) {
+  //   return "Student must be at least 4 years old";
+  // }
 
   return true;
 };
 
+// Calculates age from birth date string, returns null if invalid or not provided
+// const calculateAge = (birthDateString) => {
+//   if (!birthDateString) return null;
+//   const birthDate = new Date(birthDateString);
+//   const today = new Date();
+//   if (isNaN(birthDate.getTime())) return null;
+
+//   let age = today.getFullYear() - birthDate.getFullYear();
+//   const m = today.getMonth() - birthDate.getMonth();
+//   if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+//     age--;
+//   }
+//   return age;
+// };
+
+// const getFilteredClassesForStudent = (student) => {
+//   const studentAge = calculateAge(student.birthDate);
+//   return (classes.value || [])
+//     .filter((c) => {
+//       if (!(c.active ?? c.Active ?? true)) return false;
+//         if (studentAge === null) return true;
+//       const min = c.minAge ?? c.minimumAge ?? c.MinAge ?? 0;
+//       const max = c.maxAge ?? c.maximumAge ?? c.MaxAge ?? 999;
+//       return studentAge >= min && studentAge <= max;
+//     })
+//     .map((c) => ({
+//       label: c.className || c.name || c.Name,
+//       value: c.classId || c.id || c.Id
+//     }));
+// };
+
+// Calculates age from birth date string, returns null if invalid or not provided
+const calculateAge = (birthDateString) => {
+  if (!birthDateString) return null;
+  const birthDate = new Date(birthDateString);
+  const today = new Date();
+  if (isNaN(birthDate.getTime())) return null;
+
+  let age = today.getFullYear() - birthDate.getFullYear();
+  const m = today.getMonth() - birthDate.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+    age--;
+  }
+  return age;
+};
+
+// Filters available classes based on the student's age range safely
+const getFilteredClassesForStudent = (studentOrForm) => {
+  if (!studentOrForm) return [];
+
+  const studentAge = calculateAge(studentOrForm.birthDate);
+
+  const filtered = (classes.value || []).filter((c) => {
+    // Check if the class is active
+    const isActive = c.active ?? c.Active ?? c.IsActive ?? true;
+    if (!isActive) return false;
+
+    // If student's age is not provided, show all active classes
+    if (studentAge === null) return true;
+
+    // Get min and max age (handle null/undefined fields safely from DB)
+    const rawMin = c.minAge ?? c.minimumAge ?? c.MinAge ?? c.min_age;
+    const rawMax = c.maxAge ?? c.maximumAge ?? c.MaxAge ?? c.max_age;
+
+    // If min/max are not set (NULL in DB), class is open for all ages
+    const min = (rawMin !== null && rawMin !== undefined && rawMin !== "") ? Number(rawMin) : 0;
+    const max = (rawMax !== null && rawMax !== undefined && rawMax !== "") ? Number(rawMax) : 999;
+
+    // Check if student's age falls within this class range
+    return studentAge >= min && studentAge <= max;
+  });
+
+  // Map to select options format
+  //   return filtered.map((c) => ({
+  //     label: c.className || c.name || c.Name || c.class_name || "Unnamed Class",
+  //     value: c.classId || c.id || c.Id || c.class_id
+  //   }));
+  // };
+
+  // Map to select options format including capacity rules
+  return filtered.map((c) => {
+    const classId = c.classId || c.id || c.Id || c.class_id;
+    const className = c.className || c.name || c.Name || c.class_name || "Unnamed Class";
+    const cap = capacity.value[classId];
+
+    if (!cap || cap.limit == null) {
+      return {
+        label: className,
+        value: classId,
+        disable: false
+      };
+    }
+
+    const full = cap.remaining <= 0;
+    return {
+      label: full
+        ? `${className} — FULL`
+        : `${className} (${cap.remaining} seat${cap.remaining === 1 ? "" : "s"} left)`,
+      value: classId,
+      disable: full
+    };
+  });
+};
+
 // Runs the real Family list search by name — the closest thing to a duplicate check without a
 // dedicated endpoint.
-const runDuplicateCheck = async () => {
+const runDuplicateCheck = async ({ silent = false }) => {
   const name = form.familyName.trim();
   if (!name) {
-    notify.warning("Enter a family name first.");
-    return;
+    // notify.warning("Enter a family name first.");
+    // return;
+    if (!silent) notify.warning("Enter a family name first.");
+    return { matchesCount: 0 };
   }
   try {
     const result = await familyApi.list({ search: name, limit: 5 });
     const matches = result?.data || [];
-    notify.info(matches.length ? `${matches.length} existing famil${matches.length === 1 ? "y matches" : "ies match"} "${name}".` : `No existing family matches "${name}".`);
+    if (!silent) {
+      notify.info(
+        matches.length
+          ? `${matches.length} existing famil${matches.length === 1 ? "y matches" : "ies match"} "${name}".`
+          : `No existing family matches "${name}".`
+      );
+    }
+    return { matchesCount: matches.length, matches };
   } catch (err) {
     notify.error(getApiErrorMessage(err));
+    return { matchesCount: 0, error: err };
   }
 };
 
@@ -644,10 +644,47 @@ const REQUIRED_PHONE_BY_STEP = {
   3: () => (form.emergencyPhone ? "" : "Emergency Phone is required.")
 };
 
+// How many students in THIS form picked each class: { classId: count }
+const requestedSeats = computed(() => {
+  const map = {};
+  form.students.forEach((s) => (s.classIds || []).forEach((id) => { map[id] = (map[id] || 0) + 1; }));
+  return map;
+});
+
+// Fills capacityErrors and returns the list of messages (empty = OK).
+
+const validateCapacity = () => {
+  const errors = {};
+  for (const [classId, wanted] of Object.entries(requestedSeats.value)) {
+    const c = capacity.value[classId];
+    if (!c || c.limit == null) continue;            // class has no size limit
+    // if (wanted > c.remaining) {
+    //   errors[classId] = `"${c.className}" allows only ${c.limit} students (class size ${c.maxClassSize} + waitlist ${c.maxWaitlistSize ?? 0}). ` + `${c.enrolled} already enrolled, ${c.remaining} seat(s) left, but you selected ${wanted}.`;
+    // }
+    if (wanted > c.remaining) { errors[classId] = `"${c.className}" allows only ${c.limit} students. ` + `${c.enrolled} already enrolled, ${c.remaining} seat(s) left, but you selected ${wanted}.`; }
+  }
+  capacityErrors.value = errors;
+  return Object.values(errors);
+};
+
 const nextStep = async () => {
   const isLastStep = currentStep.value === STEPS.length;
   const valid = await stepForms[currentStep.value]?.validate();
   if (!valid) return;
+
+  // Step 1: Automatic Duplicate Family Check on Continue
+  if (currentStep.value === 1) {
+    saving.value = true;
+    const { matchesCount } = await runDuplicateCheck({ silent: true });
+    saving.value = false;
+
+    if (matchesCount > 0) {
+      notify.warning(
+        `A family with the name "${form.familyName}" already exists. Please verify or use a different family name.`
+      );
+      return; // Stop user from going to Step 2
+    }
+  }
 
   const phoneError = REQUIRED_PHONE_BY_STEP[currentStep.value]?.();
   if (phoneError) {
@@ -661,6 +698,7 @@ const nextStep = async () => {
     notify.warning("Choose a class for at least one student.");
     return;
   }
+
   // Step 5 — capacity check (refresh counts first, someone else may have enrolled meanwhile)
   if (currentStep.value === 5) {
     await loadCapacity();
@@ -670,6 +708,7 @@ const nextStep = async () => {
       return;
     }
   }
+
   if (!isLastStep) {
     currentStep.value += 1;
     return;
@@ -688,7 +727,7 @@ const nextStep = async () => {
   const allEmails = [
     form.primaryContact.email,
     ...(form.secondaryContact.email ? [form.secondaryContact.email] : []),
-    ...form.students.map((s) => s.email)
+    ...form.students.map((s) => s.email).filter((e) => e && e.trim() !== "")
   ].map((e) => e.trim().toLowerCase());
   const firstDuplicate = allEmails.find((email, i) => allEmails.indexOf(email) !== i);
   if (firstDuplicate) {
@@ -733,11 +772,13 @@ const nextStep = async () => {
     // or, on any failure, none of them are; there's no partial-batch state to reconcile client-side.
     const payload = form.students.map((student) => toCreateStudentRequest(student, form, family.familyId));
     const result = await studentApi.createBulk(payload);
-    (result?.students || []).forEach((created, i) => {
-      if (created?.temporaryPassword) {
-        passwords.push({ label: studentDisplayName(form.students[i]) || "Student", email: form.students[i].email, password: created.temporaryPassword });
-      }
-    });
+
+    // --- STUDENT USER CREATION PASSWORD LOGIC COMMENTED OUT ---
+    // (result?.students || []).forEach((created, i) => {
+    //   if (created?.temporaryPassword) {
+    //     passwords.push({ label: studentDisplayName(form.students[i]) || "Student", email: form.students[i].email, password: created.temporaryPassword });
+    //   }
+    // });
 
     const studentWord = form.students.length === 1 ? "student" : `${form.students.length} students`;
     // Payment has no backing entity yet — flagged here rather than silently dropped.
@@ -771,6 +812,22 @@ const nextStep = async () => {
 const onTempPasswordsClosed = () => {
   router.push({ name: "students" });
 };
+
+// Watch each student's birthDate changes to clear their selected classes when DOB is modified
+watch(
+  () => form.students.map(s => s.birthDate),
+  (newDates, oldDates) => {
+    if (!oldDates) return;
+    newDates.forEach((newVal, index) => {
+      if (newVal !== oldDates[index]) {
+        if (form.students[index]) {
+          form.students[index].classIds = [];
+        }
+      }
+    });
+  },
+  { deep: true }
+);
 </script>
 
 <style scoped>

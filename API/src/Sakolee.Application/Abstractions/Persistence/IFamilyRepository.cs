@@ -23,6 +23,10 @@ public interface IFamilyRepository
         string? search, Guid? tenantId, Guid? familyStatusId, SortRequest sort, int page, int limit,
         CancellationToken cancellationToken = default);
 
+    /// <summary>Loads the named families (with their studio location) by id, scoped the way
+    /// <see cref="ListAsync"/> scopes. Feeds joins that already know which households they need.</summary>
+    Task<IReadOnlyList<Family>> ListByIdsAsync(IReadOnlyCollection<Guid> ids, Guid? tenantId, CancellationToken cancellationToken = default);
+
     Task AddAsync(Family family, CancellationToken cancellationToken = default);
 
     void Update(Family family);

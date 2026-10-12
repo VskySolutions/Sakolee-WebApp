@@ -100,6 +100,7 @@ public sealed class StudentsController : ControllerBase
     {
         // Creating the Person (and the login account below) needs a tenant to own them — there is no
         // request-level tenant picker here, unlike Person/User creation, because a student is always
+
         // created inside the caller's own active tenant.
         if (!_tenantContext.IsResolved)
         {
@@ -308,35 +309,39 @@ public sealed class StudentsController : ControllerBase
         await _students.AddAsync(student, cancellationToken);
         await _students.SetClassesAsync(student, RequestedClassIds(request.ClassIds, request.ClassId), cancellationToken);
 
+
+        //  STUDENT LOGIN ACCOUNT CREATION (COMMENTED OUT)
+
         // 3. The login account, promoted from the Person just created, carrying the Student role in the
         // active tenant — the same shape UsersController.Create builds for a promoted Person.
-        var temporaryPassword = _passwordHasher.GenerateTemporaryPassword();
-        var (hash, salt) = _passwordHasher.Hash(temporaryPassword);
-        var user = new User
-        {
-            Id = userId,
-            Email = email,
-            DisplayName = fullName,
-            PersonId = person.Id,
-            PasswordHash = hash,
-            Salt = salt,
-            IsActive = true,
-            MustChangePassword = true,
-            TokenVersion = 1,
-            CreatedDate = now,
-            // Kept (encrypted) only until the student signs in and sets their own password, so "Send
-            // Credentials" can resend it without minting a new one (same as UsersController.Create).
-            EncryptedTemporaryPassword = _credentialEncryption.Encrypt(temporaryPassword),
-        };
-        await _users.AddAsync(user, cancellationToken);
-        await _users.AddAssignmentAsync(new UserTenantRole
-        {
-            Id = Guid.NewGuid(),
-            UserId = userId,
-            TenantId = tenantId,
-            Role = RoleAssignment.MapLegacyRole(studentRole, null),
-            RoleId = studentRole.Id,
-        }, cancellationToken);
+        //var temporaryPassword = _passwordHasher.GenerateTemporaryPassword();
+        //var (hash, salt) = _passwordHasher.Hash(temporaryPassword);
+        //var user = new User
+        //{
+        //    Id = userId,
+        //    Email = email,
+        //    DisplayName = fullName,
+        //    PersonId = person.Id,
+        //    PasswordHash = hash,
+        //    Salt = salt,
+        //    IsActive = true,
+        //    MustChangePassword = true,
+        //    TokenVersion = 1,
+        //    CreatedDate = now,
+        //    // Kept (encrypted) only until the student signs in and sets their own password, so "Send
+        //    // Credentials" can resend it without minting a new one (same as UsersController.Create).
+        //    EncryptedTemporaryPassword = _credentialEncryption.Encrypt(temporaryPassword),
+        //};
+        //await _users.AddAsync(user, cancellationToken);
+        //await _users.AddAssignmentAsync(new UserTenantRole
+        //{
+        //    Id = Guid.NewGuid(),
+        //    UserId = userId,
+        //    TenantId = tenantId,
+        //    Role = RoleAssignment.MapLegacyRole(studentRole, null),
+        //    RoleId = studentRole.Id,
+        //}, cancellationToken);
+        string? temporaryPassword = null;
 
         return (student, person, userId, temporaryPassword);
     }
@@ -427,29 +432,55 @@ public sealed class StudentsController : ControllerBase
         var person = student.PersonId is { } personId ? await _persons.GetByIdAsync(personId, cancellationToken) : null;
 
         // Email lives on the login account first (it is what a student signs in with); the Person's copy
-        // and the Student's own contact fields follow it.
-        if (request.Email is { } newEmailRaw)
+        //// and the Student's own contact fields follow it.
+        //if (request.Email is { } newEmailRaw)
+        //{
+        //    var newEmail = newEmailRaw.Trim();
+        //    if (person?.UserId is { } linkedUserId)
+        //    {
+        //        var linkedUser = await _users.GetByIdAsync(linkedUserId, cancellationToken);
+        //        if (linkedUser is not null && !string.Equals(newEmail, linkedUser.Email, StringComparison.OrdinalIgnoreCase))
+        //        {
+        //            if (await _users.EmailExistsAsync(newEmail, cancellationToken))
+        //            {
+        //                return Conflict(ApiResponseFactory.Error(ApiErrorCodes.DuplicateIdentifier, "Email already in use.", newEmail));
+        //            }
+        //            linkedUser.Email = newEmail;
+        //            linkedUser.TokenVersion++; // email change invalidates sessions
+        //            _users.Update(linkedUser);
+        //        }
+        //    }
+        //    if (person is not null)
+        //    {
+        //        person.PrimaryEmail = newEmail;
+        //    }
+        //}
+        // Check if the request contains the Email property (even if it's null or empty string)
+        if (request.Email != null || request.Email == null) 
         {
-            var newEmail = newEmailRaw.Trim();
+            var newEmail = string.IsNullOrWhiteSpace(request.Email) ? null : request.Email.Trim();
+
             if (person?.UserId is { } linkedUserId)
             {
                 var linkedUser = await _users.GetByIdAsync(linkedUserId, cancellationToken);
                 if (linkedUser is not null && !string.Equals(newEmail, linkedUser.Email, StringComparison.OrdinalIgnoreCase))
                 {
-                    if (await _users.EmailExistsAsync(newEmail, cancellationToken))
+                    if (newEmail is not null && await _users.EmailExistsAsync(newEmail, cancellationToken))
                     {
                         return Conflict(ApiResponseFactory.Error(ApiErrorCodes.DuplicateIdentifier, "Email already in use.", newEmail));
                     }
-                    linkedUser.Email = newEmail;
-                    linkedUser.TokenVersion++; // email change invalidates sessions
+                    linkedUser.Email = newEmail; 
+                    linkedUser.TokenVersion++; 
                     _users.Update(linkedUser);
                 }
             }
+
             if (person is not null)
             {
-                person.PrimaryEmail = newEmail;
+                person.PrimaryEmail = newEmail; 
             }
         }
+
 
         if (person is not null)
         {
@@ -628,8 +659,7 @@ public sealed class StudentsController : ControllerBase
         return true;
     }
     /// <summary>Rejects the request when any class would exceed MaxClassSize + MaxWaitlistSize.</summary>
-    private async Task<IActionResult?> CheckClassCapacityAsync(
-        IReadOnlyDictionary<Guid, int> newSeatsByClass, CancellationToken cancellationToken)
+    private async Task<IActionResult?> CheckClassCapacityAsync(IReadOnlyDictionary<Guid, int> newSeatsByClass, CancellationToken cancellationToken)
     {
         var counts = await _students.CountByClassIdsAsync(newSeatsByClass.Keys, cancellationToken);
         foreach (var (classId, newSeats) in newSeatsByClass)
@@ -637,13 +667,15 @@ public sealed class StudentsController : ControllerBase
             var cls = await _classes.GetByIdAsync(classId, cancellationToken);
             // no limit set
             if (cls is null || cls.MaxClassSize is not { } max) continue;   
-            var waitlist = cls.MaxWaitlistSize ?? 0;
-            var limit = max + waitlist;
+           // var waitlist = cls.MaxWaitlistSize ?? 0;
+           // var limit = max + waitlist;
             var enrolled = counts.TryGetValue(classId, out var c) ? c : 0;
-            var remaining = Math.Max(0, limit - enrolled);
+            //var remaining = Math.Max(0, limit - enrolled);
+            var remaining = Math.Max(0, max - enrolled);
             if (newSeats > remaining)
             {
-                return BadRequest(ApiResponseFactory.Error(ApiErrorCodes.ValidationFailed, "Class is full.", $"Class \"{cls.ClassName}\" allows only {limit} students (class size {max} + waitlist {waitlist}). " + $"{enrolled} already enrolled, {remaining} seat(s) left, but {newSeats} requested."));
+                // return BadRequest(ApiResponseFactory.Error(ApiErrorCodes.ValidationFailed, "Class is full.", $"Class \"{cls.ClassName}\" allows only {limit} students (class size {max} + waitlist {waitlist}). " + $"{enrolled} already enrolled, {remaining} seat(s) left, but {newSeats} requested."));
+                return BadRequest(ApiResponseFactory.Error(ApiErrorCodes.ValidationFailed,"Class is full.", $"Class \"{cls.ClassName}\" allows only {max} students. " + $"{enrolled} already enrolled, {remaining} seat(s) left, but {newSeats} requested."));
             }
         }
         return null;

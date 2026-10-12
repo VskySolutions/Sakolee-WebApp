@@ -13,23 +13,23 @@
       <q-form v-if="!loading" ref="formRef" greedy>
         <!-- Enrollment only: just the classes. Every other field is still loaded and sent back unchanged. -->
         <div v-if="enrollmentOnly" class="row q-col-gutter-md">
-          <app-select v-model="form.classIds" label="Classes" :options="classOptions" multiple class="col-12" />
+          <app-select v-model="form.classIds" label="Classes" :options="getFilteredClassesForStudent(form)" multiple class="col-12 col-sm-6" />
         </div>
         <div v-else class="row q-col-gutter-md">
           <div class="col-12 text-subtitle2 text-grey-8">Identity</div>
-          <app-text-field v-model="form.firstName" label="First Name" required class="col-12 col-sm-6" :rules="[(v) => !!v || 'First name is required',nameOnlyRule]" />
-          <app-text-field v-model="form.lastName" label="Last Name" required class="col-12 col-sm-6" :rules="[(v) => !!v || 'Last name is required',nameOnlyRule]" />
-          <app-text-field v-model="form.familyName" label="Family Name" required class="col-12 col-sm-6" :rules="[(v) => !!v || 'Family name is required',nameOnlyRule]"/>
+          <app-text-field v-model="form.firstName" label="First Name" required class="col-12 col-sm-6" :rules="[(v) => !!v || 'First name is required',nameOnlyRule]" @keypress="(e) => { if (!/^[A-Za-z\s]$/.test(e.key)) e.preventDefault(); }" />
+          <app-text-field v-model="form.lastName" label="Last Name" required class="col-12 col-sm-6" :rules="[(v) => !!v || 'Last name is required',nameOnlyRule]" @keypress="(e) => { if (!/^[A-Za-z\s]$/.test(e.key)) e.preventDefault(); }"/>
+          <app-text-field v-model="form.familyName" label="Family Name" required class="col-12 col-sm-6" :rules="[(v) => !!v || 'Family name is required',nameOnlyRule]" @keypress="(e) => { if (!/^[A-Za-z\s]$/.test(e.key)) e.preventDefault(); }"/>
           <app-text-field v-model="form.studentNumber" label="Student Number" class="col-12 col-sm-6" />
           <app-select v-model="form.gender" label="Gender" :options="GENDER_OPTIONS" class="col-12 col-sm-6" />
           <app-date-field v-model="form.birthDate" label="Date of Birth" required class="col-12 col-sm-6"  :rules="[required,birthDateRule]"/>
-          <app-select v-model="form.classIds" label="Classes" :options="classOptions" multiple class="col-12 col-sm-6" />
+          <app-select v-model="form.classIds" label="Classes" :options="getFilteredClassesForStudent(form)" multiple class="col-12 col-sm-6" />
           <app-date-field v-model="form.admissionDate" label="Admission Date" class="col-12 col-sm-6" />
           <div class="col-12 col-sm-6 toggle-row-inline"><q-toggle v-model="form.allowTextMessaging" color="primary" /><span class="q-ml-sm">Allow text messaging</span></div>
           <app-text-field
-            v-model="form.email" label="Email" required class="col-12 col-sm-6"
+            v-model="form.email" label="Email" class="col-12 col-sm-6"
             :error="!!emailError" :error-message="emailError"
-            :rules="[(v) => !!v || 'Email is required',emailRule]"
+            :rules="[emailRule]"
             hint="This student's own login email."
           />
           <app-phone-input v-model="form.cellPhone" label="Cell Phone" class="col-12 col-sm-6" />
@@ -37,7 +37,7 @@
           <div class="col-12 text-subtitle2 text-grey-8 q-mt-sm">School</div>
           <app-text-field v-model="form.school" label="School" class="col-12 col-sm-6" />
           <!-- <app-text-field v-model="form.gradeLevel" label="Grade Level" class="col-12 col-sm-6" /> -->
-           <app-select v-model="form.gradeLevel" label="Grade Level" :options="gradeLevelOptions" class="col-12 col-sm-6" />
+          <app-select v-model="form.gradeLevel" label="Grade Level" :options="gradeLevelOptions" :emit-value="false" :map-options="false" class="col-12 col-sm-6" />
           <app-text-field v-model="form.transportation" label="Transportation" placeholder="e.g. School Bus" class="col-12 col-sm-6" />
           <app-select v-model="form.tShirtSize" label="T-Shirt Size" :options="tShirtSizeOptions" class="col-12 col-sm-6" />
 
@@ -58,8 +58,11 @@
 
           <div class="col-12 text-subtitle2 text-grey-8 q-mt-sm">Notes</div>
           <app-text-field v-model="form.skillNotes" label="Skill Notes" type="textarea" class="col-12" />
-          <app-text-field v-model="form.textOptIn" label="Text Opt-In" class="col-12 col-sm-6" />
-          <app-text-field v-model="form.massEmailOptOut" label="Mass Email Opt-Out" class="col-12 col-sm-6" />
+          <div class="col-12 col-sm-6 toggle-row-inline"><q-checkbox v-model="form.textOptIn" label="Text Opt-In" /></div>
+          <div class="col-12 col-sm-6 toggle-row-inline"><q-checkbox v-model="form.massEmailOptOut" label="Mass Email Opt-Out" /></div>
+
+          <!-- <app-text-field v-model="form.textOptIn" label="Text Opt-In" class="col-12 col-sm-6" />
+          <app-text-field v-model="form.massEmailOptOut" label="Mass Email Opt-Out" class="col-12 col-sm-6" /> -->
 
           <div class="col-12">
             <q-toggle v-model="form.active" label="Active" />
@@ -85,15 +88,18 @@ import AppTextField from "components/common/AppTextField.vue";
 import AppSelect from "components/common/AppSelect.vue";
 import AppDateField from "components/common/AppDateField.vue";
 
-// Grade level options state
+// Grade Level options mapping
 const gradeLevels = ref([]);
-const gradeLevelOptions = computed(() => gradeLevels.value.map((g) => ({ label: g.Name || g.gradeName || g.name, value: g.Id ||g.id || g.gradeLevelId })));
 
+const gradeLevelOptions = computed(() => gradeLevels.value.map((g) => g.name ?? g.Name ?? g.gradeName ?? g.GradeName ?? g.gradeLevelName ?? g.GradeLevelName).filter((name) => name !== null && name !== undefined && String(name).trim() !== "").map((name) => String(name).trim()));
 const loadGradeLevels = async () => {
   try {
     const res = await studentGradeLevelApi.list({ limit: 100 });
-    gradeLevels.value = res?.data || [];
+    // Handle the common API response formats.
+    const data = res?.data;
+    gradeLevels.value = Array.isArray(data) ? data : Array.isArray(data?.items) ? data.items : Array.isArray(data?.data) ? data.data : [];
   } catch (err) {
+    gradeLevels.value = [];
     notify.error(getApiErrorMessage(err));
   }
 };
@@ -119,16 +125,22 @@ const birthDateRule = (val) => {
   }
 
   // Minimum 4 years check
-  if (age < 4) {
-    return "Student must be at least 4 years old";
-  }
-
+  // if (age < 4) {
+  //   return "Student must be at least 4 years old";
+  // }
+  
   return true;
 };
 
+
 // Email validation rule
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const emailRule = (val) => EMAIL_RE.test(String(val || "")) || "Enter a valid email";
+//const emailRule = (val) => EMAIL_RE.test(String(val || "")) || "Enter a valid email";
+// Optional Email validation rule: validates only if a value is entered
+const emailRule = (val) => {
+  if (!val || String(val).trim() === "") return true;
+  return EMAIL_RE.test(String(val).trim()) || "Enter a valid email";
+};
 
 // For only-letter name fields
 const NAME_RE = /^[A-Za-z\s]+$/;
@@ -146,6 +158,53 @@ const nameOnlyRule = (val) => {
   return true;
 };
 
+// Calculates age from birth date string, returns null if invalid or not provided
+const calculateAge = (birthDateString) => {
+  if (!birthDateString) return null;
+  const birthDate = new Date(birthDateString);
+  const today = new Date();
+  if (isNaN(birthDate.getTime())) return null;
+
+  let age = today.getFullYear() - birthDate.getFullYear();
+  const m = today.getMonth() - birthDate.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+    age--;
+  }
+  return age;
+};
+
+// Filters available classes based on the student's age range safely
+const getFilteredClassesForStudent = (studentOrForm) => {
+  if (!studentOrForm) return [];
+
+  const studentAge = calculateAge(studentOrForm.birthDate);
+
+  const filtered = (classes.value || []).filter((c) => {
+    // Check if the class is active
+    const isActive = c.active ?? c.Active ?? c.IsActive ?? true;
+    if (!isActive) return false;
+
+    // If student's age is not provided, show all active classes
+    if (studentAge === null) return true;
+
+    // Get min and max age (handle null/undefined fields safely from DB)
+    const rawMin = c.minAge ?? c.minimumAge ?? c.MinAge ?? c.min_age;
+    const rawMax = c.maxAge ?? c.maximumAge ?? c.MaxAge ?? c.max_age;
+
+    // If min/max are not set (NULL in DB), class is open for all ages
+    const min = (rawMin !== null && rawMin !== undefined && rawMin !== "") ? Number(rawMin) : 0;
+    const max = (rawMax !== null && rawMax !== undefined && rawMax !== "") ? Number(rawMax) : 999;
+
+    // Check if student's age falls within this class range
+    return studentAge >= min && studentAge <= max;
+  });
+
+  // Map to select options format
+  return filtered.map((c) => ({
+    label: c.className || c.name || c.Name || c.class_name || "Unnamed Class",
+    value: c.classId || c.id || c.Id || c.class_id
+  }));
+};
 
 // // Family Status options state
 // const familyStatuses = ref([]);
@@ -216,20 +275,55 @@ const blankForm = () => ({
   allergiesNotes: "",
   specialNeeds: "",
   skillNotes: "",
-  textOptIn: "",
-  massEmailOptOut: "",
-  active: true
+ textOptIn: false,
+  massEmailOptOut: false,
+  active: true,
+  
 });
 const form = reactive(blankForm());
+
+// Flag to track whether the form is currently loading initial student data
+const isInitializing = ref(false);
+
+// Watch birthDate changes: clear classes ONLY when the user actively modifies DOB, not during initial load
+watch(() => form.birthDate, (newVal, oldVal) => {
+  if (isInitializing.value) return; // Ignore when data is being populated initially
+  if (newVal !== oldVal) {
+    form.classIds = [];
+  }
+});
+
 const studentName = computed(() => [form.firstName, form.lastName].filter(Boolean).join(" "));
 const { options: tShirtSizeOptions } = useTShirtSizeOptions(() => form.tShirtSize);
-
 // Active classes for the Class select. A student whose saved class has since been deactivated keeps
 // it as an option (labelled as such) rather than showing a raw id or silently losing it on save.
 const classes = ref([]);
 const loadedClassIds = ref([]);
+// const classOptions = computed(() => {
+//   const options = classes.value.map((c) => ({ label: c.className, value: c.classId }));
+//   for (const id of loadedClassIds.value.filter((id) => !options.some((o) => o.value === id))) {
+//     options.unshift({ label: "Current class (inactive)", value: id });
+//   }
+//   return options;
+// });
 const classOptions = computed(() => {
-  const options = classes.value.map((c) => ({ label: c.className, value: c.classId }));
+  const options = classes.value.map((c) => {
+    const cap = capacity.value[c.classId];
+    const alreadyEnrolled = loadedClassIds.value.includes(c.classId);
+    // No size limit, or the student is already in this class: never disable it
+    // (their own seat is already counted in "enrolled", and it must stay deselectable).
+    if (!cap || cap.limit == null || alreadyEnrolled) {
+      return { label: c.className, value: c.classId, disable: false };
+    }
+    const full = cap.remaining <= 0;
+    return {
+      label: full
+        ? `${c.className} — FULL`
+        : `${c.className} (${cap.remaining} seat${cap.remaining === 1 ? "" : "s"} left)`,
+      value: c.classId,
+      disable: full
+    };
+  });
   for (const id of loadedClassIds.value.filter((id) => !options.some((o) => o.value === id))) {
     options.unshift({ label: "Current class (inactive)", value: id });
   }
@@ -243,7 +337,16 @@ const loadClasses = async () => {
     notify.error(getApiErrorMessage(err));
   }
 };
-
+// classId -> { className, maxClassSize, enrolled, limit, remaining }
+const capacity = ref({});
+const loadCapacity = async () => {
+  try {
+    const rows = (await classApi.capacity()) || [];
+    capacity.value = Object.fromEntries(rows.map((r) => [r.classId, r]));
+  } catch (err) {
+    notify.error(getApiErrorMessage(err));
+  }
+};
 // Fields this dialog does not edit. StudentsController.Update writes every field it is sent, so a
 // missing one is saved as null — a missing familyId drops the student out of their family. They are
 // carried over from the loaded record and sent back unchanged.
@@ -261,8 +364,11 @@ const preserved = reactive(blankPreserved());
 // rows carry only the minimal FamilyStudentSummary shape (name, number, active, classIds), not enough
 // to populate a full edit form.
 watch(() => props.modelValue, async (isOpen) => {
-  if (!isOpen || !props.studentId) return;
-  // await loadGradeLevels();
+  if (!isOpen) return;
+  //if (!isOpen || !props.studentId) return;
+isInitializing.value = true;
+
+  //await loadGradeLevels();
   Object.assign(form, blankForm());
   Object.assign(preserved, blankPreserved());
   emailError.value = "";
@@ -278,7 +384,8 @@ watch(() => props.modelValue, async (isOpen) => {
     return;
   }
   try {
-    const [row] = await Promise.all([studentApi.get(props.studentId), loadClasses(), loadGradeLevels()]);
+    // const [row] = await Promise.all([studentApi.get(props.studentId), loadClasses(), loadGradeLevels()]);
+    const [row] = await Promise.all([studentApi.get(props.studentId), loadClasses(), loadGradeLevels(), loadCapacity()]);
     loadedClassIds.value = row.classIds?.length ? [...row.classIds] : row.classId ? [row.classId] : [];
     Object.assign(preserved, {
       familyId: row.familyId ?? null,
@@ -300,6 +407,7 @@ watch(() => props.modelValue, async (isOpen) => {
       gender: row.gender || "",
       allowTextMessaging: row.allowTextMessaging ?? true,
       email: row.email || "",
+ 
       cellPhone: row.cellPhone || "",
       school: row.school || "",
       gradeLevel: row.gradeLevel || "",
@@ -317,8 +425,9 @@ watch(() => props.modelValue, async (isOpen) => {
       allergiesNotes: row.allergiesNotes || "",
       specialNeeds: row.specialNeeds || "",
       skillNotes: row.skillNotes || "",
-      textOptIn: row.textOptIn || "",
-      massEmailOptOut: row.massEmailOptOut || "",
+      textOptIn: Boolean(row.textOptIn),
+      massEmailOptOut: Boolean(row.massEmailOptOut),
+      
       active: row.active
     });
   } catch (err) {
@@ -326,6 +435,9 @@ watch(() => props.modelValue, async (isOpen) => {
     open.value = false;
   } finally {
     loading.value = false;
+    setTimeout(() => {
+      isInitializing.value = false;
+    }, 100);
   }
 });
 
@@ -347,7 +459,8 @@ const save = async () => {
     birthDate: form.birthDate || null,
     gender: form.gender || null,
     allowTextMessaging: form.allowTextMessaging,
-    email: form.email || null,
+    //email: form.email || null,
+    email: form.email && form.email.trim() !== "" ? form.email.trim() : null,
     cellPhone: form.cellPhone || null,
     school: form.school || null,
     gradeLevel: form.gradeLevel || null,
@@ -397,6 +510,7 @@ const save = async () => {
     } else if (isClassFullError(message)) {
       // Capacity problem: the user can fix it by picking another class, so show a yellow warning, not a red error.
       notify.warning(message);
+      await loadCapacity();   // refresh seats so the dropdown shows the new FULL state
     } else {
       notify.error(message);
     }

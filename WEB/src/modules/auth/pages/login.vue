@@ -45,10 +45,10 @@
 
       <div class="row items-center justify-between q-mt-sm q-mb-lg">
         <q-checkbox v-model="model.isRememberMeChecked" dense label="Remember me" color="primary" />
-        <q-btn flat dense no-caps color="primary" label="Forgot password?" :to="{ name: 'forgot_password' }" />
+        <q-btn flat dense no-caps color="primary" label="Forgot password?" class="br-12" :to="{ name: 'forgot_password' }" />
       </div>
 
-      <q-btn label="Login" type="submit" color="primary" unelevated no-caps size="md" class="full-width" :loading="loading" />
+      <q-btn label="Login" type="submit" color="primary" unelevated no-caps size="md" class="full-width br-12" :loading="loading" />
     </q-form>
   </q-card>
 </template>

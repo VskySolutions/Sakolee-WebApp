@@ -42,8 +42,8 @@
 
     <q-separator />
     <q-card-actions align="right" class="q-pa-md">
-      <q-btn v-if="cancelTo" flat color="grey-8" label="Cancel" type="button" no-caps :to="cancelTo" />
-      <q-btn unelevated color="primary" :label="submitLabel" type="submit" no-caps :loading="loading" />
+      <q-btn v-if="cancelTo" flat color="grey-8" label="Cancel" type="button" class="close-btn br-12" no-caps :to="cancelTo" />
+      <q-btn unelevated color="primary" :label="submitLabel" type="submit" class="save-btn br-12" no-caps :loading="loading" />
     </q-card-actions>
   </q-form>
 </template>

@@ -689,6 +689,7 @@ const loadClass = async () => {
 
   try {
     classData.value = await classApi.get(props.recordId);
+    console.log("Class Data:", classData.value);
   } catch (err) {
     classData.value = null;
     isOpen.value = false;

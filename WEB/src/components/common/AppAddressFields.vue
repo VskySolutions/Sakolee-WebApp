@@ -53,12 +53,29 @@
       :error="!!errorFor('addressLine2')" :error-message="errorFor('addressLine2')"
     />
 
-    <app-text-field
+    <!-- <app-text-field
       v-model="address.postalCode" :label="label('Zip Code')" :required="required" :class="col('postalCode')"
       :dense="dense" :disable="disable" :readonly="readonly"
       :rules="rulesFor('Zip Code is required')"
       :error="!!postalMessage" :error-message="postalMessage" @blur="validatePostal"
-    />
+      
+    /> -->
+
+    <app-text-field
+  v-model="address.postalCode" 
+  :label="label('Zip Code')" 
+  :required="required" 
+  :class="col('postalCode')"
+  :dense="dense" 
+  :disable="disable" 
+  :readonly="readonly"
+  :maxlength="maxPostalLength"
+  @keypress="handlePostalKeypress"
+  :rules="rulesFor('Zip Code is required')"
+  :error="!!postalMessage" 
+  :error-message="postalMessage" 
+  @blur="validatePostal"
+/>
 
     <!-- Who the post is addressed to. -->
     <template v-if="contact">
@@ -290,6 +307,68 @@ const validate = () => {
 };
 
 defineExpose({ validate });
+
+
+/**
+ * Comprehensive mapping of maximum character length limits for postal/ZIP codes 
+ * across major countries worldwide. Unlisted countries fall back to a safe default.
+ */
+const COUNTRY_MAX_POSTAL_LENGTHS = {
+  'IN': 6,  // India (Numeric)
+  'US': 5,  // United States (Numeric)
+  'CA': 6,  // Canada (Alphanumeric)
+  'GB': 8,  // United Kingdom (Alphanumeric)
+  'AU': 4,  // Australia (Numeric)
+  'DE': 5,  // Germany (Numeric)
+  'FR': 5,  // France (Numeric)
+  'JP': 7,  // Japan (Numeric)
+  'CN': 6,  // China (Numeric)
+  'SG': 6,  // Singapore (Numeric)
+  'ZA': 4,  // South Africa (Numeric)
+  'CH': 4,  // Switzerland (Numeric)
+  'IE': 7   // Ireland - Eircode (Alphanumeric)
+};
+
+/**
+ * List of countries that utilize alphanumeric postal codes (combining numbers and letters).
+ */
+const ALPHANUMERIC_POSTAL_COUNTRIES = ['CA', 'GB', 'IE', 'NL', 'MT', 'BM', 'AR', 'BN'];
+
+/**
+ * Dynamically computes the maximum allowed character length for the postal code field 
+ * based on the currently selected country code. Defaults to 10 for international flexibility.
+ */
+const maxPostalLength = computed(() => {
+  const countryCode = address.value.countryCode;
+  if (!countryCode) return 10;
+  return COUNTRY_MAX_POSTAL_LENGTHS[countryCode.toUpperCase()] || 10;
+});
+
+/**
+ * Restricts keypress inputs dynamically depending on the selected country's postal format.
+ * Blocks non-numeric characters for purely numeric regions while permitting alphanumeric input for others.
+ * 
+ * @param {KeyboardEvent} event - The native keyboard event triggered during typing.
+ */
+const handlePostalKeypress = (event) => {
+  const countryCode = address.value.countryCode ? address.value.countryCode.toUpperCase() : '';
+  
+  // Allow navigation and control keys (Backspace, Tab, Delete, Arrow keys, etc.)
+  const controlKeys = ['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'Tab', 'Home', 'End'];
+  if (controlKeys.includes(event.key)) {
+    return;
+  }
+
+  // Permit alphanumeric input for specified countries that use letters and numbers
+  if (ALPHANUMERIC_POSTAL_COUNTRIES.includes(countryCode)) {
+    return;
+  }
+
+  // Enforce strict numbers-only keypress restriction for all standard numeric postal regions
+  if (!/[0-9]/.test(event.key)) {
+    event.preventDefault();
+  }
+};
 </script>
 
 <style scoped>

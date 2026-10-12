@@ -36,6 +36,8 @@
           >
             <q-date
               v-model="isoModel"
+              :options="options"
+              :default-year-month="defaultYearMonth"
               mask="YYYY-MM-DD"
               today-btn
               minimal
@@ -77,7 +79,11 @@ const props = defineProps({
   hint: { type: String, default: "" },
   dense: { type: Boolean, default: true },
   // Browser autofill is disabled by default across the app; pass "on" to opt back in.
-  autocomplete: { type: String, default: "off" }
+  autocomplete: { type: String, default: "off" },
+  // Optional q-date `options` (function receiving "YYYY/MM/DD" → true if the day is selectable)
+  options: { type: [Function, Array], default: undefined },
+  // in defineProps, after `options`
+  defaultYearMonth: { type: String, default: undefined }
 });
 
 const emit = defineEmits(["update:modelValue"]);

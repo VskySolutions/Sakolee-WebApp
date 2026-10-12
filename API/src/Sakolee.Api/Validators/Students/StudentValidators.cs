@@ -17,7 +17,7 @@ public sealed class CreateStudentRequestValidator : AbstractValidator<CreateStud
         RuleFor(x => x.School).MaximumLength(100).When(x => x.School is not null);
         RuleFor(x => x.GradeLevel).MaximumLength(50).When(x => x.GradeLevel is not null);
         RuleFor(x => x.Transportation).MaximumLength(100).When(x => x.Transportation is not null);
-        RuleFor(x => x.TShirtSize).MaximumLength(10).When(x => x.TShirtSize is not null);
+        RuleFor(x => x.TShirtSize).MaximumLength(50).When(x => x.TShirtSize is not null);
         RuleFor(x => x.SpecialNeeds).MaximumLength(50).When(x => x.SpecialNeeds is not null);
         RuleFor(x => x.PrimaryDoctor).MaximumLength(50).When(x => x.PrimaryDoctor is not null);
         RuleFor(x => x.FeeNote).MaximumLength(300).When(x => x.FeeNote is not null);
@@ -60,7 +60,7 @@ public sealed class UpdateStudentRequestValidator : AbstractValidator<UpdateStud
         RuleFor(x => x.School).MaximumLength(100).When(x => x.School is not null);
         RuleFor(x => x.GradeLevel).MaximumLength(50).When(x => x.GradeLevel is not null);
         RuleFor(x => x.Transportation).MaximumLength(100).When(x => x.Transportation is not null);
-        RuleFor(x => x.TShirtSize).MaximumLength(10).When(x => x.TShirtSize is not null);
+        RuleFor(x => x.TShirtSize).MaximumLength(50).When(x => x.TShirtSize is not null);
         RuleFor(x => x.SpecialNeeds).MaximumLength(50).When(x => x.SpecialNeeds is not null);
         RuleFor(x => x.PrimaryDoctor).MaximumLength(50).When(x => x.PrimaryDoctor is not null);
         RuleFor(x => x.FeeNote).MaximumLength(300).When(x => x.FeeNote is not null);

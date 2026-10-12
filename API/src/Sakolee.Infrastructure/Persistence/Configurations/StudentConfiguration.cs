@@ -41,7 +41,7 @@ internal sealed class StudentConfiguration : IEntityTypeConfiguration<Student>
         builder.Property(s => s.School).HasMaxLength(100);
         builder.Property(s => s.GradeLevel).HasMaxLength(50);
         builder.Property(s => s.Transportation).HasMaxLength(100);
-        builder.Property(s => s.TShirtSize).HasMaxLength(10);
+        builder.Property(s => s.TShirtSize).HasMaxLength(50);
         builder.Property(s => s.SpecialNeeds).HasMaxLength(50);
         builder.Property(s => s.PrimaryDoctor).HasMaxLength(50);
         // Medications, ImmunizationNotes, SkillNotes, TextOptIn, MassEmailOptOut are nvarchar(max) —

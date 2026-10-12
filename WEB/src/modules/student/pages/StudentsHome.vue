@@ -1,5 +1,5 @@
 <template>
-  <parent-students v-if="isParentPortal" />
+  <parent-students class="bg-ff" v-if="isParentPortal" />
   <students-list v-else />
 </template>
 

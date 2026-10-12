@@ -23,7 +23,7 @@
         </div>
       </div>
       <img v-if="previewUrl" :src="previewUrl" alt="" width="36px" height="36px" style="border: 2px solid white; border-radius: 12px;">
-      <q-icon v-else name="o_account_circle" color="orange" class="material-icons-outlined" size="38px" />
+      <q-icon v-else name="mdi-account-circle-outline" color="orange" class="material-icons-outlined" size="38px" />
       <q-icon side name="o_keyboard_arrow_down" class="q-ml-sm" size="18px" style="color:#697A8D;" />
     </div>
     <q-menu>
@@ -31,14 +31,14 @@
         <q-item class="q-py-sm">
           <q-item-section avatar>
             <img v-if="previewUrl" :src="previewUrl" alt="" width="36px" height="36px" style="border: 2px solid white; border-radius: 12px;">
-            <q-icon v-else name="o_account_circle" color="orange" class="material-icons-outlined q-mr-sm" size="38px" />
+            <q-icon v-else name="mdi-account-circle-outline" color="orange" class="material-icons-outlined q-mr-sm" size="38px" />
           </q-item-section>
           <q-item-section>
             <q-item-label class="text-subtitle1 text-weight-medium text-capitalize">{{ displayName }}</q-item-label>
             <q-item-label caption>{{ email }}</q-item-label>
             <q-item-label v-if="roles.length" caption class="text-capitalize user-card__role">
               {{ roles.join(" · ") }}
-              <q-icon v-if="permissions.length" name="o_info" size="14px" class="q-ml-xs cursor-pointer" />
+              <q-icon v-if="permissions.length" name="mdi-information-outline" size="14px" class="q-ml-xs cursor-pointer" />
               <q-tooltip v-if="permissions.length" anchor="bottom left" self="top left" max-width="340px" class="bg-grey-9 text-white">
                 <div class="text-weight-medium q-mb-xs">Permissions ({{ permissions.length }})</div>
                 <div class="user-card__perms">
@@ -47,7 +47,7 @@
               </q-tooltip>
             </q-item-label>
             <q-item-label v-if="tenantName" caption class="row items-center no-wrap">
-              <q-icon name="o_apartment" size="14px" class="q-mr-xs" />{{ tenantName }}
+              <q-icon name="mdi-office-building-outline" size="14px" class="q-mr-xs" />{{ tenantName }}
             </q-item-label>
           </q-item-section>
         </q-item>
@@ -87,28 +87,28 @@
         </q-item> -->
         <q-separator class="q-my-sm" />
         <q-item v-ripple :to="{ name: 'profile' }" clickable>
-          <q-item-section avatar>
-            <q-icon name="person" class="material-icons-outlined" color="orange" />
+          <q-item-section avatar class="q-pr-sm">
+            <q-icon name="mdi-account-outline" class="text-54" size="20px" color="orange" />
           </q-item-section>
           <q-item-section>
-            <q-item-label>Profile</q-item-label>
+            <q-item-label class="fs-14">Profile</q-item-label>
           </q-item-section>
         </q-item>
         <q-item v-ripple :to="{ name: 'change_password' }" clickable>
-          <q-item-section avatar>
-            <q-icon name="lock" color="orange" class="material-icons-outlined" />
+          <q-item-section avatar class="q-pr-sm">
+            <q-icon name="mdi-lock-outline" class=" text-54" size="20px" />
           </q-item-section>
           <q-item-section>
-            <q-item-label>Change Password</q-item-label>
+            <q-item-label class="fs-14">Change Password</q-item-label>
           </q-item-section>
         </q-item>
         <q-separator class="q-my-sm" />
         <q-item v-ripple clickable @click="onLogout">
-          <q-item-section avatar>
-            <q-icon name="logout" color="orange" class="material-icons-outlined" />
+          <q-item-section avatar class="q-pr-sm">
+            <q-icon name="mdi-logout" class="text-26" size="20px" />
           </q-item-section>
           <q-item-section>
-            <q-item-label>Logout</q-item-label>
+            <q-item-label class="text-26 fs-14">Logout</q-item-label>
           </q-item-section>
         </q-item>
         <!-- <q-item v-ripple clickable @click="onLogoutAll">
