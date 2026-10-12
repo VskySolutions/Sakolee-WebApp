@@ -7,7 +7,7 @@
           <template #separator>
             <q-icon size="1.0em" name="o_chevron_right" color="primary" />
           </template>
-          <q-breadcrumbs-el label="Home" to="/" class="text-86 fw-700 text-uppercase sfs-11" />
+          <q-breadcrumbs-el label="Home" to="/dashboard" class="text-86 fw-700 text-uppercase sfs-11" />
           <q-breadcrumbs-el label="My Students" class="text-primary fw-700 text-uppercase sfs-11" />
         </q-breadcrumbs>
         <h1 class="parent-students__title">My Students</h1>
@@ -52,8 +52,17 @@
             </span>
           </div>
           <div class="student-card__meta">
-            <span v-if="card.age"><q-icon name="o_person" size="15px" />{{ card.age }}</span>
-            <span v-if="card.gradeLevel"><q-icon name="o_school" size="15px" />{{ card.gradeLevel }}</span>
+            <span v-if="card.age">
+              <q-icon size="14px">
+                <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="7" cy="4" r="2.5" /><path d="M2.5 12c0-2.5 2-4 4.5-4s4.5 1.5 4.5 4" />
+                </svg>
+              </q-icon>{{ card.age }}</span>
+            <span v-if="card.gradeLevel">
+              <q-icon size="14px">
+                <svg viewBox="0 0 16 14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 1 1 4.5 8 8l7-3.5L8 1Z" /><path d="M4 6.3V10c0 1.4 1.8 2.5 4 2.5s4-1.1 4-2.5V6.3" /></svg>
+              </q-icon>
+              <span>{{ card.gradeLevel }}</span>
+            </span>
           </div>
         </div>
         <button type="button" class="icon-round" @click="openView(card.studentId)">
@@ -243,8 +252,9 @@ onMounted(load);
 
 .parent-students__add {
   border-radius: 12px;
-  padding: 10px 24px;
+  padding: 10px 20px;
   font-weight: 600;
+  font-size: 14px;
   letter-spacing: 0.7px;
   box-shadow: 0 10px 15px -3px rgba(70, 72, 212, 0.2), 0 4px 6px -4px rgba(70, 72, 212, 0.2);
 }
@@ -281,6 +291,11 @@ onMounted(load);
   color: var(--primary);
   font-size: 32px;
   font-weight: 700;
+  @media (max-width: 600px) {
+    width: 76px;
+    height: 76px;
+    font-size: 22px;
+  }
 }
 
 .student-card__identity { flex: 1; min-width: 200px; }
@@ -302,11 +317,14 @@ onMounted(load);
 
 .student-card__meta {
   display: flex;
-  flex-wrap: wrap;
   gap: 40px;
   margin-top: 6px;
   font-size: 16px;
   color: var(--on-surface-variant);
+  @media (max-width: 500px) {
+    flex-direction: column;
+    gap: 10px;
+  }
 }
 
 .student-card__meta span { display: flex; align-items: center; gap: 6px; }

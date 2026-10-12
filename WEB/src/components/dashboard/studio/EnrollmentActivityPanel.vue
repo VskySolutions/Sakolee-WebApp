@@ -1,16 +1,18 @@
 <template>
   <q-card flat bordered class="panel">
     <!-- Header: title + caption on the left, the "see everything" link on the right. -->
-    <q-card-section class="row items-start no-wrap q-pb-sm">
+    <q-card-section class="row items-start no-wrap q-pa-none">
       <div class="col">
         <div class="panel__title">Enrollment &amp; Student Activity</div>
         <div class="panel__caption">Live status changes</div>
       </div>
       <q-btn flat dense no-caps size="sm" color="primary" class="panel__link" icon-right="o_chevron_right" label="View All" :to="{ path: '/students' }" />
     </q-card-section>
-
-    <q-card-section class="q-pt-none">
-      <div class="panel__group-label">
+    <div class="q-px-md q-my-md">
+      <q-separator class="view-separator" />
+    </div>
+    <q-card-section class="q-pa-none">
+      <div class="panel__group-label q-pb-sm">
         <span class="panel__dot" />Recently Enrolled
       </div>
 
@@ -72,7 +74,7 @@ const statusStyle = (status) =>
 </script>
 
 <style scoped>
-.panel { border-radius: 16px; height: 100%; }
+.panel { border-radius: 16px; height: 100%; padding: 20px; }
 
 .panel__title {
   font-size: 15px;
@@ -115,12 +117,11 @@ const statusStyle = (status) =>
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--outline);
-  border-bottom: 1px solid var(--line);
 }
 
 .activity-table :deep(tbody td) {
   font-size: 13px;
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid #c7c4d733;
 }
 
 .activity-table :deep(tbody tr:last-child td) { border-bottom: none; }
@@ -143,4 +144,13 @@ const statusStyle = (status) =>
   padding: 3px 9px;
   white-space: nowrap;
 }
+
+.q-table th{
+  background-color: white !important;
+  border-top: none !important;
+  border-right: none !important;
+  border-left: none !important;
+  padding-bottom: 10px !important;
+}
+
 </style>

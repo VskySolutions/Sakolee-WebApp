@@ -125,6 +125,7 @@ export function useParentPortalData () {
       classes.value = classRes.value?.data || [];
       instructorNames.value = Object.fromEntries((instructorRes.value?.data || []).map((i) => [i.id, i.name]));
       roomNames.value = Object.fromEntries((roomRes.value?.data || []).map((r) => [r.id, r.name]));
+      console.log("Parent Student Details:", students.value);
     } finally {
       loading.value = false;
     }

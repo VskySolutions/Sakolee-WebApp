@@ -1,8 +1,8 @@
 <template>
-  <q-page padding class="parent-dashboard">
+  <q-page padding class="parent-dashboard bg-ff">
     <!-- ---- Greeting ---- -->
     <div>
-      <h1 class="parent-dashboard__title">{{ greeting }}{{ firstName ? `, ${firstName}` : "" }}!</h1>
+      <h1 class="parent-dashboard__title text-d4">{{ greeting }}{{ firstName ? `, ${firstName}` : "" }}!</h1>
       <p class="parent-dashboard__subtitle">Here's what's happening at the academy today.</p>
     </div>
 
@@ -23,19 +23,19 @@
         </div>
         <q-skeleton v-if="loading" type="text" width="60%" class="stat-card__value" />
         <template v-else>
-          <div class="stat-card__value">{{ nextClass ? nextClass.className : "—" }}</div>
+          <div class="stat-card__value text-d4">{{ nextClass ? nextClass.className : "—" }}</div>
           <div class="stat-card__sub">{{ nextClass ? nextClass.when : "No upcoming classes this week" }}</div>
         </template>
       </div>
       <!-- Balance and messages have no data source yet; they render as "—" rather than a misleading 0. -->
       <div class="stat-card">
         <div class="stat-card__label">Balance</div>
-        <div class="stat-card__value">—</div>
+        <div class="stat-card__value text-1a">—</div>
         <div class="stat-card__sub">Billing isn't available yet</div>
       </div>
       <div class="stat-card">
         <div class="stat-card__label">Messages</div>
-        <div class="stat-card__value">—</div>
+        <div class="stat-card__value text-d4">2 New</div>
         <div class="stat-card__sub">Messaging isn't available yet</div>
       </div>
     </div>
@@ -44,10 +44,46 @@
     <div>
       <h2 class="section-title">Quick Actions</h2>
       <div class="quick-actions">
-        <button v-for="action in quickActions" :key="action.key" type="button" class="qa-btn" @click="action.run">
+        <!-- <q-button v-for="action in quickActions" :key="action.key" class="qa-btn" @click="action.run">
           <q-icon :name="action.icon" size="26px" color="primary" />
           {{ action.label }}
-        </button>
+        </q-button> -->
+        <q-button class="qa-btn" @click="onScheduleClick">
+          <q-icon size="26px" color="primary">
+            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6">
+              <rect x="2.5" y="3.5" width="15" height="14" rx="2" />
+              <path d="M2.5 8h15M6.5 2v3M13.5 2v3" />
+            </svg>
+          </q-icon>
+          Schedule
+        </q-button>
+        <q-button class="qa-btn" @click="onActivitiesClick">
+          <q-icon size="26px" color="primary">
+            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6">
+              <path d="M2 8v4l3 1V7l-3 1Z" />
+              <path d="M5 6.5 14 3v14L5 13.5" />
+              <path d="M17 8.5v3" />
+            </svg>
+          </q-icon>
+          Activities
+        </q-button>
+        <q-button class="qa-btn" @click="onPaymentsClick">
+          <q-icon size="26px" color="primary">
+            <svg viewBox="0 0 22 16" fill="none" stroke="currentColor" stroke-width="1.6">
+              <rect x="1" y="1" width="20" height="14" rx="2" />
+              <path d="M1 6h20" />
+            </svg>
+          </q-icon>
+          Payments
+        </q-button>
+        <q-button class="qa-btn" @click="onMessagesClick">
+          <q-icon size="26px" color="primary">
+            <svg viewBox="0 0 20 19" fill="none" stroke="currentColor" stroke-width="1.6">
+              <path d="M2 3.5h16v10H7l-3.5 3v-3H2v-10Z" />
+            </svg>
+          </q-icon>
+          Messages
+        </q-button>
       </div>
     </div>
 
@@ -133,17 +169,37 @@ const greeting = computed(() => {
   return "Good evening";
 });
 
-const quickActions = computed(() => [
-  {
-    key: "schedule",
-    label: "Schedule",
-    icon: "o_calendar_month",
-    run: () => (has(Permissions.ClassesRead) ? router.push("/classes") : notify.info("The schedule isn't available yet."))
-  },
-  { key: "activities", label: "Activities", icon: "o_campaign", run: () => notify.info("Activities aren't available yet.") },
-  { key: "payments", label: "Payments", icon: "o_credit_card", run: () => notify.info("Payments aren't available yet.") },
-  { key: "messages", label: "Messages", icon: "o_chat_bubble_outline", run: () => notify.info("Messages aren't available yet.") }
-]);
+// const quickActions = computed(() => [
+//   {
+//     key: "schedule",
+//     label: "Schedule",
+//     icon: "o_calendar_month",
+//     run: () => (has(Permissions.ClassesRead) ? router.push("/classes") : notify.info("The schedule isn't available yet."))
+//   },
+//   { key: "activities", label: "Activities", icon: "o_campaign", run: () => notify.info("Activities aren't available yet.") },
+//   { key: "payments", label: "Payments", icon: "o_credit_card", run: () => notify.info("Payments aren't available yet.") },
+//   { key: "messages", label: "Messages", icon: "o_chat_bubble_outline", run: () => notify.info("Messages aren't available yet.") }
+// ]);
+
+const onScheduleClick = () => {
+  if (has(Permissions.ClassesRead)) {
+    router.push("/classes");
+  } else {
+    notify.info("The schedule isn't available yet.");
+  }
+};
+
+const onActivitiesClick = () => {
+  notify.info("Activities aren't available yet.");
+};
+
+const onPaymentsClick = () => {
+  notify.info("Payments aren't available yet.");
+};
+
+const onMessagesClick = () => {
+  notify.info("Messages aren't available yet.");
+};
 
 // One entry per (student, class) pair — two siblings in the same class are two check-ins.
 const enrollments = computed(() =>
@@ -175,6 +231,8 @@ const todaySchedule = computed(() => {
   const today = new Date();
   return enrollments.value.filter(({ cls }) => runsOn(cls, today)).map(toEntry).sort(byStart);
 });
+
+console.log("Student Schedule:", todaySchedule);
 
 const nextClass = computed(() => {
   const upcoming = enrollments.value
@@ -222,7 +280,7 @@ onMounted(load);
 
 .stat-card {
   background: var(--surface-container-lowest);
-  border: 1px solid rgba(199, 196, 215, 0.3);
+  border: 1px solid #c7c4d74d;
   border-radius: 12px;
   padding: 24px;
   box-shadow: 0 4px 10px rgba(15, 23, 42, 0.05);

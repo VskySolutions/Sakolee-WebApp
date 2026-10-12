@@ -6,7 +6,7 @@
          ===================================================== -->
     <q-scroll-area class="app-menu-scroll">
 
-      <q-list class="app-menu q-py-xs q-gutter-y-sm">
+      <q-list class="app-menu q-py-xs q-gutter-y-sm" :class="route.path === '/dashboard' ? 'q-mt-xs' : ''">
 
         <template
           v-for="section in visibleSections"
@@ -267,7 +267,10 @@
             :icon="section.icon"
             :label="section.label"
             :model-value="isOpen(section)"
-            header-class="app-menu__group"
+            :header-class="[
+              'app-menu__group',
+              { 'app-menu__group--expanded': isOpen(section) }
+            ]"
             class="sakolee-desktop-menu-class"
             @update:model-value="
               (v) => setOpen(section.key, v)
@@ -746,7 +749,7 @@
 <script setup>
 import { computed, reactive, ref, onBeforeUnmount } from "vue";
 import { LocalStorage } from "quasar";
-import { useRouter } from "vue-router";
+import { useRouter, useRoute } from "vue-router";
 import { useAuthStore } from "stores/auth";
 import { Permissions } from "composables/usePermissions";
 import { useIsParentPortal } from "composables/useParentPortal";
@@ -758,6 +761,7 @@ defineProps({
 
 const authStore = useAuthStore();
 const router = useRouter();
+const route = useRoute();
 const isParentPortal = useIsParentPortal();
 const loggedUserRole = computed(() => authStore.user?.tenants[0]?.roleNames[0]);
 console.log("Logged User Role:", loggedUserRole.value);
@@ -853,9 +857,9 @@ const sections = [
     label: "Families",
     icon: "o_family_restroom",
     items: [
-      { label: "All Families", icon: "mdi-account-group-outline", to: "/families", permissions: [Permissions.FamiliesRead] },
+      { label: "All Families", icon: "mdi-account-group-outline", to: "/families", exact: true, permissions: [Permissions.FamiliesRead] },
       // Gated like its route — part of the Families area.
-      { label: "Quick Registration", icon: "mdi-account-check-outline", to: { name: "family_quick_registration" }, permissions: [Permissions.FamiliesRead] },
+      { label: "Quick Registration", icon: "mdi-account-check-outline", to: { name: "family_quick_registration" }, exact: true, permissions: [Permissions.FamiliesRead] },
       // Lead Files — students without a running class. All Leads is the one page so far.
       {
         key: "lead-files",
@@ -1189,12 +1193,14 @@ const settingsMenu = {
       label: "My Account",
       icon: "mdi-account-cog-outline",
       to: "/account",
+      exact: true,
       permissions: null
     },
     {
       label: "Profile",
       icon: "mdi-account-outline",
       to: { name: "profile" },
+      exact: true,
       permissions: null
     },
     {
@@ -1338,16 +1344,22 @@ $expand-icon-color: #767586;
 
 .active-menu-class {
   color: var(--primary) !important;
+  background: rgba(70, 72, 212, 0.1);
+  padding-left: 20px;
+  border-left: 5px solid var(--primary);
+  border-radius: 12px;
 }
 
 /* Active label */
 :deep(.active-menu-class .q-item__section:not(.q-item__section--avatar)) {
   color: var(--primary) !important;
+  font-weight: 500 !important;
 }
 
 /* Active icon */
 :deep(.active-menu-class .q-item__section--avatar .q-icon) {
   color: var(--primary) !important;
+  font-weight: 500 !important;
 }
 
 /* ============================================================
@@ -1546,7 +1558,7 @@ $expand-icon-color: #767586;
 .app-menu__flyout-parent :deep(
   .q-item__section:not(.q-item__section--avatar):not(.q-item__section--side)
 ) {
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 400;
   color: $menu-color;
 }
@@ -1555,7 +1567,7 @@ $expand-icon-color: #767586;
 .app-menu__flyout-parent :deep(
   .q-item__section--side .q-icon
 ) {
-  font-size: 18px !important;
+  font-size: 22px !important;
   color: $expand-icon-color;
 }
 
@@ -1587,7 +1599,7 @@ $expand-icon-color: #767586;
 .app-menu__nested-flyout :deep(
   .q-item__section:not(.q-item__section--avatar)
 ) {
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 400;
   color: $menu-color;
 }

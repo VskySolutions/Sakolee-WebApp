@@ -12,7 +12,7 @@
     <!-- </app-detail-header> -->
 
     <app-list-header
-      :breadcrumbs="[{ label: 'Home', to: '/' }, { label: 'My Account', to: { name: 'account' } }, { label: 'My Profile' }]"
+      :breadcrumbs="[{ label: 'Home', to: '/dashboard' }, { label: 'My Account', to: { name: 'account' } }, { label: 'My Profile' }]"
       title="My Profile"
       description="Manage your profile information here."
       @back="$router.back()"
