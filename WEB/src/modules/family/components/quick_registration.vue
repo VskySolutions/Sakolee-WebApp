@@ -45,18 +45,18 @@
             <app-select v-model="form.heardAbout" label="How Did You Hear About Us?" :options="hearAboutUsOptions" />
           </div>
           <div class="col-12 col-md-6">
-            <app-text-field v-model="form.referralName" label="Referral Name" placeholder="Friend or student name (optional)" :rules="[nameOnlyRule]" @keypress="(e) => { if (!/^[A-Za-z\s]$/.test(e.key)) e.preventDefault(); }"/>
+            <app-text-field v-model="form.referralName" label="Referral Name" placeholder="Friend or student name (optional)" :rules="[nameOnlyRule]" @keypress="(e) => { if (!/^[A-Za-z\s]$/.test(e.key)) e.preventDefault(); }" />
           </div>
           <div class="col-12 col-md-6">
             <app-select v-model="form.studioLocationId" label="Studio Location" required :options="locationOptions" :rules="[required]" />
           </div>
           <div class="col-12 col-md-6">
-            <app-text-field v-model="form.familyName" label="Family Name" required placeholder="e.g. Miller Family" :rules="[required,nameOnlyRule]" @keypress="(e) => { if (!/^[A-Za-z\s]$/.test(e.key)) e.preventDefault(); }"/>
+            <app-text-field v-model="form.familyName" label="Family Name" required placeholder="e.g. Miller Family" :rules="[required,nameOnlyRule]" @keypress="(e) => { if (!/^[A-Za-z\s]$/.test(e.key)) e.preventDefault(); }" />
           </div>
 
           <div class="col-12 col-md-6">
-  <app-select v-model="form.familyStatusId" label="Family Status" :options="familyStatusOptions" />
-</div>
+            <app-select v-model="form.familyStatusId" label="Family Status" :options="familyStatusOptions" />
+          </div>
         </div>
 
         <div class="duplicate-check-band">
@@ -87,7 +87,7 @@
             </div>
             <div class="col-12 col-md-4">
               <!-- <app-select v-model="contact.model.relation" label="Type / Relation" :options="RELATION_OPTIONS" /> -->
-               <app-select v-model="contact.model.relation" label="Type / Relation" :options="relationOptions" />
+              <app-select v-model="contact.model.relation" label="Type / Relation" :options="relationOptions" />
             </div>
             <div class="col-12 col-md-6">
               <app-text-field
@@ -116,7 +116,7 @@
         <div class="step-subtitle-inline">&bull; Emergency Contact </div>
         <div class="row q-col-gutter-md">
           <div class="col-12 col-md-6">
-            <app-text-field v-model="form.emergencyContactName" label="Emergency Contact Person" required placeholder="Full name &amp; relationship" :rules="[required, nameOnlyRule]" @keypress="(e) => { if (!/^[A-Za-z\s]$/.test(e.key)) e.preventDefault(); }"/>
+            <app-text-field v-model="form.emergencyContactName" label="Emergency Contact Person" required placeholder="Full name &amp; relationship" :rules="[required, nameOnlyRule]" @keypress="(e) => { if (!/^[A-Za-z\s]$/.test(e.key)) e.preventDefault(); }" />
           </div>
           <div class="col-12 col-md-6">
             <app-phone-input v-model="form.emergencyPhone" v-model:country="form.emergencyPhoneCountry" label="Emergency Phone" required />
@@ -139,10 +139,10 @@
           </div>
           <div class="row q-col-gutter-md">
             <div class="col-12 col-md-4">
-              <app-text-field v-model="student.firstName" label="First Name" required placeholder="Student First Name" :rules="[required,nameOnlyRule]" @keypress="(e) => { if (!/^[A-Za-z\s]$/.test(e.key)) e.preventDefault(); }"/>
+              <app-text-field v-model="student.firstName" label="First Name" required placeholder="Student First Name" :rules="[required,nameOnlyRule]" @keypress="(e) => { if (!/^[A-Za-z\s]$/.test(e.key)) e.preventDefault(); }" />
             </div>
             <div class="col-12 col-md-4">
-              <app-text-field v-model="student.lastName" label="Last Name" required placeholder="Student Last Name" :rules="[required,nameOnlyRule]" @keypress="(e) => { if (!/^[A-Za-z\s]$/.test(e.key)) e.preventDefault(); }"/>
+              <app-text-field v-model="student.lastName" label="Last Name" required placeholder="Student Last Name" :rules="[required,nameOnlyRule]" @keypress="(e) => { if (!/^[A-Za-z\s]$/.test(e.key)) e.preventDefault(); }" />
             </div>
             <div class="col-12 col-md-4">
               <app-text-field
@@ -162,7 +162,7 @@
             </div>
             <div class="col-12 col-md-4">
               <!-- <app-text-field v-model="student.gradeLevel" label="Grade Level" placeholder="e.g. 3rd Grade" /> -->
-               <app-select v-model="student.gradeLevel" label="Grade Level" :options="gradeLevelOptions" class="col-12 col-md-4" />
+              <app-select v-model="student.gradeLevel" label="Grade Level" :options="gradeLevelOptions" class="col-12 col-md-4" />
             </div>
             <div class="col-12">
               <app-text-field
@@ -292,7 +292,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, reactive, ref,watch } from "vue";
+import { computed, onMounted, reactive, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 
 // import AppBreadcrumbs from "components/common/AppBreadcrumbs.vue";
@@ -305,14 +305,14 @@ import AppAddressFields from "components/common/AppAddressFields.vue";
 import AppFieldLabel from "components/common/AppFieldLabel.vue";
 
 import { useNotify } from "composables/useNotify";
-import { classApi, locationApi, familyApi, studentApi,studentGradeLevelApi,familyStatusApi,familyRelationApi, ePaymentScheduleApi,membershipTypeApi, getApiErrorMessage } from "services/api";
-import { blankQuickRegistrationForm, blankStudent, toCreateFamilyRequest,  toCreateStudentRequest, RELATION_OPTIONS, GENDER_OPTIONS, PAYMENT_METHOD_OPTIONS} from "composables/quickRegistrationForm";
+import { classApi, locationApi, familyApi, studentApi, studentGradeLevelApi, familyStatusApi, familyRelationApi, ePaymentScheduleApi, membershipTypeApi, getApiErrorMessage } from "services/api";
+import { blankQuickRegistrationForm, blankStudent, toCreateFamilyRequest, toCreateStudentRequest, RELATION_OPTIONS, GENDER_OPTIONS, PAYMENT_METHOD_OPTIONS } from "composables/quickRegistrationForm";
 import { useTShirtSizeOptions } from "composables/useTShirtSizeOptions";
 import { useHearAboutUsOptions } from "composables/useHearAboutUsOptions";
 
-//Grade level options state
+// Grade level options state
 const gradeLevels = ref([]);
-const gradeLevelOptions = computed(() =>  (gradeLevels.value || []).filter((g) => g.active ?? g.Active ?? true).map((g) => ({ label: g.name || g.gradeName || g.Name,  value: g.id || g.gradeLevelId || g.Id  })));
+const gradeLevelOptions = computed(() => (gradeLevels.value || []).filter((g) => g.active ?? g.Active ?? true).map((g) => ({ label: g.name || g.gradeName || g.Name, value: g.id || g.gradeLevelId || g.Id })));
 
 const loadGradeLevels = async () => {
   try {
@@ -325,7 +325,7 @@ const loadGradeLevels = async () => {
 
 // Family relation options state
 const familyRelations = ref([]);
-const relationOptions = computed(() => (familyRelations.value || []).filter((fr) => fr.active ?? fr.Active ?? true).map((fr) => ({ label: fr.name || fr.relationName || fr.Name, value: fr.id || fr.familyRelationId || fr.Id  })));
+const relationOptions = computed(() => (familyRelations.value || []).filter((fr) => fr.active ?? fr.Active ?? true).map((fr) => ({ label: fr.name || fr.relationName || fr.Name, value: fr.id || fr.familyRelationId || fr.Id })));
 
 const loadFamilyRelations = async () => {
   try {
@@ -351,7 +351,7 @@ const loadEPaymentSchedules = async () => {
 
 // Membership Type options state
 const membershipTypes = ref([]);
-const membershipTypeOptions = computed(() => (membershipTypes.value || []).filter((mt) => mt.active ?? mt.Active ?? true).map((mt) => ({  label: mt.name || mt.membershipName || mt.Name,  value: mt.id || mt.membershipTypeId || mt.Id })));
+const membershipTypeOptions = computed(() => (membershipTypes.value || []).filter((mt) => mt.active ?? mt.Active ?? true).map((mt) => ({ label: mt.name || mt.membershipName || mt.Name, value: mt.id || mt.membershipTypeId || mt.Id })));
 
 const loadMembershipTypes = async () => {
   try {
@@ -412,7 +412,7 @@ const saving = ref(false);
 const form = reactive(blankQuickRegistrationForm());
 
 // The prototype repeats the same five fields for a primary and a second contact; both now save for real (FamiliesController.Create) — only the first is mandatory.
-const contactSlots = computed(() => [{ key: "primary", heading: "Contact #1 (Primary)", model: form.primaryContact, required: true },{ key: "secondary", heading: "Contact #2 (Secondary / Optional)", model: form.secondaryContact, required: false }]);
+const contactSlots = computed(() => [{ key: "primary", heading: "Contact #1 (Primary)", model: form.primaryContact, required: true }, { key: "secondary", heading: "Contact #2 (Secondary / Optional)", model: form.secondaryContact, required: false }]);
 
 // Step 4 — one or more students of the family being registered; Step 5 picks each one's class.
 const addStudent = () => { form.students.push(blankStudent()); };
@@ -440,7 +440,7 @@ const loadCapacity = async () => {
 
 onMounted(async () => {
   try {
-    const [classResult, locationResult] = await Promise.all([classApi.list({ limit: 100, active: true }),locationApi.list({ limit: 100, active: true }),loadGradeLevels(), loadFamilyStatuses(), loadFamilyRelations(),loadEPaymentSchedules(), loadMembershipTypes(),loadCapacity()]);
+    const [classResult, locationResult] = await Promise.all([classApi.list({ limit: 100, active: true }), locationApi.list({ limit: 100, active: true }), loadGradeLevels(), loadFamilyStatuses(), loadFamilyRelations(), loadEPaymentSchedules(), loadMembershipTypes(), loadCapacity()]);
     classes.value = classResult?.data || [];
     locations.value = locationResult?.data || [];
   } catch (err) {
@@ -459,15 +459,14 @@ const copyPassword = async (password) => {
   }
 };
 
-
 const required = (val) => (val !== null && val !== undefined && String(val).trim() !== "") || "Required";
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const emailRule = (val) => EMAIL_RE.test(String(val || "")) || "Enter a valid email";
 const optionalEmail = (val) => !String(val || "").trim() || emailRule(val);
 
-// For only-letter name fields 
+// For only-letter name fields
 const NAME_RE = /^[A-Za-z\s]+$/;
-//const nameOnlyRule = (val) => !val || NAME_RE.test(String(val)) || "Only letters are allowed";
+// const nameOnlyRule = (val) => !val || NAME_RE.test(String(val)) || "Only letters are allowed";
 
 const nameOnlyRule = (val) => {
   if (!val) return true;
@@ -481,34 +480,32 @@ const nameOnlyRule = (val) => {
   return true;
 };
 
-
-
-// Checks Minimum 4 years old 
+// Checks Minimum 4 years old
 const birthDateRule = (val) => {
-  if (!val) return "Required"; 
+  if (!val) return "Required";
   const birthDate = new Date(val);
   const today = new Date();
   // Future date check
   if (birthDate > today) {
     return "Birth date cannot be in the future";
   }
-  
+
   // Calculate age
   let age = today.getFullYear() - birthDate.getFullYear();
   const m = today.getMonth() - birthDate.getMonth();
   if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
     age--;
   }
-  
+
   // // Minimum 4 years check
   // if (age < 4) {
   //   return "Student must be at least 4 years old";
   // }
-  
+
   return true;
 };
 
-//Calculates age from birth date string, returns null if invalid or not provided
+// Calculates age from birth date string, returns null if invalid or not provided
 // const calculateAge = (birthDateString) => {
 //   if (!birthDateString) return null;
 //   const birthDate = new Date(birthDateString);
@@ -523,12 +520,10 @@ const birthDateRule = (val) => {
 //   return age;
 // };
 
-
-
 // const getFilteredClassesForStudent = (student) => {
 //   const studentAge = calculateAge(student.birthDate);
 //   return (classes.value || [])
-//     .filter((c) => { 
+//     .filter((c) => {
 //       if (!(c.active ?? c.Active ?? true)) return false;
 //         if (studentAge === null) return true;
 //       const min = c.minAge ?? c.minimumAge ?? c.MinAge ?? 0;
@@ -583,13 +578,13 @@ const getFilteredClassesForStudent = (studentOrForm) => {
   });
 
   // Map to select options format
-//   return filtered.map((c) => ({
-//     label: c.className || c.name || c.Name || c.class_name || "Unnamed Class",
-//     value: c.classId || c.id || c.Id || c.class_id
-//   }));
-// };
+  //   return filtered.map((c) => ({
+  //     label: c.className || c.name || c.Name || c.class_name || "Unnamed Class",
+  //     value: c.classId || c.id || c.Id || c.class_id
+  //   }));
+  // };
 
-// Map to select options format including capacity rules
+  // Map to select options format including capacity rules
   return filtered.map((c) => {
     const classId = c.classId || c.id || c.Id || c.class_id;
     const className = c.className || c.name || c.Name || c.class_name || "Unnamed Class";
@@ -628,11 +623,11 @@ const runDuplicateCheck = async ({ silent = false }) => {
     const result = await familyApi.list({ search: name, limit: 5 });
     const matches = result?.data || [];
     if (!silent) {
-    notify.info(
-      matches.length
-        ? `${matches.length} existing famil${matches.length === 1 ? "y matches" : "ies match"} "${name}".`
-        : `No existing family matches "${name}".`
-    );
+      notify.info(
+        matches.length
+          ? `${matches.length} existing famil${matches.length === 1 ? "y matches" : "ies match"} "${name}".`
+          : `No existing family matches "${name}".`
+      );
     }
     return { matchesCount: matches.length, matches };
   } catch (err) {
@@ -677,7 +672,7 @@ const nextStep = async () => {
   const valid = await stepForms[currentStep.value]?.validate();
   if (!valid) return;
 
- // Step 1: Automatic Duplicate Family Check on Continue
+  // Step 1: Automatic Duplicate Family Check on Continue
   if (currentStep.value === 1) {
     saving.value = true;
     const { matchesCount } = await runDuplicateCheck({ silent: true });
@@ -704,7 +699,7 @@ const nextStep = async () => {
     return;
   }
 
-   // Step 5 — capacity check (refresh counts first, someone else may have enrolled meanwhile)
+  // Step 5 — capacity check (refresh counts first, someone else may have enrolled meanwhile)
   if (currentStep.value === 5) {
     await loadCapacity();
     const problems = validateCapacity();

@@ -838,7 +838,6 @@ const scheduleNestedFlyoutClose = () => {
   }, 300);
 };
 
-
 // Ordered by application flow: overview → set up → configure → operate → personal. `permissions:
 // null` → visible to every authenticated user.
 const sections = [
@@ -969,7 +968,7 @@ const sections = [
     icon: "mdi-domain",
     items: [
       { label: "Tenants", icon: "mdi-office-building-outline", to: "/tenants", permissions: [Permissions.TenantsWrite] },
-      { label: "Person", icon: "mdi-account-group-outline", to: "/persons", permissions: [Permissions.PersonsRead] },
+      // { label: "Person", icon: "mdi-account-group-outline", to: "/persons", permissions: [Permissions.PersonsRead] },
     ]
   },
   {
