@@ -37,7 +37,7 @@
           <div class="col-12 text-subtitle2 text-grey-8 q-mt-sm">School</div>
           <app-text-field v-model="form.school" label="School" class="col-12 col-sm-6" />
           <!-- <app-text-field v-model="form.gradeLevel" label="Grade Level" class="col-12 col-sm-6" /> -->
-           <app-select v-model="form.gradeLevel" label="Grade Level" :options="gradeLevelOptions" class="col-12 col-sm-6" />
+          <app-select v-model="form.gradeLevel" label="Grade Level" :options="gradeLevelOptions" :emit-value="false" :map-options="false" class="col-12 col-sm-6" />
           <app-text-field v-model="form.transportation" label="Transportation" placeholder="e.g. School Bus" class="col-12 col-sm-6" />
           <app-select v-model="form.tShirtSize" label="T-Shirt Size" :options="tShirtSizeOptions" class="col-12 col-sm-6" />
 
@@ -88,15 +88,18 @@ import AppTextField from "components/common/AppTextField.vue";
 import AppSelect from "components/common/AppSelect.vue";
 import AppDateField from "components/common/AppDateField.vue";
 
-// Grade level options state
+// Grade Level options mapping
 const gradeLevels = ref([]);
-const gradeLevelOptions = computed(() => gradeLevels.value.map((g) => ({ label: g.Name || g.gradeName || g.name, value: g.Id ||g.id || g.gradeLevelId })));
 
+const gradeLevelOptions = computed(() => gradeLevels.value.map((g) => g.name ?? g.Name ?? g.gradeName ?? g.GradeName ?? g.gradeLevelName ?? g.GradeLevelName).filter((name) => name !== null && name !== undefined && String(name).trim() !== "").map((name) => String(name).trim()));
 const loadGradeLevels = async () => {
   try {
     const res = await studentGradeLevelApi.list({ limit: 100 });
-    gradeLevels.value = res?.data || [];
+    // Handle the common API response formats.
+    const data = res?.data;
+    gradeLevels.value = Array.isArray(data) ? data : Array.isArray(data?.items) ? data.items : Array.isArray(data?.data) ? data.data : [];
   } catch (err) {
+    gradeLevels.value = [];
     notify.error(getApiErrorMessage(err));
   }
 };

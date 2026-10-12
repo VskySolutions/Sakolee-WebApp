@@ -392,7 +392,7 @@ const submitForm = async () => {
       scheduleValidation &&
       scheduleValidation.valid === false
     ) {
-      notify.error(scheduleValidation.message);
+      notify.warning(scheduleValidation.message);
       return;
     }
     if (isEdit.value) {
@@ -415,7 +415,13 @@ const submitForm = async () => {
     reset();
     emit("saved");
   } catch (err) {
-    notify.error(getApiErrorMessage(err));
+    const message = getApiErrorMessage(err);
+    // HTTP 409 indicates an instructor schedule conflict.
+    if (err?.response?.status === 409) {
+      notify.warning(message);
+    } else {
+      notify.error(message);
+    }
   } finally {
     saving.value = false;
   }

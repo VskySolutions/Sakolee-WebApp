@@ -311,11 +311,7 @@ const emailRule = (val) => EMAIL_RE.test(String(val || "")) || "Enter a valid em
 
 // Grade level options state
 const gradeLevels = ref([]);
-const gradeLevelOptions = computed(() => {
-  const options = (gradeLevels.value || []).filter((g) => g.active ?? g.Active ?? true).map((g) => ({ label: g.Name || g.gradeName, value: g.Id || g.gradeLevelId }));
-  return options;
-});
-
+const gradeLevelOptions = computed(() => (gradeLevels.value || []).filter((g) => g.active ?? g.Active ?? true).map((g) => ({ label: g.name || g.gradeName || g.gradeLevelName || g.Name || "Unnamed Grade", value: g.id || g.gradeLevelId || g.Id })));
 // Family relation options state
 const familyRelations = ref([]);
 const relationOptions = computed(() => {

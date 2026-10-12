@@ -32,7 +32,7 @@
       @popup-show="search = ''"
       @popup-hide="search = ''"
       @filter="filterFn"
-      
+      @clear="clearSelection"
     >
       <!-- Multi-select renders each selection as a consistent badge/chip (removable when editable). -->
       <template v-if="chips" #selected-item="scope">
@@ -159,8 +159,9 @@ const props = defineProps({
   inputDebounce: { type: [Number, String], default: 0 }
 });
 
-
-
+const clearSelection = () => {
+  model.value = props.multiple ? [] : null;
+};
 const emit = defineEmits(["update:modelValue"]);
 
 const model = computed({
