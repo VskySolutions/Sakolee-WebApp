@@ -589,7 +589,8 @@ const submitForm = async () => {
     isBillingContact: form.isBillingContact,
     isAuthorizedToPickUpStudent: form.isAuthorizedToPickUpStudent,
     // An untouched address block is left out (on update that keeps the saved address unchanged).
-    address: hasAddressValue(form.address) ? form.address : undefined,
+   // address: hasAddressValue(form.address) ? form.address : undefined,
+   address: hasAddressValue(form.address) ? form.address : null,
     emergencyContactPerson: form.emergencyContactPerson || null,
     emergencyPhone: form.emergencyPhone || null,
     healthInsuranceCarrier: form.healthInsuranceCarrier || null,

@@ -146,8 +146,8 @@
             </div>
             <div class="col-12 col-md-4">
               <app-text-field
-                v-model="student.email" label="Student Email" type="email" required placeholder="student@example.com"
-                :rules="[required, emailRule]"
+                v-model="student.email" label="Student Email" type="email" placeholder="student@example.com"
+                :rules="[optionalEmail]"
                 hint="A separate login account is created for the student with this email."
               />
             </div>
@@ -732,7 +732,7 @@ const nextStep = async () => {
   const allEmails = [
     form.primaryContact.email,
     ...(form.secondaryContact.email ? [form.secondaryContact.email] : []),
-    ...form.students.map((s) => s.email)
+    ...form.students.map((s) => s.email).filter((e) => e && e.trim() !== "")
   ].map((e) => e.trim().toLowerCase());
   const firstDuplicate = allEmails.find((email, i) => allEmails.indexOf(email) !== i);
   if (firstDuplicate) {
@@ -777,11 +777,13 @@ const nextStep = async () => {
     // or, on any failure, none of them are; there's no partial-batch state to reconcile client-side.
     const payload = form.students.map((student) => toCreateStudentRequest(student, form, family.familyId));
     const result = await studentApi.createBulk(payload);
-    (result?.students || []).forEach((created, i) => {
-      if (created?.temporaryPassword) {
-        passwords.push({ label: studentDisplayName(form.students[i]) || "Student", email: form.students[i].email, password: created.temporaryPassword });
-      }
-    });
+
+    // --- STUDENT USER CREATION PASSWORD LOGIC COMMENTED OUT ---
+    // (result?.students || []).forEach((created, i) => {
+    //   if (created?.temporaryPassword) {
+    //     passwords.push({ label: studentDisplayName(form.students[i]) || "Student", email: form.students[i].email, password: created.temporaryPassword });
+    //   }
+    // });
 
     const studentWord = form.students.length === 1 ? "student" : `${form.students.length} students`;
     // Payment has no backing entity yet — flagged here rather than silently dropped.

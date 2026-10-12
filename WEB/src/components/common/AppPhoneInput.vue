@@ -30,6 +30,7 @@
         class="app-phone__number"
         @update:model-value="onInput"
         @blur="onBlur"
+        @keypress="(e) => { if (!/[0-9]/.test(e.key) && !['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'Tab', 'Home', 'End'].includes(e.key)) e.preventDefault(); }"
       />
     </div>
   </div>

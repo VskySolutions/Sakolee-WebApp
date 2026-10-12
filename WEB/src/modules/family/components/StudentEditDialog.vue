@@ -27,9 +27,9 @@
           <app-date-field v-model="form.admissionDate" label="Admission Date" class="col-12 col-sm-6" />
           <div class="col-12 col-sm-6 toggle-row-inline"><q-toggle v-model="form.allowTextMessaging" color="primary" /><span class="q-ml-sm">Allow text messaging</span></div>
           <app-text-field
-            v-model="form.email" label="Email" required class="col-12 col-sm-6"
+            v-model="form.email" label="Email" class="col-12 col-sm-6"
             :error="!!emailError" :error-message="emailError"
-            :rules="[(v) => !!v || 'Email is required',emailRule]"
+            :rules="[emailRule]"
             hint="This student's own login email."
           />
           <app-phone-input v-model="form.cellPhone" label="Cell Phone" class="col-12 col-sm-6" />
@@ -132,7 +132,12 @@ const birthDateRule = (val) => {
 
 // Email validation rule
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const emailRule = (val) => EMAIL_RE.test(String(val || "")) || "Enter a valid email";
+//const emailRule = (val) => EMAIL_RE.test(String(val || "")) || "Enter a valid email";
+// Optional Email validation rule: validates only if a value is entered
+const emailRule = (val) => {
+  if (!val || String(val).trim() === "") return true;
+  return EMAIL_RE.test(String(val).trim()) || "Enter a valid email";
+};
 
 // For only-letter name fields
 const NAME_RE = /^[A-Za-z\s]+$/;
@@ -356,7 +361,8 @@ const preserved = reactive(blankPreserved());
 // rows carry only the minimal FamilyStudentSummary shape (name, number, active, classIds), not enough
 // to populate a full edit form.
 watch(() => props.modelValue, async (isOpen) => {
-  if (!isOpen || !props.studentId) return;
+  if (!isOpen) return;
+  //if (!isOpen || !props.studentId) return;
 isInitializing.value = true;
 
   //await loadGradeLevels();
@@ -398,6 +404,7 @@ isInitializing.value = true;
       gender: row.gender || "",
       allowTextMessaging: row.allowTextMessaging ?? true,
       email: row.email || "",
+ 
       cellPhone: row.cellPhone || "",
       school: row.school || "",
       gradeLevel: row.gradeLevel || "",
@@ -449,7 +456,8 @@ const save = async () => {
     birthDate: form.birthDate || null,
     gender: form.gender || null,
     allowTextMessaging: form.allowTextMessaging,
-    email: form.email || null,
+    //email: form.email || null,
+    email: form.email && form.email.trim() !== "" ? form.email.trim() : null,
     cellPhone: form.cellPhone || null,
     school: form.school || null,
     gradeLevel: form.gradeLevel || null,
