@@ -108,12 +108,14 @@ public class Student
 
     public string? SkillNotes { get; set; }
 
-    /// <summary>Free text on the live schema, not a flag — preserved as-is.</summary>
-    public string? TextOptIn { get; set; }
+    ///// <summary>Free text on the live schema, not a flag — preserved as-is.</summary>
+    //public string? TextOptIn { get; set; }
 
-    /// <summary>Free text on the live schema, not a flag — preserved as-is.</summary>
-    public string? MassEmailOptOut { get; set; }
+    ///// <summary>Free text on the live schema, not a flag — preserved as-is.</summary>
+    //public string? MassEmailOptOut { get; set; }
 
+    public bool? TextOptIn { get; set; }
+    public bool? MassEmailOptOut { get; set; }
     public string? HealthInsuranceCarrier { get; set; }
 
     /// <summary>Free-text description of any disabilities (see <see cref="Disabilities"/> remarks).</summary>
